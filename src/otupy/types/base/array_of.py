@@ -59,8 +59,13 @@ class ArrayOf:
 				objlis = cls()
 				logger.debug('Building %s from %s in ArrayOf', cls, lis)
 				logger.debug('-> instantiating: %s', cls.fieldtype)
-				for k in lis:
-					objlis.append(e.fromdict(cls.fieldtype, k))
+				# Bug fix: for str (and maybe other types) the for loop 
+				# iterates on the single characters
+				if type(lis) == list:
+					for k in lis:
+						objlis.append(e.fromdict(cls.fieldtype, k))
+				else:
+					objlis.append(e.fromdict(cls.fieldtype, lis))
 		
 				return objlis
 			
