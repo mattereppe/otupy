@@ -8,6 +8,8 @@ import sys
 import otupy as oc2
 
 from otupy.encoders.json import JSONEncoder
+from otupy.encoders.yaml import YAMLEncoder
+from otupy.encoders.xml import XMLEncoder
 from otupy.transfers.http import HTTPTransfer
 
 import otupy.profiles.slpf as slpf
@@ -19,7 +21,7 @@ import otupy.profiles.dumb as dumb
 #logger = logging.getLogger('openc2producer')
 logger = logging.getLogger()
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # Create stdout handler for logging to the console 
 stdout_handler = logging.StreamHandler()
 stdout_handler.setLevel(logging.DEBUG)
@@ -37,7 +39,9 @@ logger.addHandler(file_handler)
 def main():
 	logger.info("Creating Producer")
 
-	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
+	p = oc2.Producer("producer.example.net", XMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
+#	p = oc2.Producer("producer.example.net", YAMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
+#	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 #	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("172.17.0.11", 8080))
 
 	pf = slpf.Specifiers({'hostname':'firewall', 'named_group':'firewalls', 'asset_id':'iptables'})
@@ -55,7 +59,7 @@ def main():
 #	cmd = oc2.Command(oc2.Actions.query, oc2.Features([oc2.Feature.rate_limit]), arg, actuator=pf)
 
 	logger.info("Sending command: %s", cmd)
-	resp = p.sendcmd(cmd)
+	resp = p.sendcmd(cmd, consumers=["test1.ge.imati.cnr.it", "test2.cnr.it"])
 	logger.info("Got response: %s", resp)
 
 
