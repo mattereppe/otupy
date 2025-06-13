@@ -28,9 +28,11 @@ minimal comprehension of the ``otupy`` is required to getting started.
 The ``otupy`` currently provides:
 
 * the implementation of the core functions that implement the OpenC2 Architecture and Language Specification; 
-* an implementation of the json encoder; 
-* an implementation of the HTTP transfer protocol; 
-* the definition of the SLPF profile; 
+* the implementation of the json encoder according to the the `Language Specification <https://docs.oasis-open.org/openc2/oc2ls/v1.0/cs02/oc2ls-v1.0-cs02.pdf>`__
+* the implementation of additional encoders for validation and demonstration: YAML, XML, and CBOR;
+* the implementation of the HTTP transfer protocol compliant with the `OpenC2 Specification for Transfer over HTTPS <https://docs.oasis-open.org/openc2/open-impl-https/v1.1/cs01/open-impl-https-v1.1-cs01.pdf>`__
+* the implementation of the MQTT transfer protocol compliant with the `OpenC2 Specification for Transfer over MQTT <https://docs.oasis-open.org/openc2/transf-mqtt/v1.0/cs01/transf-mqtt-v1.0-cs01.pdf>`__
+* the definition of the SLPF profile according to the `OpenC2 Profile for Stateless Packet Filtering <https://docs.oasis-open.org/openc2/oc2slpf/v1.0/cs01/oc2slpf-v1.0-cs01.pdf>`__
 * a dumb implementation of an actuator for the SLPF profile.
 
 Compatibility

@@ -9,8 +9,8 @@ otupy (/'əʊtu:paɪ/) is an open-source implementation of the OpenC2 language w
 
 The otupy framework is build around a pluggable and powerful core library, designed with flexibility and extensibility in mind. Profiles, transfer protocols, serialization formats, and actuators can be easily added without impacting the core library itself. The framework currently includes:
 - the core library that  implements the OpenC2 Architecture and Language Specification;
-- json serialization;
-- an implementation of the HTTP transfer protocol;
+- json/yaml/xml/cbor serialization;
+- implementation of the HTTP/MQTT transfer protocol;
 - the definition of the SLPF profile;
 - the Context Discovery profile and its actuators for OpenStack and Kubernetes;
 - a dumb implementation of an actuator for the SLPF profile.
