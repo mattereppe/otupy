@@ -8,7 +8,6 @@ import sys
 import otupy as oc2
 
 from otupy.encoders.json import JSONEncoder
-from otupy.encoders.yaml import YAMLEncoder
 from otupy.encoders.xml import XMLEncoder
 from otupy.transfers.http import HTTPTransfer
 

@@ -12,6 +12,7 @@ import otupy as oc2
 from otupy.encoders.json import JSONEncoder
 from otupy.encoders.yaml import YAMLEncoder
 from otupy.encoders.xml import XMLEncoder
+from otupy.encoders.cbor import CBOREncoder
 from otupy.transfers.http import HTTPTransfer
 from otupy.actuators.iptables_actuator import IptablesActuator
 import otupy.profiles.slpf as slpf
@@ -44,12 +45,13 @@ def main():
 # Instantiate the list of available actuators, using a dictionary which key
 # is the assed_id of the actuator.
 	actuators = {}
-	actuators[(slpf.Profile.nsid,'iptables')]=IptablesActuator()
+	actuators[(slpf.Profile.nsid,'iptables')]=DumbActuator()
 	actuators[('x-dumb','dumb')]=DumbActuator()
 
-	c = oc2.Consumer("testconsumer", actuators, XMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
+	c = oc2.Consumer("testconsumer", actuators, CBOREncoder(), HTTPTransfer("127.0.0.1", 8080))
+#c = oc2.Consumer("testconsumer", actuators, XMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
 #	c = oc2.Consumer("testconsumer", actuators, YAMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
-#c = oc2.Consumer("testconsumer", actuators, JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
+#	c = oc2.Consumer("testconsumer", actuators, JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 
 	c.run()
 
