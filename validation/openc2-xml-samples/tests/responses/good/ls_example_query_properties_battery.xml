@@ -1,0 +1,19 @@
+<OpenC2Msg>
+<status>200</status>
+<results>
+  <x-esm>
+    <battery>
+      <capacity>0.577216</capacity>
+      <charged_at>1547506988</charged_at>
+      <status>12</status>
+      <mode>
+        <output>high</output>
+        <supported>high</supported>
+        <supported>trickle</supported>
+      </mode>
+      <visible_on_display>true</visible_on_display>
+    </battery>
+    <asset_id>TGEadsasd</asset_id>
+  </x-esm>
+</results>
+</OpenC2Msg>

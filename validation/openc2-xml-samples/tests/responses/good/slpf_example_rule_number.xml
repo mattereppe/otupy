@@ -1,0 +1,8 @@
+<OpenC2Msg>
+<status>200</status>
+<results>
+  <slpf>
+    <rule_number>1234</rule_number>
+  </slpf>
+</results>
+</OpenC2Msg>

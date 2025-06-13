@@ -1,0 +1,7 @@
+<OpenC2Msg>
+<status>200</status>
+<status_text>OK</status_text>
+<results>
+  <x-acme></x-acme>
+</results>
+</OpenC2Msg>

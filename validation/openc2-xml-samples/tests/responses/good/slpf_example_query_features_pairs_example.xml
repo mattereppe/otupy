@@ -1,0 +1,14 @@
+<OpenC2Msg>
+<status>200</status>
+<results>
+  <pairs>
+    <allow>ipv6_net</allow>
+    <allow>ipv6_connection</allow>
+    <deny>ipv6_net</deny>
+    <deny>ipv6_connection</deny>
+    <query>features</query>
+    <delete>slpf:rule_number</delete>
+    <update>file</update>
+  </pairs>
+</results>
+</OpenC2Msg>

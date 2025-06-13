@@ -1,0 +1,8 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <file>
+    <hashes></hashes>
+  </file>
+</target>
+</OpenC2Msg>

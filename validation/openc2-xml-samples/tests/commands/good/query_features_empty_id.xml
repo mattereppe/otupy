@@ -1,0 +1,7 @@
+<OpenC2Msg>
+<command_id>queryOpenC2ProfilesValid</command_id>
+<action>query</action>
+<target>
+	<features></features>
+</target>
+</OpenC2Msg>

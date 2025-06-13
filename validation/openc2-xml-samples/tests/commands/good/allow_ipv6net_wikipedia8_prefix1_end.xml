@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>allow</action>
+<target>
+  <ipv6_net>2001:db8:1234:ffff:ffff:ffff:ffff:ffff</ipv6_net>
+</target>
+</OpenC2Msg>

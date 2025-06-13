@@ -1,0 +1,12 @@
+<geeks>
+    <article>
+        <title>Introduction to Python</title>
+        <author>GeeksforGeeks</author>
+        <content>Python is a powerful and easy-to-learn programming language.</content>
+    </article>
+    <article>
+        <title>Algorithms in Python</title>
+        <author>GeeksforGeeks</author>
+        <content>Explore different algorithms implemented in Python.</content>
+    </article>
+</geeks>

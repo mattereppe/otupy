@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>allow</action>
+<target>
+  <ipv6_net>ff02::d</ipv6_net>
+</target>
+</OpenC2Msg>

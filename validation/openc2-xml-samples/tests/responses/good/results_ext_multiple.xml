@@ -1,0 +1,17 @@
+<OpenC2Msg>
+<status>201</status>
+<status_text>Some description</status_text>
+<results>
+  <x-mycompany>
+    <stuff>
+      <some>100</some>
+      <values>true</values>
+      <values>false</values>
+      <defined>by the profile docs</defined>
+    </stuff>
+  </x-mycompany>
+  <x-acme>
+    <status_detail>this profile defines additional status info for each response</status_detail>
+  </x-acme>
+</results>
+</OpenC2Msg>

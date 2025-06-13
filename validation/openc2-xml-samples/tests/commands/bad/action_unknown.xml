@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>unknown</action>
+<target>
+  <uri>http://example.com</uri>
+</target>
+</OpenC2Msg>

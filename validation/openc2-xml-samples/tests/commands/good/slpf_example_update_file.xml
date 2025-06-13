@@ -1,0 +1,14 @@
+<OpenC2Msg>
+<action>update</action>
+<target>
+  <file>
+    <path>\\someshared-drive\somedirectory\configurations</path>
+    <name>firewallconfiguration.txt</name>
+  </file>
+</target>
+<actuator>
+  <slpf>
+    <named_group>network</named_group>
+  </slpf>
+</actuator>
+</OpenC2Msg>

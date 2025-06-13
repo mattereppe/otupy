@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>allow</action>
+<target>
+  <ipv4_net>127.0.0.1/8</ipv4_net>
+</target>
+</OpenC2Msg>

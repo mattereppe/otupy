@@ -1,0 +1,11 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <properties>battery</properties>
+</target>
+<actuator>
+  <x-esm>
+    <asset_id>TGEadsasd</asset_id>
+  </x-esm>
+</actuator>
+</OpenC2Msg>

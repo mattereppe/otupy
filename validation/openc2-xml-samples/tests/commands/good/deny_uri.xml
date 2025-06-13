@@ -1,0 +1,11 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <uri>https://example.com</uri>
+</target>
+<actuator>
+  <slpf>
+    <asset_id>123456</asset_id>
+  </slpf>
+</actuator>
+</OpenC2Msg>

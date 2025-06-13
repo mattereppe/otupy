@@ -1,0 +1,7 @@
+action: set
+target:
+  properties:
+    - firewall_status
+args:
+  x-acme:
+    firewall_status: 'on'

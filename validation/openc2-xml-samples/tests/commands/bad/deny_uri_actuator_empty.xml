@@ -1,0 +1,7 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <uri>https://example.com</uri>
+</target>
+<actuator></actuator>
+</OpenC2Msg>

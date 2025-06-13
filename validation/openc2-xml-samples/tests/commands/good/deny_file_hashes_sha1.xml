@@ -1,0 +1,10 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <file>
+    <hashes>
+      <sha1>F46ED7E88334A4D3DEBAA8CFA842727CB66E997F</sha1>
+    </hashes>
+  </file>
+</target>
+</OpenC2Msg>

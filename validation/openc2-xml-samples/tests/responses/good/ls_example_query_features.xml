@@ -1,0 +1,9 @@
+<OpenC2Msg>
+<status>200</status>
+<results>
+  <versions>1.0</versions>
+  <profiles>slpf</profiles>
+  <profiles>x-lock</profiles>
+  <rate_limit>30</rate_limit>
+</results>
+</OpenC2Msg>

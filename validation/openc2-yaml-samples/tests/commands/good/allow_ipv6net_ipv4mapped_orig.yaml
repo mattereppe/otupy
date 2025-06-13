@@ -1,0 +1,3 @@
+action: allow
+target:
+  ipv6_net: ::ffff:c000:0280

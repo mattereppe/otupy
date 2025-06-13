@@ -1,0 +1,10 @@
+<OpenC2Msg>
+<command_id>queryOpenC2ProfilesValid</command_id>
+<action>query</action>
+<target>
+  <features>profiles</features>
+  <features>versions</features>
+  <features>pairs</features>
+  <features>rate_limit</features>
+</target>
+</OpenC2Msg>

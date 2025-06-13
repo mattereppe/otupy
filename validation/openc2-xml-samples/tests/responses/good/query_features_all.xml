@@ -1,0 +1,16 @@
+<OpenC2Msg>
+<status>200</status>
+<status_text>OK</status_text>
+<results>
+  <versions>1.0-draft-2019-02</versions>
+  <profiles>x-myextension</profiles>
+  <pairs>
+    <query>features</query>
+    <deny>file</deny>
+    <allow>file</allow>
+    <allow>device</allow>
+    <remediate>file</remediate>
+    <contain>device</contain>
+  </pairs>
+</results>
+</OpenC2Msg>
