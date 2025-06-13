@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 _UNCODED = (bool, str, int, float)
 """ Basic types that do not need further encoding """
 _NOTSTRING = (bool, int, float)
-""" Types that must not be converted to strings """
+""" Types that must not be converted to strings (currently unused) """
 
 class EncoderError(Exception):
 	pass
@@ -107,8 +107,12 @@ class Encoder:
 		if isinstance(obj, dict):
 			return  Encoder.__iteratedic(obj)
 
-		if isinstance(obj, _NOTSTRING):
-			return obj
+		# The following workaround is necessary to convert derived types
+		# to primitive types, otherwise some encorders may wrong
+		# in unexpected way
+		for t in _UNCODED:
+			if isinstance(obj, t):
+				return t(obj)
 
 		# Default: return a string representation of the object
 		return str(obj)
@@ -174,7 +178,7 @@ class Encoder:
 			:param dic: The dictionary with the OpenC2 description.
 			:return: An instance of `clstype` initialized with the data in the `dic`.
 		"""
-		logger.debug("Decondig: %s with %s", dic, clstype)
+		logger.debug("Deconding: %s with %s", dic, clstype)
 		try:
 			logging.debug("Trying: %s", clstype.fromdict)
 			return clstype.fromdict(dic, Encoder)
