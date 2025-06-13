@@ -71,7 +71,7 @@ class HTTPTransfer(oc2.Transfer):
 		if not content_type.removeprefix('application/').startswith(oc2.Message.content_type):
 			raise UnsupportedMediaType("Unsupported content type")
 
-		enctype = content_type.removeprefix('application/'+oc2.Message.content_type+'+').split(';')[0]
+		enctype = (content_type.removeprefix('application/'+oc2.Message.content_type+'+').split(';')[0]).strip()
 		try:
 			encoder = oc2.Encoders[enctype].value
 		except KeyError:
@@ -79,7 +79,11 @@ class HTTPTransfer(oc2.Transfer):
 
 		# HTTP processing to extract the headers
 		# and the transport body
-		msg = encoder.decode(data, Message).get()
+		if enctype != 'cbor':
+			data_text = data.decode('utf-8') # text data
+		else:
+			data_text = data #binary data (cbor)
+		msg = encoder.decode(data_text, Message).get()
 		msg.content_type = hdr['Content-type'].removeprefix('application/').split('+')[0]
 		msg.version = oc2.Version.fromstr(hdr['Content-type'].split(';')[1].removeprefix("version="))
 		msg.encoding = encoder
@@ -176,7 +180,7 @@ class HTTPTransfer(oc2.Transfer):
 			:return: An otupy `Message` (first) and an `Encoder` instance (second).
 		"""
 
-		logger.info("Received HTTP body: \n%s", data)
+		logger.info("Received HTTP body: \n%s", str(data))
 		logger.debug(data)
 		msg, encoder = self._fromhttp(headers, data)
   			
@@ -207,7 +211,7 @@ class HTTPTransfer(oc2.Transfer):
 			encoder=app.config['ENCODER']
 			
 			try:
-				cmd, encoder = server._recv(request.headers, request.data.decode('UTF-8') )
+				cmd, encoder = server._recv(request.headers, request.data)
 				# TODO: Add the code to answer according to 'response_requested'
 			except UnsupportedMediaType as e:
 				# We were not able to understand the OpenC2 Message. 
@@ -238,7 +242,7 @@ class HTTPTransfer(oc2.Transfer):
 			# WARNING: The following code catch any exception and may prevent debugging
 			except Exception as e:
 				# TODO: Find better formatting (what should be returned if the request is not understood?)
-				logger.warn("Internal error: discarding request")
+				logger.warn("Internal error: discarding request. Reason: %s", e)
 				content = oc2.Response(status=oc2.StatusCode.INTERNALERROR, status_text=str(e))
 				resp = oc2.Message(content)
 				resp.content_type = oc2.Message.content_type
