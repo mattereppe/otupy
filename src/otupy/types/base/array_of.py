@@ -59,6 +59,9 @@ class ArrayOf:
 				objlis = cls()
 				logger.debug('Building %s from %s in ArrayOf', cls, lis)
 				logger.debug('-> instantiating: %s', cls.fieldtype)
+				# Bug fix: encoders might pass None to indicate an empty list
+				if lis is None: # This matches empty lists and None
+					return objlis # This is empty 
 				# Bug fix: for str (and maybe other types) the for loop 
 				# iterates on the single characters
 				if type(lis) == list:

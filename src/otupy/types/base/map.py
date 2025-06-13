@@ -166,6 +166,9 @@ class Map(Openc2Type, dict):
 			:return: An instance of this class initialized from the dictionary values.
 		"""
 		objdic = {}
+		# Bug fix: encoders might pass None instead of {}
+		if dic is None:
+			dic = {}
 		extension = None
 		logger.debug('Decoding %s from %s in Map', cls, dic)
 		if not isinstance(dic, dict):
@@ -178,6 +181,9 @@ class Map(Openc2Type, dict):
 				elif k in cls.register:
 					logger.debug('   Using profile %s to decode: %s', k, v)
 					extension = cls.register[k]
+					# Bug fix: encoders might pass None instead of {}
+					if v is None:
+						v = {}
 					for l,w in v.items():
 						objdic[l] = e.fromdict(extension.fieldtypes[l], w)
 				else:

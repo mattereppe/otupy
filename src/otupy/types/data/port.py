@@ -16,4 +16,9 @@ class Port(int):
 		else:
 			raise ValueError("Invalid port number")
 
+	def __repr__(self):
+		return str(self._port)
+
+	def __str__(self):
+		return str(self._port)
 
