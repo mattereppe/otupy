@@ -4,6 +4,12 @@
 	YAML encoding is mostly provided to demonstrate the meta-serialization
 	format, since there is no official documentation from OASIS about
 	this format.
+
+	This implementation is based on PyYAML, which uses YAML 1.1. Be aware that 
+	YAML 1.1 considers "on"/"off" and their capitalized versions as boolean values,
+	so they are implicitely converted to True/False when parsing. This means that
+	"on"/"off" must be explicitly enclosed in tics to be interpreted as strings
+	in OpenC2 messages.
 """
 import yaml
 

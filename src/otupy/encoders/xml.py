@@ -39,8 +39,22 @@ class XMLEncoder(Encoder):
 			:return: A string with the xml representation of the `obj`.
 
 		"""
+		def _preprocessor(d):
+			"Workaround for unmanaged cases"
 
-		return xmltodict.unparse({XMLEncoder.OpenC2Root: Encoder.todict(obj)}, pretty=True)
+			# Empty lists suppress the key
+			for k, v in d.items():
+				try:
+					v = _preprocessor(v)
+				except AttributeError:
+					if not v:
+						d[k] = None
+				
+			return d
+
+
+		obj = _preprocessor(Encoder.todict(obj))
+		return xmltodict.unparse({XMLEncoder.OpenC2Root: obj}, pretty=True)
 
 	@staticmethod
 	def decode(msg, msgtype=None):
