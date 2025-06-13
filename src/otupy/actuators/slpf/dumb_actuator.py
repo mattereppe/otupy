@@ -23,10 +23,10 @@ class DumbActuator:
 			match cmd.action:
 				case Actions.query:
 					response = self.query(cmd)
-				case Actions.allow:
-					response = self.allow(cmd)
-				case Actions.deny:
-					response = self.deny(cmd)
+#				case Actions.allow:
+#					response = self.allow(cmd)
+#				case Actions.deny:
+#					response = self.deny(cmd)
 	#			case Actions.update:
 	#				response = self.update(cmd)
 	#			case Actions.delete:
