@@ -1,0 +1,11 @@
+<OpenC2Msg>
+<action>set</action>
+<target>
+  <properties>firewall_status</properties>
+</target>
+<args>
+  <x-acme>
+    <firewall_status>on</firewall_status>
+  </x-acme>
+</args>
+</OpenC2Msg>

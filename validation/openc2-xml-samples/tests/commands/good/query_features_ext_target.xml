@@ -1,0 +1,10 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <x-acme:features>
+    <features>versions</features>
+    <features>profiles</features>
+    <features>schema</features>
+  </x-acme:features>
+</target>
+</OpenC2Msg>

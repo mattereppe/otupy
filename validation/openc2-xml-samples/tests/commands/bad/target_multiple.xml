@@ -1,0 +1,13 @@
+<OpenC2Msg>
+<action>contain</action>
+<target>
+  <file>
+    <hashes>
+      <sha256>5c2d6daaf85a710605678f8e7ef0b725b33303f3234197b9dc4b46196734a4f0</sha256>
+    </hashes>
+  </file>
+  <device>
+    <device_id>9BCE8431AC106FAA3861C7E771D20E53</device_id>
+  </device>
+</target>
+</OpenC2Msg>

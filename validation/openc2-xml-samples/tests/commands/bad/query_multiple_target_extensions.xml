@@ -1,0 +1,11 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <x-acme:features>
+    <features>versions</features>
+  </x-acme:features>
+  <x-mycompany:features>
+    <features>servers</features>
+  </x-mycompany:features>
+</target>
+</OpenC2Msg>

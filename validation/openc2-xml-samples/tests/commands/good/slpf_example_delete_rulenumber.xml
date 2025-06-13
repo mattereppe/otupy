@@ -1,0 +1,12 @@
+<OpenC2Msg>
+<action>delete</action>
+<target>
+  <slpf:rule_number>1234</slpf:rule_number>
+</target>
+<args>
+  <response_requested>complete</response_requested>
+</args>
+<actuator>
+  <slpf></slpf>
+</actuator>
+</OpenC2Msg>

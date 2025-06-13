@@ -1,0 +1,8 @@
+<OpenC2Msg>
+<action>start</action>
+<target>
+  <x-acme:_container>
+    <container_id>E57C0116-D291-4AF3-BEF9-0F5B604A2C85</container_id>
+  </x-acme:_container>
+</target>
+</OpenC2Msg>

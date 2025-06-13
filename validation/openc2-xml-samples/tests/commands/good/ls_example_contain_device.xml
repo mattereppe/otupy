@@ -1,0 +1,8 @@
+<OpenC2Msg>
+<action>contain</action>
+<target>
+  <device>
+    <device_id>9BCE8431AC106FAA3861C7E771D20E53</device_id>
+  </device>
+</target>
+</OpenC2Msg>

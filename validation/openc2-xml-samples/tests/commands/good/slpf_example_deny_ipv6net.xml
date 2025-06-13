@@ -1,0 +1,17 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <ipv6_net>3ffe:1900:4545:3:200:f8ff:fe21:67cf</ipv6_net>
+</target>
+<args>
+  <response_requested>none</response_requested>
+  <slpf>
+    <direction>ingress</direction>
+  </slpf>
+</args>
+<actuator>
+  <slpf>
+    <named_group>perimeter</named_group>
+  </slpf>
+</actuator>
+</OpenC2Msg>

@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <features>profiles</features>
+</target>
+</OpenC2Msg>

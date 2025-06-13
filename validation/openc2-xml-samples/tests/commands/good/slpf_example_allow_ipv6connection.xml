@@ -1,0 +1,13 @@
+<OpenC2Msg>
+<action>allow</action>
+<target>
+  <ipv6_connection>
+    <protocol>tcp</protocol>
+    <dst_addr>3ffe:1900:4545:3::f8ff:fe21:67cf</dst_addr>
+    <src_port>21</src_port>
+  </ipv6_connection>
+</target>
+<actuator>
+  <slpf></slpf>
+</actuator>
+</OpenC2Msg>

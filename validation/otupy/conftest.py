@@ -6,6 +6,9 @@ from otupy import *
 import otupy.profiles.slpf as slpf
 from otupy.transfers.http import HTTPTransfer
 from otupy.encoders.json import  JSONEncoder
+from otupy.encoders.yaml import  YAMLEncoder
+from otupy.encoders.xml import  XMLEncoder
+from otupy.encoders.cbor import  CBOREncoder
 
 # Parameters to send bad messages to an OpenC2 Consumer
 scheme='http'
@@ -32,10 +35,29 @@ def create_producer():
                                      endpoint="/.well-known/openc2"))
 	return producer
 
+@pytest.fixture
+def create_cbor_producer():
+	producer = Producer("OpenC2_Producer",
+	                     CBOREncoder(),
+                        HTTPTransfer("127.0.0.1",
+                                     8080,
+                                     endpoint="/.well-known/openc2"))
+	return producer
+
+@pytest.fixture
+def create_xml_producer():
+	producer = Producer("OpenC2_Producer",
+	                     XMLEncoder(),
+                        HTTPTransfer("127.0.0.1",
+                                     8080,
+                                     endpoint="/.well-known/openc2"))
+	return producer
+
+
 
 @pytest.fixture
 def http_headers():
-	return {'Content-Type': 'application/openc2+json;version=1.0', 'Accept': 'application/openc2+json;version=1.0', 'Date': datetime.datetime.now(datetime.timezone.utc).strftime('%a, %d %b %Y %H:%M:%S %Z') }
+	return {'Content-Type': 'application/openc2+xml;version=1.0', 'Accept': 'application/openc2+cbor;version=1.0', 'Date': datetime.datetime.now(datetime.timezone.utc).strftime('%a, %d %b %Y %H:%M:%S %Z') }
 
 @pytest.fixture
 def http_body():

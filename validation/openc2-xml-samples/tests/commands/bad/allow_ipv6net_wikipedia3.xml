@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>allow</action>
+<target>
+  <ipv6_net>2001::85a3::8a2e:370:7334</ipv6_net>
+</target>
+</OpenC2Msg>

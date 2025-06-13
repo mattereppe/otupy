@@ -1,0 +1,18 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <ipv4_connection>
+    <protocol>tcp</protocol>
+    <src_port>21</src_port>
+  </ipv4_connection>
+</target>
+<args>
+  <slpf>
+    <drop_process>false_ack</drop_process>
+    <direction>egress</direction>
+  </slpf>
+</args>
+<actuator>
+  <slpf></slpf>
+</actuator>
+</OpenC2Msg>

@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>allow</action>
+<target>
+  <ipv6_net>::/0</ipv6_net>
+</target>
+</OpenC2Msg>

@@ -1,0 +1,25 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <ipv4_connection>
+    <protocol>tcp</protocol>
+    <src_addr>1.2.3.4</src_addr>
+    <src_port>10996</src_port>
+    <dst_addr>198.2.3.4</dst_addr>
+    <dst_port>80</dst_port>
+  </ipv4_connection>
+</target>
+<args>
+  <start_time>1534775460000</start_time>
+  <duration>500</duration>
+  <response_requested>ack</response_requested>
+  <slpf>
+    <drop_process>none</drop_process>
+  </slpf>
+</args>
+<actuator>
+  <slpf>
+    <asset_id>30</asset_id>
+  </slpf>
+</actuator>
+</OpenC2Msg>

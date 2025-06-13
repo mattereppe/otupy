@@ -1,0 +1,3 @@
+action: allow
+target:
+  ipv6_net: 0:0:0:0:0:0:0:0

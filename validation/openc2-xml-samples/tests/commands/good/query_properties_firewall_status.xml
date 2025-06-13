@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <properties>firewall_status</properties>
+</target>
+</OpenC2Msg>

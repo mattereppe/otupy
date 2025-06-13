@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <features>unknown</features>
+</target>
+</OpenC2Msg>

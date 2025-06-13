@@ -1,0 +1,6 @@
+<OpenC2Msg>
+<action>deny</action>
+<target>
+  <mac_addr>8c:85:90:72:31:af</mac_addr>
+</target>
+</OpenC2Msg>

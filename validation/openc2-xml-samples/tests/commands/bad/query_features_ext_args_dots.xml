@@ -1,0 +1,14 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <features>profiles</features>
+  <features>versions</features>
+  <features>pairs</features>
+  <features>rate_limit</features>
+</target>
+<args>
+  <x-mycompany.example.com>
+    <debug_logging>true</debug_logging>
+  </x-mycompany.example.com>
+</args>
+</OpenC2Msg>

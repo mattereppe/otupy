@@ -1,0 +1,7 @@
+<OpenC2Msg>
+<action>query</action>
+<target>
+  <features>versions</features>
+  <features>versions</features>
+</target>
+</OpenC2Msg>
