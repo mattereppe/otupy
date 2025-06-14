@@ -171,21 +171,21 @@ def test_sending(cmd, create_cbor_producer, caplog):
 	"""
 # It seems cbor does not go smoothly in HTTP messages.
 # I don't investigate this for now. Validation should leverage MQTT
-#	c = Encoder.decode(Command, cmd)
+	c = Encoder.decode(Command, cmd)
 #
 ## Filter the log to get what I need
 #
-#	check_command(c)
-#	print("Command: ", c)
-#	with caplog.at_level(logging.INFO):
-#		resp = create_cbor_producer.sendcmd(c)
-#
-#	assert type(resp) == Message
-#	assert type(resp.content) == Response
-#
-#	assert resp.content['status'] == StatusCode.BADREQUEST or \
-#		resp.content['status'] == StatusCode.NOTIMPLEMENTED or \
-#		resp.content['status'] == StatusCode.NOTFOUND
+	check_command(c)
+	print("Command: ", c)
+	with caplog.at_level(logging.INFO):
+		resp = create_cbor_producer.sendcmd(c)
+
+	assert type(resp) == Message
+	assert type(resp.content) == Response
+
+	assert resp.content['status'] == StatusCode.BADREQUEST or \
+		resp.content['status'] == StatusCode.NOTIMPLEMENTED or \
+		resp.content['status'] == StatusCode.NOTFOUND
 		
 
 @pytest.mark.parametrize("cmd_file", load_files(command_path_bad) )
@@ -210,29 +210,32 @@ def test_response_to_invalid_commands(file, http_url, http_headers, http_body):
 		Read invalid commands from file and send them to a Consumer. Commands are not encoded (because invalid).
 		Check that a BADREQUEST status is returned.
 	"""
-#	print("Command cbor: ", file)
-#	# It may also raises while loading the files, since they may be empty
-#	count = 0
-##	for f in cmd_files:
-##print("File: " , file)
-#	with open(file, 'r') as fcmd:
-#		try:
-#			cmd = cbor.safe_load(fcmd) 
-#		except:
-#			# In the bad exampes, 1 file is empty. If more than one file cannot be read, something has changed!
+	print("Command cbor: ", file)
+	# It may also raises while loading the files, since they may be empty
+	count = 0
+#	for f in cmd_files:
+#print("File: " , file)
+	with open(file, 'rb') as fcmd:
+		try:
+#s = cbor.read(fcmd)
+			cmd = cbor2.load(fcmd)
+		except:
+			# In the bad exampes, 1 file is empty. If more than one file cannot be read, something has changed!
+			cmd = {}
 #			if fcmd.read() == '':
 #				cmd = {}	
 #			else:
 #				raise ValueError("Unable to read cbor")
-##		print("Command json: ", cmd)
-#		http_body['body']['openc2']['request'] = cmd
-##		print("HTTP body: ", json.dumps(http_body))
-#		response = send_raw_command(http_url, http_headers, cbor.dump(http_body))
-#
-#		assert response.status_code == 400
-##		print("response text: ", response.text)
-#
-#		msg = YAMLEncoder.decode(response.text, http.Message)
-#		assert msg.body.getObj().getObj()['status'] == StatusCode.BADREQUEST
+#		print("Command json: ", cmd)
+		http_body['body']['openc2']['request'] = cmd
+		print("HTTP body: ", http_body)
+		print("HTTP headers: ", http_headers)
+		response = send_raw_command(http_url, http_headers, cbor2.dumps(http_body))
+
+		assert response.status_code == 400
+#		print("response text: ", response.text)
+
+		msg = CBOREncoder.decode(response.content, http.Message)
+		assert msg.body.getObj().getObj()['status'] == StatusCode.BADREQUEST
 		
 

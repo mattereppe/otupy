@@ -79,10 +79,10 @@ class HTTPTransfer(oc2.Transfer):
 
 		# HTTP processing to extract the headers
 		# and the transport body
-		if enctype != 'cbor':
-			data_text = data.decode('utf-8') # text data
+		if encoder.is_binary:
+			data_text = data.decode('utf-8') #binary data (cbor)
 		else:
-			data_text = data #binary data (cbor)
+			data_text = data # text data 
 		msg = encoder.decode(data_text, Message).get()
 		msg.content_type = hdr['Content-type'].removeprefix('application/').split('+')[0]
 		msg.version = oc2.Version.fromstr(hdr['Content-type'].split(';')[1].removeprefix("version="))
@@ -119,7 +119,10 @@ class HTTPTransfer(oc2.Transfer):
 		# Building the requested headers for the Request
 		content_type = f"application/{msg.content_type}+{encoder.getName()};version={msg.version}"
 		date = msg.created if msg.created else int(oc2.DateTime())
-		openc2headers={'Content-Type': content_type, 'Accept': content_type, 'Date': oc2.DateTime(date).httpdate()}
+		openc2headers={'Content-Type': content_type, 
+							'Accept': content_type, 
+							'Content-Encoding': encoder.getName(),
+							'Date': oc2.DateTime(date).httpdate()}
 
 		logger.info("Sending to %s", self.url)
 		logger.info("HTTP Request Content:\n%s", openc2data)
@@ -133,10 +136,15 @@ class HTTPTransfer(oc2.Transfer):
 	
 		# TODO: How to manage HTTP response code? Can we safely assume they always match the Openc2 response?
 		try:
-			if response.text != "":
-				msg, encoder = self._fromhttp(response.headers, response.text)
+			content_encoding = response.headers['Content-Encoding']
+			if content_encoding is not None and oc2.Encoders[content_encoding].value.is_binary:
+				logger.debug("Content is not text!")
+				msg, encoder = self._fromhttp(response.headers, response.content)
 			else:
-				msg = None
+				if response.text != "":
+					msg, encoder = self._fromhttp(response.headers, response.text)
+				else:
+					msg = None
 		except ValueError as e:
 			msg = oc2.Message(oc2.Content())
 			msg.status = response.status_code
@@ -156,6 +164,9 @@ class HTTPTransfer(oc2.Transfer):
 			else:	
 				content_type = f"text/plain"
 			headers['Content-Type']= content_type
+			# This is not required by the HTTP Transfer specification, but
+			# it helps manage binary data
+			headers['Content-encoding']=encoder.getName()
 			date = msg.created if msg.created else int(oc2.DateTime())
 			data = self._tohttp(msg, encoder)
 		else:
