@@ -18,6 +18,8 @@ class CBOREncoder(Encoder):
 	"""
 	encoder_type = 'cbor'
 	""" The label that is used to identify this `Encoder` in OpenC2 messages. """
+	is_binary = True
+	""" This notifies the transfer protocol that special processing may be needed. """
 
 	@staticmethod
 	def encode(obj):

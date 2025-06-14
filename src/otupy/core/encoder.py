@@ -55,9 +55,12 @@ class Encoder:
 		which strictly follows the OpenC2 formatting rules. The intermediary representation must then be
 		translated into the specific syntax used by the derived `Encoder` (e.g., json, xml, yaml).
 
-		Currently, this class is only designed to encode into text formats.
+		This class is designed to encode into both text and binary formats. 
+		For encoders that produce a bytestream, the member `is_binary` must be set to True.
+		Also verify that the Transfer Protocol supports both formats.
 	"""
 	encoder_type = 'dictionary'
+	is_binary = False
 
 	@classmethod
 	def getName(cls):
