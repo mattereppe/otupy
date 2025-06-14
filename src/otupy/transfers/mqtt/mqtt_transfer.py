@@ -227,6 +227,14 @@ class MQTTTransfer(oc2.Transfer):
 					logger.info("Discarding duplicated Command")
 					return
 		userdata.msg_queue.append( (datetime.datetime.now(), msg.payload) )
+
+		try:
+			for p in msg.properties.UserProperty:
+				if p[0] == MQTT_PUBLISH_USERPROPERTY_ENCODING:
+					encname = p[1]
+					break
+		except:
+			encname='json'
 		
 		try:
 			cmd, encoder = self._recv(msg.properties, msg.payload)
@@ -240,7 +248,8 @@ class MQTTTransfer(oc2.Transfer):
 			resp.content_type = oc2.Message.content_type
 			resp.to = None # Consumers have no requirement to populate the "to" field
 			resp.version = oc2.Message.version
-			resp.encoder = JSONEncoder()
+			resp.encoder = encname
+			encoder = oc2.Encoders[encname].value
 			resp.status=oc2.StatusCode.BADREQUEST
 		except oc2.EncoderError as e:
 			logger.warn("Unable to understand the request: discarding")
@@ -249,7 +258,8 @@ class MQTTTransfer(oc2.Transfer):
 			resp = oc2.Message(content)
 			resp.content_type = oc2.Message.content_type
 			resp.version = oc2.Message.version
-			resp.encoder = JSONEncoder()
+			resp.encoder = encname
+			encoder = oc2.Encoders[encname].value
 			resp.status=oc2.StatusCode.BADREQUEST 
 			resp.to = None # WARNING: The following code catch any exception and may prevent debugging
 		except Exception as e:
@@ -259,15 +269,16 @@ class MQTTTransfer(oc2.Transfer):
 			resp = oc2.Message(content)
 			resp.content_type = oc2.Message.content_type
 			resp.version = oc2.Message.version
-			resp.encoder = encoder
+			resp.encoder = encname
+			encoder = oc2.Encoders[encname]
 			resp.status=oc2.StatusCode.INTERNALERROR
 			resp.to = None
 		else:
 			logger.info("Processing command: %s", cmd)
 			resp = self.message_processing_callback(cmd)
 
-			logger.info("Sending response:\n%s", resp)
-			self._respond(resp, encoder)
+		logger.info("Sending response:\n%s", resp)
+		self._respond(resp, encoder)
 
 	def _on_message_rsp(self, client, userdata, msg):
 		""" Process a command at the consumer side """
