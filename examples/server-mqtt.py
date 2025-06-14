@@ -43,10 +43,11 @@ def main():
 # Instantiate the list of available actuators, using a dictionary which key
 # is the assed_id of the actuator.
 	actuators = {}
-	actuators[(slpf.Profile.nsid,'iptables')]=IptablesActuator()
+	actuators[(slpf.Profile.nsid,'iptables')]=DumbActuator()
 	actuators[('x-dumb','dumb')]=DumbActuator()
 	device_id="testconsumer"
 
+#	c = oc2.Consumer(device_id, actuators, JSONEncoder(), MQTTTransfer("150.145.8.217", 1883, device_id=device_id, profiles=[slpf.Profile.nsid]))
 	c = oc2.Consumer(device_id, actuators, CBOREncoder(), MQTTTransfer("150.145.8.217", 1883, device_id=device_id, profiles=[slpf.Profile.nsid]))
 
 	c.run()

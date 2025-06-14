@@ -1,0 +1,146 @@
+1749934923.392938 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749934948.051536 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749934989.914304 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935023.609175 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935053.895168 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935075.352099 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935075.352357 [[38;5;196m ERROR  [0m]otupy.types.base.map: Unable to decode. Ill-formed object: Response
+1749935075.352405 [[38;5;226mWARNING [0m]otupy.core.encoder: Unable to decode: {'action': 'delete', 'target': {'slpf:rule_number': 1234}, 'args': {'response_requested': 'complete'}, 'actuator': {'slpf': {}}}. Returning EncoderError due to: NameError
+1749935199.845119 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935199.872301 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: SUB(1): Successfully subscribed to topic ['oc2/rsp', 'oc2/rsp/device/myproducer']
+1749935199.872431 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=delete, target=1234, args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(), command_id=None)
+1749935199.872662 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Publishing msg Message(content=Command(action=delete, target=1234, args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(), command_id=None), content_type='openc2', msg_type=<MessageType.command: 1>, status=None, request_id='b0d9d1bf-1eed-4f11-909a-ee25c66d73c0', created=1749935199872, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=None) to topic ['oc2/cmd/device/testconsumer', 'oc2/cmd/device/testconsumer2']
+
+1749935199.872866 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "b0d9d1bf-1eed-4f11-909a-ee25c66d73c0",
+      "created": 1749935199872,
+      "from": "myproducer",
+      "to": [
+         "testconsumer",
+         "testconsumer2"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "delete",
+            "target": {
+               "slpf:rule_number": 1234
+            },
+            "args": {
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {}
+            }
+         }
+      }
+   }
+}
+
+1749935199.872974 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(2): Message successfully published to topic oc2/cmd/device/testconsumer
+1749935199.873066 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(3): Message successfully published to topic oc2/cmd/device/testconsumer2
+1749935199.873108 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Waiting for responses...
+1749935199.900870 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: CONNACK: Success
+1749935199.975027 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "b0d9d1bf-1eed-4f11-909a-ee25c66d73c0",\n      "created": 1749935199928,\n      "from": "testconsumer",\n      "to": [\n         "myproducer"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "response": {\n            "status": 500,\n            "status_text": "Internal error"\n         }\n      }\n   }\n}'
+1749935199.976139 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Queuing response:
+Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal error'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='b0d9d1bf-1eed-4f11-909a-ee25c66d73c0', created=1749935199928, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1749935199.999372 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "b0d9d1bf-1eed-4f11-909a-ee25c66d73c0",\n      "created": 1749935199928,\n      "from": "testconsumer",\n      "to": [\n         "myproducer"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "response": {\n            "status": 500,\n            "status_text": "Internal error"\n         }\n      }\n   }\n}'
+1749935200.000362 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Duplicated message discarded
+1749935210.046683 [[38;5;226mWARNING [0m]otupy.transfers.mqtt.mqtt_transfer: Missing responses: 1 producers did not answer
+1749935210.048208 [[38;5;42m  INFO  [0m]root: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal error'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='b0d9d1bf-1eed-4f11-909a-ee25c66d73c0', created=1749935199928, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1749935463.857276 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935463.883750 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: SUB(1): Successfully subscribed to topic ['oc2/rsp', 'oc2/rsp/device/myproducer']
+1749935463.883858 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=delete, target=1234, args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(), command_id=None)
+1749935463.884089 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Publishing msg Message(content=Command(action=delete, target=1234, args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(), command_id=None), content_type='openc2', msg_type=<MessageType.command: 1>, status=None, request_id='690fbc23-8745-4a8d-8970-1d3c2056eb9c', created=1749935463883, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=None) to topic ['oc2/cmd/device/testconsumer', 'oc2/cmd/device/testconsumer2']
+
+1749935463.884323 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "690fbc23-8745-4a8d-8970-1d3c2056eb9c",
+      "created": 1749935463883,
+      "from": "myproducer",
+      "to": [
+         "testconsumer",
+         "testconsumer2"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "delete",
+            "target": {
+               "slpf:rule_number": 1234
+            },
+            "args": {
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {}
+            }
+         }
+      }
+   }
+}
+
+1749935463.884440 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(2): Message successfully published to topic oc2/cmd/device/testconsumer
+1749935463.884534 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(3): Message successfully published to topic oc2/cmd/device/testconsumer2
+1749935463.884574 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Waiting for responses...
+1749935463.909712 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: CONNACK: Success
+1749935463.986417 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "690fbc23-8745-4a8d-8970-1d3c2056eb9c",\n      "created": 1749935463937,\n      "from": "testconsumer",\n      "to": [\n         "myproducer"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "response": {\n            "status": 500,\n            "status_text": "Internal error"\n         }\n      }\n   }\n}'
+1749935463.987138 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Queuing response:
+Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal error'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='690fbc23-8745-4a8d-8970-1d3c2056eb9c', created=1749935463937, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1749935464.010431 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "690fbc23-8745-4a8d-8970-1d3c2056eb9c",\n      "created": 1749935463937,\n      "from": "testconsumer",\n      "to": [\n         "myproducer"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "response": {\n            "status": 500,\n            "status_text": "Internal error"\n         }\n      }\n   }\n}'
+1749935464.011023 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Duplicated message discarded
+1749935474.051873 [[38;5;226mWARNING [0m]otupy.transfers.mqtt.mqtt_transfer: Missing responses: 1 producers did not answer
+1749935474.052942 [[38;5;42m  INFO  [0m]root: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal error'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='690fbc23-8745-4a8d-8970-1d3c2056eb9c', created=1749935463937, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1749935601.611598 [[38;5;42m  INFO  [0m]root: Creating Producer
+1749935601.637490 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: SUB(1): Successfully subscribed to topic ['oc2/rsp', 'oc2/rsp/device/myproducer']
+1749935601.637606 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=delete, target=1234, args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(), command_id=None)
+1749935601.637814 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Publishing msg Message(content=Command(action=delete, target=1234, args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(), command_id=None), content_type='openc2', msg_type=<MessageType.command: 1>, status=None, request_id='24c90b5a-6536-4907-8a72-5f718e45674f', created=1749935601637, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=None) to topic ['oc2/cmd/device/testconsumer', 'oc2/cmd/device/testconsumer2']
+
+1749935601.638055 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "24c90b5a-6536-4907-8a72-5f718e45674f",
+      "created": 1749935601637,
+      "from": "myproducer",
+      "to": [
+         "testconsumer",
+         "testconsumer2"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "delete",
+            "target": {
+               "slpf:rule_number": 1234
+            },
+            "args": {
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {}
+            }
+         }
+      }
+   }
+}
+
+1749935601.638175 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(2): Message successfully published to topic oc2/cmd/device/testconsumer
+1749935601.638269 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(3): Message successfully published to topic oc2/cmd/device/testconsumer2
+1749935601.638312 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Waiting for responses...
+1749935601.661383 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: CONNACK: Success
+1749935601.734247 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "24c90b5a-6536-4907-8a72-5f718e45674f",\n      "created": 1749935601688,\n      "from": "testconsumer",\n      "to": [\n         "myproducer"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "response": {\n            "status": 501,\n            "status_text": "Command not implemented"\n         }\n      }\n   }\n}'
+1749935601.735035 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Queuing response:
+Message(content={'status': <StatusCode.NOTIMPLEMENTED: 501>, 'status_text': 'Command not implemented'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='24c90b5a-6536-4907-8a72-5f718e45674f', created=1749935601688, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1749935601.760084 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "24c90b5a-6536-4907-8a72-5f718e45674f",\n      "created": 1749935601688,\n      "from": "testconsumer",\n      "to": [\n         "myproducer"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "response": {\n            "status": 501,\n            "status_text": "Command not implemented"\n         }\n      }\n   }\n}'
+1749935601.760812 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Duplicated message discarded
+1749935611.796985 [[38;5;226mWARNING [0m]otupy.transfers.mqtt.mqtt_transfer: Missing responses: 1 producers did not answer
+1749935611.798078 [[38;5;42m  INFO  [0m]root: Got response: Message(content={'status': <StatusCode.NOTIMPLEMENTED: 501>, 'status_text': 'Command not implemented'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='24c90b5a-6536-4907-8a72-5f718e45674f', created=1749935601688, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
