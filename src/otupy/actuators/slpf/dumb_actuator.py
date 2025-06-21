@@ -36,8 +36,10 @@ class DumbActuator:
 				case Actions.scan:
 					response = self.scan(cmd)
 				case _:
+					print("not implemented")
 					response = self.__notimplemented(cmd)
 		except Exception as e:
+			print("Exception: ", e)
 			return self.__servererror(cmd, e)
 
 		return response

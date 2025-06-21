@@ -277,13 +277,16 @@ class MQTTTransfer(oc2.Transfer):
 			logger.info("Processing command: %s", cmd)
 			resp = self.message_processing_callback(cmd)
 
-		logger.info("Sending response:\n%s", resp)
+		logger.info("Got response: %s", resp)
+
 		self._respond(resp, encoder)
 
 	def _on_message_rsp(self, client, userdata, msg):
 		""" Process a command at the consumer side """
 		# No feedback to responses is possible, so if we don't understand the response, just
 		# discard them
+
+		logger.info("MQTT got response: %s", str(msg))
 		try:
 			rsp, encoder = self._recv(msg.properties, msg.payload)
 		except Exception as e:
@@ -542,6 +545,7 @@ class MQTTTransfer(oc2.Transfer):
 			for dst in msg.to:
 				publish_topics.append(MQTT_OC2_DEVICE_RSP_TOPIC+dst)
 		# Options and properties are added by the following method
+		logger.info("Sending response:\n%s", msg)
 		self._send_mqtt_msg(publish_topics, msg, encoder)
 
 

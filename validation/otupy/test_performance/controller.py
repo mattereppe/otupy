@@ -1,4 +1,4 @@
-#!../../../.oc2-env/bin/python3
+#!../../../.venv/bin/python3
 # Example to use the OpenC2 library
 #
 
@@ -9,6 +9,7 @@ import otupy as oc2
 
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
+from otupy.transfers.mqtt import MQTTTransfer, OpenC2Role
 
 import otupy.profiles.slpf as slpf
 import otupy.profiles.dumb as dumb
@@ -33,7 +34,8 @@ NUM_TESTS = 100
 def main():
 	logger.info("Creating Producer")
 
-	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
+#p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
+	p = oc2.Producer("myproducer", JSONEncoder(), MQTTTransfer("150.145.8.217", 1883,  OpenC2Role.Producer, device_id="myproducer"))
 
 
 	cmd_list = load_json(command_path_good) 
@@ -43,8 +45,9 @@ def main():
 			cmd = oc2.Encoder.decode(oc2.Command, c)
 	
 			logger.info("Sending command: %s", cmd)
-			resp = p.sendcmd(cmd)
-			logger.info("Got response: %s", resp)
+			resp = p.sendcmd(cmd, consumers=["testconsumer"])
+#			logger.info("Got response: %s", resp)
+			logger.info("Got response: ")
 
 
 if __name__ == '__main__':
