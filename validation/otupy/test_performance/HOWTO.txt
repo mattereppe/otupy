@@ -9,10 +9,17 @@ rm -rf controller.log server.log
 
 # Collect log file from the server
 cp ../../examples/server.log .
+# For MQTT:
+cp ../../../examples/server.log server-mqtt.log
+
 
 # Collect statistics
 awk -f server.awk server.log  | gawk -f stat-server.awk > server.txt
 awk -f controller.awk controller.log  | gawk -f stat-controller.awk > controller.txt
+# For MQTT:
+awk -f server-mqtt.awk server-mqtt.log | gawk -f stat-server.awk > server-mqtt.txt
+awk -f controller-mqtt.awk controller.log | gawk -f stat-controller.awk  > controller-mqtt.txt
+
 
 # For network traces:
 # Use wireshark to capture, display filter "HTTP", View -> Time from previous displayed

@@ -47,8 +47,8 @@ def main():
 	actuators[('x-dumb','dumb')]=DumbActuator()
 	device_id="testconsumer"
 
-#	c = oc2.Consumer(device_id, actuators, JSONEncoder(), MQTTTransfer("150.145.8.217", 1883, device_id=device_id, profiles=[slpf.Profile.nsid]))
-	c = oc2.Consumer(device_id, actuators, CBOREncoder(), MQTTTransfer("150.145.8.217", 1883, device_id=device_id, profiles=[slpf.Profile.nsid]))
+	c = oc2.Consumer(device_id, actuators, JSONEncoder(), MQTTTransfer("150.145.8.217", 1883, device_id=device_id, profiles=[slpf.Profile.nsid]))
+#	c = oc2.Consumer(device_id, actuators, CBOREncoder(), MQTTTransfer("150.145.8.217", 1883, device_id=device_id, profiles=[slpf.Profile.nsid]))
 
 	c.run()
 
