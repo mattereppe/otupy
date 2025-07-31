@@ -67,36 +67,33 @@ class Producer:
 		if not transfer: transfer = self.transfer
 		if not transfer: raise ValueError('Missing transfer object')
 		if not encoder: raise ValueError('Missing encoder object')
-		
 		msg = Message(cmd)
-		msg.from_=self.producer
-		msg.to=consumers
+		msg.from_ = self.producer
+		msg.to = consumers
 
 		if self.authenticator is not None:
+			auth_info = self.authenticator.authenticate()
+		else:
+			auth_info = None
+
+		try:
+			return transfer.send(msg, encoder, auth_info)
+
+		except PermissionError as e:
+			self.logger.error(f"401 Response. Starting authentication process {e}")
+			auth_endpoint = self.authenticator.extract_auth_endpoint_from_error(e)
+
+			if not auth_endpoint:
+				self.logger.error("Error fetching endpoint url")
+				raise ValueError("Error fetching endpoint url")
+
 			try:
-				msg = Message(cmd, from_=self.producer, to=consumers)
-				return transfer.send(msg, encoder, auth_info=None)
+				auth_info = self.authenticator.authenticate(auth_endpoint)
+				return transfer.send(msg, encoder, auth_info=auth_info)
 
-			except PermissionError as e:
-				self.logger.error(f"401 Response. Starting authentication process {e}")
-				auth_endpoint = self.authenticator.extract_auth_endpoint_from_error(e)
-
-				if not auth_endpoint:
-					self.logger.error("Error fetching endpoint url")
-					raise ValueError("Error fetching endpoint url")
-
-				try:
-					self.authenticator.authenticate(auth_endpoint)
-					auth_info=self.authenticator.token
-					return transfer.send(msg, encoder, auth_info=auth_info)
-				except Exception as auth_exc:
-					self.logger.error(f"Authentication failed {auth_exc}")
-					raise auth_exc
-			except Exception as e:
-				self.logger.error(f"Error sending the command {e}")
-				raise e
-
-		return transfer.send(msg, encoder)
-
-
-
+			except Exception as auth_exc:
+				self.logger.error(f"Authentication failed {auth_exc}")
+				raise auth_exc
+		except Exception as e:
+			self.logger.error(f"Error sending the command {e}")
+			raise e

@@ -52,6 +52,7 @@ def main():
         )
 
         response = producer.sendcmd(cmd)
+        producer.sendcmd(cmd) #sencond time with saved token
 
     except ValueError as ve:
         logger.error("Configuration error: %s", ve)

@@ -55,9 +55,13 @@ class OAuth2Authenticator(Authenticator):
             self.logger.error(f"Error fetching the token: {e}")
             raise
 
-    def authenticate(self, ua_url):
+    def authenticate(self, ua_url=None):
         """Starts the OAuth2 authentication process"""
+
         try:
+            if ua_url is None:
+                return self.token
+
             self.ua_url = ua_url
             response = requests.get(f"{ua_url}/as_url")
             if response.status_code != 200:
