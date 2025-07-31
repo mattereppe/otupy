@@ -74,8 +74,7 @@ class Producer:
 
 		if self.authenticator is not None:
 			try:
-				target_consumer = self.authenticator.consumer_url
-				msg = Message(cmd, from_=self.producer, to=target_consumer)
+				msg = Message(cmd, from_=self.producer, to=consumers)
 				return transfer.send(msg, encoder, auth_info=None)
 
 			except PermissionError as e:

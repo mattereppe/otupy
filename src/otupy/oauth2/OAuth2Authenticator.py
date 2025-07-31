@@ -11,10 +11,9 @@ import logging
 
 
 class OAuth2Authenticator(Authenticator):
-    def __init__(self, client_id, client_secret, consumer_url, redirect_uri, callback_port=8000 ):
+    def __init__(self, client_id, client_secret, redirect_uri, callback_port=8000 ):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.consumer_url = consumer_url
         self.redirect_uri = redirect_uri
         self.callback_port = callback_port
         self.auth_response_queue = queue.Queue()

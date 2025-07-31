@@ -23,7 +23,6 @@ def main():
         'client_id': 'jWcEjOQG0I0MdcxsRdGFS5Ca',
         'client_secret': 'l9KX9UhQNEDyzBxWYe3Ot6OxcvN7Cask6aBdFkEL0UM2gsSQ',
         'redirect_uri': 'http://127.0.0.1:8000/callback',
-        'consumer_url': 'http://127.0.0.1:8080',
         'callback_port': 8000
     }
     oauth2authenticator = OAuth2Authenticator(**oauth2_config)

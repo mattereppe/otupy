@@ -90,3 +90,155 @@
 }
 1751644391.679331 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Received command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'direction': <Direction.ingress: 2>, 'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None), content_type='openc2', msg_type=<MessageType.command: 1>, status=None, request_id='768e9f85-8bd5-4bd5-9ba6-8c31af6ea26a', created=1751644391661, from_='producer.example.net', to=['127.0.0.1'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
 1751644391.686949 [[38;5;42m  INFO  [0m]werkzeug: 127.0.0.1 - - [04/Jul/2025 17:53:11] "[35m[1mPOST /.well-known/openc2 HTTP/1.1[0m" 500 -
+1753973161.960441 [[38;5;42m  INFO  [0m]werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+1753973161.961175 [[38;5;42m  INFO  [0m]werkzeug: [33mPress CTRL+C to quit[0m
+1753973161.962634 [[38;5;42m  INFO  [0m]werkzeug:  * Restarting with stat
+1753973162.550240 [[38;5;226mWARNING [0m]werkzeug:  * Debugger is active!
+1753973162.571438 [[38;5;42m  INFO  [0m]werkzeug:  * Debugger PIN: 337-102-096
+1753973168.150337 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Received HTTP body: 
+{
+   "headers": {
+      "request_id": "f8ea781c-b0eb-45b6-acf3-886508d2dce5",
+      "created": 1753973168134,
+      "from": "producer.example.net",
+      "to": "http://127.0.0.1:8080"
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs"
+               ]
+            },
+            "args": {
+               "slpf": {},
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {
+                  "hostname": "firewall",
+                  "named_group": "firewalls",
+                  "asset_id": "iptables"
+               }
+            }
+         }
+      }
+   }
+}
+1753973168.151973 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Received command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None), content_type='openc2', msg_type=<MessageType.command: 1>, status=None, request_id='f8ea781c-b0eb-45b6-acf3-886508d2dce5', created=1753973168134, from_='producer.example.net', to=['h', 't', 't', 'p', ':', '/', '/', '1', '2', '7', '.', '0', '.', '0', '.', '1', ':', '8', '0', '8', '0'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1753973168.152384 [[38;5;42m  INFO  [0m]otupy.core.consumer: Dispatching command to: <otupy.actuators.iptables_actuator.IptablesActuator object at 0x112056e10>
+1753973168.152801 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Got response: Message(content={'status': <StatusCode.OK: 200>, 'status_text': 'OK', 'results': {'versions': ['1.0'], 'profiles': ['slpf'], 'pairs': {allow: [ipv4_connection, ipv4_net], deny: [ipv4_connection, ipv4_net], query: [features], delete: [slpf:rule_number], update: [file]}}}, content_type='openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.OK: 200>, request_id='f8ea781c-b0eb-45b6-acf3-886508d2dce5', created=1753973168152, from_='testconsumer', to=['producer.example.net'], version='1.0', encoding=None)
+1753973168.153306 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Sending response:
+{
+   "headers": {
+      "request_id": "f8ea781c-b0eb-45b6-acf3-886508d2dce5",
+      "created": 1753973168152,
+      "from": "testconsumer",
+      "to": [
+         "producer.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 200,
+            "status_text": "OK",
+            "results": {
+               "slpf": {},
+               "versions": [
+                  "1.0"
+               ],
+               "profiles": [
+                  "slpf"
+               ],
+               "pairs": {
+                  "allow": [
+                     "ipv4_connection",
+                     "ipv4_net"
+                  ],
+                  "deny": [
+                     "ipv4_connection",
+                     "ipv4_net"
+                  ],
+                  "query": [
+                     "features"
+                  ],
+                  "delete": [
+                     "slpf:rule_number"
+                  ],
+                  "update": [
+                     "file"
+                  ]
+               }
+            }
+         }
+      }
+   }
+}
+1753973168.153885 [[38;5;42m  INFO  [0m]werkzeug: 127.0.0.1 - - [31/Jul/2025 16:46:08] "POST /.well-known/openc2 HTTP/1.1" 200 -
+1753973224.409659 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Received HTTP body: 
+{
+   "headers": {
+      "request_id": "a615a9b7-6338-4411-8887-04ab53266e66",
+      "created": 1753973224396,
+      "from": "producer.example.net",
+      "to": [
+         "127.0.0.1"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs"
+               ]
+            },
+            "args": {
+               "slpf": {
+                  "direction": "ingress"
+               },
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {
+                  "hostname": "firewall",
+                  "named_group": "firewalls",
+                  "asset_id": "iptables"
+               }
+            }
+         }
+      }
+   }
+}
+1753973224.410992 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Received command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'direction': <Direction.ingress: 2>, 'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None), content_type='openc2', msg_type=<MessageType.command: 1>, status=None, request_id='a615a9b7-6338-4411-8887-04ab53266e66', created=1753973224396, from_='producer.example.net', to=['127.0.0.1'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1753973224.411349 [[38;5;42m  INFO  [0m]otupy.core.consumer: Dispatching command to: <otupy.actuators.iptables_actuator.IptablesActuator object at 0x112056e10>
+1753973224.411566 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Got response: Message(content={'status': <StatusCode.NOTIMPLEMENTED: 501>, 'status_text': 'Option not supported'}, content_type='openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.NOTIMPLEMENTED: 501>, request_id='a615a9b7-6338-4411-8887-04ab53266e66', created=1753973224411, from_='testconsumer', to=['producer.example.net'], version='1.0', encoding=None)
+1753973224.411865 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Sending response:
+{
+   "headers": {
+      "request_id": "a615a9b7-6338-4411-8887-04ab53266e66",
+      "created": 1753973224411,
+      "from": "testconsumer",
+      "to": [
+         "producer.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 501,
+            "status_text": "Option not supported"
+         }
+      }
+   }
+}
+1753973224.412235 [[38;5;42m  INFO  [0m]werkzeug: 127.0.0.1 - - [31/Jul/2025 16:47:04] "[35m[1mPOST /.well-known/openc2 HTTP/1.1[0m" 501 -

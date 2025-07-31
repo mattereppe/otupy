@@ -562,3 +562,108 @@ TypeError: Consumer.dispatch() got an unexpected keyword argument 'token'
 
 -->
 
+1753972995.235545 [[38;5;42m  INFO  [0m]root: Creating Producer
+1753972995.237145 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'response_requested': <ResponseType.complete: 3>, 'direction': <Direction.ingress: 2>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None)
+1753973104.708826 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Sending to http://127.0.0.1:8080/.well-known/openc2
+1753973104.711268 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP Request Content:
+{
+   "headers": {
+      "request_id": "00519b3c-d30f-4ab9-a6b6-13418da5cf58",
+      "created": 1753973055243,
+      "from": "producer.example.net",
+      "to": [
+         "127.0.0.1"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs"
+               ]
+            },
+            "args": {
+               "slpf": {
+                  "direction": "ingress"
+               },
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {
+                  "hostname": "firewall",
+                  "named_group": "firewalls",
+                  "asset_id": "iptables"
+               }
+            }
+         }
+      }
+   }
+}
+1753973224.395352 [[38;5;42m  INFO  [0m]root: Creating Producer
+1753973224.396169 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'response_requested': <ResponseType.complete: 3>, 'direction': <Direction.ingress: 2>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None)
+1753973224.397172 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Sending to http://127.0.0.1:8080/.well-known/openc2
+1753973224.397391 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP Request Content:
+{
+   "headers": {
+      "request_id": "a615a9b7-6338-4411-8887-04ab53266e66",
+      "created": 1753973224396,
+      "from": "producer.example.net",
+      "to": [
+         "127.0.0.1"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs"
+               ]
+            },
+            "args": {
+               "slpf": {
+                  "direction": "ingress"
+               },
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {
+                  "hostname": "firewall",
+                  "named_group": "firewalls",
+                  "asset_id": "iptables"
+               }
+            }
+         }
+      }
+   }
+}
+1753973224.413259 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP got response: <Response [501]>
+1753973224.415646 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP Response Content:
+{
+   "headers": {
+      "request_id": "a615a9b7-6338-4411-8887-04ab53266e66",
+      "created": 1753973224411,
+      "from": "testconsumer",
+      "to": [
+         "producer.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 501,
+            "status_text": "Option not supported"
+         }
+      }
+   }
+}
+1753973224.416404 [[38;5;42m  INFO  [0m]root: Got response: Message(content={'status': <StatusCode.NOTIMPLEMENTED: 501>, 'status_text': 'Option not supported'}, content_type='openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.NOTIMPLEMENTED: 501>, request_id='a615a9b7-6338-4411-8887-04ab53266e66', created=1753973224411, from_='testconsumer', to=['producer.example.net'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1753973260.982640 [[38;5;42m  INFO  [0m]root: Creating Producer
+1753973260.983793 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'response_requested': <ResponseType.complete: 3>, 'direction': <Direction.ingress: 2>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None)
