@@ -4,7 +4,7 @@ import threading
 import logging
 import os
 from dotenv import load_dotenv
-from examples.oauth2_examples.UA.casbin.AuthAgent import AuthorizationAgent, AuthorizationError
+from otupy.apps.oauth2.UA.casbin.AuthAgent import AuthorizationAgent, AuthorizationError
 
 # Load environment variables from .env
 load_dotenv()
