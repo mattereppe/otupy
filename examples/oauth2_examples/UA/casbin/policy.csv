@@ -5,7 +5,7 @@
 g, admin, administrator
 
 # Administrator permissions
-p, administrator, query, features:* , slpf
-
-
+p, administrator, update, file, slpf
+p, administrator, query, features:*, slpf
+p, administrator, allow, 130.0.16.0/20, slpf
 

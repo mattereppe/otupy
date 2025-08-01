@@ -23,7 +23,15 @@ class OAuth2Authorizer(Authorizer):
             command=msg.content
             action = command.action.name if hasattr(command.action, 'name') else str(command.action)
             target_type = command.target.choice
-            target = [f"{target_type}.{t.name}" for t in command.target.obj]
+            target = []
+            if target_type == "features":
+                for t in command.target.obj:
+                    entry = f"{target_type}.{t.name}"
+                    target.append(entry)
+            elif target_type == "ipv4_net":
+                target.append(str(command.target.obj))
+            else:
+                target.append(target_type)
             actuator = command.actuator.choice
             command_dict = {
                 "action": action,

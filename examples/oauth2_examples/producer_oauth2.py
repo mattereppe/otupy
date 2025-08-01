@@ -50,9 +50,14 @@ def main():
             args,
             actuator=actuator_profile
         )
+        cmd2 = oc2.Command(oc2.Actions.update,
+                          oc2.File({'path': 'http://192.168.197.128:8080', 'name': 'iptables-rules.v4'}), args,
+                          actuator=actuator_profile)
+
+        cmd3 = oc2.Command(oc2.Actions.allow, oc2.IPv4Net('130.0.16.0'), args, actuator=actuator_profile)
 
         response = producer.sendcmd(cmd)
-        producer.sendcmd(cmd) #sencond time with saved token
+        producer.sendcmd(cmd3) #sencond time with saved token
 
     except ValueError as ve:
         logger.error("Configuration error: %s", ve)

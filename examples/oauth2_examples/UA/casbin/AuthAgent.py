@@ -1,7 +1,9 @@
 import casbin
+from casbin.util import key_match2
 import logging
 from pathlib import Path
 import sys
+import ipaddress
 
 logging.getLogger("casbin").setLevel(logging.WARNING)
 
@@ -27,7 +29,21 @@ class AuthorizationAgent:
             raise AuthorizationError(f"Policy file not found: {policy_path}")
 
         try:
-            return casbin.Enforcer(str(model_file), str(policy_file))
+            enforcer = casbin.Enforcer(str(model_file), str(policy_file))
+
+            def safe_cidr_match(obj, policy_obj):
+                try:
+                    target_net = ipaddress.ip_network(obj, strict=False)
+                    policy_net = ipaddress.ip_network(policy_obj, strict=False)
+                    return target_net.subnet_of(policy_net)
+                except ValueError:
+                    # If not IP/subnet -> keymatch
+                    return key_match2(obj, policy_obj)
+
+            enforcer.add_function("safeCidrMatch", safe_cidr_match)
+
+            return enforcer
+
         except Exception as e:
             raise AuthorizationError(f"Failed to initialize enforcer: {e}")
 

@@ -119,7 +119,7 @@ class Consumer:
                     status=StatusCode.FORBIDDEN,
                     status_text="Not authorized to execute this command"
                 )
-                return self.__respmsg(res, res)
+                return self.__respmsg(msg, res)
         try:
             profile = msg.content.actuator.getName()
         except AttributeError:
