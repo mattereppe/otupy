@@ -4,7 +4,7 @@ import threading
 import logging
 import os
 from dotenv import load_dotenv
-from otupy.apps.oauth2.UA.casbin.AuthAgent import AuthorizationAgent, AuthorizationError
+from otupy.apps.oauth2.UA.AuthAgent import AuthorizationAgent, AuthorizationError
 
 # Load environment variables from .env
 load_dotenv()
@@ -20,8 +20,8 @@ as_authorize_url = 'http://127.0.0.1:9000/'
 # Credentials from environment variables
 CONFIG_USERNAME = os.getenv("USERNAME")
 CONFIG_PASSWORD = os.getenv("PASSWORD")
-MODEL_PATH= "casbin/model.conf"
-POLICY_PATH= "casbin/policy.csv"
+MODEL_PATH= "model.conf"
+POLICY_PATH= "policy.csv"
 
 
 if not CONFIG_USERNAME or not CONFIG_PASSWORD:

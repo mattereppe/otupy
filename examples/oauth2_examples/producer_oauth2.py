@@ -6,6 +6,7 @@ import sys
 from otupy.core.producer import Producer
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
+from otupy.transfers.mqtt import MQTTTransfer
 import otupy as oc2
 import otupy.profiles.slpf as slpf
 
@@ -28,13 +29,22 @@ def main():
     oauth2authenticator = OAuth2Authenticator(**oauth2_config)
 
     try:
+        transfer = MQTTTransfer(
+            broker_host="test.mosquitto.org",
+            broker_port=1883)
+
         producer = Producer(
             producer="producer.example.net",
             encoder=JSONEncoder(),
             transfer=HTTPTransfer("127.0.0.1", 8080),
             authenticator=oauth2authenticator
         )
-
+        prod = Producer(
+            producer="producer.example.net",
+            encoder=JSONEncoder(),
+            transfer=transfer,
+            authenticator=oauth2authenticator
+        )
         actuator_profile = slpf.Specifiers({
             'hostname': 'firewall',
             'named_group': 'firewalls',
@@ -56,7 +66,7 @@ def main():
 
         cmd3 = oc2.Command(oc2.Actions.allow, oc2.IPv4Net('130.0.16.0'), args, actuator=actuator_profile)
 
-        response = producer.sendcmd(cmd)
+        response = prod.sendcmd(cmd)
         # producer.sendcmd(cmd3) #sencond time with saved token
 
     except ValueError as ve:
