@@ -67,7 +67,7 @@ def main():
         cmd3 = oc2.Command(oc2.Actions.allow, oc2.IPv4Net('130.0.16.0'), args, actuator=actuator_profile)
 
         response = prod.sendcmd(cmd)
-        # producer.sendcmd(cmd3) #sencond time with saved token
+        # prod.sendcmd(cmd3) #sencond time with saved token
 
     except ValueError as ve:
         logger.error("Configuration error: %s", ve)
