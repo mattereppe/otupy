@@ -242,3 +242,126 @@
    }
 }
 1753973224.412235 [[38;5;42m  INFO  [0m]werkzeug: 127.0.0.1 - - [31/Jul/2025 16:47:04] "[35m[1mPOST /.well-known/openc2 HTTP/1.1[0m" 501 -
+1754386516.938745 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: SUB(1): Successfully subscribed to topic ['oc2/cmd/all', 'oc2/cmd/device/testconsumer', 'oc2/cmd/ap/slpf']
+1754386516.940213 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Waiting for MQTT messages
+1754386517.021951 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: CONNACK: Success
+1754386585.223976 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "cf7819c0-07f8-4fa7-b1d5-a8a64b411e41",\n      "created": 1754386585073,\n      "from": "myproducer",\n      "to": [\n         "testconsumer",\n         "testconsumer2"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "request": {\n            "action": "query",\n            "target": {\n               "features": [\n                  "versions",\n                  "profiles",\n                  "pairs"\n               ]\n            },\n            "args": {\n               "slpf": {\n                  "direction": "ingress"\n               },\n               "response_requested": "complete"\n            },\n            "actuator": {\n               "slpf": {\n                  "hostname": "firewall1",\n                  "named_group": "firewalls",\n                  "asset_id": "iptables"\n               }\n            }\n         }\n      }\n   }\n}'
+1754386585.244506 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Processing command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'direction': <Direction.ingress: 2>, 'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall1,named_group:firewalls,asset_id:iptables), command_id=None), content_type='application/openc2', msg_type=<MessageType.command: 1>, status=None, request_id='cf7819c0-07f8-4fa7-b1d5-a8a64b411e41', created=1754386585073, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1754386585.245264 [[38;5;42m  INFO  [0m]otupy.core.consumer: Dispatching command to: <otupy.actuators.slpf.dumb_actuator.DumbActuator object at 0x111ab5550>
+1754386585.246621 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: Returning details of internal exception
+1754386585.247231 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: This is only meant for debugging: change the log level for production environments
+1754386585.248950 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='cf7819c0-07f8-4fa7-b1d5-a8a64b411e41', created=1754386585248, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386585.249312 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending response:
+Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='cf7819c0-07f8-4fa7-b1d5-a8a64b411e41', created=1754386585248, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386585.250281 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "cf7819c0-07f8-4fa7-b1d5-a8a64b411e41",
+      "created": 1754386585248,
+      "from": "testconsumer",
+      "to": [
+         "myproducer"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 500,
+            "status_text": "Internal server error: BEDREQUEST"
+         }
+      }
+   }
+}
+
+1754386585.251221 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(2): Message successfully published to topic oc2/rsp
+1754386585.251754 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(3): Message successfully published to topic oc2/rsp/device/myproducer
+1754386618.556413 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "e0b54841-3deb-4930-ba91-ad63cc3ae88e",\n      "created": 1754386618471,\n      "from": "myproducer",\n      "to": [\n         "testconsumer",\n         "testconsumer2"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "request": {\n            "action": "query",\n            "target": {\n               "features": [\n                  "versions",\n                  "profiles",\n                  "pairs"\n               ]\n            },\n            "args": {\n               "slpf": {\n                  "direction": "ingress"\n               },\n               "response_requested": "complete"\n            },\n            "actuator": {\n               "slpf": {\n                  "hostname": "firewall1",\n                  "named_group": "firewalls",\n                  "asset_id": "iptables"\n               }\n            }\n         }\n      }\n   }\n}'
+1754386618.563026 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Processing command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'direction': <Direction.ingress: 2>, 'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall1,named_group:firewalls,asset_id:iptables), command_id=None), content_type='application/openc2', msg_type=<MessageType.command: 1>, status=None, request_id='e0b54841-3deb-4930-ba91-ad63cc3ae88e', created=1754386618471, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1754386618.563347 [[38;5;42m  INFO  [0m]otupy.core.consumer: Dispatching command to: <otupy.actuators.slpf.dumb_actuator.DumbActuator object at 0x111ab5550>
+1754386618.563517 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: Returning details of internal exception
+1754386618.563646 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: This is only meant for debugging: change the log level for production environments
+1754386618.563992 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='e0b54841-3deb-4930-ba91-ad63cc3ae88e', created=1754386618563, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386618.564118 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending response:
+Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='e0b54841-3deb-4930-ba91-ad63cc3ae88e', created=1754386618563, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386618.564494 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "e0b54841-3deb-4930-ba91-ad63cc3ae88e",
+      "created": 1754386618563,
+      "from": "testconsumer",
+      "to": [
+         "myproducer"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 500,
+            "status_text": "Internal server error: BEDREQUEST"
+         }
+      }
+   }
+}
+
+1754386618.564747 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(4): Message successfully published to topic oc2/rsp
+1754386618.566546 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(5): Message successfully published to topic oc2/rsp/device/myproducer
+1754386629.714324 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "040b6ea2-16db-49fc-a821-347b98598e91",\n      "created": 1754386629480,\n      "from": "myproducer",\n      "to": [\n         "testconsumer",\n         "testconsumer2"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "request": {\n            "action": "query",\n            "target": {\n               "features": [\n                  "versions",\n                  "profiles",\n                  "pairs"\n               ]\n            },\n            "args": {\n               "slpf": {\n                  "direction": "ingress"\n               },\n               "response_requested": "complete"\n            },\n            "actuator": {\n               "slpf": {\n                  "hostname": "firewall1",\n                  "named_group": "firewalls",\n                  "asset_id": "iptables"\n               }\n            }\n         }\n      }\n   }\n}'
+1754386629.720202 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Processing command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'direction': <Direction.ingress: 2>, 'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall1,named_group:firewalls,asset_id:iptables), command_id=None), content_type='application/openc2', msg_type=<MessageType.command: 1>, status=None, request_id='040b6ea2-16db-49fc-a821-347b98598e91', created=1754386629480, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1754386629.720499 [[38;5;42m  INFO  [0m]otupy.core.consumer: Dispatching command to: <otupy.actuators.slpf.dumb_actuator.DumbActuator object at 0x111ab5550>
+1754386629.720716 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: Returning details of internal exception
+1754386629.720867 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: This is only meant for debugging: change the log level for production environments
+1754386629.721296 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='040b6ea2-16db-49fc-a821-347b98598e91', created=1754386629721, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386629.721530 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending response:
+Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='040b6ea2-16db-49fc-a821-347b98598e91', created=1754386629721, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386629.722100 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "040b6ea2-16db-49fc-a821-347b98598e91",
+      "created": 1754386629721,
+      "from": "testconsumer",
+      "to": [
+         "myproducer"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 500,
+            "status_text": "Internal server error: BEDREQUEST"
+         }
+      }
+   }
+}
+
+1754386629.723478 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(6): Message successfully published to topic oc2/rsp
+1754386629.723986 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(7): Message successfully published to topic oc2/rsp/device/myproducer
+1754386640.055131 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Received MQTT payload: 
+b'{\n   "headers": {\n      "request_id": "fe1db4a9-69c9-4eb4-b68c-41984fab504b",\n      "created": 1754386639816,\n      "from": "myproducer",\n      "to": [\n         "testconsumer",\n         "testconsumer2"\n      ]\n   },\n   "body": {\n      "openc2": {\n         "request": {\n            "action": "query",\n            "target": {\n               "features": [\n                  "versions",\n                  "profiles",\n                  "pairs"\n               ]\n            },\n            "args": {\n               "slpf": {\n                  "direction": "ingress"\n               },\n               "response_requested": "complete"\n            },\n            "actuator": {\n               "slpf": {\n                  "hostname": "firewall1",\n                  "named_group": "firewalls",\n                  "asset_id": "iptables"\n               }\n            }\n         }\n      }\n   }\n}'
+1754386640.058945 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Processing command: Message(content=Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'direction': <Direction.ingress: 2>, 'response_requested': <ResponseType.complete: 3>}, actuator=slpf(hostname:firewall1,named_group:firewalls,asset_id:iptables), command_id=None), content_type='application/openc2', msg_type=<MessageType.command: 1>, status=None, request_id='fe1db4a9-69c9-4eb4-b68c-41984fab504b', created=1754386639816, from_='myproducer', to=['testconsumer', 'testconsumer2'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1754386640.059156 [[38;5;42m  INFO  [0m]otupy.core.consumer: Dispatching command to: <otupy.actuators.slpf.dumb_actuator.DumbActuator object at 0x111ab5550>
+1754386640.059274 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: Returning details of internal exception
+1754386640.059365 [[38;5;226mWARNING [0m]otupy.actuators.slpf.dumb_actuator: This is only meant for debugging: change the log level for production environments
+1754386640.061077 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='fe1db4a9-69c9-4eb4-b68c-41984fab504b', created=1754386640060, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386640.061233 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending response:
+Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=<StatusCode.INTERNALERROR: 500>, request_id='fe1db4a9-69c9-4eb4-b68c-41984fab504b', created=1754386640060, from_='testconsumer', to=['myproducer'], version='1.0', encoding=None)
+1754386640.061546 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Sending message: {
+   "headers": {
+      "request_id": "fe1db4a9-69c9-4eb4-b68c-41984fab504b",
+      "created": 1754386640060,
+      "from": "testconsumer",
+      "to": [
+         "myproducer"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 500,
+            "status_text": "Internal server error: BEDREQUEST"
+         }
+      }
+   }
+}
+
+1754386640.061755 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(8): Message successfully published to topic oc2/rsp
+1754386640.061931 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(9): Message successfully published to topic oc2/rsp/device/myproducer
