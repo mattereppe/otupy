@@ -26,12 +26,10 @@ AllowedCommandTarget = ActionTargets()
 	 Command Matrix (Table 2.3.1): valid Command/Target pairs
 """
 # TODO: complete (replace with commented lines) after defining all targets
-AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv4_net]
-#AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
-#	TargetEnum.ipv4_net, TargetEnum.ipv6_net]
-AllowedCommandTarget[Actions.deny] = [TargetEnum.ipv4_connection, TargetEnum.ipv4_net]
-#AllowedCommandTarget[Actions.deny] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
-#	TargetEnum.ipv4_net, TargetEnum.ipv6_net]
+AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
+	TargetEnum.ipv4_net, TargetEnum.ipv6_net]
+AllowedCommandTarget[Actions.deny] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
+	TargetEnum.ipv4_net, TargetEnum.ipv6_net]
 AllowedCommandTarget[Actions.query] = [TargetEnum.features]
 AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':rule_number']]
 AllowedCommandTarget[Actions.update] = [TargetEnum.file]
