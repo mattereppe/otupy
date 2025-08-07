@@ -19,6 +19,8 @@ import time
 import threading
 import datetime
 
+from paho.mqtt.properties import Properties
+from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt import client as mqtt_client
 
 import otupy as oc2
@@ -93,10 +95,13 @@ class MQTTTransfer(oc2.Transfer):
             - a list of (received) messages
             - the number of expected messages
             - an event to signal all expected messages were received
+            - fild to memorize exception
         """
         event: threading.Event
         msg_queue: list
         expected_msgs: int
+        exception: Exception
+
 
         def __init__(self, event: threading.Event, expected_msgs: int = None):
             """ Initialize MQTTUserData """
@@ -223,7 +228,7 @@ class MQTTTransfer(oc2.Transfer):
         # Also remove previous packets after response_timeout
         for c in userdata.msg_queue:
             if msg.payload in c:
-                if (datetime.datetime.now() - c[0]).seconds > self.response_timeout:
+                if (datetime.datetime.now() - c[0]).seconds > self.response_timeout or msg.properties.UserProperty[2] is not None:
                     userdata.msg_queue.remove(c)
                 else:
                     logger.info("Discarding duplicated Command")
@@ -239,7 +244,7 @@ class MQTTTransfer(oc2.Transfer):
             encname = 'json'
 
         try:
-            cmd, encoder = self._recv(msg.properties, msg.payload)
+            cmd, encoder, auth_info = self._recv(msg.properties, msg.payload)
         # TODO: Add the code to answer according to 'response_requested'
         except UnsupportedMediaType as e:
             # We were not able to understand the OpenC2 Message.
@@ -277,7 +282,7 @@ class MQTTTransfer(oc2.Transfer):
             resp.to = None
         else:
             logger.info("Processing command: %s", cmd)
-            resp = self.message_processing_callback(cmd)
+            resp = self.message_processing_callback(cmd,auth_info)
 
         logger.info("Got response: %s", resp)
 
@@ -290,7 +295,7 @@ class MQTTTransfer(oc2.Transfer):
 
         logger.info("MQTT got response: %s", str(msg))
         try:
-            rsp, encoder = self._recv(msg.properties, msg.payload)
+            rsp, encoder,auth_info = self._recv(msg.properties, msg.payload)
         except Exception as e:
             logger.error("Unable to decode request: %s", msg.payload.decode("utf-8"))
         else:
@@ -305,6 +310,12 @@ class MQTTTransfer(oc2.Transfer):
                 if not rsp in userdata.msg_queue:
                     logger.info("Queuing response:\n%s", rsp)
                     userdata.msg_queue.append(rsp)
+                    res = rsp.content
+                    if res['status'].value == 401:
+                        logger.info("Unauthorized access - HTTP 401")
+                        userdata.exception = PermissionError(rsp)
+                        userdata.event.set()
+                        return
                     # If we know the number of expected messages, let's decrement it
                     # and raise event if no more are expected
                     if userdata.expected_msgs:
@@ -407,10 +418,14 @@ class MQTTTransfer(oc2.Transfer):
         if not content_type.removeprefix('application/').startswith(oc2.Message.content_type):
             raise UnsupportedMediaType("Unsupported content type " + "content_type")
 
-        for p in prop.UserProperty:
-            if p[0] == MQTT_PUBLISH_USERPROPERTY_ENCODING:
-                enctype = p[1]
-                break
+        enctype = None
+        access_token = None
+
+        for key, value in prop.UserProperty:
+            if key == MQTT_PUBLISH_USERPROPERTY_ENCODING:
+                enctype = value
+            elif key == "access_token":
+                access_token = value
         try:
             encoder = oc2.Encoders[enctype].value
         except KeyError:
@@ -423,9 +438,9 @@ class MQTTTransfer(oc2.Transfer):
         msg.version = _OPENC2_VERSION  # Version is not carried in the metadata, this implementation assumes the version it can manage
         msg.encoding = encoder
 
-        return msg, encoder
+        return msg, encoder, access_token
 
-    def _send_mqtt_msg(self, publish_topics, msg, encoder):
+    def _send_mqtt_msg(self, publish_topics, msg, encoder,auth_info=None):
         # The MQTT Transfer Specification requires the "from" field. Producers can use the "to" field,
         # but this is not strictly required.
         # The Producer/Consumer implementation might not fill these fields,
@@ -447,16 +462,23 @@ class MQTTTransfer(oc2.Transfer):
             publish_properties.PayloadFormatIndicator = 0x00  # unspecified byte stream
         publish_properties.MessageExpiryInterval = MQTT_MESSAGEEXPIRYINTERVAL
         publish_properties.ContentType = MQTT_PUBLISH_CONTENTTYPE
+
+        user_properties = []
         match msg.msg_type:
             case oc2.MessageType.command:
-                publish_properties.UserProperty = (MQTT_PUBLISH_USERPROPERTY_MSGTYPE, MQTT_PUBLISH_OC2REQUEST)
+                user_properties.append((MQTT_PUBLISH_USERPROPERTY_MSGTYPE, MQTT_PUBLISH_OC2REQUEST))
             case oc2.MessageType.response:
-                publish_properties.UserProperty = (MQTT_PUBLISH_USERPROPERTY_MSGTYPE, MQTT_PUBLISH_OC2RESPONSE)
+                user_properties.append((MQTT_PUBLISH_USERPROPERTY_MSGTYPE, MQTT_PUBLISH_OC2RESPONSE))
             case _:
                 logger.error("Unmanaged message type: %s", msg.msg_type)
                 logger.error("Skipping message")
                 return None
-        publish_properties.UserProperty = ((MQTT_PUBLISH_USERPROPERTY_ENCODING, encoder.getName()))
+        user_properties.append((MQTT_PUBLISH_USERPROPERTY_ENCODING, encoder.getName()))
+
+        if auth_info is not None:
+            user_properties.append(("access_token", auth_info['access_token']))
+
+        publish_properties.UserProperty = user_properties
 
         # Send the OpenC2 message and get the response
         logger.info("Sending message: %s\n", openc2data)
@@ -491,6 +513,9 @@ class MQTTTransfer(oc2.Transfer):
         """
 
         assert self.role == OpenC2Role.Producer
+        self.mqtt_userdata.msg_queue.clear()
+        self.mqtt_userdata.exception = None
+        self.mqtt_userdata.event.clear()
 
         publish_topics = []
         # We compute the number of expected responses as number of
@@ -511,7 +536,7 @@ class MQTTTransfer(oc2.Transfer):
         self.mqtt_userdata.expected_msgs = expected_responses
         logger.info("Publishing msg %s to topic %s\n", msg, publish_topics)
 
-        self._send_mqtt_msg(publish_topics, msg, encoder)
+        self._send_mqtt_msg(publish_topics, msg, encoder,auth_info)
 
         logger.info("Waiting for responses...")
 
@@ -520,7 +545,18 @@ class MQTTTransfer(oc2.Transfer):
             self.mqtt_userdata.event.wait(timeout=self.response_timeout)
         except KeyboardInterrupt:
             logger.warning("Interrupt signal received. There might be uncaught responses")
-        self.client.loop_stop()
+        finally:
+            self.client.loop_stop()
+
+        # Check exceptions
+        if self.mqtt_userdata.exception is not None:
+            e = self.mqtt_userdata.exception
+            ex=e.args[0]
+            res=self._tomqtt(ex,encoder)
+            if isinstance(e, PermissionError):
+                raise PermissionError(f"{res}")
+            else:
+                raise e
 
         if self.mqtt_userdata.expected_msgs and self.mqtt_userdata.expected_msgs > 0:
             logger.warn("Missing responses: %d producers did not answer", self.mqtt_userdata.expected_msgs)
@@ -556,9 +592,9 @@ class MQTTTransfer(oc2.Transfer):
         """
 
         logger.info("Received MQTT payload: \n%s", data)
-        msg, encoder = self._frommqtt(prop, data)
+        msg, encoder, auth_info = self._frommqtt(prop, data)
 
-        return msg, encoder
+        return msg, encoder, auth_info
 
     def receive(self, callback, encoder):
         """ Listen for incoming messages

@@ -6,7 +6,7 @@ import sys
 from otupy.core.producer import Producer
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
-from otupy.transfers.mqtt import MQTTTransfer
+from otupy.transfers.mqtt import MQTTTransfer, OpenC2Role
 import otupy as oc2
 import otupy.profiles.slpf as slpf
 
@@ -29,9 +29,7 @@ def main():
     oauth2authenticator = OAuth2Authenticator(**oauth2_config)
 
     try:
-        transfer = MQTTTransfer(
-            broker_host="test.mosquitto.org",
-            broker_port=1883)
+        transfer = MQTTTransfer("test.mosquitto.org", 1883, OpenC2Role.Producer, device_id="myproducer",response_timeout=10)
 
         producer = Producer(
             producer="producer.example.net",
@@ -67,6 +65,7 @@ def main():
         cmd3 = oc2.Command(oc2.Actions.allow, oc2.IPv4Net('130.0.16.0'), args, actuator=actuator_profile)
 
         response = prod.sendcmd(cmd)
+        # logger.info("sending second command")
         # prod.sendcmd(cmd3) #sencond time with saved token
 
     except ValueError as ve:

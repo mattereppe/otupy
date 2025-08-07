@@ -365,3 +365,4 @@ Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Inte
 
 1754386640.061755 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(8): Message successfully published to topic oc2/rsp
 1754386640.061931 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: PUB(9): Message successfully published to topic oc2/rsp/device/myproducer
+1754389301.075223 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Stopping processing MQTT messages

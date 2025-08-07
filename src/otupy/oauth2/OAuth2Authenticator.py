@@ -125,7 +125,8 @@ class OAuth2Authenticator(Authenticator):
     def extract_auth_endpoint_from_error(self, error_response):
         """Extracts the authentication endpoint from the error response"""
         try:
-            parsed = json.loads(str(error_response))
+            r=str(error_response)
+            parsed = json.loads(r)
             url = parsed['body']['openc2']['response']['results']['auth_endpoint']
         except Exception as e:
             self.logger.error(f"Error extracting authentication endpoint: {e}")

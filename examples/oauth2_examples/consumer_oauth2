@@ -32,9 +32,7 @@ def main():
                                   client_secret="Zr6o8gmnuSNT3AAtvbeK1X6YAog0dXXJFGdpy6YfgSZhTpqS",
                                   introspection_url="http://127.0.0.1:9000/oauth/introspect",
                                   ua_url='http://127.0.0.1:7000')
-    transfer = MQTTTransfer(
-        broker_host="test.mosquitto.org",
-        broker_port=1883)
+    transfer =  MQTTTransfer("test.mosquitto.org", 1883, device_id="myConsumer", profiles=[slpf.Profile.nsid])
     consumer=Consumer(consumer="testconsumer",
                       actuators=actuators,
                       encoder=JSONEncoder(),
