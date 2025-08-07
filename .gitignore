@@ -1,0 +1,12 @@
+/.oc2_env/
+/.pytest_cache/
+/.vscode/
+/docs/
+/examples/
+/src/
+/tests/
+/validation/
+/.readthedocs.yaml
+/LICENSE.md
+/README.md
+/slpf_tests
