@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify
 import sys
 import threading
@@ -16,6 +17,7 @@ app = Flask(__name__)
 
 # Authorization Server login endpoint URL
 as_authorize_url = 'http://127.0.0.1:9000/'
+as_authorize_url = 'http://127.0.0.1:8080/realms/openc2/protocol/openid-connect/' #keycloack as url
 
 # Credentials from environment variables
 CONFIG_USERNAME = os.getenv("USERNAME")
@@ -41,6 +43,65 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+
+def keycloack_auth_flow(url):
+    session = requests.Session()
+
+    try:
+        # STEP 1: Richiesta iniziale
+        response = session.get(url)
+        logger.debug(f"[GET] Initial response: {response.status_code}")
+        logger.debug(f"[GET] Content: {response.text[:500]}...")
+
+        # STEP 2: Trova il form di login
+        soup = BeautifulSoup(response.text, "html.parser")
+        form = soup.find("form", {"id": "kc-form-login"})
+
+        if not form:
+            logger.error("❌ Form di login non trovato.")
+            return
+
+        post_url = form["action"].replace("&amp;", "&")
+        logger.info(f"📝 Login form POST URL: {post_url}")
+
+        payload = {
+            'username': CONFIG_USERNAME,
+            'password': CONFIG_PASSWORD,
+        }
+
+        # Costruisci header cookie manuale da session.cookies
+        cookie_jar = session.cookies
+        cookie_header = "; ".join([f"{c.name}={c.value}" for c in cookie_jar])
+
+        headers_post = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Cookie': cookie_header
+        }
+
+        # STEP 3: POST login
+        login_response = session.post(post_url, data=payload, headers=headers_post)
+
+        logger.info(f"[POST] Login status: {login_response.status_code}")
+        logger.debug(f"[POST] Login response text:\n{login_response.text[:500]}...")
+
+        # STEP 4: Controlla se c'è stato redirect al redirect_uri
+        final_url = login_response.url
+        logger.info(f"🔁 Final URL after login: {final_url}")
+
+        if "code=" in final_url:
+            from urllib.parse import urlparse, parse_qs
+            query = urlparse(final_url).query
+            code = parse_qs(query).get("code", [None])[0]
+            if code:
+                logger.info(f"Authorization code obtained: {code}")
+            else:
+                logger.error("Authorization code not found")
+        else:
+            logger.warning("Error on login")
+
+    except Exception as e:
+        logger.exception(f"Error {e}")
 def auth_flow(url):
     session = requests.Session()
     try:
@@ -138,7 +199,7 @@ def auth():
         return jsonify({'error': 'Missing URL'}), 400
 
     url = data['url']
-    threading.Thread(target=auth_flow, args=(url,)).start()
+    threading.Thread(target=keycloack_auth_flow, args=(url,)).start()
     return jsonify({'status': 'OK'}), 200
 
 

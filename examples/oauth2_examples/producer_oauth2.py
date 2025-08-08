@@ -26,6 +26,12 @@ def main():
         'redirect_uri': 'http://127.0.0.1:8000/callback',
         'callback_port': 8000
     }
+    oauth2_config = { #keycloack config
+        'client_id': 'Producer',
+        'client_secret': 'RYuumxqGJwXTZP52Of5ImUcWEA4TnTUa',
+        'redirect_uri': 'http://127.0.0.1:8000/callback',
+        'callback_port': 8000
+    }
     oauth2authenticator = OAuth2Authenticator(**oauth2_config)
 
     try:
@@ -34,10 +40,10 @@ def main():
         producer = Producer(
             producer="producer.example.net",
             encoder=JSONEncoder(),
-            transfer=HTTPTransfer("127.0.0.1", 8080),
+            transfer=HTTPTransfer("127.0.0.1", 9000),
             authenticator=oauth2authenticator
         )
-        prod = Producer(
+        mqtt_prod = Producer(
             producer="producer.example.net",
             encoder=JSONEncoder(),
             transfer=transfer,
@@ -64,7 +70,7 @@ def main():
 
         cmd3 = oc2.Command(oc2.Actions.allow, oc2.IPv4Net('130.0.16.0'), args, actuator=actuator_profile)
 
-        response = prod.sendcmd(cmd)
+        producer.sendcmd(cmd)
         # logger.info("sending second command")
         # prod.sendcmd(cmd3) #sencond time with saved token
 

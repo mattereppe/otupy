@@ -20,8 +20,7 @@ class OAuth2Authenticator(Authenticator):
         self.client = OAuth2Session(
             client_id=self.client_id,
             client_secret=self.client_secret,
-            redirect_uri=self.redirect_uri,
-            scope="openc2"
+            redirect_uri=self.redirect_uri
         )
         self.token = None
         self.flask_app = None
@@ -38,12 +37,14 @@ class OAuth2Authenticator(Authenticator):
             @self.flask_app.route('/callback')
             def callback():
                 authorization_response = request.url
+                self.logger.info(f"callback: {authorization_response}")
                 self.auth_response_queue.put(authorization_response)
                 return 'Authentication completed.', 200
 
     def get_token_threaded(self):
         """Thread to get token"""
-        token_url = f"{self.as_url}/oauth/token"
+        # token_url = f"{self.as_url}/oauth/token"
+        token_url = f"{self.as_url}/token"
         auth_response = self.auth_response_queue.get()
         try:
             self.token = self.client.fetch_token(token_url,
@@ -69,6 +70,7 @@ class OAuth2Authenticator(Authenticator):
 
             self.as_url = response.json().get("as_url")
             as_auth_url = f"{self.as_url}/oauth/authorize"
+            as_auth_url = f"{self.as_url}/auth"
             if not self.as_url:
                 raise ValueError("Missing AS url")
 

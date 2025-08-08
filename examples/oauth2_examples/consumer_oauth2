@@ -28,22 +28,26 @@ def main():
 
     actuators = {(slpf.nsid, 'iptables'): IptablesActuator()}
 
-    authorizer = OAuth2Authorizer(client_id="sz64Qq9PxLRURl05TN5Ppj1b",
-                                  client_secret="Zr6o8gmnuSNT3AAtvbeK1X6YAog0dXXJFGdpy6YfgSZhTpqS",
-                                  introspection_url="http://127.0.0.1:9000/oauth/introspect",
+    # authorizer = OAuth2Authorizer(client_id="sz64Qq9PxLRURl05TN5Ppj1b",
+    #                               client_secret="Zr6o8gmnuSNT3AAtvbeK1X6YAog0dXXJFGdpy6YfgSZhTpqS",
+    #                               introspection_url="http://127.0.0.1:9000/oauth/introspect",
+    #                               ua_url='http://127.0.0.1:7000')
+    authorizer = OAuth2Authorizer(client_id="Consumer", #keycloack config
+                                  client_secret="kek5v8Zc1Vc23OkfQWXE01YEBw6KC4ER",
+                                  introspection_url="http://127.0.0.1:8080/realms/openc2/protocol/openid-connect/token/introspect",
                                   ua_url='http://127.0.0.1:7000')
-    transfer =  MQTTTransfer("test.mosquitto.org", 1883, device_id="myConsumer", profiles=[slpf.Profile.nsid])
     consumer=Consumer(consumer="testconsumer",
                       actuators=actuators,
                       encoder=JSONEncoder(),
-                      transfer=HTTPTransfer("127.0.0.1", 8080),
+                      transfer=HTTPTransfer("127.0.0.1", 9000),
                       authorizer=authorizer)
-    cons=Consumer(consumer="testconsumer",
-                      actuators=actuators,
-                      encoder=JSONEncoder(),
-                      transfer=transfer,
-                      authorizer=authorizer)
-    cons.run()
+    # transfer =  MQTTTransfer("test.mosquitto.org", 1883, device_id="myConsumer", profiles=[slpf.Profile.nsid])
+    # mqtt_cons=Consumer(consumer="testconsumer",
+    #                   actuators=actuators,
+    #                   encoder=JSONEncoder(),
+    #                   transfer=transfer,
+    #                   authorizer=authorizer)
+    consumer.run()
 
 
 if __name__ == "__main__":
