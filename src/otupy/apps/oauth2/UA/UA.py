@@ -49,12 +49,10 @@ def keycloack_auth_flow(url):
     session = requests.Session()
 
     try:
-        # STEP 1: Richiesta iniziale
         response = session.get(url)
         logger.debug(f"[GET] Initial response: {response.status_code}")
         logger.debug(f"[GET] Content: {response.text[:500]}...")
 
-        # STEP 2: Trova il form di login
         soup = BeautifulSoup(response.text, "html.parser")
         form = soup.find("form", {"id": "kc-form-login"})
 
@@ -70,7 +68,6 @@ def keycloack_auth_flow(url):
             'password': CONFIG_PASSWORD,
         }
 
-        # Costruisci header cookie manuale da session.cookies
         cookie_jar = session.cookies
         cookie_header = "; ".join([f"{c.name}={c.value}" for c in cookie_jar])
 
@@ -79,13 +76,11 @@ def keycloack_auth_flow(url):
             'Cookie': cookie_header
         }
 
-        # STEP 3: POST login
         login_response = session.post(post_url, data=payload, headers=headers_post)
 
         logger.info(f"[POST] Login status: {login_response.status_code}")
         logger.debug(f"[POST] Login response text:\n{login_response.text[:500]}...")
 
-        # STEP 4: Controlla se c'è stato redirect al redirect_uri
         final_url = login_response.url
         logger.info(f"🔁 Final URL after login: {final_url}")
 
