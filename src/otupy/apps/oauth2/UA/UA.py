@@ -57,7 +57,7 @@ def keycloack_auth_flow(url):
         form = soup.find("form", {"id": "kc-form-login"})
 
         if not form:
-            logger.error("❌ Form di login non trovato.")
+            logger.error("Form di login non trovato.")
             return
 
         post_url = form["action"].replace("&amp;", "&")
