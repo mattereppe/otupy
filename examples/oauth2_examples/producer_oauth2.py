@@ -35,7 +35,7 @@ def main():
     oauth2authenticator = OAuth2Authenticator(**oauth2_config)
 
     try:
-        transfer = MQTTTransfer("test.mosquitto.org", 1883, OpenC2Role.Producer, device_id="myproducer",response_timeout=10)
+        # transfer = MQTTTransfer("test.mosquitto.org", 1883, OpenC2Role.Producer, device_id="myproducer",response_timeout=10)
 
         producer = Producer(
             producer="producer.example.net",
@@ -43,12 +43,12 @@ def main():
             transfer=HTTPTransfer("127.0.0.1", 9000),
             authenticator=oauth2authenticator
         )
-        mqtt_prod = Producer(
-            producer="producer.example.net",
-            encoder=JSONEncoder(),
-            transfer=transfer,
-            authenticator=oauth2authenticator
-        )
+        # mqtt_prod = Producer(
+        #     producer="producer.example.net",
+        #     encoder=JSONEncoder(),
+        #     transfer=transfer,
+        #     authenticator=oauth2authenticator
+        # )
         actuator_profile = slpf.Specifiers({
             'hostname': 'firewall',
             'named_group': 'firewalls',
@@ -70,7 +70,7 @@ def main():
 
         cmd3 = oc2.Command(oc2.Actions.allow, oc2.IPv4Net('130.0.16.0'), args, actuator=actuator_profile)
 
-        producer.sendcmd(cmd)
+        producer.sendcmd(cmd3)
         # logger.info("sending second command")
         # prod.sendcmd(cmd3) #sencond time with saved token
 

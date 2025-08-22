@@ -911,3 +911,48 @@ b'{\n   "headers": {\n      "request_id": "fe1db4a9-69c9-4eb4-b68c-41984fab504b"
 1754386640.293893 [[38;5;42m  INFO  [0m]otupy.transfers.mqtt.mqtt_transfer: Duplicated message discarded
 1754386650.331905 [[38;5;226mWARNING [0m]otupy.transfers.mqtt.mqtt_transfer: Missing responses: 1 producers did not answer
 1754386650.332445 [[38;5;42m  INFO  [0m]root: Got response: Message(content={'status': <StatusCode.INTERNALERROR: 500>, 'status_text': 'Internal server error: BEDREQUEST'}, content_type='application/openc2', msg_type=<MessageType.response: 2>, status=None, request_id='fe1db4a9-69c9-4eb4-b68c-41984fab504b', created=1754386640060, from_='testconsumer', to=['myproducer'], version='1.0', encoding=<class 'otupy.encoders.json.JSONEncoder'>)
+1755854998.233564 [[38;5;42m  INFO  [0m]root: Creating Producer
+1755854998.234413 [[38;5;42m  INFO  [0m]root: Sending command: Command(action=query, target=[<Feature.versions: 1>, <Feature.profiles: 2>, <Feature.pairs: 3>], args={'response_requested': <ResponseType.complete: 3>, 'direction': <Direction.ingress: 2>}, actuator=slpf(hostname:firewall,named_group:firewalls,asset_id:iptables), command_id=None)
+1755854998.236893 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: Sending to http://127.0.0.1:8080/.well-known/openc2
+1755854998.237150 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP Request Content:
+{
+   "headers": {
+      "request_id": "288249ac-160a-4115-bcc8-bd381707292a",
+      "created": 1755854998234,
+      "from": "producer.example.net",
+      "to": [
+         "127.0.0.1"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs"
+               ]
+            },
+            "args": {
+               "slpf": {
+                  "direction": "ingress"
+               },
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {
+                  "hostname": "firewall",
+                  "named_group": "firewalls",
+                  "asset_id": "iptables"
+               }
+            }
+         }
+      }
+   }
+}
+1755854998.262011 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP got response: <Response [404]>
+1755854998.262381 [[38;5;42m  INFO  [0m]otupy.transfers.http.http_transfer: HTTP Response Content:
+{"error":"Unable to find matching target resource method"}
+1755854998.262554 [[38;5;196m ERROR  [0m]producer: Error sending the command 415 Unsupported Media Type: Unsupported content type

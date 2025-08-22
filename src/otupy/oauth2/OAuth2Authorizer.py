@@ -32,7 +32,7 @@ class OAuth2Authorizer(Authorizer):
                 target.append(str(command.target.obj))
             else:
                 target.append(target_type)
-            actuator = command.actuator.choice
+            actuator = command.actuator.choice if hasattr(command, 'actuator') and command.actuator else "*"
             command_dict = {
                 "action": action,
                 "target": target,
