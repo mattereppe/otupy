@@ -94,3 +94,26 @@ b'\xa2gheaders\xa3jrequest_idx$71768059-5224-4561-bd62-40092c2b0512gcreated\x1b\
 1758565987.390181 [[38;5;42m  INFO  [0m]werkzeug:  * Restarting with stat
 1758565987.687197 [[38;5;226mWARNING [0m]werkzeug:  * Debugger is active!
 1758565987.689114 [[38;5;42m  INFO  [0m]werkzeug:  * Debugger PIN: 544-922-128
+1758984630.791955 [[38;5;42m  INFO  [0m]werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+1758984630.792138 [[38;5;42m  INFO  [0m]werkzeug: [33mPress CTRL+C to quit[0m
+1758984630.792821 [[38;5;42m  INFO  [0m]werkzeug:  * Restarting with stat
+1758984631.112282 [[38;5;226mWARNING [0m]werkzeug:  * Debugger is active!
+1758984631.114297 [[38;5;42m  INFO  [0m]werkzeug:  * Debugger PIN: 574-460-166
+1758984749.585126 [[38;5;42m  INFO  [0m]werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+1758984749.585341 [[38;5;42m  INFO  [0m]werkzeug: [33mPress CTRL+C to quit[0m
+1758984749.585902 [[38;5;42m  INFO  [0m]werkzeug:  * Restarting with stat
+1758984749.903154 [[38;5;226mWARNING [0m]werkzeug:  * Debugger is active!
+1758984749.905523 [[38;5;42m  INFO  [0m]werkzeug:  * Debugger PIN: 574-460-166
+1758985699.262778 [[38;5;42m  INFO  [0m]werkzeug: 127.0.0.1 - - [27/Sep/2025 17:08:19] "[33mGET / HTTP/1.1[0m" 404 -
+1758985730.065984 [[38;5;42m  INFO  [0m]werkzeug:  * Detected change in '/home/pc-abdeljabbar/Thesis/otupy/examples/controller-iptables.py', reloading
+1758985730.135437 [[38;5;42m  INFO  [0m]werkzeug:  * Restarting with stat
+1758985730.434428 [[38;5;226mWARNING [0m]werkzeug:  * Debugger is active!
+1758985730.436513 [[38;5;42m  INFO  [0m]werkzeug:  * Debugger PIN: 574-460-166
+1758985803.177686 [[38;5;42m  INFO  [0m]werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+1758985803.177863 [[38;5;42m  INFO  [0m]werkzeug: [33mPress CTRL+C to quit[0m
+1758985803.178470 [[38;5;42m  INFO  [0m]werkzeug:  * Restarting with stat
+1758985803.494734 [[38;5;226mWARNING [0m]werkzeug:  * Debugger is active!
+1758985803.496808 [[38;5;42m  INFO  [0m]werkzeug:  * Debugger PIN: 574-460-166

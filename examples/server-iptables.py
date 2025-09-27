@@ -32,7 +32,7 @@ def main():
 	actuators = {}
 	actuators[(slpf.Profile.nsid,'iptables')]=IptablesActuator()
 
-	c = oc2.Consumer("testconsumer", actuators, JSONEncoder(), HTTPTransfer("172.17.0.11", 8080))
+	c = oc2.Consumer("testconsumer", actuators, JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 
 
 	c.run()

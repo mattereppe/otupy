@@ -64,13 +64,13 @@ class HTTPTransfer(oc2.Transfer):
 			data = oc2.Encoder().encode(m)
 
 		return data
-
+	
 	def _fromhttp(self, hdr, data):
 		""" Convert HTTP `Message` to otupy `Message` """
 
 		# TODO: Check the HTTP headers for version/encoding
 		content_type =hdr['Content-type']
-
+		
 		if not content_type.removeprefix('application/').startswith(oc2.Message.content_type):
 			raise UnsupportedMediaType("Unsupported content type")
 

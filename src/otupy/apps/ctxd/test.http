@@ -1,0 +1,36 @@
+POST http://127.0.0.1:8080/.well-known/openc2
+Content-Type: application/openc2+cbor
+
+{
+   "headers": {
+      "request_id": "ecca71ad-eb30-439a-a7b8-1b5a5abb0e81",
+      "created": 1758981528753,
+      "from": "producer.azure.test",
+      "to": [
+         "127.0.0.1"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "x-ctxd:context": {
+                  "services": ["dummy_service"],
+                  "links": ["dummy_link"]
+               }
+            },
+            "args": {
+               "x-ctxd": {
+                  "name_only": false
+               }
+            },
+            "actuator": {
+               "x-ctxd": {
+                  "asset_id": "azure"
+               }
+            }
+         }
+      }
+   }
+}

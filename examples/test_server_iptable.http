@@ -1,0 +1,36 @@
+POST http://127.0.0.1:8080/.well-known/openc2
+Content-Type: application/openc2+cbor
+{
+   "headers": {
+      "request_id": "6a7123cf-4a6f-48fc-bb79-12f974742aff",
+      "created": 1758985900772,
+      "from": "producer.example.net",
+      "to": [
+         "127.0.0.1"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "update",
+            "target": {
+               "file": {
+                  "path": "http://127.0.0.1:8080",
+                  "name": "iptables-rules.v4"
+               }
+            },
+            "args": {
+               "slpf": {},
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "slpf": {
+                  "hostname": "firewall",
+                  "named_group": "firewalls",
+                  "asset_id": "iptables"
+               }
+            }
+         }
+      }
+   }
+}

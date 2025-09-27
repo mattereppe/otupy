@@ -1,0 +1,3 @@
+azure
+generated_samples
+generated_tests
