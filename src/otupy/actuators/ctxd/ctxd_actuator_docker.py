@@ -61,7 +61,8 @@ class CTXDActuator_docker(CTXDActuator):
 
 		This class provides an implementation of the CTXD `Actuator`.
 	"""
-
+	def is_available(self):
+		return True
 	my_services: ArrayOf(Service) = None # type: ignore
 	""" Name of the service """
 	my_links: ArrayOf(Link) = None # type: ignore

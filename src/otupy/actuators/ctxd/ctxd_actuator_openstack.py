@@ -54,11 +54,18 @@ logger = logging.getLogger(__name__)
 
 @actuator_implementation("ctxd-openstack")
 class CTXDActuator_openstack(CTXDActuator):
+<<<<<<< HEAD
 	""" Openstack Actuator Manager
 
 		Extend the base `CTDXActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
 		hypervisors, and OpenStack sw components. It should be extended in future releases with additional resources (e.g., networks, ports).
 
+=======
+
+	def is_available(self):
+		return True
+	""" CTXD implementation
+>>>>>>> b7e2739c (Proxmox ctxd created and added)
 
 	"""
 

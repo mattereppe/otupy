@@ -1,6 +1,18 @@
 {
     "clusters": [
         {
+            "type": "proxmox",
+            "hostname": "proxmox0",
+            "ip": "127.0.0.1",
+            "port": 8080,
+            "protocol": 6,
+            "endpoint": "/.well-known/openc2",
+            "transfer": 1,
+            "encoding": 1,
+            "asset_id": "proxmox",
+            "producer_id": "producer.proxmox.test"
+        },
+        {
             "type": "azure",
             "hostname": "azure0",
             "ip": "127.0.0.1",
@@ -9,7 +21,8 @@
             "endpoint": "/.well-known/openc2",
             "transfer": 1,
             "encoding": 1,
-            "asset_id": "azure"
+            "asset_id": "azure",
+            "producer_id": "producer.azure.test"
         }
     ],
     "consumer": {
@@ -17,7 +30,7 @@
         "port": 8080,
         "endpoint": "/.well-known/openc2"
     },
-    "mongodb":{
+    "mongodb": {
         "username": "",
         "password": "",
         "ip": "127.0.0.1",

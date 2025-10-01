@@ -28,7 +28,8 @@ class CTXDActuator_azure(CTXDActuator):
     Azure Context Discovery Actuator
     Collects VMs, Load Balancers, NSGs, Firewalls, App Gateways, App Services, SQL, Storage.
     """
-
+    def is_available(self):
+        return True
     def __init__(self, subscription_id=None, domain=None, asset_id=None, hostname=None,
                  ip=None, port=443, protocol="TCP", endpoint=None, transfer="sync", encoding="json"):
 

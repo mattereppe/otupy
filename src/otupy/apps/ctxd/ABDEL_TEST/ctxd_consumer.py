@@ -1,0 +1,78 @@
+import json
+import logging
+import otupy as oc2
+from otupy.encoders.json import JSONEncoder
+from otupy.transfers.http import HTTPTransfer
+import otupy.profiles.ctxd as ctxd
+
+from otupy.actuators.ctxd.ctxd_actuator_proxmox import CTXDActuator_Proxmox
+from otupy.actuators.ctxd.ctxd_actuator_azure import CTXDActuator_azure
+import os
+logger = logging.getLogger()
+logger.setLevel(logging.ERROR)
+stdout_handler = logging.StreamHandler()
+stdout_handler.setLevel(logging.INFO)
+stdout_handler.setFormatter(oc2.LogFormatter(datetime=True, name=True))
+logger.addHandler(stdout_handler)
+
+CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+"/configuration.json"
+
+def load_config(file_path):
+
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+def create_actuator(conf, consumer_ip, consumer_port, consumer_endpoint):
+    actuator_type = conf["type"].lower()
+    common_args = dict(
+        domain=None,
+        asset_id=conf["asset_id"],
+        hostname=conf["hostname"],
+        ip=consumer_ip,
+        port=consumer_port,
+        protocol=conf.get("protocol", 6),
+        endpoint=consumer_endpoint,
+        transfer=conf.get("transfer", 1),
+        encoding=conf.get("encoding", 1)
+    )
+    if actuator_type == "proxmox":
+        return CTXDActuator_Proxmox(
+            **common_args,
+            proxmox_host=conf["proxmox_host"],
+            username=conf["username"],
+            password=conf["password"],
+            verify_ssl=conf.get("verify_ssl", False)
+        )
+    elif actuator_type == "azure":
+        return CTXDActuator_azure(
+            **common_args
+        )
+    else:
+        raise ValueError(f"Unknown actuator type: {actuator_type}")
+
+def start_consumer():
+    config = load_config(CONFIG_FILE)
+    consumer_conf = config["consumer"]
+
+    ip = consumer_conf["ip"]
+    port = consumer_conf["port"]
+    endpoint = consumer_conf["endpoint"]
+
+    actuators = {}
+    for cluster_conf in config["clusters"]:
+        actuators[(ctxd.Profile.nsid, cluster_conf["type"])] = create_actuator(
+            cluster_conf, ip, port, endpoint
+        )
+
+    consumer = oc2.Consumer(
+        consumer_conf.get("name", "unified_consumer"),
+        actuators=actuators,
+        encoder=JSONEncoder(),
+        transfer=HTTPTransfer(host=ip, port=port, endpoint=endpoint)
+    )
+
+    logger.info("Running consumer with actuators: %s", list(actuators.keys()))
+    consumer.run()
+
+if __name__ == "__main__":
+    start_consumer()

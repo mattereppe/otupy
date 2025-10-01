@@ -280,3 +280,6 @@ class CTXDActuator:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error: ' + str(e))
 		else:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error')
+		
+	def is_available(self):
+		return True

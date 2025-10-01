@@ -71,7 +71,26 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		nodes, and containers. It should be extended in future releases with additional resources (e.g., services and file systems).
 
 	"""
+<<<<<<< HEAD
 
+=======
+	def is_available(self):
+		return True
+	my_services: ArrayOf(Service) = None # type: ignore
+	""" Name of the service """
+	my_links: ArrayOf(Link) = None # type: ignore
+	"""It identifies the type of the service"""
+	domain : str = None
+	asset_id : str = None
+	actuators: any = None
+	hostname: any = None
+	ip: any = None
+	port: any = None
+	protocol: any = None
+	endpoint: any = None
+	transfer: any = None
+	encoding: any = None
+>>>>>>> b7e2739c (Proxmox ctxd created and added)
 	namespace = [] #it contains only the name of the namespaces
 	""" Namespaces list"""
 	api_client : any = None #api client for kubernetes
