@@ -73,7 +73,9 @@ def main():
                       db_commands_table_name = element['db_commands_table_name'],
                       db_jobs_table_name = element['db_jobs_table_name'],
                       file_environment_variables = element['file_environment_variables'],
-                      security_group_id = element['security_group_id']
+                      project_name = element['project_name'],
+                      security_group_base_name = element['security_group_base_name'],
+                      security_group_base_description = element['security_group_base_description']
                 )
             elif (element["type"] == "kubernetes"):
                 actuators[(slpf.Profile.nsid,element['asset_id'])] = SLPFActuator_kubernetes(
@@ -89,6 +91,7 @@ def main():
                       config_file = element['config_file'],
                       kube_context = element['kube_context'],
                       namespace=element['namespace'],
+                      subnet_base_label_key=element['subnet_base_label_key'],
                       generate_name=element['generate_name']
                 )
             elif (element["type"] == "azure"):
@@ -116,7 +119,7 @@ def main():
         c.run()  
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        raise e
 
 
 if __name__ == "__main__":

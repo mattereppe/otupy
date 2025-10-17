@@ -4,6 +4,7 @@
 """
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 
 import os
@@ -109,7 +110,7 @@ class SLPFActuator:
                 logger.info(self.tag + " Initializing scheduler")
                 # Setting misfire grace time to 1 day
                 self.misfire_grace_time = 86400
-                self.scheduler = BackgroundScheduler()
+                self.scheduler = BackgroundScheduler(executors={'default': ThreadPoolExecutor(max_workers=1)})
                 self.scheduler.add_listener(lambda event: self.scheduler_listener(event), EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
                 self.restore_persistent_jobs()
                 self.scheduler.start()
@@ -120,7 +121,7 @@ class SLPFActuator:
                 logger.info(self.tag + " Initialization error: %s", str(e))
                 raise e
             
-    def execute_allow_command(self, target, direction):
+    def execute_allow_command(self, target, direction, custom_data):
         """ Implementation of `allow` action
 
             Each Actuator must override this method in order to implement the allow action.
@@ -132,7 +133,7 @@ class SLPFActuator:
         """
         pass
 
-    def execute_deny_command(self, target, direction, drop_process):
+    def execute_deny_command(self, target, direction, drop_process, custom_data):
         """ Implementation of `deny` action
 
             Each Actuator must override this method in order to implement the deny action.
@@ -173,7 +174,7 @@ class SLPFActuator:
         """
         pass
 
-    def execute_delete_command(self, command_to_delete):
+    def execute_delete_command(self, command_to_delete, custom_data):
         """ Implementation of `delete` action
 
             Each Actuator must override this method in order to implement the delete action.
@@ -209,6 +210,7 @@ class SLPFActuator:
       
 
     def run(self, cmd):
+        command_received_timestamp = time.perf_counter()
         # Check if the Command is compliant with the implemented profile
         if not slpf.validate_command(cmd):
             return Response(status=StatusCode.NOTIMPLEMENTED, status_text='Invalid Action/Target pair')
@@ -230,13 +232,13 @@ class SLPFActuator:
                 case Actions.query:
                     response = self.query(cmd)
                 case Actions.allow:
-                    response = self.allow(cmd)
+                    response = self.allow(cmd, command_received_timestamp)
                 case Actions.deny:
-                    response = self.deny(cmd)
+                    response = self.deny(cmd, command_received_timestamp)
                 case Actions.update:
                     response = self.update(cmd)
                 case Actions.delete:
-                    response = self.delete(cmd)
+                    response = self.delete(cmd, command_received_timestamp)
                 case _:
                     response = self.__notimplemented(cmd)
         except Exception as e:
@@ -323,7 +325,7 @@ class SLPFActuator:
         return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
 
-    def allow(self, cmd):
+    def allow(self, cmd, command_received_timestamp):
         """ `Allow` action
 
             This method implements the `allow` action.
@@ -334,12 +336,12 @@ class SLPFActuator:
         """
 
         try:
-            return self.allow_deny_handler(cmd)
+            return self.allow_deny_handler(cmd, command_received_timestamp)
         except Exception as e:
             return self.__servererror(cmd, e)
 
 
-    def deny(self, cmd):
+    def deny(self, cmd, command_received_timestamp):
         """ `Deny` action
 
             This method implements the `deny` action.
@@ -350,12 +352,12 @@ class SLPFActuator:
         """
 
         try:
-            return self.allow_deny_handler(cmd)           
+            return self.allow_deny_handler(cmd, command_received_timestamp)           
         except Exception as e:
             return self.__servererror(cmd, e)
         
 
-    def allow_deny_handler(self, cmd):
+    def allow_deny_handler(self, cmd, command_received_timestamp):
         """ This method manages the execution of `allow` and `deny` commands.
 
             Validates and manages allow and deny `Target` and `Args`, 
@@ -404,7 +406,7 @@ class SLPFActuator:
                     raise TypeError(tmp_str)
 
             if 'insert_rule' in args:
-                if args['response_requested'] != ResponseType.complete:
+                if not 'response_requested' in args or args['response_requested'] != ResponseType.complete:
                         raise ValueError(StatusCode.BADREQUEST, "Response requested must be complete with insert rule argument")
                 if self.db.find_command(args['insert_rule']):
                     raise ValueError(StatusCode.NOTIMPLEMENTED, "Rule number currently in use")
@@ -414,8 +416,8 @@ class SLPFActuator:
                     raise ValueError(StatusCode.BADREQUEST, "Only two arguments between start time, stop time and duration can be specified")
                 if args['start_time'] > args['stop_time']:
                     raise ValueError(StatusCode.BADREQUEST, "Start time greater than stop time")
-            if'stop_time' in args and (args['stop_time'] < time.time() * 1000):
-                raise ValueError(StatusCode.BADREQUEST, "Stop time already expired")
+        #    if'stop_time' in args and (args['stop_time'] < time.time() * 1000):
+        #        raise ValueError(StatusCode.BADREQUEST, "Stop time already expired")
        
         #   Setting default args values
             if not 'direction' in args:
@@ -423,13 +425,22 @@ class SLPFActuator:
             if action == Actions.deny and not 'drop_process' in args:
                 args['drop_process'] = DropProcess.none
 
-        #   Validating action, target, args for specific implementation
+        #   Validating action, target, args
+        #   and getting custom data from specific implementation
             temp_args = {'direction': args['direction']}
             if 'drop_process' in args:
                 temp_args['drop_process'] = args['drop_process']
-            self.validate_action_target_args(action=action,
-                                             target=target,
-                                             args=temp_args)
+
+        #   DA AGGIUNGERE A validate_action_target_args CHE RITORNA CUSTOM DATA
+            custom_data = self.validate_action_target_args(
+                action=action,
+                target=target,
+                args=temp_args
+            )
+            
+        #   If stop time already expired, OK without rule number is returned
+            if'stop_time' in args and (args['stop_time'] <= time.time() * 1000):
+                return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK])
 
         #   Calculating start/stop time
             if 'start_time' in args:
@@ -455,33 +466,39 @@ class SLPFActuator:
                 self.save_persistent_commands()
 
         #   Generating job ids
-            job_ids = {'start_job_id': self.generate_unique_job_id(),
-                       'stop_job_id': self.generate_unique_job_id() if 'stop_time' in args else None,
-                       'my_id': None }
+        #    job_ids = {'start_job_id': self.generate_unique_job_id(),
+        #               'stop_job_id': self.generate_unique_job_id() if 'stop_time' in args else None,
+        #               'my_id': None }
+            scheduler_data = {
+                'start_job_id': self.generate_unique_job_id(),
+                'stop_job_id': self.generate_unique_job_id() if 'stop_time' in args else None
+            }
 
         #   Inserting commands in db   
             logger.info(self.tag + " Inserting command in database")
-            rule_number = self.db_handler(action, target, args, job_ids)
+            rule_number = self.db_handler(action, target, args, custom_data, scheduler_data)
+
+            scheduler_data['my_id'] = None
 
         #   Managing the scheduler    
             start_time = datetime.fromtimestamp(args['start_time'])            
             self.scheduler.add_job(self.allow_deny_execution_wrapper,
                                    'date',
                                    next_run_time=start_time,
-                                   args=[action, rule_number],
-                                   kwargs={'target': target, **temp_args},
-                                   id=job_ids['start_job_id'],
+                                   args=[action, rule_number, command_received_timestamp],
+                                   kwargs={'target': target, 'custom_data': custom_data, **temp_args},
+                                   id=scheduler_data['start_job_id'],
                                    misfire_grace_time=self.misfire_grace_time)
             if 'stop_time' in args:
 #               Just needed args                
                 command = Command(action, target, slpf.Args(temp_args))
-                job_ids['my_id'] = job_ids['stop_job_id']
+                scheduler_data['my_id'] = scheduler_data['stop_job_id']
                 stop_time = datetime.fromtimestamp(args['stop_time'])
                 self.scheduler.add_job(self.delete_handler,
                                        'date',
                                        next_run_time=stop_time,
-                                       kwargs={'command_to_delete': command, 'rule_number': rule_number, 'job_ids': job_ids},
-                                       id=job_ids['stop_job_id'],
+                                       kwargs={'command_to_delete': command, 'rule_number': rule_number, 'custom_data': custom_data, 'scheduler_data': scheduler_data, 'command_received_timestamp': None},
+                                       id=scheduler_data['stop_job_id'],
                                        misfire_grace_time=self.misfire_grace_time)              
             
             res = slpf.Results(rule_number=slpf.RuleID(rule_number))
@@ -491,7 +508,6 @@ class SLPFActuator:
         except ValueError as e:
             return Response(status=e.args[0], status_text=e.args[1])
         except Exception as e:
-            print("------------>", str(e))
             return Response(status=StatusCode.INTERNALERROR, status_text="Rule not updated")
 
 
@@ -507,15 +523,20 @@ class SLPFActuator:
         try:
         #   Executing allow/deny command for specific implementation
             function = self.execute_allow_command if args[0] == Actions.allow else self.execute_deny_command
+            command_launched_timestamp = time.perf_counter()
             function(**kwargs)
             logger.info(self.tag + " %s action executed successfully", args[0].__repr__().capitalize())
+            command_executed_timestamp = time.perf_counter()
+            if args[0] == Actions.allow:
+                with open("/home/kali/Scrivania/openstack/all_consumer_time.txt", "a") as f:
+                    f.write(f"{command_executed_timestamp - args[2]} {command_executed_timestamp - command_launched_timestamp}\n")
         except Exception as e:
             logger.info(self.tag + " Execution error for %s action: %s", args[0].__repr__().capitalize(), str(e))
             e.arg = { 'command_action': args[0], 'rule_number': args[1]}
             raise e
 
 
-    def delete(self, cmd):
+    def delete(self, cmd, command_received_timestamp):
         """ `Delete` action
 
             This method implements the `delete` action: 
@@ -554,25 +575,32 @@ class SLPFActuator:
             cmd_data = self.db.get_command(rule_number)
             command_to_delete = self.reconstruct_command(cmd_data)
 
+        #   Getting custom data
+            custom_data = cmd_data['custom_data']
+
         #   Managing the scheduler 
-            job_ids = {'start_job_id': cmd_data['start_job_id'],
-                       'stop_job_id': cmd_data['stop_job_id'],
-                       'my_id': self.generate_unique_job_id()}             
+        #    job_ids = {'start_job_id': cmd_data['start_job_id'],
+        #               'stop_job_id': cmd_data['stop_job_id'],
+        #               'my_id': self.generate_unique_job_id()}
+            scheduler_data = cmd_data['scheduler_data']
+            scheduler_data['my_id'] = self.generate_unique_job_id()
+
             self.scheduler.add_job(self.delete_handler,
                                    'date',
                                    next_run_time=start_time,
-                                   kwargs={'command_to_delete': command_to_delete, 'rule_number': rule_number, 'job_ids': job_ids},
-                                   id=job_ids['my_id'],
+                                   kwargs={'command_to_delete': command_to_delete, 'rule_number': rule_number, 'custom_data': custom_data, 'scheduler_data': scheduler_data, 'command_received_timestamp': command_received_timestamp},
+                                   id=scheduler_data['my_id'],
                                    misfire_grace_time=self.misfire_grace_time)
             
             return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK])
         except TypeError as e:
             return Response(status=StatusCode.BADREQUEST, status_text=str(e))
         except Exception as e:
+            print("-------__>", str(e))
             return Response(status=StatusCode.INTERNALERROR, status_text="Firewall rule not removed or updated")
         
 
-    def delete_handler(self, command_to_delete, rule_number, job_ids):
+    def delete_handler(self, command_to_delete, rule_number, custom_data, scheduler_data, command_received_timestamp):
         """ This method manages the execution of `delete` command.
 
             Cancels scheduled `jobs` such as the execution of the command that needs to be deleted if `start time` not expired yet
@@ -594,29 +622,36 @@ class SLPFActuator:
         """
 
         try:
-            if job_ids['stop_job_id']:
-                if self.scheduler.get_job(job_ids['stop_job_id']):
+            if scheduler_data['stop_job_id']:
+                if self.scheduler.get_job(scheduler_data['stop_job_id']):
                 #   Removing stop job if present
-                    self.scheduler.remove_job(job_ids['stop_job_id'])
+                    self.scheduler.remove_job(scheduler_data['stop_job_id'])
                 else:
                 #   An allow action has setted a stop time job that is no longer present in the scheduler
                 #   and this is a delete action:
                 #   the command has been already removed and the delete action terminate
-                    if job_ids['my_id'] and job_ids['my_id'] != job_ids['stop_job_id']:
+                    if scheduler_data['my_id'] and scheduler_data['my_id'] != scheduler_data['stop_job_id']:
                         return
-            if self.scheduler.get_job(job_ids['start_job_id']):
+                    
+            command_launched_timestamp = time.perf_counter()
+
+            if self.scheduler.get_job(scheduler_data['start_job_id']):
             #   Removing start job if present
             #   If start job still present in the scheduler the command is not set yet in the specific implementation, only in the database
-                self.scheduler.remove_job(job_ids['start_job_id'])
+                self.scheduler.remove_job(scheduler_data['start_job_id'])
             else:
             #   if start job is not present in the scheduler we have to remove the command from the specific implementation
-                self.execute_delete_command(command_to_delete)
+                self.execute_delete_command(command_to_delete, custom_data)
 
         #   Deleting command from database
             logger.info(self.tag + " Deleting command from database")
             self.db.delete_command(rule_number)
 
             logger.info(self.tag + " Delete action executed successfully")
+            command_executed_timestamp = time.perf_counter()
+            if command_received_timestamp:
+                with open("/home/kali/Scrivania/openstack/del_consumer_time.txt", "a") as f:
+                    f.write(f"{command_executed_timestamp - command_received_timestamp} {command_executed_timestamp - command_launched_timestamp}\n")
         except Exception as e:
             logger.info(self.tag + " Execution error for delete action: %s", str(e))
             e.arg = { 'command_action': Actions.delete }
@@ -710,7 +745,6 @@ class SLPFActuator:
                                    id=self.generate_unique_job_id(),
                                    misfire_grace_time=self.misfire_grace_time)
 
-        #    return Response(status=StatusCode.PROCESSING, status_text=StatusCodeDescription[StatusCode.PROCESSING])
             return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK])
         except TypeError as e:
             return Response(status=StatusCode.BADREQUEST, status_text=str(e))
@@ -731,13 +765,21 @@ class SLPFActuator:
         """
 
         try:
-        #   Setting SLPF Actuator in file mode
-            self.mode = SLPFActuator.Mode.file
-            logger.info(self.tag + " " + self.mode.value + " mode")            
-        #   Cleaning scheduler
-            self.scheduler.remove_all_jobs()
-        #   Cleaning database: SLPF Actuator now in file mode, al rules managed by file
-            self.db.clean_db()
+            if self.mode == SLPFActuator.Mode.db:
+            #   Setting SLPF Actuator in file mode    
+                self.mode = SLPFActuator.Mode.file
+                logger.info(self.tag + " " + self.mode.value + " mode setted")
+            #   Cleaning scheduler from allow, deny and delete commands
+            #    self.scheduler.remove_all_jobs()
+                for job in self.scheduler.get_jobs():
+                    if job.func.__name__ != self.update_handler.__name__:
+                        self.scheduler.remove_job(job.id)
+            #   Cleaning database: SLPF Actuator now in file mode, all rules managed by file
+                self.db.clean_db()
+            #   Cleaning all rules in specific implementation
+                self.clean_actuator_rules()
+                self.save_persistent_commands()
+        
         #   Executing update command for specific implementation
             self.execute_update_command(**kwargs)
             logger.info(self.tag + " Update action executed successfully")
@@ -759,12 +801,15 @@ class SLPFActuator:
             logger.info(self.tag + " Deleting non persistent commands")        
             non_persistent_commands = self.db.get_non_persistent_comands()           
             for command in non_persistent_commands:
-                job_ids = {'start_job_id': command['start_job_id'],
-                           'stop_job_id': command['stop_job_id'],
-                           'my_id': None }
-                self.delete_handler(command_to_delete=self.reconstruct_command(command),
-                                    rule_number=command['rule_number'],
-                                    job_ids=job_ids)
+                scheduler_data = command['scheduler_data']
+                scheduler_data['my_id'] = None
+
+                self.delete_handler(
+                    command_to_delete=self.reconstruct_command(command),
+                    rule_number=command['rule_number'],
+                    custom_data=None,
+                    job_ids=scheduler_data
+                )
 
         #   Saves persistent commands only if SLPF Actuator is in db mode (there are commands in the database)
         #   If SLPF Actuator is in file mode (empty database, rules managed by file) there is no need to save persistent commands
@@ -844,7 +889,7 @@ class SLPFActuator:
                 return job_id
 
 
-    def db_handler(self, action, target, args, job_ids):
+    def db_handler(self, action, target, args, custom_data, scheduler_data):
         """ This method handles insertion of commands in the database.
 
             :param action: Command `Action` to be inserted.
@@ -879,21 +924,23 @@ class SLPFActuator:
             elif type(target) == IPv4Net or type(target) == IPv6Net:
                 dst = target.__str__()
 
-            rule_number = self.db.insert_command(insert_rule=args['insert_rule'] if 'insert_rule' in args else None,
-                                                action=action.__repr__(),
-                                                drop_process=args['drop_process'].name if 'drop_process' in args else None,
-                                                direction=args['direction'].name,
-                                                target=target.__class__.__name__,
-                                                protocol=prot,
-                                                src_addr=src,
-                                                src_port=src_port,
-                                                dst_addr=dst,
-                                                dst_port=dst_port,
-                                                start_time=datetime.fromtimestamp(args['start_time']).isoformat(sep=' ', timespec='milliseconds'),
-                                                stop_time=datetime.fromtimestamp(args['stop_time']).isoformat(sep=' ', timespec='milliseconds') if 'stop_time' in args else None,
-                                                persistent=args['persistent'] if 'persistent' in args else True,
-                                                start_job_id=job_ids['start_job_id'],
-                                                stop_job_id=job_ids['stop_job_id'])
+            rule_number = self.db.insert_command(
+                insert_rule=args['insert_rule'] if 'insert_rule' in args else None,
+                action=action.__repr__(),
+                drop_process=args['drop_process'].name if 'drop_process' in args else None,
+                direction=args['direction'].name,
+                target=target.__class__.__name__,
+                protocol=prot,
+                src_addr=src,
+                src_port=src_port,
+                dst_addr=dst,
+                dst_port=dst_port,
+                start_time=datetime.fromtimestamp(args['start_time']).isoformat(sep=' ', timespec='milliseconds'),
+                stop_time=datetime.fromtimestamp(args['stop_time']).isoformat(sep=' ', timespec='milliseconds') if 'stop_time' in args else None,
+                persistent=args['persistent'] if 'persistent' in args else True,
+                custom_data=custom_data,
+                scheduler_data=scheduler_data
+            )
         except Exception as e:
             raise e
         return rule_number
@@ -930,9 +977,6 @@ class SLPFActuator:
             direction = slpf.Direction.both
 
         if cmd_data['target'] == IPv4Net.__name__ or cmd_data['target'] == IPv6Net.__name__:
-        #    if direction == slpf.Direction.ingress or direction == slpf.Direction.both:
-        #        addr = cmd_data['src_addr']
-        #    elif direction == slpf.Direction.egress:
             addr = cmd_data['dst_addr']
 
         if cmd_data['target'] == IPv4Net.__name__:

@@ -9,4 +9,4 @@
 /.readthedocs.yaml
 /LICENSE.md
 /README.md
-/slpf_tests
+/slpf_tests/test_json/.pytest_cache/
