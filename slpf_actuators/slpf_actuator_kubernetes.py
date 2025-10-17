@@ -1,12 +1,13 @@
 import logging
 import os
+import ipaddress
 import subprocess
 
 from kubernetes import config, client, utils
 from kubernetes.client.rest import ApiException
 
 from otupy.actuators.slpf.slpf_actuator import SLPFActuator
-from otupy import Actions, StatusCode, IPv4Net, IPv4Connection, IPv6Net, IPv6Connection, Response, StatusCodeDescription, Feature, ArrayOf, Version, Nsid, ActionTargets, TargetEnum
+from otupy import Actions, StatusCode, IPv4Net, IPv4Connection, IPv6Net, IPv6Connection, Response, StatusCodeDescription, Feature, ArrayOf, Version, Nsid, ActionTargets, TargetEnum, L4Protocol
 import otupy.profiles.slpf as slpf
 from otupy.profiles.slpf.profile import Profile
 from otupy.profiles.slpf.args import Direction
@@ -19,7 +20,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
         This class provides an implementation of the `SLPF Actuator` using Kubernetes.
     """
 
-    def __init__(self, config_file=None, kube_context=None, namespace=None, generate_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
+    def __init__(self, config_file=None, kube_context=None, namespace=None, subnet_base_label_key=None, generate_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
         """ Initialization of the `Kubernetes-based` SLPF Actuator.
 
             This method connects to Kubernetes and initializes the `SLPF Actuator`.
@@ -55,8 +56,9 @@ class SLPFActuator_kubernetes(SLPFActuator):
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
                 self.config_file = config_file if config_file else None
                 self.kube_context = kube_context if kube_context else None
-                self.namespace = namespace if namespace else "default"
-                self.generate_name = generate_name if generate_name else "network-policy-"
+                self.namespace = namespace if namespace else "slpf-ns"
+                self.subnet_base_label_key = subnet_base_label_key if subnet_base_label_key else "OC2_NET"
+                self.generate_name = generate_name if generate_name else "slpf-np-"
 
                 self.OPENC2VERS=Version(1,0)
 
@@ -92,9 +94,18 @@ class SLPFActuator_kubernetes(SLPFActuator):
         try:
             # Load the kubeconfig file (by default it loads from ~/.kube/config) and context
             config.load_kube_config(config_file=self.config_file, context=self.kube_context)
-            # Create an API client
+            # Create API clients
+            self.core_api = client.CoreV1Api()
             self.networking_api = client.NetworkingV1Api()
             self.api_client = client.ApiClient()
+#           Create a new namespace if it does not exist yet
+        #    namespaces = self.core_api.list_namespace()
+        #    namespace_names = [ ns.metadata.name for ns in namespaces.items ]
+        #    if not self.namespace in namespace_names:
+        #        logger.info("[KUBERNETES] Creating new namespace %s", self.namespace)
+        #        namespace_body = client.V1Namespace(metadata=client.V1ObjectMeta(name=self.namespace))
+        #        self.core_api.create_namespace(namespace_body)
+
             logger.info("[KUBERNETES] Connection executed successfully")
         except Exception as e:
             logger.info("[KUBERNETES] Connection failed.")
@@ -127,10 +138,13 @@ class SLPFActuator_kubernetes(SLPFActuator):
     def validate_action_target_args(self, action, target, args):
         try:
             if action == Actions.allow:
-                if (type(target) == IPv4Net or type(target) == IPv6Net) and args['direction'] != Direction.egress:
-                    raise ValueError(StatusCode.NOTIMPLEMENTED, "Only egress direction is permitted for IPv4Net/IPv6Net in Kubernetes.")
+                if type(target) == IPv4Connection or type(target) == IPv6Connection:
+                    if target.protocol and target.protocol != L4Protocol.tcp and target.protocol != L4Protocol.udp and target.protocol != L4Protocol.sctp:
+                        raise ValueError(StatusCode.NOTIMPLEMENTED, "Protocol not supported.")
+                custom_data = self.kubernetes_get_custom_data(target, args['direction'])
+                return custom_data
             if action == Actions.deny:
-                raise ValueError(StatusCode.NOTIMPLEMENTED, "Deny action not implemented for Kubernetes.")
+                raise ValueError(StatusCode.NOTIMPLEMENTED, "Command not supported.")
             elif action == Actions.update:
                 ext = os.path.splitext(target['name'])[1] 
                 if ext != '.yaml':
@@ -141,28 +155,39 @@ class SLPFActuator_kubernetes(SLPFActuator):
             raise e
         
 
-    def execute_allow_command(self, target, direction):
+    def execute_allow_command(self, target, direction, custom_data):
         try:
-            ingress = None
-            egress = None
-            _from = None
-            to = None
-            cidr = None
-            ports = None
             protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else None
+            cidr = None
             port = None
-
-            metadata=client.V1ObjectMeta(
-                    generate_name=self.generate_name,
-                    namespace=self.namespace
-                )
+            ports = None
             
-            policy_types = [direction.name.capitalize()] if direction != Direction.both else ["Ingress", "Egress"]
-
+            metadata=client.V1ObjectMeta(
+                generate_name=self.generate_name,
+                namespace=self.namespace
+            )
+            
             if direction == Direction.ingress or direction == Direction.both:
-                cidr = target.src_addr.__str__() if target.src_addr else None
-                port = target.src_port if target.src_port else None
+                policy_types = ['Ingress']
+                pod_selector = client.V1LabelSelector(
+                    match_labels=custom_data['ingress_label']
+                )
+                ingress = None
+                _from = None
 
+                if type(target) == IPv4Connection or type(target) == IPv6Connection:
+                    if target.src_addr:
+                        cidr = target.src_addr.__str__()
+                    if target.src_port:
+                        port = target.src_port
+                    if target.protocol:
+                        ports = [
+                            client.V1NetworkPolicyPort(
+                                protocol=protocol,
+                                port=port
+                            )
+                        ]
+                
                 if cidr:
                     _from = [
                         client.V1NetworkPolicyPeer(
@@ -170,14 +195,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
                         )
                     ]
                     
-                if target.protocol:
-                    ports = [
-                        client.V1NetworkPolicyPort(
-                            protocol=protocol,
-                            port=port
-                        )
-                    ]
-
                 if _from or ports:
                     ingress = [
                         client.V1NetworkPolicyIngressRule(
@@ -185,12 +202,37 @@ class SLPFActuator_kubernetes(SLPFActuator):
                             ports=ports
                         )
                     ]
-            
+
+                network_policy = client.V1NetworkPolicy(
+                    metadata=metadata,
+                    spec=client.V1NetworkPolicySpec(
+                        policy_types=policy_types,
+                        ingress=ingress,
+                        pod_selector=pod_selector
+                    )
+                )
+                
+                self.networking_api.create_namespaced_network_policy(
+                    namespace=self.namespace,
+                    body=network_policy
+                )   
+
             if direction == Direction.egress or direction == Direction.both:
+                policy_types = ['Egress']
+                pod_selector = client.V1LabelSelector(
+                    match_labels=custom_data['egress_label']
+                )
+                egress = None
+                to = None
+                cidr = None
+                port = None
+                ports = None
+
                 if type(target) == IPv4Connection or type(target) == IPv6Connection:
-                    cidr = target.dst_addr.__str__() if target.dst_addr else None
-                    port = target.dst_port if target.dst_port else None
-                    ports = None
+                    if target.dst_addr:
+                        cidr = target.dst_addr.__str__()
+                    if target.dst_port:
+                        port = target.dst_port
                     if target.protocol:
                         ports = [
                             client.V1NetworkPolicyPort(
@@ -215,80 +257,206 @@ class SLPFActuator_kubernetes(SLPFActuator):
                             ports=ports
                         )
                     ]
-                    
-            network_policy = client.V1NetworkPolicy(
-                metadata=metadata,
-                spec=client.V1NetworkPolicySpec(
-                    policy_types=policy_types,
-                    ingress=ingress,
-                    egress=egress,
-                    pod_selector=client.V1LabelSelector(match_labels={})
-                )
-            )
 
-            self.networking_api.create_namespaced_network_policy(
-                namespace=self.namespace,
-                body=network_policy
-            )    
+                network_policy = client.V1NetworkPolicy(
+                    metadata=metadata,
+                    spec=client.V1NetworkPolicySpec(
+                        policy_types=policy_types,
+                        egress=egress,
+                        pod_selector=pod_selector
+                    )
+                )
+
+                self.networking_api.create_namespaced_network_policy(
+                    namespace=self.namespace,
+                    body=network_policy
+                )
 
         except Exception as e:
             raise e
         
 
-    def execute_delete_command(self, command_to_delete):
+    def execute_delete_command(self, command_to_delete, custom_data):
         try:
             target = command_to_delete.target.getObj()
             direction = command_to_delete.args['direction']
-            policy_types = [direction.name.capitalize()] if direction != Direction.both else ["Ingress", "Egress"]
 
-            network_policies = self.networking_api.list_namespaced_network_policy(namespace=self.namespace)
-            
-            for policy in network_policies.items:
-                if set(policy.spec.policy_types) != set(policy_types):
-                    continue
+            cidr = None
+            protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else None
+            port = None
 
-                ingress_rule_list = policy.spec.ingress
-                egress_rule_list  = policy.spec.egress
-                if ingress_rule_list and len(ingress_rule_list) > 1:
-                    continue
-                if egress_rule_list and len(egress_rule_list) > 1:
-                    continue
-                ingress_rule = ingress_rule_list[0] if ingress_rule_list else None
-                egress_rule = egress_rule_list[0] if egress_rule_list else None
+            if direction == Direction.ingress or direction == Direction.both:
+                policy_types = ['Ingress']
 
-                cidr = target.__str__() if type(target) == IPv4Net or type(target) == IPv6Net else None
-                protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else None
-                port = None
-                if ingress_rule:
+                label_cnt = 0
+                deleted = False
+                label_key, label_value = list(custom_data['ingress_label'].items())[0]
+                network_policies = self.networking_api.list_namespaced_network_policy(namespace=self.namespace)
+                for policy in network_policies.items:
+                    selector = policy.spec.pod_selector
+                    if selector.match_labels.get(label_key) != label_value:
+                        continue
+                    label_cnt += 1
+                    if deleted:
+                        continue
+                    if set(policy.spec.policy_types) != set(policy_types):
+                        continue
+
+                    ingress_rule_list = policy.spec.ingress
+                    if ingress_rule_list and len(ingress_rule_list) > 1:
+                        continue
+                    ingress_rule = ingress_rule_list[0] if ingress_rule_list else None
+
                     if type(target) == IPv4Connection or type(target) == IPv6Connection:
                         if target.src_addr:
                             cidr = target.src_addr.__str__()
                         if target.src_port:
                             port = target.src_port
+
                     if not self.kubernetes_match_policy(cidr, protocol, port, Direction.ingress, ingress_rule):
                         continue
 
-                if egress_rule: 
+                    logger.info("[KUBERNETES] Deleting Kubernetes Network Policy " + policy.metadata.name)
+                    self.networking_api.delete_namespaced_network_policy(
+                        name=policy.metadata.name,
+                        namespace=self.namespace,
+                        body=client.V1DeleteOptions()
+                    )
+                    deleted = True
+
+                if not deleted:
+                    raise ValueError(StatusCode.INTERNALERROR, "Kubernetes network policy not found.")
+                
+                if label_cnt == 1:
+                    label_selector = f"{label_key}={label_value}"
+                    pods = self.core_api.list_namespaced_pod(namespace=self.namespace, label_selector=label_selector)
+                    for pod in pods.items:
+                        labels = pod.metadata.labels
+                        if label_key in labels and labels[label_key] == label_value:
+                            labels[label_key] = None
+                            patch = {"metadata": {"labels": labels}}
+                            self.core_api.patch_namespaced_pod(name=pod.metadata.name, namespace=self.namespace, body=patch)
+                
+            if direction == Direction.egress or direction == Direction.both:
+                policy_types = ['Egress']
+                cidr = None
+                port = None
+                
+                label_cnt = 0
+                deleted = False
+                label_key, label_value = list(custom_data['egress_label'].items())[0]
+                network_policies = self.networking_api.list_namespaced_network_policy(namespace=self.namespace)
+                for policy in network_policies.items:
+                    selector = policy.spec.pod_selector
+                    if selector.match_labels.get(label_key) != label_value:
+                        continue
+                    label_cnt += 1
+                    if deleted:
+                        continue
+                    if set(policy.spec.policy_types) != set(policy_types):
+                        continue
+
+                    egress_rule_list = policy.spec.egress
+                    if egress_rule_list and len(egress_rule_list) > 1:
+                        continue
+                    egress_rule = egress_rule_list[0] if egress_rule_list else None
+
                     if type(target) == IPv4Connection or type(target) == IPv6Connection:
-                        cidr = None
-                        port = None
                         if target.dst_addr:
                             cidr = target.dst_addr.__str__()
                         if target.dst_port:
                             port = target.dst_port
+                    elif type(target) == IPv4Net or type(target) == IPv6Net:
+                        cidr = target.__str__()
+
                     if not self.kubernetes_match_policy(cidr, protocol, port, Direction.egress, egress_rule):
                         continue
 
-                logger.info("[KUBERNETES] Deleting Kubernetes Network Policy " + policy.metadata.name)
-                self.networking_api.delete_namespaced_network_policy(
-                    name=policy.metadata.name,
-                    namespace=self.namespace,
-                    body=client.V1DeleteOptions()
-                )
-                return
-            raise ValueError(StatusCode.INTERNALERROR, "Kubernetes network policy not found.")
+                    logger.info("[KUBERNETES] Deleting Kubernetes Network Policy " + policy.metadata.name)
+                    self.networking_api.delete_namespaced_network_policy(
+                        name=policy.metadata.name,
+                        namespace=self.namespace,
+                        body=client.V1DeleteOptions()
+                    )
+                    deleted = True
+
+                if not deleted:
+                    raise ValueError(StatusCode.INTERNALERROR, "Kubernetes network policy not found.")
+                
+                if label_cnt == 1:
+                    label_selector = f"{label_key}={label_value}"
+                    pods = self.core_api.list_namespaced_pod(namespace=self.namespace, label_selector=label_selector)
+                    for pod in pods.items:
+                        labels = pod.metadata.labels
+                        if label_key in labels and labels[label_key] == label_value:
+                            labels[label_key] = None
+                            patch = {"metadata": {"labels": labels}}
+                            self.core_api.patch_namespaced_pod(name=pod.metadata.name, namespace=self.namespace, body=patch)
+
         except ValueError as e:
             raise e    
+        except Exception as e:
+            raise e
+        
+
+    def kubernetes_get_custom_data(self, target, direction):
+        try:
+            custom_data = {
+                'ingress_label': None,
+                'egress_label': None
+            }
+
+            dst_addr = "0.0.0.0/0" if type(target) == IPv4Connection or type(target) == IPv4Net else "::/0"
+            src_addr = "0.0.0.0/0" if type(target) == IPv4Connection or type(target) == IPv4Net else "::/0"
+            if direction == Direction.ingress or direction == Direction.both:
+                if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_addr:
+                    dst_addr = target.dst_addr.__str__()
+                elif type(target) == IPv4Net or type(target) == IPv6Net:
+                    dst_addr = target.__str__()
+                custom_data['ingress_label'] = self.kubernetes_get_label(dst_addr)
+
+            if direction == Direction.egress or direction == Direction.both:
+                if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_addr:
+                    src_addr = target.src_addr.__str__()
+                custom_data['egress_label'] = self.kubernetes_get_label(src_addr)
+                
+            return custom_data
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            #   TODO eliminare le etichette appena create se ricevo errore
+            raise e
+        
+
+    def kubernetes_get_label(self, cidr):
+        try:
+            cidr = ipaddress.ip_network(cidr)
+            str_cidr = str(cidr).replace('.', '-')#.network_address
+            str_cidr = str_cidr.replace('/', '-')
+            label_key = self.subnet_base_label_key + str_cidr
+            label_value = 'true'
+            found = False
+
+            pods = self.core_api.list_namespaced_pod(self.namespace)
+            for pod in pods.items:
+                pod_ip = pod.status.pod_ip
+                if pod_ip and ipaddress.ip_address(pod_ip) in cidr:
+                    if not found:
+                        found = True
+                    pod_labels = pod.metadata.labels or {}
+                    if pod_labels.get(label_key) != label_value:
+                        pod_labels[label_key] = label_value
+                        patch = {'metadata': {'labels': pod_labels}}
+                        self.core_api.patch_namespaced_pod(
+                            name=pod.metadata.name,
+                            namespace=self.namespace,
+                            body=patch
+                        )
+
+            if not found:
+                raise ValueError(StatusCode.BADREQUEST, f"No pod founded for ip address {cidr}")
+            
+            return { label_key: label_value }
         except Exception as e:
             raise e
         
@@ -310,11 +478,16 @@ class SLPFActuator_kubernetes(SLPFActuator):
             :return: `True` if the Kubernetes network policy matches the cidr, protocol and port for the specified direction. 
                     `False` otherwise.
         """
-        try: 
+        try:
+            if not policy and not cidr and not protocol and not port:
+                return True
+            elif not policy and (cidr or protocol or port):
+                return False
+            
             from_or_to = policy._from if direction == Direction.ingress else policy.to
             if (cidr and not from_or_to) or (not cidr and from_or_to):
                 return False
-            if cidr:
+            elif cidr and from_or_to:
                 if len(from_or_to) > 1:
                     return False
                 peer = from_or_to[0]
@@ -326,7 +499,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
             ports = policy.ports
             if (protocol and not ports) or (not protocol and ports):
                 return False
-            if protocol:
+            elif protocol and ports:
                 if len(ports) > 1:
                     return False
                 prt = ports[0]

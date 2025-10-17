@@ -4,79 +4,65 @@ items:
 - apiVersion: networking.k8s.io/v1
   kind: NetworkPolicy
   metadata:
-    name: network-policy-9j42x
+    name: slpf-np-9j42x
     namespace: my5gtestbed
   spec:
+    podSelector:
+      matchLabels:
+        oc2-net-10-17-1-25-32: "true"
     egress:
-    - ports:
-      - protocol: TCP
-    ingress:
-    - ports:
-      - protocol: TCP
+    - to:
+      - ipBlock:
+          cidr: 10.17.2.26/32
     podSelector: {}
     policyTypes:
-    - Ingress
     - Egress
   status: {}
 - apiVersion: networking.k8s.io/v1
   kind: NetworkPolicy
   metadata:
-    name: network-policy-fnnxh
+    name: slpf-np-jsjq6
     namespace: my5gtestbed
   spec:
-    egress:
-    - ports:
-      - protocol: TCP
+    podSelector:
+      matchLabels:
+        oc2-net-10-17-2-26-32: "true"
+    policyTypes:
+    - Ingress
+  status: {}
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: slpf-np-fnnxh
+    namespace: my5gtestbed
+  spec:
+    podSelector:
+      matchLabels:
+        oc2-net-10-17-2-26-32: "true"
     ingress:
     - from:
       - ipBlock:
-          cidr: 172.19.0.1/32
+          cidr: 10.17.1.25/32
       ports:
       - protocol: TCP
-    podSelector: {}
     policyTypes:
     - Ingress
-    - Egress
   status: {}
 - apiVersion: networking.k8s.io/v1
   kind: NetworkPolicy
   metadata:
-    name: network-policy-jbdw7
+    name: slpf-np-jbdw7
     namespace: my5gtestbed
   spec:
+    podSelector:
+      matchLabels:
+        oc2-net-10-17-2-26-32: "true"
     ingress:
     - from:
       - ipBlock:
-          cidr: 172.19.0.1/32
-    podSelector: {}
-    policyTypes:
-    - Ingress
-    - Egress
-  status: {}
-- apiVersion: networking.k8s.io/v1
-  kind: NetworkPolicy
-  metadata:
-    name: network-policy-jsjq6
-    namespace: my5gtestbed
-  spec:
-    egress:
-    - ports:
-      - protocol: TCP
-    podSelector: {}
-    policyTypes:
-    - Egress
-  status: {}
-- apiVersion: networking.k8s.io/v1
-  kind: NetworkPolicy
-  metadata:
-    name: network-policy-lbjsq
-    namespace: my5gtestbed
-  spec:
-    ingress:
-    - from:
-      - ipBlock:
-          cidr: 172.19.0.1/32
-    podSelector: {}
+          cidr: 10.17.1.25/32
+      ports:
+      - protocol: UDP
     policyTypes:
     - Ingress
   status: {}
