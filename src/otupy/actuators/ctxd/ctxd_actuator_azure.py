@@ -1,11 +1,16 @@
 import os
-from azure.identity import DefaultAzureCredential
+from azure.identity import ClientSecretCredential
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
-from azure.mgmt.resource import SubscriptionClient
+from azure.mgmt.resource import SubscriptionClient, ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.web import WebSiteManagementClient
+from azure.mgmt.keyvault import KeyVaultManagementClient
+from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+from azure.mgmt.containerservice import ContainerServiceClient
+from azure.mgmt.msi import ManagedServiceIdentityClient
+from azure.mgmt.communication import CommunicationServiceManagementClient
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.consumer import Consumer
@@ -19,22 +24,23 @@ from otupy.profiles.ctxd.data.transfer import Transfer
 from otupy.profiles.ctxd.data.service import Service
 from otupy.profiles.ctxd.data.link import Link
 from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
 from otupy.profiles.ctxd.data.name import Name
+from otupy.types.data.l4_protocol import L4Protocol
 from otupy import ArrayOf
 
-class CTXDActuator_azure(CTXDActuator):
-    """
-    Azure Context Discovery Actuator
-    Collects VMs, Load Balancers, NSGs, Firewalls, App Gateways, App Services, SQL, Storage.
-    """
+class CTXDActuatorAzure(CTXDActuator):
     def is_available(self):
         return True
-    def __init__(self, subscription_id=None, domain=None, asset_id=None, hostname=None,
-                 ip=None, port=443, protocol="TCP", endpoint=None, transfer="sync", encoding="json"):
 
+    def __init__(self, tenant_id, client_id, client_secret, subscription_id=None,
+                 domain=None, asset_id=None, hostname=None,
+                 ip=None, port=8080, protocol="TCP", endpoint=None,
+                 transfer="1", encoding="1"):
+
+        self.tenant_id = tenant_id
+        self.client_id = client_id
+        self.client_secret = client_secret
         self.subscription_id = subscription_id
-        self.domain = domain
         self.asset_id = asset_id
         self.hostname = hostname
         self.ip = ip
@@ -44,8 +50,8 @@ class CTXDActuator_azure(CTXDActuator):
         self.transfer = transfer
         self.encoding = encoding
 
-        # Azure credentials
-        self.credential = DefaultAzureCredential()
+        self.credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+
         if not self.subscription_id:
             self.subscription_id = self.get_default_subscription()
 
@@ -55,18 +61,21 @@ class CTXDActuator_azure(CTXDActuator):
         self.storage_client = StorageManagementClient(self.credential, self.subscription_id)
         self.sql_client = SqlManagementClient(self.credential, self.subscription_id)
         self.web_client = WebSiteManagementClient(self.credential, self.subscription_id)
+        self.kv_client = KeyVaultManagementClient(self.credential, self.subscription_id)
+        self.cr_client = ContainerRegistryManagementClient(self.credential, self.subscription_id)
+        self.aks_client = ContainerServiceClient(self.credential, self.subscription_id)
+        self.msi_client = ManagedServiceIdentityClient(self.credential, self.subscription_id)
+        self.comm_client = CommunicationServiceManagementClient(self.credential, self.subscription_id)
+        self.resource_client = ResourceManagementClient(self.credential, self.subscription_id)
 
-        # Discover resources and build services
         self.my_links = self.discover_resources()
         self.my_services = self.build_services()
 
     def get_default_subscription(self):
-        """Get default subscription from Azure"""
         sub_client = SubscriptionClient(self.credential)
         return next(sub_client.subscriptions.list()).subscription_id
 
     def create_consumer(self, resource_name):
-        """Create a Consumer object for a resource"""
         return Consumer(
             server=Server(Hostname(resource_name)),
             port=self.port,
@@ -77,7 +86,6 @@ class CTXDActuator_azure(CTXDActuator):
         )
 
     def add_link(self, links, resource_id, resource_name, role, link_type):
-        """Helper to append a Link with a Peer"""
         peer = Peer(
             service_name=Name(resource_name),
             role=PeerRole(role),
@@ -86,46 +94,50 @@ class CTXDActuator_azure(CTXDActuator):
         links.append(Link(name=Name(resource_id), link_type=LinkType(link_type), peers=ArrayOf(Peer)([peer])))
 
     def discover_resources(self):
-        """Discover Azure resources and create links"""
         links = ArrayOf(Link)()
 
-        # --- Virtual Machines ---
-        for vm in self.compute_client.virtual_machines.list_all():
-            os_name = vm.storage_profile.os_disk.os_type if vm.storage_profile.os_disk else "Unknown"
-            self.add_link(links, vm.id, vm.name, role=9, link_type=4)  # control link
+        discovery_map = [
+            (self.compute_client.virtual_machines.list_all, 9, 4),
+            (self.compute_client.virtual_machine_scale_sets.list, 9, 4),
+            (self.network_client.load_balancers.list_all, 4, 3),
+            (self.network_client.network_security_groups.list_all, 3, 5),
+            (self.network_client.application_gateways.list_all, 8, 3),
+            (self.network_client.azure_firewalls.list_all, 3, 5),
+            (self.network_client.virtual_networks.list_all, 5, 2),
+            (self.network_client.virtual_network_gateways.list, 5, 2),
+            (self.network_client.local_network_gateways.list, 5, 2),
+            (self.network_client.vpn_connections.list_by_vpn_gateway, 5, 2),
+            (self.network_client.private_endpoints.list_by_subscription, 5, 2),
+            (self.network_client.network_interfaces.list_all, 5, 2),
+            (self.network_client.network_watchers.list_all, 5, 2),
+            (self.network_client.private_dns_zone_groups.list, 5, 2),
+            (self.network_client.virtual_networks.list_all, 5, 2),
+            (self.storage_client.storage_accounts.list, 5, 2),
+            (self.web_client.web_apps.list, 6, 2),
+            (self.sql_client.servers.list, 7, 2),
+            (self.kv_client.vaults.list, 7, 2),
+            (self.cr_client.registries.list, 6, 2),
+            (self.aks_client.managed_clusters.list, 8, 3),
+            (self.msi_client.user_assigned_identities.list_by_subscription, 7, 2),
+            (self.comm_client.communication_services.list_by_subscription, 7, 2),
+            (self.comm_client.email_services.list_by_subscription, 7, 2),
+            (self.compute_client.disks.list, 5, 2)
+        ]
 
-        # --- Load Balancers ---
-        for lb in self.network_client.load_balancers.list_all():
-            self.add_link(links, lb.id, lb.name, role=4, link_type=3)  # packet_flow
+        for list_func, role, link_type in discovery_map:
+            try:
+                for resource in list_func():
+                    self.add_link(links, getattr(resource, "id", "unknown"), getattr(resource, "name", "unknown"), role, link_type)
+            except Exception:
+                continue
 
-        # --- Network Security Groups ---
-        for nsg in self.network_client.network_security_groups.list_all():
-            self.add_link(links, nsg.id, nsg.name, role=3, link_type=5)  # protect
-
-        # --- Firewalls ---
-        for fw in self.network_client.azure_firewalls.list_all():
-            self.add_link(links, fw.id, fw.name, role=3, link_type=5)  # protect
-
-        # --- Application Gateways ---
-        for app_gw in self.network_client.application_gateways.list_all():
-            self.add_link(links, app_gw.id, app_gw.name, role=8, link_type=3)  # packet_flow
-
-        # --- Storage Accounts ---
-        for sa in self.storage_client.storage_accounts.list():
-            self.add_link(links, sa.id, sa.name, role=5, link_type=2)  # hosting
-
-        # --- App Services ---
-        for site in self.web_client.web_apps.list():
-            self.add_link(links, site.id, site.name, role=6, link_type=2)  # hosting
-
-        # --- SQL Servers ---
-        for sql in self.sql_client.servers.list():
-            self.add_link(links, sql.id, sql.name, role=7, link_type=2)  # hosting
+#        print("=== Risorse visibili con questo Service Principal ===")
+ #       for link in links:
+  #          print(f"- {link.peers[0].service_name.obj} ({link.name.obj})")
 
         return links
 
     def build_services(self):
-        """Build the main Azure cloud service with discovered links"""
         cloud_service = Cloud(description="Azure Cloud", id=self.subscription_id, name="azure", type="cloud")
         azure_service = Service(
             name=Name("azure"),
@@ -141,5 +153,4 @@ class CTXDActuator_azure(CTXDActuator):
 
     @staticmethod
     def get_name_links(links):
-        """Return a list of names for discovered links"""
         return ArrayOf(Name)([link.name.obj for link in links])

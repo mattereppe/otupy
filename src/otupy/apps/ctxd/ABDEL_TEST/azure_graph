@@ -1,0 +1,18 @@
+digraph example_graph {
+	graph [rankdir=LR]
+	azure [label=Azure]
+	kubernetes [label=kubernetes fontcolor=black]
+	azure -> kubernetes [label=packet_flow color=black dir=both fontcolor=black]
+	"kubernetes-internal" [label="kubernetes-internal" fontcolor=black]
+	azure -> "kubernetes-internal" [label=packet_flow color=black dir=both fontcolor=black]
+	"mindicity-miranda" [label="mindicity-miranda" fontcolor=black]
+	azure -> "mindicity-miranda" [label=protect color=black dir=forward fontcolor=black]
+	"aks-agentpool-12831900-nsg" [label="aks-agentpool-12831900-nsg" fontcolor=black]
+	azure -> "aks-agentpool-12831900-nsg" [label=protect color=black dir=forward fontcolor=black]
+	"kube-apiserver" [label="kube-apiserver" fontcolor=black]
+	azure -> "kube-apiserver" [label=hosting color=black dir=forward fontcolor=black]
+	"kube-apiserver.nic.e2f15c63-f6fc-463f-adf9-8227031e304c" [label="kube-apiserver.nic.e2f15c63-f6fc-463f-adf9-8227031e304c" fontcolor=black]
+	azure -> "kube-apiserver.nic.e2f15c63-f6fc-463f-adf9-8227031e304c" [label=hosting color=black dir=forward fontcolor=black]
+	"kv-miranda-base" [label="kv-miranda-base" fontcolor=black]
+	azure -> "kv-miranda-base" [label=hosting color=black dir=forward fontcolor=black]
+}

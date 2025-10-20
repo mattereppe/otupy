@@ -5,3 +5,8 @@ azure-storage-blob
 azure-mgmt-compute
 azure-mgmt-network
 azure-mgmt-resourcegraph
+azure.mgmt.keyvault
+azure.mgmt.containerregistry
+azure.mgmt.containerservice
+azure.mgmt.msi
+azure.mgmt.communication

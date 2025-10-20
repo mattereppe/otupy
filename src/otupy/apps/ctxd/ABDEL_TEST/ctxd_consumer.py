@@ -6,7 +6,7 @@ from otupy.transfers.http import HTTPTransfer
 import otupy.profiles.ctxd as ctxd
 
 from otupy.actuators.ctxd.ctxd_actuator_proxmox import CTXDActuator_Proxmox
-from otupy.actuators.ctxd.ctxd_actuator_azure import CTXDActuator_azure
+from otupy.actuators.ctxd.ctxd_actuator_azure import CTXDActuatorAzure
 import os
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
@@ -24,6 +24,7 @@ def load_config(file_path):
 
 def create_actuator(conf, consumer_ip, consumer_port, consumer_endpoint):
     actuator_type = conf["type"].lower()
+
     common_args = dict(
         domain=None,
         asset_id=conf["asset_id"],
@@ -44,8 +45,25 @@ def create_actuator(conf, consumer_ip, consumer_port, consumer_endpoint):
             verify_ssl=conf.get("verify_ssl", False)
         )
     elif actuator_type == "azure":
-        return CTXDActuator_azure(
-            **common_args
+
+        json_path = os.path.abspath(conf.get("file_secrets"))
+
+        # Load JSON
+        with open(json_path, "r") as f:
+            secrets = json.load(f)
+
+        # Access secrets
+        tenant_id = secrets.get("tenant_id")
+        client_id = secrets.get("client_id")
+        client_secret = secrets.get("client_secret")
+        subscription_id = secrets.get("subscription_id")
+        return CTXDActuatorAzure(
+            **common_args,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_secret=client_secret,
+            subscription_id=subscription_id
+
         )
     else:
         raise ValueError(f"Unknown actuator type: {actuator_type}")
