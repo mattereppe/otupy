@@ -1,0 +1,9 @@
+#!/bin/bash
+# Run the simulation and got statistics
+
+# Run the simulation (change the number of trials)
+./controller-serialization-only.py > data.log
+
+
+# Collect statistics
+awk -F ":" -f encoding.awk data.log | awk -F ":" -f stat.awk > stat.txt
