@@ -1,18 +1,49 @@
 digraph example_graph {
 	graph [rankdir=LR]
-	azure [label=Azure]
-	kubernetes [label=kubernetes fontcolor=black]
-	azure -> kubernetes [label=packet_flow color=black dir=both fontcolor=black]
-	"kubernetes-internal" [label="kubernetes-internal" fontcolor=black]
-	azure -> "kubernetes-internal" [label=packet_flow color=black dir=both fontcolor=black]
-	"mindicity-miranda" [label="mindicity-miranda" fontcolor=black]
-	azure -> "mindicity-miranda" [label=protect color=black dir=forward fontcolor=black]
-	"aks-agentpool-12831900-nsg" [label="aks-agentpool-12831900-nsg" fontcolor=black]
-	azure -> "aks-agentpool-12831900-nsg" [label=protect color=black dir=forward fontcolor=black]
-	"kube-apiserver" [label="kube-apiserver" fontcolor=black]
-	azure -> "kube-apiserver" [label=hosting color=black dir=forward fontcolor=black]
-	"kube-apiserver.nic.e2f15c63-f6fc-463f-adf9-8227031e304c" [label="kube-apiserver.nic.e2f15c63-f6fc-463f-adf9-8227031e304c" fontcolor=black]
-	azure -> "kube-apiserver.nic.e2f15c63-f6fc-463f-adf9-8227031e304c" [label=hosting color=black dir=forward fontcolor=black]
-	"kv-miranda-base" [label="kv-miranda-base" fontcolor=black]
-	azure -> "kv-miranda-base" [label=hosting color=black dir=forward fontcolor=black]
+	azure [label=Azure color=blue fontcolor=blue shape=tripleoctagon]
+	subgraph "cluster_mc_miranda-prod-rg_miranda-prod-aks_westeurope" {
+		graph [color=lightgrey label="RG: mc_miranda-prod-rg_miranda-prod-aks_westeurope" style=filled]
+	}
+	azure -> kubernetes [label=hosting color=black dir=back fontcolor=black]
+	azure -> "kubernetes-internal" [label=hosting color=black dir=back fontcolor=black]
+	subgraph cluster_Kube_Infrastructure_RG {
+		graph [color=lightgrey label="RG: Kube_Infrastructure_RG" style=filled]
+	}
+	azure -> "mindicity-miranda-VPNgw" [label=hosting color=black dir=back fontcolor=black]
+	azure -> "FDCM_GW-mindicity-miranda" [label=hosting color=black dir=back fontcolor=black]
+	subgraph "cluster_MC_Miranda-prod-rg_miranda-prod-aks_westeurope" {
+		graph [color=lightgrey label="RG: MC_Miranda-prod-rg_miranda-prod-aks_westeurope" style=filled]
+	}
+	azure -> "kube-apiserver" [label=hosting color=black dir=back fontcolor=black]
+	subgraph cluster_NetworkWatcherRG {
+		graph [color=lightgrey label="RG: NetworkWatcherRG" style=filled]
+	}
+	azure -> NetworkWatcher_westeurope [label=hosting color=black dir=back fontcolor=black]
+	azure -> VN_Infra [label=hosting color=black dir=back fontcolor=black]
+	azure -> "kube-apiserver-nic-e2f15c63-f6fc-463f-adf9-8227031e304c" [label=hosting color=black dir=back fontcolor=black]
+	azure -> "mindicity-miranda" [label=protect color=black dir=back fontcolor=black]
+	azure -> "mindicity-miranda_Rule__P150_ALLOW_INBOUND_ANY_ANY" [label=protect color=black dir=back fontcolor=black]
+	AllowFromFD [label="AllowFromFD
+(Virtual Machine)" color=darkcyan fontcolor=black shape=box3d]
+	"mindicity-miranda" -> AllowFromFD [label=protect color=black dir=back fontcolor=black]
+	azure -> "mindicity-miranda" [label=hosting color=gray dir=forward fontcolor=gray]
+	azure -> AllowFromFD [label=hosting color=gray dir=forward fontcolor=gray]
+	azure -> "mindicity-miranda_Rule__P160_ALLOW_INBOUND_ANY_443" [label=protect color=black dir=back fontcolor=black]
+	AllowDash [label="AllowDash
+(Virtual Machine)" color=darkcyan fontcolor=black shape=box3d]
+	"mindicity-miranda" -> AllowDash [label=protect color=black dir=back fontcolor=black]
+	azure -> AllowDash [label=hosting color=gray dir=forward fontcolor=gray]
+	azure -> "aks-agentpool-12831900-nsg" [label=protect color=black dir=back fontcolor=black]
+	azure -> "aks-agentpool-12831900-nsg_Rule__P500_ALLOW_INBOUND_Tcp_None" [label=protect color=black dir=back fontcolor=black]
+	"k8s-azure-lb_allow_IPv4_bc87afc9aeeece13e643801ad1da615f" [label="k8s-azure-lb_allow_IPv4_bc87afc9aeeece13e643801ad1da615f
+(Azure Resource)" color=black fontcolor=black shape=box]
+	"aks-agentpool-12831900-nsg" -> "k8s-azure-lb_allow_IPv4_bc87afc9aeeece13e643801ad1da615f" [label=protect color=black dir=back fontcolor=black]
+	azure -> "aks-agentpool-12831900-nsg" [label=hosting color=gray dir=forward fontcolor=gray]
+	azure -> "k8s-azure-lb_allow_IPv4_bc87afc9aeeece13e643801ad1da615f" [label=hosting color=gray dir=forward fontcolor=gray]
+	"kube-apiserver" -> "kube-apiserver-nic-e2f15c63-f6fc-463f-adf9-8227031e304c" [label=attached_to color=blue dir=forward fontcolor=blue]
+	VN_Infra -> "kube-apiserver" [label=hosting color=teal dir=forward fontcolor=teal]
+	VN_Infra -> "kubernetes-internal" [label=hosting color=teal dir=forward fontcolor=teal]
+	VN_Infra -> "kube-apiserver-nic-e2f15c63-f6fc-463f-adf9-8227031e304c" [label=hosting color=teal dir=forward fontcolor=teal]
+	VN_Infra -> "mindicity-miranda-VPNgw" [label=hosting color=teal dir=forward fontcolor=teal]
+	"kube-apiserver" -> "kubernetes-internal" [label=packet_flow color=orange dir=both fontcolor=orange]
 }
