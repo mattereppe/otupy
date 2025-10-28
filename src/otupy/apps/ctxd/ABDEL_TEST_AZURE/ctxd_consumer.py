@@ -1,6 +1,8 @@
 import json
 import logging
 import otupy as oc2
+from otupy.actuators.ctxd.ctxd_actuator_docker import CTXDActuator_docker
+from otupy.actuators.ctxd.ctxd_actuator_kubernetes import CTXDActuator_kubernetes
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
 import otupy.profiles.ctxd as ctxd
@@ -65,6 +67,16 @@ def create_actuator(conf, consumer_ip, consumer_port, consumer_endpoint):
             subscription_id=subscription_id
 
         )
+    elif (actuator_type== "kubernetes"):
+                #CTXDActuator_kubernetes is able to find the connected VM, containers and namespaces to the kuberenetes cloud
+                return CTXDActuator_kubernetes(**common_args,
+                                                    namespace = conf['namespace'],
+                                                    config_file =  conf['config_file'],
+                                                        kube_context =  conf.get['kube_context'])
+            
+    elif(actuator_type== "docker"):
+        #CTXDActuator_docker is able to find the hosting VM and managed containers
+        return CTXDActuator_docker(**common_args)
     else:
         raise ValueError(f"Unknown actuator type: {actuator_type}")
 

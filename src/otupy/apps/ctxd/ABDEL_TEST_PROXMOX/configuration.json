@@ -1,0 +1,45 @@
+{
+    "clusters": [
+        {
+            "type": "proxmox",
+            "hostname": "kube0",
+            "ip": "127.0.0.1",
+            "port": 8080,
+            "protocol": 6,
+            "endpoint": "/.well-known/openc2",
+            "transfer": 1,
+            "encoding": 1,
+            "asset_id": "proxmox",
+            "file_secrets":"/home/abba/Desktop/secrets_proxmox.json"
+        },
+        {
+            "type": "kubernetes",
+            "hostname": "kube0",
+            "ip": "127.0.0.1",
+            "port": 8080,
+            "protocol": 6,
+            "endpoint": "/.well-known/openc2",
+            "transfer": 1,
+            "encoding": 1,
+            "asset_id": "kubernetes",
+            "namespace": [
+                ""
+            ],
+            "config_file": "/home/abba/.kube/config",
+            "kube_context": "kubernetes-admin@kubernetes"
+        }
+    ],
+    "consumer": {
+        "ip": "127.0.0.1",
+        "port": 8080,
+        "endpoint": "/.well-known/openc2"
+    },
+    "mongodb":{
+        "username": "",
+        "password": "",
+        "ip": "127.0.0.1",
+        "port": 27017,
+        "database_name": "my_cluster_db",
+        "collection_name": "my_collection"
+    }
+}
