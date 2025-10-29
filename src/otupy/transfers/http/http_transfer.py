@@ -80,9 +80,15 @@ class HTTPTransfer(oc2.Transfer):
 		# HTTP processing to extract the headers
 		# and the transport body
 		if encoder.is_binary:
+			logger.debug("Encoder is binary", str(data))
 			data_text = data.decode('utf-8') #binary data (cbor)
 		else:
-			data_text = data # text data 
+			logger.debug("Encoder is non-binary", str(data))
+            if isinstance(data, bytes): # TODO: this is probably the correct way of doing it... why to rely on a possibly out-of-date property when you can just test the variable
+				data_text = data.decode()
+			else:
+				data_text = data # text data 
+        logger.debug("Decoded data - data_text", data_text)
 		msg = encoder.decode(data_text, Message).get()
 		msg.content_type = hdr['Content-type'].removeprefix('application/').split('+')[0]
 		msg.version = oc2.Version.fromstr(hdr['Content-type'].split(';')[1].removeprefix("version="))
