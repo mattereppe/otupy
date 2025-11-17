@@ -66,7 +66,7 @@ To use the authentication module, the ``Producer`` must be instantiated with an 
        # Configuration for the OAuth2 client (Producer)
        oauth2_config = {
            'client_id': 'my-producer-client-id',
-           'client_secret': 'my-super-secret-key',
+           'client_secret': 'secret-key',
            'redirect_uri': 'http://127.0.0.1:8000/callback',
            'callback_port': 8000
        }

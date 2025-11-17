@@ -92,25 +92,18 @@ The Consumer is configured to use the ``OAuth2Authorizer`` with the specified mo
 
    def main():
        """Create and run a secure OpenC2 Consumer with authorization."""
-       # Configuration for the Authorizer, including Casbin files
-       auth_config = {
-           'as_url': 'http://127.0.0.1:5000',
-           'ua_url': 'http://127.0.0.1:5001',
-           'model': 'path/to/your/model.conf',
-           'policy': 'path/to/your/policy.csv'
-       }
-       authorizer = OAuth2Authorizer(**auth_config)
+       authorizer = OAuth2Authorizer(client_id="Consumer",
+                                  client_secret="secret",
+                                  introspection_url="http://127.0.0.1:8080/introspect", #introspect url
+                                  ua_url='http://127.0.0.1:7000')
 
        # Instantiate the Consumer with the authorizer
-       consumer = Consumer(
-           actuators={'slpf': MyFirewallActuator()},
-           authorizer=authorizer
-       )
+       consumer=Consumer(consumer="testconsumer",
+                      actuators=actuators,
+                      encoder=JSONEncoder(),
+                      transfer=HTTPTransfer("127.0.0.1", 9000),
+                      authorizer=authorizer)
 
-       # The transfer layer will automatically use the authorizer
-       # to check authentication and authorization for every request.
-       http_server = HTTPTransfer("127.0.0.1", 9000)
-       print("Starting secure consumer...")
        http_server.start(consumer)
 
    if __name__ == "__main__":
