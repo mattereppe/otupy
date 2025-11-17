@@ -1,6 +1,6 @@
 {
   "action": "allow",
   "target": {
-    "ipv4_net": "130.0.16.0"
+    "ipv4_net": "130.0.16.0/20"
   }
 }

@@ -1,7 +1,7 @@
 #!../../../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
-
+import time
 import logging
 import sys
 import os
@@ -14,6 +14,10 @@ import otupy.profiles.slpf as slpf
 
 
 
+dirname = os.path.dirname(__file__)
+command_path = os.path.join(dirname,"../openc2-commands")
+
+
 logger = logging.getLogger()
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
 logger.setLevel(logging.INFO)
@@ -23,7 +27,6 @@ file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(oc2.LogFormatter(datetime=True, name=True, datefmt='%t'))
 logger.addHandler(file_handler)
 
-command_path = "/Users/nicolapoidomani/Desktop/otupy/validation/otupy/oauth2/openc2-commands"
 NUM_TESTS = 100
 
 
@@ -57,15 +60,29 @@ def main():
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 9000), authenticator=oauth2authenticator)
 
     cmd_list = load_json(command_path)
-    for i in range(1, NUM_TESTS + 1):
-        print("Running test #", i)
-        for c in cmd_list:
-            cmd = oc2.Encoder.decode(oc2.Command, c)
-            command = oc2.Command(cmd.action, cmd.target, args, actuator=actuator_profile)
+    # for i in range(1,2):
+    #     print("Running test #", i)
+    #     for c in cmd_list:
+    #         cmd = oc2.Encoder.decode(oc2.Command, c)
+    #         command = oc2.Command(cmd.action, cmd.target, args, actuator=actuator_profile)
+    #
+    #         logger.info("Sending command: %s", command)
+    #         resp = p.sendcmd(command)
+    #         logger.info("Got response: %s", resp)
 
-            logger.info("Sending command: %s", command)
-            resp = p.sendcmd(command)
-            logger.info("Got response: %s", resp)
+
+    cmd= oc2.Encoder.decode(oc2.Command,cmd_list[0])
+    command = oc2.Command(cmd.action, cmd.target, args, actuator=actuator_profile)
+    logger.info("Sending command: %s", command)
+    resp = p.sendcmd(command)
+    logger.info("Got response: %s", resp)
+
+    input('waiting...')
+    cmd = oc2.Encoder.decode(oc2.Command, cmd_list[2])
+    command = oc2.Command(cmd.action, cmd.target, args, actuator=actuator_profile)
+    logger.info("Sending command: %s", command)
+    resp = p.sendcmd(command)
+    logger.info("Got response: %s", resp)
 
 
 if __name__ == '__main__':

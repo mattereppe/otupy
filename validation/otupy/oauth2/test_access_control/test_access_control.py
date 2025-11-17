@@ -15,7 +15,9 @@ file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(oc2.LogFormatter(datetime=True, name=True, datefmt='%t'))
 logger.addHandler(file_handler)
 
-command_path = "/Users/nicolapoidomani/Desktop/otupy/validation/otupy/oauth2/openc2-commands"
+
+dirname = os.path.dirname(__file__)
+command_path = os.path.join(dirname,"../openc2-commands")
 NUM_TESTS = 100
 
 # Test results tracking
