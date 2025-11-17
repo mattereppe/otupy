@@ -514,7 +514,6 @@ class SLPFActuator_iptables(SLPFActuator):
         
     def execute_update_command(self, name, path):
         try:             
-            abs_path = os.path.join(path, name)
             ext = os.path.splitext(name)[1]
 
             if ext == '.v4':
@@ -522,7 +521,7 @@ class SLPFActuator_iptables(SLPFActuator):
             elif ext == '.v6':
                 destination = os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename)
 
-            with open(abs_path, "r") as src, open(destination, "w") as dst:
+            with open(path, "r") as src, open(destination, "w") as dst:
                 dst.write(src.read())
 
             self.restore_persistent_commands()

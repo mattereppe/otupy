@@ -72,7 +72,7 @@ def main():
                       db_name = element['db_name'],
                       db_commands_table_name = element['db_commands_table_name'],
                       db_jobs_table_name = element['db_jobs_table_name'],
-                      file_environment_variables = element['file_environment_variables'],
+                      environment_variables_file = element['file_environment_variables'],
                       project_name = element['project_name'],
                       security_group_base_name = element['security_group_base_name'],
                       security_group_base_description = element['security_group_base_description']
@@ -106,8 +106,7 @@ def main():
                       db_jobs_table_name = element['db_jobs_table_name'],
                       authentication_file = element['authentication_file'],
                       resource_group_name = element['resource_group_name'],
-                      network_security_group_name = element['network_security_group_name'],
-                      max_num_security_rules=element['max_num_security_rules']
+                      network_security_group_name = element['network_security_group_name']
                 )
             else:
                 raise Exception("SLPF Actuator type not known")

@@ -26,14 +26,14 @@ class SLPFActuator_azure(SLPFActuator):
         This class provides an implementation of the `SLPF Actuator` using MS Azure.
     """
 
-    def __init__(self, authentication_file, resource_group_name, network_security_group_name, max_num_security_rules, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
+    def __init__(self, authentication_file, resource_group_name=None, network_security_group_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
         try:
             self.authentication_file = authentication_file
         #   Resource group name
-            self.resource_group_name = resource_group_name
+            self.resource_group_name = resource_group_name if resource_group_name else "slpf_rg"
         #   Network Security Group name
-            self.network_security_group_name = network_security_group_name
-            self.max_num_security_rules = max_num_security_rules
+            self.network_security_group_name = network_security_group_name if network_security_group_name else "slpf_nsg"
+            self.max_num_security_rules = 1000
 
             self.OPENC2VERS=Version(1,0)
 
@@ -135,14 +135,10 @@ class SLPFActuator_azure(SLPFActuator):
                     if target.protocol and target.protocol != L4Protocol.tcp and target.protocol != L4Protocol.udp and target.protocol != L4Protocol.icmp:
                         raise ValueError(StatusCode.NOTIMPLEMENTED, "Provided protocol not implemented for MS Azure.")
                 if action == Actions.deny and 'drop_process' in args:
-                    raise ValueError(StatusCode.NOTIMPLEMENTED, "Drop process argument not implemented for MS Azure.")
-                
-                security_rules = self.crea_lista()
+                    raise ValueError(StatusCode.NOTIMPLEMENTED, "Drop process argument not implemented for MS Azure.")    
             #    security_rules = self.network_client.security_rules.list(self.resource_group, self.nsg_name)
-                if len(security_rules) == self.max_num_security_rules:
-                    raise ValueError(StatusCode.INTERNALERROR, "Maximum number of security rule inserted.")
-            #    if self.azure_find_security_rule(action, target, args['direction'], security_rules):
-            #        raise ValueError(StatusCode.BADREQUEST, "Security rule already exists.")
+            #    if len(security_rules) == self.max_num_security_rules:
+            #        raise ValueError(StatusCode.INTERNALERROR, "Maximum number of security rule inserted.")
             elif action == Actions.update:
                 raise ValueError(StatusCode.NOTIMPLEMENTED, "Update action not implemented for MS Azure.")
         except ValueError as e:
@@ -182,30 +178,25 @@ class SLPFActuator_azure(SLPFActuator):
                 target=target,
                 direction=direction
             )
-            security_rule.name = None #self.azure_generate_unique_rule_name()
+            security_rule.name = self.azure_generate_unique_rule_name()
             security_rule.priority = self.azure_get_priority(security_rule)
 
             print("INSERTING RULE ", security_rule.priority)
-
-        #    self.network_client.security_rules.begin_create_or_update(
-        #        resource_group_name=self.resource_group,
-        #        network_security_group_name=self.nsg_name,
-        #        security_rule_name=security_rule.name,
-        #        security_rule_parameters=security_rule
-        #    ).result()
+            self.network_client.security_rules.begin_create_or_update(
+                resource_group_name=self.resource_group,
+                network_security_group_name=self.nsg_name,
+                security_rule_name=security_rule.name,
+                security_rule_parameters=security_rule
+            ).result()
         except Exception as e:
             raise e
         
 
     def execute_delete_command(self, command_to_delete):
         try:
-        #    security_rules = self.network_client.security_rules.list(resource_group_name=self.resource_group, network_security_group_name=self.nsg_name)
-            security_rules = self.crea_lista()
-
             self.azure_direction_handler(
                 func=self.azure_delete_security_rule,
                 direction=command_to_delete.args['direction'],
-                security_rules=security_rules,
                 action=command_to_delete.action,
                 target=command_to_delete.target.getObj()
             )
@@ -213,7 +204,7 @@ class SLPFActuator_azure(SLPFActuator):
             raise e
         
 
-    def azure_delete_security_rule(self, security_rules, action, target, direction):
+    def azure_delete_security_rule(self, action, target, direction):
         try:
             security_rule = self.azure_from_openc2(
                 action=action,
@@ -221,6 +212,7 @@ class SLPFActuator_azure(SLPFActuator):
                 direction=direction
             )
 
+            security_rules = self.network_client.security_rules.list(resource_group_name=self.resource_group, network_security_group_name=self.nsg_name)
             security_rules = [ rule for rule in security_rules if rule.direction and rule.direction.lower() == security_rule.direction.lower() ]
             security_rules = sorted(security_rules, key=lambda sr: sr.priority if sr.priority else 9999)
             print("DELETING RULE ", security_rule)
@@ -229,11 +221,11 @@ class SLPFActuator_azure(SLPFActuator):
             
             if security_rule:
                 logger.info("[AZURE] Deleting Azure security rule " + security_rule.name)
-        #        self.network_client.security_rules.begin_delete(
-        #            resource_group_name=self.resource_group,
-        #            network_security_group_name=self.nsg_name,
-        #            security_rule_name=security_rule.name
-        #        ).result()
+                self.network_client.security_rules.begin_delete(
+                    resource_group_name=self.resource_group,
+                    network_security_group_name=self.nsg_name,
+                    security_rule_name=security_rule.name
+                ).result()
             else:
                 raise ValueError("[AZURE] Security rule not found.")
             
@@ -333,11 +325,10 @@ class SLPFActuator_azure(SLPFActuator):
             if address_priority > 2:
                 base_priority -= 400
 
-            security_rules = self.crea_lista()
-        #    security_rules = self.network_client.security_rules.list(
-        #        resource_group_name=self.resource_group,
-        #        network_security_group_name=self.nsg_name
-        #    )
+            security_rules = self.network_client.security_rules.list(
+                resource_group_name=self.resource_group,
+                network_security_group_name=self.nsg_name
+            )
         #   Filtro per direzione giusta (direzioni diverse possono avere la stessa priorità)
             security_rules = [ rule for rule in security_rules if rule.direction and rule.direction.lower() == security_rule.direction.lower() ]
             security_rules = sorted(security_rules, key=lambda sr: sr.priority if sr.priority else 9999)
@@ -393,10 +384,10 @@ class SLPFActuator_azure(SLPFActuator):
                     for rule in rules:
                         print("RULE: ", rule.priority)
                         print("SPOSTO REGOLA DI 100")
-                    #    self.azure_update_priority(
-                    #        security_rule=rule,
-                    #        new_priority= rule.priority + 100
-                    #    )
+                        self.azure_update_priority(
+                            security_rule=rule,
+                            new_priority= rule.priority + 100
+                        )
             
                 if address_priority != 2:
                     return last_of_this_group.priority + 1
@@ -432,10 +423,10 @@ class SLPFActuator_azure(SLPFActuator):
                             print("RULE: ", rule.priority)
                             last_priority = rule.priority
                             print("SPOSTO REGOLA DI ", mov)
-                        #    self.azure_update_priority(
-                        #        security_rule=rule,
-                        #        new_priority=rule.priority + mov
-                        #    )
+                            self.azure_update_priority(
+                                security_rule=rule,
+                                new_priority=rule.priority + mov
+                            )
                         else:
                             return rule.priority + mov
                     return last_priority                                        

@@ -530,9 +530,8 @@ class SLPFActuator_kubernetes(SLPFActuator):
         try:
             self.clean_actuator_rules()
 
-            abs_path = os.path.join(path, name)
             utils.create_from_yaml(k8s_client=self.api_client,
-                                   yaml_file=abs_path,
+                                   yaml_file=path,
                                    namespace=self.namespace)
         except Exception as e:
             raise e
