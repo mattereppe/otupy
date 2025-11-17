@@ -20,18 +20,18 @@ class SLPFActuator_openstack(SLPFActuator):
         This class provides an implementation of the `SLPF Actuator` using OpenStack.
     """
 
-    def __init__(self, file_environment_variables, project_name, security_group_base_name=None, security_group_base_description=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
+    def __init__(self, environment_variables_file, project_name, security_group_base_name=None, security_group_base_description=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
         """ Initialization of the `OpenStack-based` SLPF Actuator.
 
             This method connects to OpenStack and initializes the `SLPF Actuator`.
 
             :param file_environment_variables: Absolute path of the file containing environment variables for connecting to OpenStack.
             :type file_environment_variables: str
-            :param security_group_id: Id of the OpenStack security group to manage.
-            :type security_group_id: str
-            :param security_group_name: Name of the OpenStack security group to manage.
+            :param project_name: Name of the OpenStack project to manage.
+            :type project_name: str
+            :param security_group_base_name: Base name of each OpenStack security created.
             :type security_group_name: str
-            :param security_group_description: Description of the OpenStack security group to manage.
+            :param security_group_description: Base description of each OpenStack security created.
             :type security_group_description: str
             :param hostname: SLPF Actuator hostname.
             :type hostname: str
@@ -52,9 +52,9 @@ class SLPFActuator_openstack(SLPFActuator):
         """
         try:
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-                if not file_environment_variables:
+                if not environment_variables_file:
                     raise ValueError("Absolute path of evironment variables file must be provided.")
-                self.file_environment_variables = file_environment_variables
+                self.environment_variables_file = environment_variables_file
                 if not project_name:
                     raise ValueError("Project id must be provided.")
                 self.project_name = project_name
@@ -97,8 +97,8 @@ class SLPFActuator_openstack(SLPFActuator):
         """
         try:
         #   Load enviroment variables into linux OS to connect to openstack
-            if(self.file_environment_variables is not None): #if it is none, it will use the enviroment variables already present in the system
-                with open(self.file_environment_variables, 'r') as f:
+            if(self.environment_variables_file is not None): #if it is none, it will use the enviroment variables already present in the system
+                with open(self.environment_variables_file, 'r') as f:
                     for line in f:
                         line = line.strip()
                         if line.startswith('export '):  # Only process lines starting with 'export'

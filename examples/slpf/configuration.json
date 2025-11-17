@@ -40,10 +40,7 @@
             "file_environment_variables": "/home/kali/Scrivania/matteo-astrid.rc",
             "project_name": "astrid",
             "security_group_base_name": "OC2_SG_",
-            "security_group_base_description": "SLPF Actuator security group",
-            "security_group_id": "9d2b8ab0-2626-4007-8253-0111cf608e9e",
-            "security_group_name": "slpf-sg",
-            "security_group_description": "SLPF Actuator security group"
+            "security_group_base_description": "SLPF Actuator security group"
         },
         {
             "type": "kubernetes",
@@ -81,8 +78,7 @@
             "db_jobs_table_name": "azure_jobs",
             "authentication_file": "",
             "resource_group_name": "slpf_rg",
-            "network_security_group_name": "slpf_nsg",
-            "max_num_security_rules": 1000
+            "network_security_group_name": "slpf_nsg"
         }
     ],
     "consumer": {

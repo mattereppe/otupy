@@ -41,9 +41,9 @@ def main():
 #    pf.fieldtypes['asset_id'] = parameters['asset_id']  # I have to repeat a second time to have no bugs
 
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
-    pf = slpf.Specifiers({'asset_id': 'iptables'})
+#    pf = slpf.Specifiers({'asset_id': 'iptables'})
 #    pf = slpf.Specifiers({'asset_id': 'openstack'})
-#    pf = slpf.Specifiers({'asset_id': 'kubernetes'})
+    pf = slpf.Specifiers({'asset_id': 'kubernetes'})
 #    pf = slpf.Specifiers({'asset_id': 'azure'})
 
     # Args
@@ -102,12 +102,14 @@ def main():
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv6Net("2001:0db8:85a3::/48"), arg, actuator=pf)
 
     # (allow IPv4Connection)
-    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("10.0.2.6")), arg, actuator=pf)  # iptables
+#    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("10.0.2.6")), arg, actuator=pf)  # iptables
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("192.168.0.222")), arg, actuator=pf)  # OpenStack
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("192.168.0.222"), dst_addr=oc2.IPv4Net("192.168.0.202")), arg, actuator=pf)  # OpenStack
+#    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("192.168.0.201"), dst_addr=oc2.IPv4Net("192.168.0.202"), protocol=oc2.L4Protocol.tcp, src_port=80), arg, actuator=pf)  # OpenStack
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(dst_addr=oc2.IPv4Net("10.17.2.26")), arg, actuator=pf)  # Kubernetes
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("10.17.2.28"), dst_addr=oc2.IPv4Net("10.17.2.26")), arg, actuator=pf)  # Kubernetes
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("10.17.2.26"), dst_addr=oc2.IPv4Net("10.17.1.25"), protocol=oc2.L4Protocol.sctp), arg, actuator=pf)  # Kubernetes
+#    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("10.17.1.62"), dst_addr=oc2.IPv4Net("10.17.2.44"), protocol=oc2.L4Protocol.tcp, src_port=80), arg, actuator=pf)  # Kubernetes
 
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(src_addr=oc2.IPv4Net("172.19.0.1")), arg, actuator=pf)
 #    cmd = oc2.Command(oc2.Actions.allow, oc2.IPv4Connection(protocol=oc2.L4Protocol.udp), arg, actuator=pf)
@@ -169,7 +171,7 @@ def main():
 
     # (Delete)
 
-#    cmd = oc2.Command(oc2.Actions.delete, slpf.RuleID(1), arg, actuator=pf)
+    cmd = oc2.Command(oc2.Actions.delete, slpf.RuleID(1), arg, actuator=pf)
 
 #   ----------------------------------------------------------
 

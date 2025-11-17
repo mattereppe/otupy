@@ -689,8 +689,8 @@ class SLPFActuator:
             
             if 'path' in target and type(target['path']) != str: 
                 raise TypeError("Invalid update argument type")
-            path = target['path'] if 'path' in target else self.update_directory_path
-            abs_path = os.path.join(path, target['name'])
+            path = target['path'] if 'path' in target else None
+            abs_path = os.path.join(self.update_directory_path, target['name']) if not 'path' in target else target['path']
             if not os.path.exists(abs_path):
                 raise ValueError(StatusCode.INTERNALERROR, "Cannot access file")
 
