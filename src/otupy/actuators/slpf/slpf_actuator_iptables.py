@@ -6,7 +6,7 @@ import ipaddress
 
 from otupy.actuators.slpf.slpf_actuator import SLPFActuator
 
-from otupy import Version, Actions, IPv4Net, IPv4Connection , IPv6Net, IPv6Connection, L4Protocol, Binaryx, StatusCode
+from otupy import Actions, IPv4Net, IPv4Connection , IPv6Net, IPv6Connection, StatusCode
 from otupy.profiles.slpf.args import Direction
 from otupy.profiles.slpf.data import DropProcess
 
@@ -15,21 +15,21 @@ logger = logging.getLogger(__name__)
 class SLPFActuator_iptables(SLPFActuator):
     """ `iptables-based` SLPF Actuator implementation.
 
-        This class provides an implementation of the `SLPF Actuator` using iptables.
+        This class provides an implementation of the SLPFActuator using `iptables`.
     """
 
     def __init__(self, iptables_rules_directory_path=None, iptables_rules_v4_filename=None, iptables_rules_v6_filename=None, iptables_input_chain_name=None, iptables_output_chain_name=None, iptables_forward_chain_name=None, iptables_cmd=None, ip6tables_cmd=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
         """ Initialization of the `iptables-based` SLPF Actuator.
 
-            This method creates `personalized iptables chain`, 
-            creates two `file` to store iptables v4 and v6 persistent rules, respectively, 
-            finally initializes the `SLPF Actuator`.
+            This method creates `custom iptables chain` to manage OpenC2 Commands, 
+            creates two `file` to store iptables v4 and v6 persistent rules, respectively 
+            and initializes the `SLPF Actuator Manager`.
 
-            :param iptables_rules_directory_path: Path to the directory containing the files where iptables rules v4/v6 are stored.
+            :param iptables_rules_directory_path: Path to the directory containing the files where iptables rules v4/v6 will be stored.
             :type iptables_rules_directory_path: str
-            :param iptables_rules_v4_filename: Name of the file where iptables rules v4 are stored.
+            :param iptables_rules_v4_filename: Name of the file where iptables rules v4 will be stored.
             :type iptables_rules_v4_filename: str
-            :param iptables_rules_v6_filename: Name of the file where iptables rules v6 are stored.
+            :param iptables_rules_v6_filename: Name of the file where iptables rules v6 will be stored.
             :type iptables_rules_v6_filename: str
             :param iptables_input_chain_name: Name of the custom iptables input chain.
             :type iptables_input_chain_name: str
@@ -53,11 +53,11 @@ class SLPFActuator_iptables(SLPFActuator):
             :type db_directory_path: str
             :param db_name: sqlite3 database name.
             :type db_name: str
-            :param db_commands_table_name: Name of the `commands` table in the sqlite3 database.
+            :param db_commands_table_name: Name of the `OpenC2 Commands` table in the sqlite3 database.
             :type db_commands_table_name: str
             :param db_jobs_table_name: Name of the `APScheduler jobs` table in the sqlite3 database.
             :type db_jobs_table_name: str
-            :param update_directory_path: Path to the directory containing files to be used as update.
+            :param update_directory_path: Path to the default directory containing files to be used as update.
             :type update_directory_path: str
         """
 
@@ -136,11 +136,11 @@ class SLPFActuator_iptables(SLPFActuator):
                     logger.info("[IPTABLES] Creating file %s", self.iptables_rules_v6_filename)
                     with open(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename), "w") as file:
                         file.write("")
-
-            #   Initializing SLPF Actuator
+                
+            #   Initializing SLPF Actuator Manager
                 super().__init__(hostname=hostname,
                                  named_group=named_group,
-                                 asset_id=asset_id,
+                                 asset_id=asset_id if asset_id else 'iptables',
                                  asset_tuple=asset_tuple,
                                  db_directory_path=db_directory_path,
                                  db_name=db_name,
@@ -160,7 +160,9 @@ class SLPFActuator_iptables(SLPFActuator):
             :type chain_name: str
 
             :return: `True` if the custom iptables v4/v6 chain already exists, `False` otherwise.
+            :rtype: bool
         """
+
         try:
             self.iptables_execute_command(base_cmd + " -L " + chain_name)
             return True
@@ -169,6 +171,19 @@ class SLPFActuator_iptables(SLPFActuator):
     
     
     def iptables_find_link(self, base_cmd, chain_name, personalized_chain_name):
+        """ This method checks if a custom iptables v4/v6 chain is linked to its corresponding main chain.
+
+            :param base_cmd: Base command for iptables v4/v6.
+            :type base_cmd: str
+            :param chain_name: Name of the main iptables v4/v6 chain.
+            :type chain_name: str
+            :param personalized_chain_name: Name of the custom iptables v4/v6 chain.
+            :type personalized_chain_name: str
+
+            :return: `True` if the custom iptables v4/v6 chain is linked to its corresponding main chain, `False` otherwise.
+            :rtype: bool
+        """
+
         try:
             cmd = base_cmd.strip().split()
             cmd.append("-S")
@@ -239,12 +254,13 @@ class SLPFActuator_iptables(SLPFActuator):
 
         
     def iptables_direction_handler(self, **kwargs):
-        """ This method handles the direction of an OpenC2 `allow`, `deny` or `delete` command and 
+        """ This method handles the direction of OpenC2 `allow`, `deny` or `delete` commands and 
             the iptables `forward chain`.
 
             :param kwargs: A dictionary of arguments for the execution of the OpenC2 `allow`, `deny` or `delete` command.
             :type kwargs: dict
         """
+
         try:
             self.iptables_execution_handler(**kwargs, forward=True)
             if kwargs['direction'] == Direction.both:
@@ -256,13 +272,14 @@ class SLPFActuator_iptables(SLPFActuator):
             raise e
 
     def iptables_execution_handler(self, **kwargs):
-        """ This method handles the execution of an OpenC2 `allow`, `deny` or `delete` command for `iptables`.
+        """ This method handles the execution of OpenC2 `allow`, `deny` or `delete` actions for `iptables`.
 
-            Creates the desired iptables command and executes it.
+            It creates the desired iptables command and executes it.
 
             :param kwargs: A dictionary of arguments for the execution of the OpenC2 `allow`, `deny` or `delete` command.
             :type kwargs: dict
         """
+
         try:
             cmd = self.iptables_create_command(**kwargs)
             self.iptables_execute_command(cmd)
@@ -286,13 +303,15 @@ class SLPFActuator_iptables(SLPFActuator):
                                 `reject` drop the packet and send an ICMP host unreachable (or equivalent) to the source of the packet,
                                 `false_ack` drop the packet and send a false acknowledgment.
             :type drop_process: DropProcess
-            :param action_to_delete: The action of the OpenC2 `Command` to delete.
+            :param action_to_delete: The action of the OpenC2 `Command` to delete (in case of delete command).
             :type action_to_delete: Actions
             :param forward: A flag that specifies if the rule has to be inserted in the iptables forward chain.
             :type forward: bool
 
             :return: The created `iptables command`.
+            :rtype: str
         """
+
         try:
             if type(target) == IPv4Connection or type(target) == IPv4Net:
                 cmd = self.iptables_cmd + " "
@@ -346,18 +365,9 @@ class SLPFActuator_iptables(SLPFActuator):
         
 
     def iptables_get_rule_position(self, target, direction, forward):
-        """ This method returns the position where the new rule should be inserted in the considered chain.
+        """ This method returns the position where the new rule should be inserted in the considered iptables custom chain.
 
-            Compare the specifity of the new rule to be inserted with the specifity of the rules already present.
-
-            Specifity order (from lower to higher):
-            - destination address,
-            - source address,
-            - protocol,
-            - destination port,
-            - source port.
-
-            Networks are always placed at the bottom in size order.
+            It compares the specifity of the new rule to be inserted with the specifity of the rules already present.
 
             :param target: Command target.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
@@ -366,8 +376,10 @@ class SLPFActuator_iptables(SLPFActuator):
             :param forward: A flag that specifies if the rule has to be inserted in the iptables forward chain.
             :type forward: bool
 
-            :return: The `position` found.
+            :return: The `position` of the new iptables rule.
+            :rtype: str
         """
+
         try:
             target_cidr = None
 
@@ -535,6 +547,7 @@ class SLPFActuator_iptables(SLPFActuator):
             :param cmd: The iptables v4/v6 command to be executed.
             :type cmd: str
         """
+
         try:
             subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:

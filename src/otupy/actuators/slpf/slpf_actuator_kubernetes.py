@@ -1,7 +1,6 @@
 import logging
 import os
 import ipaddress
-import subprocess
 
 from kubernetes import config, client, utils
 from kubernetes.client.rest import ApiException
@@ -17,13 +16,13 @@ logger = logging.getLogger(__name__)
 class SLPFActuator_kubernetes(SLPFActuator):
     """ `Kubernetes-based` SLPF Actuator implementation.
 
-        This class provides an implementation of the `SLPF Actuator` using Kubernetes.
+        This class provides an implementation of the SLPFActuator using `Kubernetes`.
     """
 
     def __init__(self, config_file=None, kube_context=None, namespace=None, subnet_base_label_key=None, generate_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
         """ Initialization of the `Kubernetes-based` SLPF Actuator.
 
-            This method connects to Kubernetes and initializes the `SLPF Actuator`.
+            This method connects to Kubernetes and initializes the `SLPF Actuator Manager`.
 
             :param config_file: Absolute path to the Kubernetes configuration file.
             :type config_file: str
@@ -31,6 +30,8 @@ class SLPFActuator_kubernetes(SLPFActuator):
             :type kube_context: str
             :param namespace: Name of the Kubernetes namespace.
             :type namespace: str
+            :param subnet_base_label_key: Prefix used to generate Kubernetes labels, which are associated with pods and network policies.
+            :type subnet_base_label_key: str
             :param generate_name: Prefix used by Kubernetes to generate a unique name for network policies.
             :type generate_name: str
             :param hostname: SLPF Actuator hostname.
@@ -45,13 +46,14 @@ class SLPFActuator_kubernetes(SLPFActuator):
             :type db_directory_path: str
             :param db_name: sqlite3 database name.
             :type db_name: str
-            :param db_commands_table_name: Name of the `commands` table in the sqlite3 database.
+            :param db_commands_table_name: Name of the `OpenC2 Commands` table in the sqlite3 database.
             :type db_commands_table_name: str
             :param db_jobs_table_name: Name of the `APScheduler jobs` table in the sqlite3 database.
             :type db_jobs_table_name: str
-            :param update_directory_path: Path to the directory containing files to be used as update.
+            :param update_directory_path: Path to the default directory containing files to be used as update.
             :type update_directory_path: str
         """
+        
         try:
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
                 self.config_file = config_file if config_file else None
@@ -70,10 +72,10 @@ class SLPFActuator_kubernetes(SLPFActuator):
 
             #   Connecting to Kubernetes
                 self.connect_to_kubernetes()
-            #   Initializing SLPF Actuator
+            #   Initializing SLPF Actuator Manager
                 super().__init__(hostname=hostname,
                                  named_group=named_group,
-                                 asset_id=asset_id,
+                                 asset_id=asset_id if asset_id else 'kubernetes',
                                  asset_tuple=asset_tuple,
                                  db_directory_path=db_directory_path,
                                  db_name=db_name,
@@ -89,8 +91,9 @@ class SLPFActuator_kubernetes(SLPFActuator):
         """ Kubernetes connection.
         
             This method loads the kubeconfig file (by default it loads from ~/.kube/config) 
-            and creates an API client.
+            and creates API clients.
         """
+
         try:
             # Load the kubeconfig file (by default it loads from ~/.kube/config) and context
             config.load_kube_config(config_file=self.config_file, context=self.kube_context)
@@ -98,13 +101,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
             self.core_api = client.CoreV1Api()
             self.networking_api = client.NetworkingV1Api()
             self.api_client = client.ApiClient()
-#           Create a new namespace if it does not exist yet
-        #    namespaces = self.core_api.list_namespace()
-        #    namespace_names = [ ns.metadata.name for ns in namespaces.items ]
-        #    if not self.namespace in namespace_names:
-        #        logger.info("[KUBERNETES] Creating new namespace %s", self.namespace)
-        #        namespace_body = client.V1Namespace(metadata=client.V1ObjectMeta(name=self.namespace))
-        #        self.core_api.create_namespace(namespace_body)
 
             logger.info("[KUBERNETES] Connection executed successfully")
         except Exception as e:
@@ -400,6 +396,20 @@ class SLPFActuator_kubernetes(SLPFActuator):
         
 
     def kubernetes_get_custom_data(self, target, direction):
+        """ This method retrieves the actuator-specific custom data for Kubernetes.
+
+            The custom data includes the label to associate with the Network Policy controlling inbound traffic (and the relevant pods) 
+            and the label to associate with the Network Policy controlling outbound traffic (and the relevant pods).
+
+            :param target: The target of the allow action.
+            :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
+            :param direction: Specifies whether to allow incoming traffic, outgoing traffic or both for the specified target.
+            :type direction: Direction
+
+            :return: Actuator-specific custom data to be stored in the database for future function execution
+            :rtype: dict
+        """
+
         try:
             custom_data = {
                 'ingress_label': None,
@@ -424,14 +434,22 @@ class SLPFActuator_kubernetes(SLPFActuator):
         except ValueError as e:
             raise e
         except Exception as e:
-            #   TODO eliminare le etichette appena create se ricevo errore
             raise e
         
 
     def kubernetes_get_label(self, cidr):
+        """ This method creates Kubernetes labels and associates them with the pods affected by the OpenC2 command.
+
+            :param cidr: Specifies the single IP address or range of IP addresses within the Kubernetes cluster network involved in the command.
+            :type cidr: str
+
+            :return: The Kubernetes label
+            :rtype: dict
+        """
+
         try:
             cidr = ipaddress.ip_network(cidr)
-            str_cidr = str(cidr).replace('.', '-')#.network_address
+            str_cidr = str(cidr).replace('.', '-')
             str_cidr = str_cidr.replace('/', '-')
             label_key = self.subnet_base_label_key + str_cidr
             label_value = 'true'
@@ -477,7 +495,9 @@ class SLPFActuator_kubernetes(SLPFActuator):
 
             :return: `True` if the Kubernetes network policy matches the cidr, protocol and port for the specified direction. 
                     `False` otherwise.
+            :rtype: bool
         """
+
         try:
             if not policy and not cidr and not protocol and not port:
                 return True
@@ -526,6 +546,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
             logger.info("[KUBERNETES] An error occurred deleting all Kubernetes Network Policy: %s", str(e))
             raise e
     
+
     def execute_update_command(self, name, path):
         try:
             self.clean_actuator_rules()

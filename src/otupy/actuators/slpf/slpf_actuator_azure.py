@@ -1,5 +1,4 @@
 import logging
-import os
 import json
 import uuid
 import ipaddress
@@ -13,7 +12,7 @@ from azure.mgmt.network.models import NetworkSecurityGroup, SecurityRule
 from azure.core.exceptions import ResourceNotFoundError
 
 from otupy.actuators.slpf.slpf_actuator import SLPFActuator
-from otupy import Feature, Version, Actions, IPv4Net, IPv4Connection , IPv6Net, IPv6Connection, L4Protocol, Binaryx, StatusCode, ArrayOf, ActionTargets, TargetEnum, Nsid, Response, StatusCodeDescription
+from otupy import Feature, Version, Actions, IPv4Net, IPv4Connection , IPv6Net, IPv6Connection, L4Protocol, StatusCode, ArrayOf, ActionTargets, TargetEnum, Nsid, Response, StatusCodeDescription
 import otupy.profiles.slpf as slpf 
 from otupy.profiles.slpf.profile import Profile
 from otupy.profiles.slpf.args import Direction
@@ -23,15 +22,43 @@ logger = logging.getLogger(__name__)
 class SLPFActuator_azure(SLPFActuator):
     """ `MSAzure-based` SLPF Actuator implementation.
 
-        This class provides an implementation of the `SLPF Actuator` using MS Azure.
+        This class provides an implementation of the SLPFActuator using `MS Azure`.
     """
 
     def __init__(self, authentication_file, resource_group_name=None, network_security_group_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
+        """ Initialization of the `MSAzure-based` SLPF Actuator.
+
+            This method connects to MS Azure and initializes the `SLPF Actuator Manager`.
+
+            :param authentication_file: Specifies the absolute path to the authentication file to enstablish a connection with the Azure environment
+            :type authentication_file: str
+            :param resource_group_name: Name of the Resource Group containing the Network Security Groups to be managed
+            :type resource_group_name: str
+            :param network_security_group_name: Name of the Network Security Group where filtering rules will be created
+            :type network_security_group_name: str
+            :param hostname: SLPF Actuator hostname.
+            :type hostname: str
+            :param named_group: SLPF Actuator group.
+            :type named_group: str
+            :param asset_id: SLPF Actuator asset id.
+            :type asset_id: str
+            :param asset_tuple: SLPF Actuator asset tuple.
+            :type asset_tuple: str
+            :param db_directory_path: sqlite3 database directory path.
+            :type db_directory_path: str
+            :param db_name: sqlite3 database name.
+            :type db_name: str
+            :param db_commands_table_name: Name of the `OpenC2 Commands` table in the sqlite3 database.
+            :type db_commands_table_name: str
+            :param db_jobs_table_name: Name of the `APScheduler jobs` table in the sqlite3 database.
+            :type db_jobs_table_name: str
+            :param update_directory_path: Path to the default directory containing files to be used as update.
+            :type update_directory_path: str
+        """
+        
         try:
             self.authentication_file = authentication_file
-        #   Resource group name
             self.resource_group_name = resource_group_name if resource_group_name else "slpf_rg"
-        #   Network Security Group name
             self.network_security_group_name = network_security_group_name if network_security_group_name else "slpf_nsg"
             self.max_num_security_rules = 1000
 
@@ -46,10 +73,10 @@ class SLPFActuator_azure(SLPFActuator):
         #   Connecting to MS Azure
             #self.connect_to_azure()
 
-        #   Initializing SLPF Actuator
+        #   Initializing SLPF Actuator Manager
             super().__init__(hostname=hostname,
                              named_group=named_group,
-                             asset_id=asset_id,
+                             asset_id=asset_id if asset_id else 'azure',
                              asset_tuple=asset_tuple,
                              db_directory_path=db_directory_path,
                              db_name=db_name,
@@ -61,6 +88,12 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def connect_to_azure(self):
+        """ MS Azure connection.
+        
+            This method retrieves the credentials required to access Azure services using the authentication file 
+            and initializes the Resource Group and Network Security Group.
+        """
+
         try:
             with open(self.authentication_file) as f:
                 credentials = json.load(f)
@@ -172,6 +205,18 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def azure_create_security_rule(self, action, target, direction):
+        """ This method handles the execution of OpenC2 `allow` and `deny` commands for `MS Azure`.
+
+            It maps the OpenC2 `Action`, `Target` and `direction` argument to the corresponding MS Azure security rule,  
+            determines the priority for the security rule and then creates it. 
+
+            :param action: The action of the OpenC2 Command.
+            :type action: Actions
+            :param target: The target of the OpenC2 Command.
+            :type target: IPv4Specifies whether to create an incoming or outgoing traffic rule.
+            :type direction: Direction
+        """
+
         try:
             security_rule = self.azure_from_openc2(
                 action=action,
@@ -181,7 +226,6 @@ class SLPFActuator_azure(SLPFActuator):
             security_rule.name = self.azure_generate_unique_rule_name()
             security_rule.priority = self.azure_get_priority(security_rule)
 
-            print("INSERTING RULE ", security_rule.priority)
             self.network_client.security_rules.begin_create_or_update(
                 resource_group_name=self.resource_group,
                 network_security_group_name=self.nsg_name,
@@ -205,6 +249,20 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def azure_delete_security_rule(self, action, target, direction):
+        """ This method handles the execution of OpenC2 `delete` commands for `MS Azure`.
+
+            Starting from the OpenC2 `Target` and `direction` argument of the command to delete, 
+            the corresponding MS Azure security rule is retrieved and deleted. 
+            Finally, the priorities of the remaining security rules are updated if necessary.
+
+            :param action: The action of the OpenC2 Command to delete.
+            :type action: Actions
+            :param target: The target of the OpenC2 Command to delete.
+            :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
+            :param direction: Specifies whether to delete an incoming or outgoing traffic rule.
+            :type direction: Direction
+        """
+
         try:
             security_rule = self.azure_from_openc2(
                 action=action,
@@ -215,8 +273,6 @@ class SLPFActuator_azure(SLPFActuator):
             security_rules = self.network_client.security_rules.list(resource_group_name=self.resource_group, network_security_group_name=self.nsg_name)
             security_rules = [ rule for rule in security_rules if rule.direction and rule.direction.lower() == security_rule.direction.lower() ]
             security_rules = sorted(security_rules, key=lambda sr: sr.priority if sr.priority else 9999)
-            print("DELETING RULE ", security_rule)
-
             security_rule = self.azure_get_security_rule(security_rule=security_rule, security_rules=security_rules)
             
             if security_rule:
@@ -235,6 +291,16 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def azure_direction_handler(self, func, **kwargs):
+        """ This method handles the direction of OpenC2 `allow`, `deny` or `delete` commands.
+
+            Executes the function passed as an argument with its kwargs for `ingress`, `egress` or `both` directions.
+
+            :param func: The `MSAzure-based` SLPF Actuator handler method for OpenC2 `allow`, `deny` or `delete` command.
+            :type func: method
+            :param kwargs: A dictionary of arguments for the execution of the `MSAzure-based` SLPF Actuator handler method for OpenC2 `allow`, `deny` or `delete` command.
+            :type kwargs: dict
+        """
+
         try:
             if kwargs['direction'] == Direction.both:
                 kwargs['direction'] = Direction.ingress
@@ -245,45 +311,19 @@ class SLPFActuator_azure(SLPFActuator):
             raise e
         
 
-    def azure_from_openc2(self, action, target, direction):
-    #   Crea una security rule azure meno gli elementi name e priority
-        try:           
-            security_rule = SecurityRule(
-                access=action.__repr__().capitalize(),
-                direction="Inbound" if direction == Direction.ingress else "Outbound",
-                source_address_prefix=target.src_addr.__str__() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_addr else "*",
-                destination_address_prefix=target.__str__() if type(target) == IPv4Net or type(target) == IPv6Net else "*",
-                protocol=target.protocol.name.capitalize() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else "*",
-                source_port_range=str(target.src_port) if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_port else "*",
-                destination_port_range=str(target.dst_port) if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_port else "*"
-            )
-
-            if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_addr:                
-                security_rule.destination_address_prefix = target.dst_addr.__str__()
-
-            return security_rule
-        except Exception as e:
-            raise e
-        
-
-    def azure_find_security_rule(self, action, target, direction, security_rules):
-        try:
-            dir = direction
-            if direction == Direction.both:
-                dir = Direction.ingress
-                security_rule = self.azure_from_openc2(action=action, target=target, direction=dir)
-                if self.azure_get_security_rule(security_rule=security_rule, security_rules=security_rules):
-                    return True
-                dir = Direction.egress
-            security_rule = self.azure_from_openc2(action=action, target=target, direction=dir)
-            if self.azure_get_security_rule(security_rule=security_rule, security_rules=security_rules):
-                return True 
-            return False
-        except Exception as e:
-            raise e
-        
-
     def azure_get_security_rule(self, security_rule, security_rules):
+        """ This method retrieves the Azure security rule from the list of security rules passed as an argument 
+            that matches the specified Azure security rule.
+
+            :param security_rule: The Azure security rule to be retrieved.
+            :type security_rule: SecurityRule
+            :param security_rules: The list of Azure security rules.
+            :type security_rules: list
+
+            :return: The desired Azure security rule.
+            :rtype: SecurityRule
+        """
+
         try:
             for rule in security_rules:
                 if(
@@ -301,6 +341,12 @@ class SLPFActuator_azure(SLPFActuator):
             raise e
 
     def azure_generate_unique_rule_name(self):
+        """ This method generates an unique name for an Azure security rule.
+
+            :return: The generated security rule name.
+            :rtype: str
+        """
+
         while True:
             rule_name = str(uuid.uuid4())
             try:
@@ -308,20 +354,24 @@ class SLPFActuator_azure(SLPFActuator):
                                                        self.network_security_group_name,
                                                        rule_name)
             except ResourceNotFoundError:
-                print("RULE NAMEEE ", rule_name)
                 return rule_name
         
 
     def azure_get_priority(self, security_rule):
+        """ This method computes the proper priority to assign to the Azure security rule that will be created.
+
+            :param security_rule: The Azure security rule that will be created.
+            :type security_rule: SecurityRule
+
+            :return: The priority to assign to the Azure security rule.
+            :rtype: int
+        """
+
         try:
             address_priority = self.azure_get_address_priority(security_rule)
             protocol_priority = self.azure_get_protocol_priority(security_rule)  
-            print("ADDR_PRIORITY ", address_priority)
-            print("PROT_PRIORITY ", protocol_priority)
 
-        #   Priorità di partenza 
             base_priority = 500 * address_priority + 100 * protocol_priority + 100
-        #   Per la priorità data le reti avrebbero 500 priorità, io ne voglio dare solo 100 quindi sottraggo 400 a tutto quello che viene dopo le reti
             if address_priority > 2:
                 base_priority -= 400
 
@@ -329,7 +379,7 @@ class SLPFActuator_azure(SLPFActuator):
                 resource_group_name=self.resource_group,
                 network_security_group_name=self.nsg_name
             )
-        #   Filtro per direzione giusta (direzioni diverse possono avere la stessa priorità)
+
             security_rules = [ rule for rule in security_rules if rule.direction and rule.direction.lower() == security_rule.direction.lower() ]
             security_rules = sorted(security_rules, key=lambda sr: sr.priority if sr.priority else 9999)
 
@@ -358,32 +408,21 @@ class SLPFActuator_azure(SLPFActuator):
                         last_of_this_group = rule
                         if rule.priority - precedent_rule.priority > 1:
                             priority_hole = rule.priority - 1
-                #   Se target non è una rete possiamo interrompere perchè abbiamo trovato il primo buco
-                #   Se target è una rete non conta trovare un buco perchè devo inserire regola nel giusto ordine, salvo però la posizione dell'ultimo buco
                     if priority_hole and address_priority != 2:
                         break      
                 precedent_rule = rule
-
-            if first_of_this_group:
-                print("FIRST OF THIS", first_of_this_group.priority)
-            if last_of_this_group:
-                print("LAST OF THIS", last_of_this_group.priority)
 
             if not first_of_this_group:
                 return base_priority
             else:
                 if not last_of_this_group:
                     last_of_this_group = first_of_this_group
-            #   Se non è una rete ritorno subito il primo buco
                 if priority_hole and address_priority != 2:
                     return priority_hole
-            #   Se spazio finito (100 posti terminati per questo gruppo) ne alloco altri 100
                 if not priority_hole and (last_of_this_group.priority + 1) % 100 == 0:
                     rules = [ rule for rule in security_rules if rule.priority and rule.priority > last_of_this_group.priority ]
                     rules.reverse()
                     for rule in rules:
-                        print("RULE: ", rule.priority)
-                        print("SPOSTO REGOLA DI 100")
                         self.azure_update_priority(
                             security_rule=rule,
                             new_priority= rule.priority + 100
@@ -391,12 +430,10 @@ class SLPFActuator_azure(SLPFActuator):
             
                 if address_priority != 2:
                     return last_of_this_group.priority + 1
-            #   Se è una rete devo trovare il posto giusto    
                 else:
                     rules = None
                     mov = None
                     new_cidr = ipaddress.ip_network(security_rule.destination_address_prefix, strict=False)
-                    print("NEW CIDR ", new_cidr)
                     rules = [ rule for rule in security_rules if rule.priority and rule.priority >= first_of_this_group.priority and rule.priority <= last_of_this_group.priority ]
                     if priority_hole:
                         rules_after_hole = [ rule for rule in rules if rule.priority and rule.priority > priority_hole ]
@@ -417,12 +454,9 @@ class SLPFActuator_azure(SLPFActuator):
                     last_priority = None
                     for rule in rules:
                         cidr = ipaddress.ip_network(rule.destination_address_prefix, strict=False)
-                        print("CIDR ", cidr)
                         mov_expression = new_cidr.prefixlen < cidr.prefixlen if mov == -1 else new_cidr.prefixlen > cidr.prefixlen
                         if type(new_cidr) != type(cidr) or (type(new_cidr) == type(cidr) and mov_expression):
-                            print("RULE: ", rule.priority)
                             last_priority = rule.priority
-                            print("SPOSTO REGOLA DI ", mov)
                             self.azure_update_priority(
                                 security_rule=rule,
                                 new_priority=rule.priority + mov
@@ -435,6 +469,14 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def azure_shift_rules(self, security_rule, security_rules):
+        """ This method recompacts the priorities of the active Azure security rules due to the removal of a security rule.
+
+            :param security_rule: The deleted Azure security rule
+            :type security_rule: SecurityRule
+            :param security_rules: The list of active Azure security rules.
+            :type security_rules: list
+        """
+
         try:
             address_priority = self.azure_get_address_priority(security_rule)
             protocol_priority = self.azure_get_protocol_priority(security_rule)  
@@ -458,23 +500,16 @@ class SLPFActuator_azure(SLPFActuator):
                     break
                 elif address_priority == rule_addr_priority and protocol_priority == rule_prot_priority:
                     last_priority = rule.priority
-
                 precedent_rule = rule
 
-            print("BASE PRIORITY ", base_priority)
-            print("RULE PRIORITY ", security_rule.priority)
-            print("LAST PRIORITY ", last_priority)
-            
             rules = [ rule for rule in security_rules if rule.priority and rule.priority >= base_priority and rule.priority <= last_priority ]
             last_hundreds = last_priority - (last_priority % 100)
-        #   len(rules) - 1 perchè nella lista c'è ancora la regola che abbiamo appena cancellato 
             if last_hundreds != base_priority and len(rules) - 1 <= last_hundreds - base_priority:
                 count = 0
                 for rule in rules: 
-                    print("RULE: ", rule.priority)
                     if rule.priority != security_rule.priority:
                         if rule.priority > base_priority + count:
-                            print("SPOSTO REGOLA A BASE PRIORITY + ", count)
+                            pass
                         #    self.azure_update_priority(
                         #        security_rule=rule,
                         #        new_priority=base_priority + count
@@ -483,19 +518,25 @@ class SLPFActuator_azure(SLPFActuator):
 
                 rules = [ rule for rule in security_rules if rule.priority and rule.priority > last_priority ]
                 for rule in rules:
-                    print("RULE: ", rule.priority)
-                    print("SPOSTO REGOLA DI -100")
+                    pass
                 #    self.azure_update_priority(
                 #        security_rule=rule,
                 #        new_priority=rule.priority - 100
                 #    )
-            else:
-                print("NIENTE DA SCALARE")
+
         except Exception as e:
             raise e
         
 
     def azure_update_priority(self, security_rule, new_priority):
+        """ This method updates the priority of a security rule with a new value passed as an argument.
+
+            :param security_rule: The Azure security rule to be updated.
+            :type security_rule: SecurityRule
+            :param new_priority: The new priority value.
+            :type new_priority: int
+        """
+
         try:
             security_rule.priority = new_priority
             self.network_client.security_rules.begin_create_or_update(
@@ -509,6 +550,15 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def azure_get_address_priority(self, security_rule):
+        """ This method calculates the level of specificity of an Azure security rule in terms of address (source address, destination address, both, or neither).
+
+            :param security_rule: The security rule in question.
+            :type security_rule: SecurityRule
+
+            :return: The address priority of the Azure security rule.
+            :rtype: int
+        """
+
         try:
             address_priority = None
             src_addr = security_rule.source_address_prefix if security_rule.source_address_prefix and security_rule.source_address_prefix != "*" else None
@@ -533,13 +583,21 @@ class SLPFActuator_azure(SLPFActuator):
         
 
     def azure_get_protocol_priority(self, security_rule):
+        """ This method calculates the level of specificity of an Azure security rule in terms of protocol (combination of protocol and source and destionation ports).
+
+            :param security_rule: The security rule in question.
+            :type security_rule: SecurityRule
+
+            :return: The protocol priority of the Azure security rule.
+            :rtype: int
+        """
+        
         try:
             protocol_priority = None
             protocol = security_rule.protocol if security_rule.protocol and security_rule.protocol != "*" else None
             dst_port = security_rule.destination_port_range if security_rule.destination_port_range and security_rule.destination_port_range != "*" else None
             src_port = security_rule.source_port_range if security_rule.source_port_range and security_rule.source_port_range != "*" else None
 
-        #   Le reti con protocol_priority = 0 perche voglio un solo gruppo di 100, non 500 totali come gli altri
             if (protocol and dst_port and src_port) or self.azure_get_address_priority(security_rule) == 2:
                 protocol_priority = 0
             elif protocol and dst_port and not src_port:
@@ -556,39 +614,37 @@ class SLPFActuator_azure(SLPFActuator):
             raise e
         
 
-    def crea_lista(self):
-        lista = []
-
-        for i in range(100, 190):
-            lista.append(SecurityRule(priority=i,
-                                      name=str(i),
-                                      direction="Inbound",
-                                      access="Allow",
-                                      destination_address_prefix="172.19.0.1/32",
-                                      source_address_prefix="172.19.0.3/32",
-                                      protocol="Tcp",
-                                      source_port_range="8080",
-                                      destination_port_range="8080"
-                                      ))
-
-        lista.append(SecurityRule(priority=191,
-                                      name=str(191),
-                                      direction="Inbound",
-                                      access="Allow",
-                                      destination_address_prefix="172.19.0.4/32",
-                                      source_address_prefix="172.19.0.3/32",
-                                      protocol="Tcp",
-                                      source_port_range="8080",
-                                      destination_port_range="8080"
-                                      ))  
+    def azure_from_openc2(self, action, target, direction):
+        """ This method generates an MS Azure security rule.
         
-        for i in range(1100, 1110):
-            lista.append(SecurityRule(priority=i,
-                                      name=str(i),
-                                      direction="Inbound",
-                                      access="Allow",
-                                      destination_address_prefix="172.19.0.1/32",
-                                      ))
+            Transforms the OpenC2 `Action`, `Target` and `direction` argument into a valid Azure security rule.
 
-            
-        return lista
+            :param action: The OpenC2 action.
+            :type action: Actions
+            :param target: The OpenC2 Target.
+            :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
+            :param direction: The OpenC2 direction.
+            :type direction: Direction
+
+
+            :return: The corresponding MS Azure security rule.
+            :rtype: SecurityRule
+        """
+
+        try:           
+            security_rule = SecurityRule(
+                access=action.__repr__().capitalize(),
+                direction="Inbound" if direction == Direction.ingress else "Outbound",
+                source_address_prefix=target.src_addr.__str__() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_addr else "*",
+                destination_address_prefix=target.__str__() if type(target) == IPv4Net or type(target) == IPv6Net else "*",
+                protocol=target.protocol.name.capitalize() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else "*",
+                source_port_range=str(target.src_port) if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_port else "*",
+                destination_port_range=str(target.dst_port) if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_port else "*"
+            )
+
+            if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_addr:                
+                security_rule.destination_address_prefix = target.dst_addr.__str__()
+
+            return security_rule
+        except Exception as e:
+            raise e

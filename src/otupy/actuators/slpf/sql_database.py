@@ -90,13 +90,17 @@ class SQLDatabase:
             :type stop_time: str
             :param persistent: Specifies if the command is persistent or not.
             :type persistent: bool
-            :param start_job_id: The id of the `APScheduler job` responsible to activate the command.
-            :type start_job_id: str
-            :param stop_job_id: The id of the `APScheduler job` responsible to deactivate the command.
-            :type stop_job_id: str
+            :param custom_data: Actuator-specific custom data associated with the rule to be saved.
+            :type custom_data: dict
+            :param scheduler_data: Contains information about `APScheduler job IDs`: 
+                                    `start_job_id` is the ID of the job responsible to activate, at a certain `start time`, the OpenC2 allow or deny action, 
+                                    `stop_job_id` is the ID of the job responsible to deactivate, at a certain `stop time`, the OpenC2 allow or deny action. 
+            :type job_ids: dict
 
             :return: The rule number associated with the stored command.
+            :rtype: int
         """
+
         try:
             conn = sqlite3.connect(self.db_abs_path)
             custom_data_blob = pickle.dumps(custom_data)
@@ -122,6 +126,7 @@ class SQLDatabase:
             :type rule_number: int
 
             :return: The needed command.
+            :rtype: dict
         """
         try:
             conn = sqlite3.connect(self.db_abs_path)
@@ -157,6 +162,7 @@ class SQLDatabase:
             :type rule_number: int
 
             :return: This method returns `True` if the given rule number is already associated with a command, `False` otherwise.
+            :rtype: bool
         """
         try:
             conn = sqlite3.connect(self.db_abs_path)
@@ -177,6 +183,7 @@ class SQLDatabase:
             The returned list of non-persistent commands is a list of `Python dictionaries`, it has to be transformed into a list of `OpenC2 Commands`.
 
             :return: The list of non-persistent commands.
+            :rtype: list
         """
         try:
             conn = sqlite3.connect(self.db_abs_path)
@@ -199,6 +206,7 @@ class SQLDatabase:
             :type command: tuple
 
             :return: The `Python dictonary` representing the command.
+            :rtype: dict
         """
         return {
             'rule_number': command[0],
@@ -253,6 +261,7 @@ class SQLDatabase:
         """ This method gets all `APScheduler jobs` from the database `jobs table`.
 
             :return: A list of Python dictionaries representing the APScheduler jobs.
+            :rtype: list
         """
         try:
             conn = sqlite3.connect(self.db_abs_path)
@@ -287,6 +296,7 @@ class SQLDatabase:
             :type command: tuple
 
             :return: The `Python dictonary` representing the job.
+            :rtype: dict
         """
         return {
             'id': job[0],
@@ -311,7 +321,11 @@ class SQLDatabase:
             conn.close()
 
     def is_empty(self):
-        """ This method checks whether the database `commands tables` is empty. """
+        """ This method checks whether the database `commands tables` is empty. 
+        
+            :return: `True` if the database is empty, `False` otherwise.
+            :rtype: bool 
+        """
         try:
             conn = sqlite3.connect(self.db_abs_path)
             c = conn.cursor()
