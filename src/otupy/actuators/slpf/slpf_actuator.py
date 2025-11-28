@@ -1,6 +1,6 @@
-""" Skeleton `Actuator` for SLPF profile
+""" Skeleton `Actuator Manager` for SLPF profile
 
-    This module provides an example to create an `Actuator` for the SLPF profile.
+    This module provides an example to create an `Actuator Manager` for the SLPF profile.
 """
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -36,23 +36,33 @@ MY_IDS = {'hostname': None,
             'asset_tuple': None }
 
 class SLPFActuator:
-    """ `SLPF Actuator implementation`.
+    """ `SLPF Actuator Manager implementation`.
 
-        This class provides an implementation of the `SLPF Actuator`.
+        This class provides an implementation of the `SLPF Actuator Manager`.
     """
 
     
     class Mode(Enum):
-        file = 'File'
+        """ This class defines the operational modes of the Actuator Manager.
+
+            In `DB Mode`, the filtering rules stored in the database through `allow` and `deny` commands are used to manage the actuator's behavior.
+
+            In `FILE Mode`, the filtering rules contained in the file specified as the target of the last `update` command are applied to manage the actuator's behavior.
+        """
+
         db = 'Database'
+        file = 'File'
+
 
     def __init__(self,hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
-        """ Initialization of the `SLPF Actuator`.
+        """ Initialization of the `SLPF Actuator Manager`.
 
-            This method initializes a `sqlite3` database to store `allow` and `deny` OpenC2 commands as well as `APScheduler jobs` (for non executed scheduled commands in case of SLPF Actuator `shutdown`),  
-            restores `persistent commands`, 
-            initializes an `APScheduler scheduler` for managing commands that are set to be executed at a specific `start time` or `stop time` and 
-            registers `slpf_exit()` method to be executed upon SLPF Actuator termination.
+            Initializes an `sqlite3` database to store `allow` and `deny` OpenC2 Commands, 
+            as well as `APScheduler jobs` for commands that have not been executed (in case of a shutdown of the SLPF Actuator Manager). 
+            It checks the current `SLPF Actuator Manager Mode` (either `DB mode` or `FILE mode`), 
+            restores `persistent` OpenC2 Commands, 
+            and initializes an `APScheduler scheduler` to manage commands scheduled for specific `start time` or `stop time`. 
+            Finally it registers the `slpf_exit()` method to be executed during the `shutdown` of the SLPF Actuator Manager.
 
             :param hostname: SLPF Actuator hostname.
             :type hostname: str
@@ -66,13 +76,11 @@ class SLPFActuator:
             :type db_directory_path: str
             :param db_name: sqlite3 database name.
             :type db_name: str
-            :param db_commands_table_name: Name of the `commands` table in the sqlite3 database.
+            :param db_commands_table_name: Name of the `OpenC2 Commands` table in the sqlite3 database.
             :type db_commands_table_name: str
             :param db_jobs_table_name: Name of the `APScheduler jobs` table in the sqlite3 database.
             :type db_jobs_table_name: str
-            :param misfire_grace_time: Seconds after the designated runtime that the `APScheduler job` is still allowed to be run, because of a `shutdown`.
-            :type misfire_grace_time: int
-            :param update_directory_path: Path to the directory containing files to be used as update.
+            :param update_directory_path: Path to the default directory containing files to be used as update.
             :type update_directory_path: str
         """
         
@@ -84,7 +92,7 @@ class SLPFActuator:
             MY_IDS['named_group'] = named_group
             MY_IDS['asset_id'] = asset_id if asset_id else " "
             MY_IDS['asset_tuple'] = asset_tuple
-
+            
             self.tag = "[SLPF-" + MY_IDS['asset_id'] + "]"
 
             try:
@@ -121,40 +129,44 @@ class SLPFActuator:
                 logger.info(self.tag + " Initialization error: %s", str(e))
                 raise e
             
+
     def execute_allow_command(self, target, direction, custom_data):
         """ Implementation of `allow` action
 
-            Each Actuator must override this method in order to implement the allow action.
+            Each Actuator must override this method to implement the `allow` action in its specific environment.
 
             :param target: The target of the allow action.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
             :param direction: Specifies whether to allow incoming traffic, outgoing traffic or both for the specified target.
             :type direction: Direction
+            :param custom_data: Contains custom data specific to this actuator, previously stored in the database.
+            :type custom_data: dict
         """
         pass
 
     def execute_deny_command(self, target, direction, drop_process, custom_data):
         """ Implementation of `deny` action
 
-            Each Actuator must override this method in order to implement the deny action.
+            Each Actuator must override this method to implement the `deny` action in its specific environment.
 
             :param target: The target of the deny action.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
             :param direction: Specifies whether to deny incoming traffic, outgoing traffic or both for the specified target.
             :type direction: Direction
-            :param drop_process: Specifies how to handle denied packets: 
-                                `none` drop the packet and do not send any notification to the source of the packet,
-                                `reject` drop the packet and send an ICMP host unreachable (or equivalent) to the source of the packet,
-                                `false_ack` drop the packet and send a false acknowledgment.
+            :param drop_process: Specifies how to handle denied packets.
             :type drop_process: DropProcess
+            :param custom_data: Contains custom data specific to this actuator, previously stored in the database.
+            :type custom_data: dict
         """
         pass
 
     def validate_action_target_args(self, action, target, args):
-        """ This method should be implemented if an Actuator does not implements some SLPF `action`, `Target`, `features` 
-            or has to perform some `checks` before executing an action (e.g: check if the file extension of an update target is supported).
+        """ This method should be implemented to validate SLPF `actions` and `targets`, as well as the `direction` and `drop_process` arguments in the specific actuator environment, 
+            or to perform additional checks before executing an action (e.g: check if the file extension of an update target is supported).
+
+            It may also return actuator-specific custom data, which will be stored in the database and used during the future execution of the function.
             
-            Possibles `action` values are `allow`, `deny` and `update` (since query and delete action are already fully validated).
+            Possibles `action` values are `allow`, `deny` and `update`, since query and delete action are already fully validated.
 
             This method should validates `Target` and `Args` of an `allow` action for a specific Actuator.
             
@@ -166,28 +178,33 @@ class SLPFActuator:
             :type action: Actions
             :param target: The target of the action to validate.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection/File
-            :param args: The `Args` of the action to validate. 
-                        Contains the `direction` argument in case of `allow` action, 
-                        `direction` and `drop_process` arguments in case of `deny` action
-                        and has a `None` value in case of `update` action.
+            :param args: The arguments of the action to validate. 
+                        Contains the direction argument in case of `allow` action, 
+                        the direction and drop_process arguments in case of `deny` action
+                        and has a None value in case of `update` action.
             :type args: slpf.Args
+
+            :return: Optional actuator-specific custom data to be stored in the database for future function execution
+            :rtype: dict
         """
         pass
 
     def execute_delete_command(self, command_to_delete, custom_data):
         """ Implementation of `delete` action
 
-            Each Actuator must override this method in order to implement the delete action.
+            Each Actuator must override this method to implement the `delete` action in its specific environment.
 
-            :param command_to_delete: The OpenC2 `Command` to delete.
+            :param command_to_delete: The OpenC2 Command to delete.
             :type command_to_delete: Command
+            :param custom_data: Contains custom data specific to this actuator, previously stored in the database.
+            :type custom_data: dict
         """
         pass
 
     def execute_update_command(self, name, path):
         """ Implementation of `update` action
 
-            Each Actuator must override this method in order to implement the update action.
+            Each Actuator must override this method to implement the `delete` action in its specific environment.
 
             :param name: The `name` of the target file.
             :type name: str
@@ -197,20 +214,21 @@ class SLPFActuator:
         pass
 
     def save_persistent_commands(self):
-        """ Each Actuator must override this method in order to `save` all setted commands. """
+        """ Each Actuator must override this method to `save` all active commands in its specific environment. """
         pass
 
     def restore_persistent_commands(self):
-        """ Each Actuator must override this method in order to `restore` all commands saved with `save_persistent_commands()`. """
+        """ Each Actuator must override this method to `restore` all commands previously saved using the save_persistent_commands() method, in its specific environment. """
         pass
 
     def clean_actuator_rules(self):
-        """ Each Actuator must override this method in order to set the `SLPF Actuator` in `DB mode` deleting all setted commands. """
+        """ Each Actuator must override this method to `remove all rules` in its environment, 
+            in response to a change in the Actuator Manager's mode (from DB mode to FILE mode, or vice versa).
+        """
         pass
       
 
     def run(self, cmd):
-        command_received_timestamp = time.perf_counter()
         # Check if the Command is compliant with the implemented profile
         if not slpf.validate_command(cmd):
             return Response(status=StatusCode.NOTIMPLEMENTED, status_text='Invalid Action/Target pair')
@@ -232,13 +250,13 @@ class SLPFActuator:
                 case Actions.query:
                     response = self.query(cmd)
                 case Actions.allow:
-                    response = self.allow(cmd, command_received_timestamp)
+                    response = self.allow(cmd)
                 case Actions.deny:
-                    response = self.deny(cmd, command_received_timestamp)
+                    response = self.deny(cmd)
                 case Actions.update:
                     response = self.update(cmd)
                 case Actions.delete:
-                    response = self.delete(cmd, command_received_timestamp)
+                    response = self.delete(cmd)
                 case _:
                     response = self.__notimplemented(cmd)
         except Exception as e:
@@ -267,11 +285,13 @@ class SLPFActuator:
     def query(self, cmd):
         """ `Query` action
 
-            This method implements the `query` action.
+            This method provides a default and complete implementation of the `query` action.
 
-            :param cmd: The `Command` including `Target` and optional `Args`.
+            :param cmd: The OpenC2 Command including `Target` and optional `Args`.
             :type cmd: Command
-            :return: A `Response` including the result of the query and appropriate status code and messages.
+
+            :return: An OpenC2 Response including the result of the query command and an appropriate status code and description.
+            :rtype: Response
         """
         
         # Sec. 4.1 Implementation of the 'query features' command
@@ -298,8 +318,9 @@ class SLPFActuator:
 
             Implements the 'query features' command according to the requirements in Sec. 4.1 of the Language Specification.
 
-            Each Actuator must override this method if the query feature command cannot be completely implemented.
+            Each Actuator must override this method if it does not implement a specific feature in its environment.
         """
+
         features = {}
         for f in cmd.target.getObj():
             match f:
@@ -325,49 +346,59 @@ class SLPFActuator:
         return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
 
-    def allow(self, cmd, command_received_timestamp):
+    def allow(self, cmd):
         """ `Allow` action
 
             This method implements the `allow` action.
 
-            :param cmd: The `Command` including `Target` and optional `Args`.
+            :param cmd: The OpenC2 Command including `Target` and optional `Args`.
             :type cmd: Command
-            :return: A `Response` including the result of the allow command and appropriate status code and messages.
+
+            :return: An OpenC2 Response including the result of the allow command and an appropriate status code and description.
+            :rtype: Response
         """
 
         try:
-            return self.allow_deny_handler(cmd, command_received_timestamp)
+            return self.allow_deny_handler(cmd)
         except Exception as e:
             return self.__servererror(cmd, e)
 
 
-    def deny(self, cmd, command_received_timestamp):
+    def deny(self, cmd):
         """ `Deny` action
 
             This method implements the `deny` action.
             
-            :param cmd: The `Command` including `Target` and optional `Args`.
+            :param cmd: The OpenC2 Command including `Target` and optional `Args`.
             :type cmd: Command
-            :return: A `Response` including the result of the deny command and appropriate status code and messages.
+
+            :return: An OpenC2 Response including the result of the deny command and an appropriate status code and description.
+            :rtype: Response
         """
 
         try:
-            return self.allow_deny_handler(cmd, command_received_timestamp)           
+            return self.allow_deny_handler(cmd)           
         except Exception as e:
             return self.__servererror(cmd, e)
         
 
-    def allow_deny_handler(self, cmd, command_received_timestamp):
+    def allow_deny_handler(self, cmd):
         """ This method manages the execution of `allow` and `deny` commands.
 
-            Validates and manages allow and deny `Target` and `Args`, 
-            sets the SLPF Actuator in `db mode` (database rules in use) iff database is empty, 
-            inserts the command in the `database` 
-            and sets the allow or deny action to be executed at a specific `start` and/or `stop time`.
+            It validates `Target` and `Args` of the command according to the OpenC2 SLPF Specification, 
+            applies default values for any unspecified arguments 
+            and performs actuator-specific validation through the `validate_action_target_arguments` method (which must be overridden by the actuator), 
+            also retrieving any actuator-specific `custom_data` to be stored.
+            If the system is currently operating in `FILE mode`, it switches the SLPF Actuator Manager to `DB mode` (database rules in use). 
+            It then inserts the OpenC2 command into the `database`, together with the associated `custom_data`, 
+            and schedules the command to be executed at the specific `start` time, 
+            while ensuring its effect is cancelled at the specified `stop` time (if provided).
 
-            :param cmd: The `Command` including `Target` and optional `Args`.
+            :param cmd: The OpenC2 Command including `Target` and optional `Args`.
             :type cmd: Command
-            :return: A `Response` including the result of the allow or deny command and appropriate status code and messages.
+
+            :return: An OpenC2 Response including the result of the allow or deny command and an appropriate status code and description.
+            :rtype: Response
         """
 
         try:
@@ -416,8 +447,7 @@ class SLPFActuator:
                     raise ValueError(StatusCode.BADREQUEST, "Only two arguments between start time, stop time and duration can be specified")
                 if args['start_time'] > args['stop_time']:
                     raise ValueError(StatusCode.BADREQUEST, "Start time greater than stop time")
-        #    if'stop_time' in args and (args['stop_time'] < time.time() * 1000):
-        #        raise ValueError(StatusCode.BADREQUEST, "Stop time already expired")
+
        
         #   Setting default args values
             if not 'direction' in args:
@@ -425,14 +455,13 @@ class SLPFActuator:
             if action == Actions.deny and not 'drop_process' in args:
                 args['drop_process'] = DropProcess.none
 
-        #   Validating action, target, args
-        #   and getting custom data from specific implementation
+        #   Actuator-specific arguments
             temp_args = {'direction': args['direction']}
             if 'drop_process' in args:
                 temp_args['drop_process'] = args['drop_process']
 
-        #   Validating action, target and args for the specific implementation
-        #   and getting possible custom data to save in the database
+        #   Validating action, target and args in the specific actuator environment
+        #   and retrieving any possible custom data to store in the database.
             custom_data = self.validate_action_target_args(
                 action=action,
                 target=target,
@@ -457,48 +486,42 @@ class SLPFActuator:
                 if 'duration' in args:
                     args['stop_time'] = (args['start_time']*1000 + args['duration']) / 1000
 
-        #   Setting SLPF Actuator in db mode
-        #   Clean all rules in specific implementation
-        #   Starting to use db rules
             if self.mode == SLPFActuator.Mode.file:
+            #   Setting SLPF Actuator Manager in DB Mode 
                 self.mode = SLPFActuator.Mode.db
-                logger.info(self.tag + " " + self.mode.value + " mode setted") 
+                logger.info(self.tag + " " + self.mode.value + " mode setted")
+            #   Cleaning all rules in the specific actuator environment (starting to use db rules)
                 self.clean_actuator_rules()
                 self.save_persistent_commands()
 
-        #   Generating job ids
-        #    job_ids = {'start_job_id': self.generate_unique_job_id(),
-        #               'stop_job_id': self.generate_unique_job_id() if 'stop_time' in args else None,
-        #               'my_id': None }
+        #   Generating scheduler job IDs
             scheduler_data = {
                 'start_job_id': self.generate_unique_job_id(),
                 'stop_job_id': self.generate_unique_job_id() if 'stop_time' in args else None
             }
 
-        #   Inserting commands in db   
+        #   Inserting the OpenC2 command and custom data into the database
             logger.info(self.tag + " Inserting command in database")
             rule_number = self.db_handler(action, target, args, custom_data, scheduler_data)
 
+        #   Managing the scheduler
             scheduler_data['my_id'] = None
-
-        #   Managing the scheduler    
             start_time = datetime.fromtimestamp(args['start_time'])            
             self.scheduler.add_job(self.allow_deny_execution_wrapper,
                                    'date',
                                    next_run_time=start_time,
-                                   args=[action, rule_number, command_received_timestamp],
+                                   args=[action, rule_number],
                                    kwargs={'target': target, 'custom_data': custom_data, **temp_args},
                                    id=scheduler_data['start_job_id'],
                                    misfire_grace_time=self.misfire_grace_time)
             if 'stop_time' in args:
-#               Just needed args                
                 command = Command(action, target, slpf.Args(temp_args))
                 scheduler_data['my_id'] = scheduler_data['stop_job_id']
                 stop_time = datetime.fromtimestamp(args['stop_time'])
                 self.scheduler.add_job(self.delete_handler,
                                        'date',
                                        next_run_time=stop_time,
-                                       kwargs={'command_to_delete': command, 'rule_number': rule_number, 'custom_data': custom_data, 'scheduler_data': scheduler_data, 'command_received_timestamp': None},
+                                       kwargs={'command_to_delete': command, 'rule_number': rule_number, 'custom_data': custom_data, 'scheduler_data': scheduler_data},
                                        id=scheduler_data['stop_job_id'],
                                        misfire_grace_time=self.misfire_grace_time)              
             
@@ -513,41 +536,38 @@ class SLPFActuator:
 
 
     def allow_deny_execution_wrapper(self, *args, **kwargs):
-        """ This method is a wrapper for the execution of `allow` and `deny` commands for a specific `SLPF Actuator implementation`.
+        """ This method is a wrapper for the execution of `allow` and `deny` commands in the specific SLPF Actuator environment.
 
             :param args: Contains the `Action` to be executed (allow or deny) and the `rule number` assigned to this rule.
             :type args: list
-            :param kwargs: A dictionary of arguments for the execution of the specific implementation of allow or deny command.
+            :param kwargs: A dictionary of actuator-specific arguments
             :type kwargs: dict
         """
 
         try:
-        #   Executing allow/deny command for specific implementation
+        #   Executing allow/deny command in the specific SLPF Actuator environment
             function = self.execute_allow_command if args[0] == Actions.allow else self.execute_deny_command
-            command_launched_timestamp = time.perf_counter()
             function(**kwargs)
             logger.info(self.tag + " %s action executed successfully", args[0].__repr__().capitalize())
-            command_executed_timestamp = time.perf_counter()
-            #if args[0] == Actions.allow:
-            #    with open("/home/kali/Scrivania/openstack/all_consumer_time.txt", "a") as f:
-            #        f.write(f"{command_executed_timestamp - args[2]} {command_executed_timestamp - command_launched_timestamp}\n")
         except Exception as e:
             logger.info(self.tag + " Execution error for %s action: %s", args[0].__repr__().capitalize(), str(e))
             e.arg = { 'command_action': args[0], 'rule_number': args[1]}
             raise e
 
 
-    def delete(self, cmd, command_received_timestamp):
+    def delete(self, cmd):
         """ `Delete` action
 
-            This method implements the `delete` action: 
-            validates and manages delete `Target` and `Args`, 
-            gets the `command` with a specific `rule number` from the `database` and recontructs it as an `OpenC2 Command`. 
-            Finally sets the delete action to be executed at a specific `start time`.
+            This method implements the `delete` action.
 
-            :param cmd: The `Command` including `Target` and optional `Args`.
+            It validates `Target` and `Args` of the command according to the OpenC2 SLPF Specification, 
+            gets the rule with the specified `rule number` from the `database` and recontructs it as an `OpenC2 Command`. 
+            Finally schedules the delete action to be executed at a specific `start time`.
+
+            :param cmd: The OpenC2 Command including `Target` and optional `Args`.
             :type cmd: Command
-            :return: A `Response` including the result of the delete command and appropriate status code and messages.
+            :return: An OpenC2 Response including the result of the delete command and an appropriate status code and description.
+            :rtype: Response
         """
 
         target = cmd.target.getObj()
@@ -572,24 +592,19 @@ class SLPFActuator:
             start_time = args['start_time'] / 1000 if 'start_time' in args else time.time()
             start_time = datetime.fromtimestamp(start_time)
 
-        #   Get and reconstruct command from db
+        #   Retrieving the OpenC2 Command and associated custom data from the database
             cmd_data = self.db.get_command(rule_number)
-            command_to_delete = self.reconstruct_command(cmd_data)
-
-        #   Getting custom data
             custom_data = cmd_data['custom_data']
+        #   Reconstructing the OpenC2 Command
+            command_to_delete = self.reconstruct_command(cmd_data)            
 
         #   Managing the scheduler 
-        #    job_ids = {'start_job_id': cmd_data['start_job_id'],
-        #               'stop_job_id': cmd_data['stop_job_id'],
-        #               'my_id': self.generate_unique_job_id()}
             scheduler_data = cmd_data['scheduler_data']
             scheduler_data['my_id'] = self.generate_unique_job_id()
-
             self.scheduler.add_job(self.delete_handler,
                                    'date',
                                    next_run_time=start_time,
-                                   kwargs={'command_to_delete': command_to_delete, 'rule_number': rule_number, 'custom_data': custom_data, 'scheduler_data': scheduler_data, 'command_received_timestamp': command_received_timestamp},
+                                   kwargs={'command_to_delete': command_to_delete, 'rule_number': rule_number, 'custom_data': custom_data, 'scheduler_data': scheduler_data},
                                    id=scheduler_data['my_id'],
                                    misfire_grace_time=self.misfire_grace_time)
             
@@ -600,58 +615,61 @@ class SLPFActuator:
             return Response(status=StatusCode.INTERNALERROR, status_text="Firewall rule not removed or updated")
         
 
-    def delete_handler(self, command_to_delete, rule_number, custom_data, scheduler_data, command_received_timestamp):
-        """ This method manages the execution of `delete` command.
+    def delete_handler(self, command_to_delete, rule_number, custom_data, scheduler_data):
+        """ This method manages the execution of `delete` commands.
 
-            Cancels scheduled `jobs` such as the execution of the command that needs to be deleted if `start time` not expired yet
-            or the annulment of the command that needs to be deleted if `stop time` is present and not expired yet. 
-            Finally executes the `delete` command for a specific `SLPF Actuator implementation` and 
-            deletes the command from the `database`.
+            If the rule to be deleted is not yet active because its `start time` has not yet been reached 
+            or if it is scheduled to be annulled at a specific `stop time`, 
+            the jobs responsible for these operations are cancelled. 
+            If the rule to be deleted has already been annulled, this method terminates.
 
-            This method can be executed by a `delete` command, an `allow` or `deny` command with a certain `stop time` and from `slpf_exit()` method at SLPF Actuator `shutdown`. 
+            Finally, it executes the delete action in the specific `SLPF Actuator environment` and 
+            deletes the corresponding rule from the `database`.
 
-            :param command_to_delete: The command to delete.
+            This method can be executed by a `delete` command, 
+            an `allow` or `deny` command with a certain `stop time` 
+            and from the `slpf_exit()` method to delete all non persistent OpenC2 Commands at SLPF Actuator `shutdown`. 
+
+            :param command_to_delete: The OpenC2 Command that will be deleted.
             :type command_to_delete: Command
-            :param rule_number: Rule number of the command to delete.
+            :param rule_number: The rule number of the rule that will be deleted.
             :type rule_number: RuleID
-            :param job_ids: Contains information about `apscheduler job ids`: 
-                            `start_job_id` is the id of the job responsible to activate, at a certain `start time`, the OpenC2 allow or deny command, 
-                            `stop_job_id` is the id of the job responsible to deactivate, at a certain `stop time`, the OpenC2 allow or deny command. 
-                            `my_id` is the id of the job that is executing this function.
-            :type job_ids: dict
+            :param custom_data: Actuator-specific custom data associated with the rule that will be deleted.
+            :type custom_data: dict
+            :param scheduler_data: Contains information about `APScheduler job IDs`: 
+                                    `start_job_id` is the ID of the job responsible to activate, at a certain `start time`, the allow or deny action, 
+                                    `stop_job_id` is the ID of the job responsible to deactivate, at a certain `stop time`, the allow or deny action, 
+                                    `my_id` is the ID of the job that is executing this function.
+            :type scheduler_data: dict
         """
 
         try:
             if scheduler_data['stop_job_id']:
                 if self.scheduler.get_job(scheduler_data['stop_job_id']):
-                #   Removing stop job if present
+                #   Removing the stop job (if present)
                     self.scheduler.remove_job(scheduler_data['stop_job_id'])
                 else:
-                #   An allow action has setted a stop time job that is no longer present in the scheduler
-                #   and this is a delete action:
-                #   the command has been already removed and the delete action terminate
+                #   An allow/deny command has set a stop time job that is no longer present in the scheduler.
+                #   Since this is a delete action (not allow or deny with a specific stop time),
+                #   the rule has already been removed and the delete action terminates.
                     if scheduler_data['my_id'] and scheduler_data['my_id'] != scheduler_data['stop_job_id']:
                         return
                     
-            command_launched_timestamp = time.perf_counter()
-
             if self.scheduler.get_job(scheduler_data['start_job_id']):
-            #   Removing start job if present
-            #   If start job still present in the scheduler the command is not set yet in the specific implementation, only in the database
+            #   Removing the start job (if present)
+            #   If the start job is still present in the scheduler the rule is not yet active in the specific actuator environment,
+            #   but is only saved in the database.
+            #   In this case, the delete action is not executed in the specific actuator environment.
                 self.scheduler.remove_job(scheduler_data['start_job_id'])
             else:
-            #   if start job is not present in the scheduler we have to remove the command from the specific implementation
+            #   If the start job is not present in the scheduler, the rule must be deleted in the specific actuator environment
                 self.execute_delete_command(command_to_delete, custom_data)
 
-        #   Deleting command from database
+        #   Deleting the OpenC2 Command from the database
             logger.info(self.tag + " Deleting command from database")
             self.db.delete_command(rule_number)
 
             logger.info(self.tag + " Delete action executed successfully")
-            command_executed_timestamp = time.perf_counter()
-            #if command_received_timestamp:
-            #    with open("/home/kali/Scrivania/openstack/del_consumer_time.txt", "a") as f:
-            #        f.write(f"{command_executed_timestamp - command_received_timestamp} {command_executed_timestamp - command_launched_timestamp}\n")
         except Exception as e:
             logger.info(self.tag + " Execution error for delete action: %s", str(e))
             e.arg = { 'command_action': Actions.delete }
@@ -661,19 +679,23 @@ class SLPFActuator:
     def update(self, cmd):
         """ `Update` action
 
-            This method implements the `update` action: 
-            validates and manages update `Target` and `Args` and 
-            sets the update action to be executed at a specific `start time`.
+            This method implements the `update` action.
 
-            :param cmd: The `Command` including `Target` and optional `Args`.
+            It validates `Target` and `Args` of the command according to the OpenC2 SLPF Specification 
+            and schedules the update action to be executed at a specific `start time`.
+
+            :param cmd: The OpenC2 Command including `Target` and optional `Args`.
             :type cmd: Command
-            :return: A `Response` including the result of the delete command and appropriate status code and messages.
+
+            :return: An OpenC2 Response including the result of the delete command and an appropriate status code and description.
         """
+
         try:
             target = cmd.target.getObj()
             args = cmd.args
 
-        #   Validating action, target for specific implementation
+        #   Validating action, target and args in the specific actuator environment
+        #   No custom data is required in the update action.
             self.validate_action_target_args(action=cmd.action,
                                              target=target,
                                              args=None)
@@ -732,7 +754,6 @@ class SLPFActuator:
             if 'start_time' in args and type(args['start_time']) != DateTime:
                 raise TypeError("Invalid update argument type")
             
-
         #   Calculating start time
             start_time = args['start_time'] / 1000 if 'start_time' in args else time.time()
             start_time = datetime.fromtimestamp(start_time)
@@ -741,7 +762,7 @@ class SLPFActuator:
             self.scheduler.add_job(self.update_handler,
                                    'date',
                                    next_run_time=start_time,
-                                   kwargs={'name': target['name'], 'path': path},
+                                   kwargs={'name': target['name'], 'path': abs_path},
                                    id=self.generate_unique_job_id(),
                                    misfire_grace_time=self.misfire_grace_time)
 
@@ -755,33 +776,35 @@ class SLPFActuator:
 
         
     def update_handler(self, **kwargs):
-        """ This method manages the execution of `update` command.
+        """ This method manages the execution of `update` commands.
 
-            Sets `SLPF Actuator` in `FILE mode` (file rules in use) removing all scheduled commands from the scheduler and all rules from the database and 
-            executes the `update` command for a specific `SLPF Actuator implementation`
+            If the system is currently operating in `DB Mode`, it switches the SLPF Actuator Manager to `FILE Mode`, 
+            removing all rules from the database and all associated scheduled commands from the scheduler.  
+            Finally, it executes the `update` action in the specific `SLPF Actuator environment`.
 
-            :param kwargs: A list of arguments for the execution of the specific implementation of update command.
+            :param kwargs: A dictionary of actuator-specific arguments.
             :type kwargs: dict
         """
 
         try:
             if self.mode == SLPFActuator.Mode.db:
-            #   Setting SLPF Actuator in file mode    
+            #   Setting SLPF Actuator Manager in FILE Mode    
                 self.mode = SLPFActuator.Mode.file
                 logger.info(self.tag + " " + self.mode.value + " mode setted")
-            #   Cleaning scheduler from allow, deny and delete commands
-            #    self.scheduler.remove_all_jobs()
+            #   Cleaning the scheduler of allow, deny and delete commands
+            #   (related to rules that will be deleted)
                 for job in self.scheduler.get_jobs():
                     if job.func.__name__ != self.update_handler.__name__:
                         self.scheduler.remove_job(job.id)
-            #   Cleaning database: SLPF Actuator now in file mode, all rules managed by file
+            #   Cleaning database (SLPF Actuator Manager now in file mode, all rules managed by file)
                 self.db.clean_db()
-            #   Cleaning all rules in specific implementation
+            #   Cleaning all rules in the specific actuator environment
                 self.clean_actuator_rules()
                 self.save_persistent_commands()
         
-        #   Executing update command for specific implementation
+        #   Executing the update action in the specific actuator environment
             self.execute_update_command(**kwargs)
+
             logger.info(self.tag + " Update action executed successfully")
         except Exception as e:
             logger.info(self.tag + " Execution error for update action: %s", str(e))
@@ -790,12 +813,13 @@ class SLPFActuator:
           
 
     def slpf_exit(self):
-        """ This method handles SLPF Actuator `shutdown`.
+        """ This method handles SLPF Actuator Manager `shutdown`.
 
-            Deletes non persistent commands from the database, 
+            It deletes all non-persistent commands from the database, 
             saves persistent commands and scheduled jobs if SLPF Actuator in db mode and 
             turns off the scheduler.
         """
+
         try:
         #   Deleting non persistent commands    
             logger.info(self.tag + " Deleting non persistent commands")        
@@ -811,23 +835,23 @@ class SLPFActuator:
                     job_ids=scheduler_data
                 )
 
-        #   Saves persistent commands only if SLPF Actuator is in db mode (there are commands in the database)
-        #   If SLPF Actuator is in file mode (empty database, rules managed by file) there is no need to save persistent commands
+        #   Saving persistent commands only if the SLPF Actuator Manager is in DB Mode (there are rules in the database)
             logger.info(self.tag + " " + self.mode.value + " mode") 
             if self.mode == SLPFActuator.Mode.db:  
-            #   Saving persistent commands            
                 self.save_persistent_commands()
-            #   Saving persistent jobs
-                logger.info(self.tag + " Saving persistent scheduled jobs")  
-                persistent_jobs = self.scheduler.get_jobs()
-                if persistent_jobs:
-                    for job in persistent_jobs:
-                        self.db.insert_job(id=job.id,
-                                          func_name=job.func.__name__,
-                                           next_run_time=job.next_run_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
-                                           args=job.args,
-                                           kwargs=job.kwargs)                
-        #   Shutdown scheduler
+            
+        #   Saving unexecuted scheduler jobs
+            logger.info(self.tag + " Saving persistent scheduled jobs")  
+            persistent_jobs = self.scheduler.get_jobs()
+            if persistent_jobs:
+                for job in persistent_jobs:
+                    self.db.insert_job(id=job.id,
+                                      func_name=job.func.__name__,
+                                       next_run_time=job.next_run_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                       args=job.args,
+                                       kwargs=job.kwargs)   
+                                                    
+        #   Shutting down the scheduler
             threading.Thread(target=self.scheduler.shutdown).start() 
             logger.info(self.tag + " Shutdown")       
         except Exception as e:
@@ -836,7 +860,7 @@ class SLPFActuator:
 
 
     def scheduler_listener(self, event):
-        """ This method handles success or exceptions of scheduled `apscheduler jobs`.
+        """ This method handles success or exceptions of scheduled `APScheduler jobs`.
 
             :param event: An event triggered by the execution of a job (success or exception).
             :type event: apscheduler.events.JobExecutionEvent
@@ -844,7 +868,6 @@ class SLPFActuator:
 
         try:
             if event.exception:
-                # allow/deny case
                 if hasattr(event.exception, 'arg'):
                     command_action = event.exception.arg.get('command_action')
                     if not command_action:
@@ -860,7 +883,7 @@ class SLPFActuator:
 
 
     def restore_persistent_jobs(self):
-        """ This method restores scheduled `apscheduler jobs` not executed yet. """
+        """ This method restores scheduled `APScheduler jobs` not executed yet. """
 
         try:
             persistent_jobs = self.db.get_jobs()
@@ -878,9 +901,10 @@ class SLPFActuator:
         
 
     def generate_unique_job_id(self):
-        """ This method generates an unique id for an `apscheduler job` that has to be scheduled.
+        """ This method generates an unique ID for an `APScheduler job` that has to be scheduled.
 
             :return: The generated `unique id`.
+            :rtype: str
         """
 
         while True:
@@ -890,17 +914,19 @@ class SLPFActuator:
 
 
     def db_handler(self, action, target, args, custom_data, scheduler_data):
-        """ This method handles insertion of commands in the database.
+        """ This method handles insertion of OpenC2 Commands and associated custom data into the database.
 
-            :param action: Command `Action` to be inserted.
+            :param action: The command `Action` to be inserted.
             :type action: Actions
-            :param target: Command `Target` to be inserted.
+            :param target: The command `Target` to be inserted.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
-            :param args: Command `Args` to be inserted.
+            :param args: The command `Args` to be inserted.
             :type args: slpf.Args
-            :param job_ids: Contains information about `apscheduler job ids`: 
-                            `start_job_id` is the id of the job responsible to activate, at a certain `start time`, the OpenC2 allow or deny command, 
-                            `stop_job_id` is the id of the job responsible to deactivate, at a certain `stop time`, the OpenC2 allow or deny command. 
+            :param custom_data: Actuator-specific custom data associated with the rule to be saved.
+            :type custom_data: dict
+            :param scheduler_data: Contains information about `APScheduler job IDs`: 
+                                    `start_job_id` is the ID of the job responsible to activate, at a certain `start time`, the OpenC2 allow or deny action, 
+                                    `stop_job_id` is the ID of the job responsible to deactivate, at a certain `stop time`, the OpenC2 allow or deny action. 
             :type job_ids: dict
         """
 
@@ -949,10 +975,11 @@ class SLPFActuator:
     def reconstruct_command(self, cmd_data):
         """ This method reconstruct an `OpenC2 Command` from `database data`.
 
-            :param cmd_data: Database data of a specific command.
+            :param cmd_data: Database record related to a specific OpenC2 Command.
             :type cmd_data: dict
 
             :return: The reconstructed `OpenC2 Command`.
+            :rtype: Command
         """
 
         if cmd_data['action'] == Actions.allow.name:

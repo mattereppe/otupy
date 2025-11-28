@@ -12,7 +12,7 @@ import itertools
 
 
 from helpers import load_json, load_files, send_raw_command
-from otupy import Encoder, Command, Response, Message, StatusCode, EncoderError, Actions, Args, ResponseType, DateTime, Duration, IPv4Connection, IPv6Connection, IPv4Net, IPv6Net, L4Protocol, Port, File, Hashes, Binaryx
+from otupy import Encoder, Command, Response, Message, StatusCode, EncoderError, Actions, Args, ResponseType, DateTime, Duration, IPv4Connection, IPv6Connection, IPv4Net, IPv6Net, L4Protocol, Port, File, Hashes, Binaryx, Features, Feature
 from otupy.core.producer import Producer
 import otupy.transfers.http
 from otupy.transfers.http.http_transfer import HTTPTransfer
@@ -24,6 +24,7 @@ from otupy.profiles.slpf.args import Direction
 from otupy.profiles.slpf.data import DropProcess
 import slpf_tests.test_json.json_schema_validation_slpf as json_schema_validation_slpf
 
+good_query_commands = []
 good_allow_commands = []
 bad_allow_commands = []
 good_deny_commands = []
@@ -33,6 +34,8 @@ good_update_commands = []
 bad_update_commands = []
 
 def generate_commands(asset_id, src_addr_ipv4, src_addr_ipv6, dst_addr_ipv4, dst_addr_ipv6, src_port, dst_port, file_name_v4=None, file_path_v4=None, file_hash_md5_v4=None, file_hash_sha1_v4=None, file_hash_sha256_v4=None, file_name_v6=None, file_path_v6=None, file_hash_md5_v6=None, file_hash_sha1_v6=None, file_hash_sha256_v6=None):
+#	Query
+	generate_query_commands(asset_id)
 #	Allow
 	generate_allow_deny_target_commands(asset_id, Actions.allow, src_addr_ipv4, src_addr_ipv6, dst_addr_ipv4, dst_addr_ipv6, src_port, dst_port, good_allow_commands, bad_allow_commands)
 	generate_allow_deny_argument_commands(asset_id, Actions.allow, src_addr_ipv4, dst_addr_ipv4, L4Protocol.tcp, src_port, dst_port, good_allow_commands, bad_allow_commands)
@@ -46,6 +49,26 @@ def generate_commands(asset_id, src_addr_ipv4, src_addr_ipv6, dst_addr_ipv4, dst
 	if asset_id != 'openstack':
 		generate_update_target_commands(asset_id, file_name_v4, file_path_v4, file_hash_md5_v4, file_hash_sha1_v4, file_hash_sha256_v4, file_name_v6, file_path_v6, file_hash_md5_v6, file_hash_sha1_v6, file_hash_sha256_v6)
 		generate_update_argument_commands(asset_id, file_name_v4, file_path_v4)
+
+
+def generate_query_commands(asset_id):
+	features = ['versions', 'profiles', 'pairs', 'rate_limit']
+	arg = Args({'response_requested': ResponseType.complete})
+	pf = slpf.Specifiers({'asset_id': asset_id})
+	for n in range(1, len(features) + 1):
+		for combo in itertools.combinations(features, n):
+			target = []
+			for key in combo:
+				if key == 'versions':
+					target.append(Feature.versions)
+				if key == 'profiles':
+					target.append(Feature.profiles)
+				if key == 'pairs':
+					target.append(Feature.pairs)
+			target = Features(target)
+			cmd = Command(Actions.query, target, arg, actuator=pf)
+			json_cmd = JSONEncoder.todict(cmd)
+			good_query_commands.append(json_cmd)				
 
 
 def generate_allow_deny_target_commands(asset_id, action, src_addr_ipv4, src_addr_ipv6, dst_addr_ipv4, dst_addr_ipv6, src_port, dst_port, good_list, bad_list):
@@ -367,12 +390,12 @@ generate_commands(
 	src_port=8080,
 	dst_port=8080,
 	file_name_v4='new_iptables_rules.v4',
-	file_path_v4='/home/kali/Scrivania/openc2lib/examples/slpf',
+	file_path_v4='/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v4',
 	file_hash_md5_v4='38511b2bea2d61fb31a63981f4a9fe66',
 	file_hash_sha1_v4='51f42a2930a19da436c4ba86363c0fa1eb73d038',
 	file_hash_sha256_v4='b804cab981ac13d8b6a12668a589d244caa99dbc6364bf211d8af694be60ddec',
 	file_name_v6='new_iptables_rules.v6',
-	file_path_v6='/home/kali/Scrivania/openc2lib/examples/slpf',
+	file_path_v6='/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6',
 	file_hash_md5_v6='c3ccc09d9ef7c373de16ca5e904fc687',
 	file_hash_sha1_v6='ed75daa4a1bcb67675c66d8035eeccf6cce06c45',
 	file_hash_sha256_v6='ad675c0396f490b5c35059bbb9b24c9f12e43c1de339ed04984460777d072b44'
@@ -399,7 +422,7 @@ generate_commands(
 #	src_port=8080,
 #	dst_port=8080,
 #	file_name_v4='kubernetes_network_policy.yaml',
-#	file_path_v4='/home/kali/Scrivania/openc2lib/examples/slpf',
+#	file_path_v4='/home/kali/Scrivania/openc2lib/examples/slpf/kubernetes_network_policy.yaml',
 #	file_hash_md5_v4='d42b7f9d90e2fc648ab3b8f15211de08',
 #	file_hash_sha1_v4='bcb775a203e52df46a579f061e4d389aa9871ab7',
 #	file_hash_sha256_v4='cee9a8d1c67df45b165e474bfc0ccbc5c94bab9878bf60a7dd59e38cf8817bb9'
@@ -484,7 +507,7 @@ def validate_json(caplog):
 
 
 
-@pytest.mark.parametrize("cmd", good_allow_commands + good_deny_commands + good_delete_commands + good_update_commands + bad_allow_commands + bad_deny_commands + bad_update_commands)
+@pytest.mark.parametrize("cmd", good_query_commands + good_allow_commands + good_deny_commands + good_delete_commands + good_update_commands + bad_allow_commands + bad_deny_commands + bad_update_commands)
 @pytest.mark.dependency(name="test_decoding")
 def test_decoding(cmd):
 	""" Test 'good' commands can be successfully decoded by otupy """
@@ -493,7 +516,7 @@ def test_decoding(cmd):
 	assert type(c) == Command
 
 
-@pytest.mark.parametrize("cmd", good_allow_commands + good_deny_commands + good_delete_commands + good_update_commands + bad_allow_commands + bad_deny_commands + bad_update_commands)
+@pytest.mark.parametrize("cmd", good_query_commands + good_allow_commands + good_deny_commands + good_delete_commands + good_update_commands + bad_allow_commands + bad_deny_commands + bad_update_commands)
 def test_encoding(cmd):
 	""" Test 'good' commands can be successfully encoded by otupy
 
@@ -549,7 +572,7 @@ def test_sending_allow(cmd, create_producer, caplog):
 		assert tmp_resp.content.get('status') == StatusCode.NOTIMPLEMENTED
 
 	
-	time.sleep(2)
+#	time.sleep(2)
 
 	rule_number = resp.content.get('results')['rule_number']
 	arg = Args({'response_requested': ResponseType.complete})
@@ -567,7 +590,7 @@ def test_sending_allow(cmd, create_producer, caplog):
 	assert type(resp.content) == Response
 	assert resp.content.get('status') == StatusCode.OK
 
-	time.sleep(2)
+#	time.sleep(2)
 	
 		
 @pytest.mark.parametrize("cmd", bad_allow_commands)
@@ -799,6 +822,30 @@ def test_sending_invalid_update(cmd, create_producer, caplog):
         # The test succeeds if any exception is raised
 		pass
 
+
+@pytest.mark.parametrize("cmd", good_query_commands)
+def test_sending_query(cmd, create_producer, caplog):
+	""" Test 'good' messages are successfully sent to the remote party and a response is received.
+
+		Validate the openc2 json messages exchanged. The response is often an error because the majority
+		of features are not implemented in the available actuators.
+	"""
+	c = Encoder.decode(Command, cmd)
+
+#	Filter the log to get what I need
+	logger = logging.getLogger("otupy.transfers.http.http_transfer")
+	logger.addFilter(JSONDump())
+
+	check_command(c)
+	print("Command: ", c)
+
+	with caplog.at_level(logging.INFO):
+		resp = create_producer.sendcmd(c)
+
+	assert type(resp) == Message
+	assert type(resp.content) == Response
+	assert resp.content.get('status') == StatusCode.OK or \
+		resp.content.get('status') == StatusCode.NOTIMPLEMENTED
 
 
 def test_iptables_ingress_rules(create_producer, caplog):

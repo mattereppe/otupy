@@ -33,17 +33,10 @@ logger.addHandler(file_handler)
 def main():
     logger.info("Creating Producer")
 
-#    p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer(parameters['ip'],
-#                                                                        parameters['port']))
-#    pf = slpf.Specifiers({'hostname': parameters['hostname'],
-#                          'named_group': parameters['named_group'],
-#                          'asset_id': parameters['asset_id']})
-#    pf.fieldtypes['asset_id'] = parameters['asset_id']  # I have to repeat a second time to have no bugs
-
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
-#    pf = slpf.Specifiers({'asset_id': 'iptables'})
+    pf = slpf.Specifiers({'asset_id': 'iptables'})
 #    pf = slpf.Specifiers({'asset_id': 'openstack'})
-    pf = slpf.Specifiers({'asset_id': 'kubernetes'})
+#    pf = slpf.Specifiers({'asset_id': 'kubernetes'})
 #    pf = slpf.Specifiers({'asset_id': 'azure'})
 
     # Args
@@ -89,7 +82,7 @@ def main():
 
     # Actions
     # (query)
-#    cmd = oc2.Command(oc2.Actions.query, oc2.Features([oc2.Feature.versions, oc2.Feature.profiles, oc2.Feature.pairs]), arg, actuator=pf)
+    cmd = oc2.Command(oc2.Actions.query, oc2.Features([oc2.Feature.versions, oc2.Feature.profiles, oc2.Feature.pairs]), arg, actuator=pf)
 
 #   ----------------------------------------------------------   
 
@@ -171,7 +164,7 @@ def main():
 
     # (Delete)
 
-    cmd = oc2.Command(oc2.Actions.delete, slpf.RuleID(1), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.delete, slpf.RuleID(1), arg, actuator=pf)
 
 #   ----------------------------------------------------------
 
@@ -179,20 +172,20 @@ def main():
     # (iptables)
 #    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v4"), arg, actuator=pf)
 #    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6"), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'md5': oc2.Binaryx(bytes.fromhex('c3ccc09d9ef7c373de16ca5e904fc687'))})), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'sha1': oc2.Binaryx(bytes.fromhex('ed75daa4a1bcb67675c66d8035eeccf6cce06c45'))})), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'sha256': oc2.Binaryx(bytes.fromhex('ad675c0396f490b5c35059bbb9b24c9f12e43c1de339ed04984460777d072b44'))})), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'md5': oc2.Binaryx(bytes.fromhex('c3ccc09d9ef7c373de16ca5e904fc687')), 'sha1': oc2.Binaryx(bytes.fromhex('ed75daa4a1bcb67675c66d8035eeccf6cce06c45')), 'sha256': oc2.Binaryx(bytes.fromhex('ad675c0396f490b5c35059bbb9b24c9f12e43c1de339ed04984460777d072b44'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'md5': oc2.Binaryx(bytes.fromhex('c3ccc09d9ef7c373de16ca5e904fc687'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'sha1': oc2.Binaryx(bytes.fromhex('ed75daa4a1bcb67675c66d8035eeccf6cce06c45'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'sha256': oc2.Binaryx(bytes.fromhex('ad675c0396f490b5c35059bbb9b24c9f12e43c1de339ed04984460777d072b44'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'md5': oc2.Binaryx(bytes.fromhex('c3ccc09d9ef7c373de16ca5e904fc687')), 'sha1': oc2.Binaryx(bytes.fromhex('ed75daa4a1bcb67675c66d8035eeccf6cce06c45')), 'sha256': oc2.Binaryx(bytes.fromhex('ad675c0396f490b5c35059bbb9b24c9f12e43c1de339ed04984460777d072b44'))})), arg, actuator=pf)
 #   not valid:
 #    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="server.log"), arg, actuator=pf)
 #    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="non_existing_file.txt"), arg, actuator=pf)
 #    cmd = oc2.Command(oc2.Actions.update, oc2.File(path="/home/kali/Scrivania/openc2lib/examples/slpf"), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'md5': oc2.Binaryx(bytes.fromhex('3e4d11990c706c9ccc787951026ccf80'))})), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'sha1': oc2.Binaryx(bytes.fromhex('504cd4900a2791dd07e0fef60623d2086e6e3700'))})), arg, actuator=pf)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf", hashes=oc2.Hashes(hashes={'sha256': oc2.Binaryx(bytes.fromhex('5e2ba905ca03620586f71eeb4bb5008548219ac4da49f130e5200cd3db3bc590'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'md5': oc2.Binaryx(bytes.fromhex('3e4d11990c706c9ccc787951026ccf80'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'sha1': oc2.Binaryx(bytes.fromhex('504cd4900a2791dd07e0fef60623d2086e6e3700'))})), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="new_iptables_rules.v6", path="/home/kali/Scrivania/openc2lib/examples/slpf/new_iptables_rules.v6", hashes=oc2.Hashes(hashes={'sha256': oc2.Binaryx(bytes.fromhex('5e2ba905ca03620586f71eeb4bb5008548219ac4da49f130e5200cd3db3bc590'))})), arg, actuator=pf)
     
     # (kubernetes)
-#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="kubernetes_network_policy.yaml", path="/home/kali/Scrivania/openc2lib/examples/slpf"), arg, actuator=pf)
+#    cmd = oc2.Command(oc2.Actions.update, oc2.File(name="kubernetes_network_policy.yaml", path="/home/kali/Scrivania/openc2lib/examples/slpf/kubernetes_network_policy.yaml"), arg, actuator=pf)
 
     logger.info("Sending command: %s", cmd)
     response = p.sendcmd(cmd)

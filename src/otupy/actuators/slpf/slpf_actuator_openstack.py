@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 class SLPFActuator_openstack(SLPFActuator):
     """ `OpenStack-based` SLPF Actuator implementation.
 
-        This class provides an implementation of the `SLPF Actuator` using OpenStack.
+        This class provides an implementation of the SLPFActuator using `OpenStack`.
     """
 
     def __init__(self, environment_variables_file, project_name, security_group_base_name=None, security_group_base_description=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
         """ Initialization of the `OpenStack-based` SLPF Actuator.
 
-            This method connects to OpenStack and initializes the `SLPF Actuator`.
+            This method connects to OpenStack and initializes the `SLPF Actuator Manager`.
 
             :param file_environment_variables: Absolute path of the file containing environment variables for connecting to OpenStack.
             :type file_environment_variables: str
@@ -45,11 +45,12 @@ class SLPFActuator_openstack(SLPFActuator):
             :type db_directory_path: str
             :param db_name: sqlite3 database name.
             :type db_name: str
-            :param db_commands_table_name: Name of the `commands` table in the sqlite3 database.
+            :param db_commands_table_name: Name of the `OpenC2 Commands` table in the sqlite3 database.
             :type db_commands_table_name: str
             :param db_jobs_table_name: Name of the `APScheduler jobs` table in the sqlite3 database.
             :type db_jobs_table_name: str
         """
+
         try:
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
                 if not environment_variables_file:
@@ -60,9 +61,6 @@ class SLPFActuator_openstack(SLPFActuator):
                 self.project_name = project_name
                 self.security_group_base_name = security_group_base_name if security_group_base_name else "OC2_SG_"
                 self.security_group_base_description = security_group_base_description if security_group_base_description else "SLPF Actuator security group"
-            #    self.security_group_id = security_group_id
-            #    self.security_group_name = security_group_name if security_group_name else "slpf-sg"
-            #    self.security_group_description = security_group_description if security_group_description else "SLPF Actuator security group"
 
                 self.OPENC2VERS=Version(1,0)
 
@@ -71,13 +69,12 @@ class SLPFActuator_openstack(SLPFActuator):
                 self.AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection, TargetEnum.ipv4_net, TargetEnum.ipv6_net]
                 self.AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':rule_number']]
 
-
             #   Connecting to OpenStack
                 self.connect_to_openstack()
-            #   Initializing SLPF Actuator
+            #   Initializing SLPF Actuator Manager
                 super().__init__(hostname=hostname,
                                  named_group=named_group,
-                                 asset_id=asset_id,
+                                 asset_id=asset_id if asset_id else 'openstack',
                                  asset_tuple=asset_tuple,
                                  db_directory_path=db_directory_path,
                                  db_name=db_name,
@@ -176,26 +173,23 @@ class SLPFActuator_openstack(SLPFActuator):
         
         
     def openstack_allow_handler(self, target, direction, custom_data):
-        """ This method handles the execution of an OpenC2 `allow` command for `OpenStack`.
+        """ This method handles the execution of OpenC2 `allow` commands for `OpenStack`.
 
-            Starting from OpenC2 `Target` and `direction` gets the corresponding OpenStack SecurityGroupRule  
-            and creates it.
+            It maps the OpenC2 `Target` and `direction` argument to the corresponding OpenStack SecurityGroupRule  
+            and creates it. 
+            Finally, it associates the security group, where the security rule has been applied, with all the OpenStack ports affected by the security rule.
 
             :param target: The target of the allow action.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
-            :param direction: Specifies whether to allow incoming traffic, outgoing traffic or both for the specified target.
+            :param direction: Specifies whether to create an ingress or egress traffic rule.
             :type direction: Direction
+            :param custom_data: Contains custom data specific to this actuator, previously stored in the database.
+            :type custom_data: dict
         """
+
         try:
             security_group_id = custom_data['ingress_id'] if direction == Direction.ingress else custom_data['egress_id']
             security_group_rule = self.openstack_from_openc2(target, direction, security_group_id)
-
-
-        #    sg = self.conn.network.find_security_group(
-        #        name_or_id=security_group_id,
-        #        project_id=self.project_id
-        #    )
-    
 
             self.conn.network.create_security_group_rule(
                 security_group_id=security_group_rule.security_group_id,
@@ -249,17 +243,21 @@ class SLPFActuator_openstack(SLPFActuator):
         
 
     def openstack_delete_handler(self, target, direction, custom_data):
-        """ This method handles the execution of an OpenC2 `delete` command for `OpenStack`.
+        """ This method handles the execution of OpenC2 `delete` commands for `OpenStack`.
 
-            Starting from OpenC2 `Target` and `direction` of the command to delete 
-            gets the corresponding OpenStack SecurityGroupRule `id` 
-            and deletes the OpenStack SecurityGroupRule.
+            Starting from the OpenC2 `Target` and `direction` argument of the command to delete, 
+            the corresponding OpenStack SecurityGroupRule ID is retrieved. 
+            The OpenStack SecurityGroupRule is then deleted, unless it is the last rule in the Security Group, 
+            in which case the entire Security Group is dissociated from the OpenStack ports using it and then deleted.
 
-            :param target: The target of the delete action.
+            :param target: The target of the action to be deleted.
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
-            :param direction: Specifies whether to delete a rule for incoming traffic, outgoing traffic or both.
+            :param direction: Specifies whether to delete an incoming or outgoing traffic rule.
             :type direction: Direction
+            :param custom_data: Contains custom data specific to this actuator, previously stored in the database.
+            :type custom_data: dict
         """
+
         try:
             security_group_id = custom_data['ingress_id'] if direction == Direction.ingress else custom_data['egress_id']
             rule_id = self.openstack_get_rule_id(target, direction, security_group_id)
@@ -284,7 +282,7 @@ class SLPFActuator_openstack(SLPFActuator):
         
     
     def openstack_direction_handler(self, func, **kwargs):
-        """ This method handles the direction of an OpenC2 `allow` or `delete` command.
+        """ This method handles the direction of OpenC2 `allow` or `delete` commands.
 
             Executes the function passed as an argument with its kwargs for `ingress`, `egress` or `both` directions.
 
@@ -304,6 +302,20 @@ class SLPFActuator_openstack(SLPFActuator):
         
 
     def openstack_get_custom_data(self, target, direction):
+        """ This method retrieves the actuator-specific custom data for OpenStack.
+
+            The custom data includes the ID of the Security Group where the security rule controlling inbound traffic will be inserted 
+            and the ID of the Security Group where the security rule controlling outbound traffic will be inserted.
+
+            :param target: The target of the allow action.
+            :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
+            :param direction: Specifies whether to allow incoming traffic, outgoing traffic or both for the specified target.
+            :type direction: Direction
+
+            :return: Actuator-specific custom data to be stored in the database for future function execution
+            :rtype: dict
+        """
+
         try:
             custom_data = {
                 'ingress_id': None,
@@ -328,11 +340,25 @@ class SLPFActuator_openstack(SLPFActuator):
         except ValueError as e:
             raise e
         except Exception as e:
-            #   TODO eliminare i security group appena creati se ricevo errore
             raise e
         
 
     def openstack_get_security_group_ids(self, cidr, target, direction):
+        """ This method retrieves the ID of the Security Group where a specific rule is to be inserted. 
+            If the Security Group does not exist, it creates a new one. 
+            If the Security Group exists, it checks that the security rule is not already present within it.
+
+            :param cidr: Specifies the single IP address or range of IP addresses within the OpenStack network involved in the command.
+            :type cidr: str
+            :param target: The target of the allow action.
+            :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
+            :param direction: Specifies whether to allow incoming traffic, outgoing traffic or both for the specified target.
+            :type direction: Direction
+
+            :return: The ID of the Security Group where a specific rule is to be inserted. 
+            :rtype: str
+        """
+
         try:
             cidr = ipaddress.ip_network(cidr)
             ports = list(self.conn.network.ports(project_id=self.project_id))
@@ -368,60 +394,29 @@ class SLPFActuator_openstack(SLPFActuator):
             else:
                 if self.openstack_get_rule_id(target, direction, sg.id):
                     raise ValueError(StatusCode.BADREQUEST, "Security rule already exists.")
-                
-        #    for port in matching_ports:
-        #        sg_ids = port.security_group_ids
-        #        if sg.id not in sg_ids:
-        #            self.conn.network.update_port(
-        #                port.id,
-        #                port_security_enabled=True,
-        #                security_groups=sg_ids + [sg.id]
-        #            )
-        #            logger.info("[OPENSTACK] Security group " + sg.name + " assigned to port " + port.id)
 
             return sg.id
         except ValueError as e:
             raise e
         except Exception as e:
-            print("----------_>", str(e))
             raise e
-        
-
-#    def openstack_find_rule(self, target, direction):
-#        """ This method search for an OpenStack `SecurityGroupRule` that matches the OpenC2 `Target` and `direction` passed as arguments.
-#
-#            :param target: The desired OpenC2 Target
-#            :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
-#            :param direction: The desired OpenC2 direction
-#            :type direction: Direction
-
-#            :return: This method returns `True` if the OpenStack SecurityGroupRule is found, `False` otherwise.
-#        """
-#        try:
-#            dir = direction
-#            if direction == Direction.both:
-#                dir = Direction.ingress
-#                if self.openstack_get_rule_id(target, dir):
-#                    return True
-#                dir = Direction.egress
-#
-#            if self.openstack_get_rule_id(target, dir):
-#                    return True
-#            return False
-#        except Exception as e:
-#            raise e
         
         
     def openstack_get_rule_id(self, target, direction, security_group_id):
-        """ This method gets the OpenStack SecurityGroupRule `id` of the corresponding OpenStack `SecurityGroupRule` that matches the OpenC2 `Target` and `direction` passed as arguments.
+        """ This method gets the OpenStack SecurityGroupRule `ID` of the corresponding OpenStack `SecurityGroupRule` 
+            that matches the OpenC2 `Target` and `direction` passed as arguments.
         
             :param target: The desired OpenC2 Target
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
             :param direction: The desired OpenC2 direction
             :type direction: Direction
+            :param security_group_id: The ID of the Security Group that contains the security rule
+            :type security_group_id: str
 
-            :return: The desired OpenStack SecurityGroupRule `id`.
+            :return: The desired OpenStack SecurityGroupRule `ID`.
+            :rtype: str
         """
+
         try:
             security_group_rule = self.openstack_from_openc2(target, direction, security_group_id)
 
@@ -447,18 +442,21 @@ class SLPFActuator_openstack(SLPFActuator):
     def openstack_from_openc2(self, target, direction, security_group_id):
         """ This method generates an OpenStack `SecurityGroupRule`.
         
-            Transforms OpenC2 `Target` and `direction` into a valid OpenStack `SecurityGroupRule`.
+            Transforms the OpenC2 `Target` and `direction` argument into a valid OpenStack `SecurityGroupRule`.
 
-            :param target: The desired OpenC2 Target
+            :param target: The OpenC2 Target
             :type target: IPv4Net/IPv6Net/IPv4Connection/IPv6Connection
-            :param direction: The desired OpenC2 direction
+            :param direction: The OpenC2 direction
             :type direction: Direction
+            :param security_group_id: The ID of the Security Group where the security rule needs to be inserted
+            :type security_group_id: str
 
             :return: The corresponding OpenStack `SecurityGroupRule`.
+            :rtype: SecurityGroupRule
         """
+        
         try:
             security_group_rule = SecurityGroupRule(
-            #    security_group_id=self.security_group_id,
                 security_group_id=security_group_id,
                 direction=direction.name.lower(),
                 ether_type='IPv4' if type(target) == IPv4Net or type(target) == IPv4Connection else 'IPv6',
