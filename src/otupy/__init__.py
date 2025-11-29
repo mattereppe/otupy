@@ -45,7 +45,7 @@ from otupy.core.response import StatusCode, StatusCodeDescription, Response
 from otupy.core.results import Results
 from otupy.core.args import Args
 from otupy.core.encoder import Encoder, Encoders, register_encoder, EncoderError
-from otupy.core.transfer import Transfer
+from otupy.core.transfer import Transfer, transfer, Transfers
 from otupy.core.profile import Profile
 from otupy.core.target import target
 from otupy.core.register import Register

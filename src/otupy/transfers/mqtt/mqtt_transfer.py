@@ -74,6 +74,7 @@ class OpenC2Role(aenum.enum):
 	Consumer = 1
 	Producer = 2
 
+@oc2.transfer("mqtt")
 class MQTTTransfer(oc2.Transfer):
 	""" MQTT Transfer Protocol
 
