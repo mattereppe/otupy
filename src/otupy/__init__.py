@@ -35,7 +35,7 @@ from otupy.types.data import Port, L4Protocol, DateTime, Duration, TargetEnum, N
 from otupy.types.targets import Artifact, CommandID, Device, DomainName, EmailAddr, Features, File, IDNDomainName, IDNEmailAddr, IPv4Net, IPv6Net, IPv4Connection, IPv6Connection, MACAddr, Process, URI, IRI, Properties
 
 from otupy.core.actions import Actions
-from otupy.core.actuator import Actuator
+from otupy.core.actuator import Actuator, Actuators, actuator, actuator_implementation
 from otupy.core.producer import Producer
 from otupy.core.consumer import Consumer
 from otupy.core.message import Message
@@ -50,7 +50,6 @@ from otupy.core.profile import Profile
 from otupy.core.target import target
 from otupy.core.register import Register
 from otupy.core.extensions import Extensions, extension
-from otupy.core.actuator import actuator
 
 from otupy.utils.log_formatting import LogFormatter
 from otupy.utils.media_types import MediaTypes
