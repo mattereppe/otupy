@@ -23,6 +23,7 @@ from otupy.transfers.http.message import Message
 logger = logging.getLogger(__name__)
 """ The logging facility in otupy """
 
+@oc2.transfer("http")
 class HTTPTransfer(oc2.Transfer):
 	""" HTTP Transfer Protocol
 
