@@ -7,6 +7,10 @@ from otupy import Consumer
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
 
+import otupy.encoders # Available as enum in otupy.Encoders
+import otupy.actuators # Available as dict in otupy.Actuators
+import otupy.transfers # Available as dict in otupy.Transfers
+
 
 def load_class(class_name: str) -> type:
     """
