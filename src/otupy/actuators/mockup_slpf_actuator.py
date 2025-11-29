@@ -1,4 +1,4 @@
-""" Mokup `Actuator` for SLPF profile
+""" Mockup `Actuator` for SLPF profile
 
 	This module can be used to test the SLPF without a real backend.
 	It only answers to the request for available features; any other request
@@ -6,7 +6,7 @@
 """
 import logging
 
-from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Actions, Command, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
+from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Actions, Command, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 from otupy.actuators.SQLDatabase import SQLDatabase
 from otupy.actuators.iptables_manager import IptablesManager
 from otupy.core.actions import Actions
@@ -19,14 +19,15 @@ OPENC2VERS=Version(1,0)
 
 MY_IDS = {'hostname': None,
 			'named_group': None,
-			'asset_id': 'mokup',
+			'asset_id': 'mockup',
 			'asset_tuple': None }
 
 # An implementation of the slpf profile. 
-class MokupSlpfActuator:
-	""" Mokup SLPF implementation
+@actuator_implementation("slpf-mockup")
+class MockupSlpfActuator:
+	""" Mockup SLPF implementation
 
-		This class provides a mokup of the SLPF `Actuator`.
+		This class provides a mockup of the SLPF `Actuator`.
 	"""
 	
 	def run(self, cmd):
