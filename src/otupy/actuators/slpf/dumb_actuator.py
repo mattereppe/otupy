@@ -5,7 +5,7 @@
 """
 import logging
 
-from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Results, StatusCode, StatusCodeDescription, Actions, Command, Response, ResponseType, Feature, Features
+from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Results, StatusCode, StatusCodeDescription, Actions, Command, Response, ResponseType, Feature, Features, actuator_implementation
 import otupy.profiles.slpf as slpf
 import otupy.profiles.dumb as dumb 
 
@@ -16,6 +16,7 @@ OPENC2VERS=Version(1,0)
 
 # A dumb actuator that does not implement any function but can
 # be used to test the openc2 communication.
+@actuator_implementation("slpf-dumb")
 class DumbActuator:
 	def run(self, cmd):
 
