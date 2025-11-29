@@ -1,7 +1,10 @@
 import logging
+import time
 from otupy import Version, StatusCode
 from otupy import  StatusCodeDescription, Actions, Command, Response
 import otupy.profiles.ebpf as ebpf
+from bcc import BPF
+import ctypes as ct
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +15,11 @@ MY_IDS = {
 	'domain': None,
 	'asset_id': None
 }
+class Data(ct.Structure):
+    _fields_ = [
+    ("pid", ct.c_ulonglong),
+    ("comm", ct.c_char * 16)
+]
 class EbpfActuator:
     
     # Internal state storage
@@ -31,13 +39,23 @@ class EbpfActuator:
         except Exception as e:
             return self.__servererror(cmd, e)
 
+
+    def print_event(cpu, data, size):
+        event = ct.cast(data, ct.POINTER(Data)).contents
+        print("%-18.9f %-6d %s" % (time.time(), event.pid >> 32, event.comm.decode()))
     def create(self, cmd):
-        # La logica è la stessa della tua precedente funzione LOAD
-        file_path = cmd.target.ebpf_program.file_path
-        kernel_hook = 'todo'
-        # ... logica per l'aggancio BPF (Netlink/libbpf)
-        print(f"[{self.id}] Esecuzione CREATE: Aggancio {file_path} a {kernel_hook}...")
-        # ...
+
+
+        source_code = cmd.target.obj.file_path
+        hook_point = cmd.target.obj.prog_type
+        b = BPF(text=source_code)
+
+        #mi aggancio alla system che mi serve
+        b.attach_kprobe(event=b.get_syscall_fnname(hook_point), fn_name="syscall__"+ hook_point)
+
+        b["events"].open_perf_buffer(self.print_event)
+
+
         return Response(status=StatusCode.OK, status_text=f"Programma BPF agganciato con successo (CREATE).")
 
     

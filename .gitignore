@@ -1,0 +1,15 @@
+# Python virtual environment
+venv/
+.oc2-env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# OS-specific files
+.DS_Store

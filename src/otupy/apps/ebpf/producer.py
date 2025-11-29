@@ -9,6 +9,7 @@ from otupy.transfers.http import HTTPTransfer
 
 import otupy.profiles.ebpf as ebpf 
 from otupy.profiles.ebpf.actuator import Specifiers as EbpfSpecifiers
+from otupy.profiles.ebpf.targets.ebpf_program import ebpf_program
 from otupy.types.base.array_of import ArrayOf
 from otupy.types.targets.features import Features
 
@@ -33,9 +34,11 @@ def main():
 
     # 3. Define Command Target: Target Features (la forma corretta per query generica)
     # L'istanza è vuota, per ottenere la serializzazione corretta (probabilmente {"features": {}} o {"features": null})
-   #target_features = ebpf_program(file_path=ArrayOf(Name)(),prog_type=ArrayOf(Name)()) 
+    source_file = "source_code.c"
+    hook_point = "execve"
+    target_features = ebpf_program(file_path=ArrayOf(Name)(source_file),prog_type=ArrayOf(Name)(hook_point)) 
 
-    target_features = Features()
+    #target_features = Features()
     # 4. Crea e Invia il Comando
     cmd = oc2.Command(
         action=oc2.Actions.create, 

@@ -8,3 +8,4 @@ azure-mgmt-resourcegraph
 azure.mgmt.sql
 azure.mgmt.web
 proxmoxer
+bcc
