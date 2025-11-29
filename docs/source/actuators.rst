@@ -25,3 +25,8 @@ locate the device it is controlling and the code to control it. It is
 also expected to perform command validation, to detect any action or
 option that it does not support (which may be more restrictive than the
 generic profile validation).
+
+To make the ``Actuator`` automatically available to ``Consumer``s, use
+the ``@actuator_implementation`` decorator, and assign it a name.
+Also remember to import the actuator class in the __init__.py file
+of the actuators folder.
