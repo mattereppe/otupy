@@ -1,0 +1,13 @@
+ctxd-openstack-example:
+  id: "ctxd-openstack"
+  profile: "ctxd"
+  domain: null
+  asset_id: "openstack"
+  hostname: "something"
+  ip: "127.0.0.1"
+  port: 8080
+  protocol: 6
+  endpoint: "/.well-known/openc2"
+  transfer: 1
+  encoding: 1
+  file_enviroment_variables: "something.rc"
