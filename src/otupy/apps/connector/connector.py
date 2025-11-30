@@ -2,47 +2,27 @@
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from glob import glob
+from os.path import dirname
 
+# noinspection PyUnusedImports
+import otupy.actuators  # Do not remove! It is necessary to find the registered actuators.
+from otupy import Actuators
 from otupy import Consumer
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
 
-import otupy.encoders # Available as enum in otupy.Encoders
-import otupy.actuators # Available as dict in otupy.Actuators
-import otupy.transfers # Available as dict in otupy.Transfers
-
-
-def load_class(class_name: str) -> type:
-    """
-    Dynamically load a class from its fully qualified name.
-    :param class_name: Fully qualified name of the class to load.
-    :returns: The class object.
-    :raises ImportError: If the module cannot be imported.
-    :raises AttributeError: If the class does not exist in the module.
-    """
-    try:
-        module_path, class_name = class_name.rsplit(".", 1)
-        module = __import__(module_path, fromlist=[class_name])
-        clazz = getattr(module, class_name)
-
-        return clazz
-    except ImportError as e:
-        # noinspection PyUnboundLocalVariable
-        raise ImportError(f"Could not import module {module_path}: {e}")
-    except AttributeError as e:
-        # noinspection PyUnboundLocalVariable
-        raise AttributeError(f"Class {class_name} not found in module {module_path}: {e}")
-
 
 def main() -> None:
     """The main function."""
+    # Parse the CLI arguments.
     arguments = ArgumentParser()
-    arguments.add_argument("-c", "--config", default="connector.ini", help="path to the configuration file")
+    arguments.add_argument("-c", "--config", default=f"{dirname(__file__)}/connector.ini",
+                           help="path to the configuration file")
     args = arguments.parse_args()
 
+    # Parse the configuration file.
     config = ConfigParser()
     config.read(args.config)
-
     ip = config["connector"].get("ip")
     port = config["connector"].getint("port")
     endpoint = config["connector"].get("endpoint")
@@ -58,22 +38,23 @@ def main() -> None:
         actuator_config.read(file)
         for name in actuator_config.sections():
             print(f"Loading {name}...")
-            clazz = load_class(actuator_config[name].get("class"))
-            if not hasattr(clazz, "run"):
-                raise RuntimeError(f"The class {clazz} does not have a run method")
+            identifier = actuator_config[name].get("id")
+            if identifier not in Actuators:
+                raise RuntimeError(f"{identifier} is not a registered actuator")
+            clazz = Actuators[identifier]
             parameters = {
-                "asset_id":name,
-                "ip":ip,
-                "port":port,
-                "endpoint":endpoint,
-                "protocol":protocol,
-                "transfer":transfer,
-                "encoding":encoding,
-                "hostname":hostname
+                "asset_id": name,
+                "ip": ip,
+                "port": port,
+                "endpoint": endpoint,
+                "protocol": protocol,
+                "transfer": transfer,
+                "encoding": encoding,
+                "hostname": hostname
             }
             profile = actuator_config[name].get("profile")
             for key in actuator_config[name]:
-                if key in ("class", "profile"):
+                if key in ("id", "profile"):
                     continue
                 value = None
                 try:
@@ -94,7 +75,6 @@ def main() -> None:
                     value = None
                 parameters[key] = value
             actuators[(profile, name)] = clazz(**parameters)
-
 
     # noinspection PyTypeChecker
     consumer = Consumer("connector", actuators, JSONEncoder(), HTTPTransfer(ip, port, endpoint))
