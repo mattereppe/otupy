@@ -6,14 +6,20 @@ from os.path import dirname
 
 # noinspection PyUnusedImports
 import otupy.actuators  # Do not remove! It is necessary to find the registered actuators.
-from otupy import Actuators
+# noinspection PyUnusedImports
+import otupy.encoders  # Do not remove! It is necessary to find the registered encoders.
+# noinspection PyUnusedImports
+import otupy.transfers  # Do not remove! It is necessary to find the registered transferers.
+from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer
-from otupy.encoders.json import JSONEncoder
-from otupy.transfers.http import HTTPTransfer
 
 
 def main() -> None:
-    """The main function."""
+    """
+    The main function.
+
+    :raise RuntimeError: if something goes wrong
+    """
     # Parse the CLI arguments.
     arguments = ArgumentParser()
     arguments.add_argument("-c", "--config", default=f"{dirname(__file__)}/connector.ini",
@@ -27,8 +33,8 @@ def main() -> None:
     port = config["connector"].getint("port")
     endpoint = config["connector"].get("endpoint")
     protocol = config["connector"].getint("protocol")
-    transfer = config["connector"].getint("transfer")
-    encoding = config["connector"].getint("encoding")
+    transfer = config["connector"].get("transfer")
+    encoding = config["connector"].get("encoding")
     hostname = config["connector"].get("hostname")
     configs = config["connector"].get("configs")
 
@@ -76,8 +82,17 @@ def main() -> None:
                 parameters[key] = value
             actuators[(profile, name)] = clazz(**parameters)
 
-    # noinspection PyTypeChecker
-    consumer = Consumer("connector", actuators, JSONEncoder(), HTTPTransfer(ip, port, endpoint))
+    # Load the encoder.
+    if encoding not in Encoders.__members__:
+        raise RuntimeError(f"{encoding} is not a registered encoding schema")
+    encoder = Encoders[encoding]
+
+    # Load the transferer (beautiful name, eh?).
+    if transfer not in Transfers:
+        raise RuntimeError(f"{transfer} is not a registered transfer schema")
+    transferer = Transfers[transfer](ip, port, endpoint)
+
+    consumer = Consumer("connector", actuators, encoder, transferer)
     consumer.run()
 
 
