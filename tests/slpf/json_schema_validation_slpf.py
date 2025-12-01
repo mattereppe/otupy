@@ -3,10 +3,10 @@ import enum
 
 from jsonschema import validate
 
-json_schema_cmd='slpf_tests/openc2-json-schema/schemas/command.json'
-json_schema_rsp='slpf_tests/openc2-json-schema/schemas/response.json'
-json_schema_contrib = 'slpf_tests/openc2-json-schema/schemas/contrib/oc2slpf-v1.0-wd08_update.json'
-json_schema_http = 'slpf_tests/openc2-http-json-schema/message.json'
+json_schema_cmd='../json/openc2-json-schema/schemas/command.json'
+json_schema_rsp='../json/openc2-json-schema/schemas/response.json'
+json_schema_contrib = '../json/openc2-json-schema/schemas/contrib/oc2slpf-v1.0-wd08_update.json'
+json_schema_http = '../json/openc2-http-json-schema/message.json'
 
 class Validation(enum.Enum):
 	command  = 1

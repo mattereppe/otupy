@@ -1,4 +1,4 @@
 /.oc2_env/
 /.pytest_cache/
 /.vscode/
-/slpf_tests/test_json/.pytest_cache/
+/tests/slpf/test_json/.pytest_cache/

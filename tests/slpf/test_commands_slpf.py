@@ -1,8 +1,6 @@
 import pytest
-import os
 import logging
 import ipaddress
-import json
 import time
 import datetime
 import subprocess
@@ -10,19 +8,15 @@ import signal
 import threading
 import itertools
 
-
-from helpers import load_json, load_files, send_raw_command
-from otupy import Encoder, Command, Response, Message, StatusCode, EncoderError, Actions, Args, ResponseType, DateTime, Duration, IPv4Connection, IPv6Connection, IPv4Net, IPv6Net, L4Protocol, Port, File, Hashes, Binaryx, Features, Feature
+from otupy import Encoder, Command, Response, Message, StatusCode, Actions, Args, ResponseType, DateTime, Duration, IPv4Connection, IPv6Connection, IPv4Net, IPv6Net, L4Protocol, Port, File, Hashes, Binaryx, Features, Feature
 from otupy.core.producer import Producer
-import otupy.transfers.http
 from otupy.transfers.http.http_transfer import HTTPTransfer
-import otupy.transfers.http.message as http
 from otupy.encoders.json import JSONEncoder
 
 import otupy.profiles.slpf as slpf
 from otupy.profiles.slpf.args import Direction
 from otupy.profiles.slpf.data import DropProcess
-import slpf_tests.test_json.json_schema_validation_slpf as json_schema_validation_slpf
+import tests.slpf.json_schema_validation_slpf as json_schema_validation_slpf
 
 good_query_commands = []
 good_allow_commands = []
