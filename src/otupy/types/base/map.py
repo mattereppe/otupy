@@ -1,7 +1,7 @@
 import logging
 import typing
 
-from otupy import EncoderError
+from otupy.core.encoder import EncoderError
 from otupy.types.base.openc2_type import Openc2Type
 
 logger = logging.getLogger(__name__)
