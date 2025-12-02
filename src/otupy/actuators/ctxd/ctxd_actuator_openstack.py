@@ -20,7 +20,6 @@ from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.transfer import Transfer
 from otupy.profiles.ctxd.data.vm import VM
@@ -41,11 +40,6 @@ logger = logging.getLogger(__name__)
 OPENC2VERS=Version(1,0)
 """ Supported OpenC2 Version """
 
-MY_IDS = {
-	'domain': None,
-	'asset_id': None
-}
-
 # An implementation of the ctxd profile. 
 @actuator_implementation("ctxd-openstack")
 class CTXDActuator_openstack(CTXDActuator):
@@ -58,31 +52,18 @@ class CTXDActuator_openstack(CTXDActuator):
 	""" Name of the service """
 	my_links: ArrayOf(Link) = None # type: ignore
 	"""It identifies the type of the service"""
-	domain : str = None
-	asset_id : str = None
-	hostname: any = None
-	ip: any = None
-	port: any = None
-	protocol: any = None
-	endpoint: any = None
-	transfer: any = None
-	encoding: any = None
-	file_enviroment_variables : any = None
+	specifiers : dict = None
+	consumer: dict = None
+	auth: dict = None
+	services: list = None
+	config: dict = None
 	conn : any = None #connection to openstack
 	
-	def __init__(self, domain, asset_id, hostname, ip, port, protocol, endpoint, transfer, encoding, file_enviroment_variables):
-		MY_IDS['domain'] = domain
-		MY_IDS['asset_id'] = asset_id
-		self.domain = domain
-		self.asset_id = asset_id
-		self.hostname = hostname
-		self.ip = ip
-		self.port = port
-		self.protocol = protocol
-		self.endpoint = endpoint
-		self.transfer = transfer
-		self.encoding = encoding
-		self.file_enviroment_variables = file_enviroment_variables
+	def __init__(self, specifiers, consumer, auth, config, services=[], **kwargs):
+		self.specifiers = specifiers
+		self.consumer = consumer
+		self.auth = auth
+		self.config = config
 
 		self.connect_to_openstack()
 		self.my_links = self.get_links()
@@ -102,12 +83,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 		openstack_service = Service(name= Name('openstack'), type=ServiceType(array_cloud_services[0]), links=self.get_name_links(self.my_links),
 									 subservices=None, owner= self.asset_id, release=None, security_functions=None,
-									 actuator=Consumer(server=Server(Hostname(self.hostname)), 
-													   port=self.port,
-													   protocol= L4Protocol(self.protocol),
-													   endpoint= self.endpoint,
-													   transfer=Transfer(self.transfer),
-													   encoding=Encoding(self.encoding)))
+									 actuator=Consumer(**self.consumer))
 		return ArrayOf(Service)([openstack_service])
 
 
@@ -120,37 +96,39 @@ class CTXDActuator_openstack(CTXDActuator):
 		#definisco il link control tra cloud e vm
 		links = ArrayOf(Link)()
 		for vm in vms:
-			tmp_vm = VM(description='vm', 
+			print(vm['name'], vm['description'])
+			tmp_vm = VM(vm['description'],
 							id= vm['id'], 
 							hostname= Hostname(vm['name']),
 							os = OS(name=self.openstack_server_os(vm['image']['id'])))
 
+			logger.debug("Found VM: %s", str(tmp_vm))
 			array_vms.append(tmp_vm)
 			
-			tmp_peer = Peer(service_name= Name('vm\n'+ vm['addresses']['Net01'][0]['addr']), 
-							role= PeerRole(9), #VM is controlled by Openstack
-							consumer=Consumer(server=Server(Hostname(vm['name'])),
-												port=self.port,
-												protocol= L4Protocol(self.protocol),
-												endpoint= self.endpoint,
-												transfer=Transfer(self.transfer),
-												encoding=Encoding(self.encoding)))
+			tmp_peer = Peer(service_name= Name(vm['name']),
+							role= PeerRole.client ) #VM is controlled by Openstack
+#							consumer=Consumer(server=Server(Hostname(vm['name'])),
+#												port=self.port,
+#												protocol= L4Protocol(self.protocol),
+#												endpoint= self.endpoint,
+#												transfer=Transfer(self.transfer),
+#												encoding=Encoding(self.encoding)))
 
 			links.append(Link(name = Name(vm['id']), link_type=LinkType(4), peers=ArrayOf(Peer)([tmp_peer])))
 
-		#create a dumb slpf peer
-		slpf_peer = Peer(service_name= Name('slpf'),
-						role= PeerRole(3), #The slpf is hosted by Openstack
-						consumer=Consumer(server=Server(Hostname('os-fw')),
-											port=self.port,
-											protocol= L4Protocol(self.protocol),
-											endpoint= self.endpoint,
-											transfer=Transfer(self.transfer),
-											encoding=Encoding(self.encoding)))
-				
-		links.append(Link(name = Name('os-fw'), link_type=LinkType(2), peers=ArrayOf(Peer)([slpf_peer])))
-		#end creation of dumb slpf
-		
+#		#create a dumb slpf peer
+#		slpf_peer = Peer(service_name= Name('slpf'),
+#						role= PeerRole(3), #The slpf is hosted by Openstack
+#						consumer=Consumer(server=Server(Hostname('os-fw')),
+#											port=self.port,
+#											protocol= L4Protocol(self.protocol),
+#											endpoint= self.endpoint,
+#											transfer=Transfer(self.transfer),
+#											encoding=Encoding(self.encoding)))
+#				
+#		links.append(Link(name = Name('os-fw'), link_type=LinkType(2), peers=ArrayOf(Peer)([slpf_peer])))
+#		#end creation of dumb slpf
+#		
 		return links
 	
 	
@@ -160,46 +138,50 @@ class CTXDActuator_openstack(CTXDActuator):
 		
 		for link in links:
 			name_links.append(link.name.obj)
-			
+
 		return name_links
 	
 
 	def connect_to_openstack(self):
-		#load enviroment variables into linux OS to connect to openstack
-		if(self.file_enviroment_variables is not None): #if it is none, it will use the enviroment variables already present in the system
-			with open(self.file_enviroment_variables, 'r') as f:
-				for line in f:
-					line = line.strip()
-					if line.startswith('export '):  # Only process lines starting with 'export'
-						# Remove 'export ' and split on the first '='
-						line = line[len('export '):]
-						if '=' in line:
-							key, value = line.split('=', 1)
-							# Strip quotes around the value if they exist (handle the case of values like "SreX1$")
-							value = value.strip('"').strip("'")
-							os.environ[key] = value
-		
+
 		try:
-		# Initialize the OpenStack connection using environment variables
-			self.conn = openstack.connect()
+			# Get access to OpenStack (the following mechanism is largely undocumented.
+			# See: https://github.com/openstack/openstacksdk/blob/3d45cecb3a897bf9bb10613bfc6ec82a395c153f/doc/source/user/transition_from_profile.rst#L154
+			config_dict=openstack.config.defaults.get_defaults()
+			config_dict.update(
+				{'name': 'iccio', 'cacert': '/etc/ssl/certs/TNTCA2.crt'},
+			)
+	
+			loader = openstack.config.OpenStackConfig(
+	  		  load_yaml_config=False,
+	    		app_name='unused',
+	    		app_version='1.0')
+			cloud_region = loader.get_one_cloud(
+	    		region_name='',
+	    		auth_type='password',
+				auth=self.auth,
+				cacert=self.config['cacert'],
+	    		)
+			self.conn = openstack.connection.from_config(cloud_config=cloud_region)
+	
 
         # Get the token from the connection object (it will automatically handle authentication)
 			token = self.conn.authorize()
 
         # Verify successful authentication by checking token
 			if token:
-				print("Authentication successful!")
-				print(f"Token: {token}")
+				logger.info("Authentication successful!")
+				logger.debug(f"Token: {token}")
 			else:
-				print("Authentication failed.")
+				logger.error("Authentication failed.")
     
 		except Exception as e:
-			print(f"An error occurred: {e}")
+			logger.error(f"An error occurred: {e}")
 
 	
 	def openstack_service_list(self):
 		if not self.conn:
-			print("Connection to OpenStack is not established.")
+			logger.error("Connection to OpenStack is not established.")
 			return
 		
 		try:
@@ -215,12 +197,12 @@ class CTXDActuator_openstack(CTXDActuator):
 			return services_list
 		
 		except Exception as e:
-			print(f"Failed to retrieve service list: {e}")
+			logger.warning("Failed to retrieve service list: %s",e)
 			return Exception("Failed to retrieve service list")
 		
 	def openstack_server_list(self):
 		if not self.conn:
-			print("Connection to OpenStack is not established.")
+			logger.error("Connection to OpenStack is not established.")
 			return
 
 		try:
@@ -237,7 +219,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			return server_list
 
 		except Exception as e:
-			print(f"Failed to retrieve server list: {e}")
+			logger.warning("Failed to retrieve server list: %s", e)
 			return Exception("Failed to retrieve server list")
 		
 
@@ -250,8 +232,8 @@ class CTXDActuator_openstack(CTXDActuator):
 			if image:
 				return image.name  # Return the name of the image (OS name)
 			else:
-				print(f"Image with ID {image_id} not found.")
+				logger.warning("Image with ID %s not found.", image_id)
 				return None
 		except Exception as e:
-			print(f"Failed to retrieve OS for image ID {image_id}: {e}")
+			logger.warning(f"Failed to retrieve OS for image ID %s: %s", image_id, e)
 			return None
