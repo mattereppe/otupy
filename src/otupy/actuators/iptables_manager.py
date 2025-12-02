@@ -47,11 +47,11 @@ class IptablesManager:
 		if isinstance(target, IPv4Connection): # or isinstance(target.IPv6Connection):
 			src_ip = target.src_addr
 			dst_ip = target.dst_addr
-			logger.debug("protocol: %s", protocol)
+			logger.debug("protocol: %s", target.protocol)
 			src_port = target.src_port
 			dst_port = target.dst_port
 			protocol = target.protocol.name
-			logger.debug("protocol: %s", protocol)
+			logger.debug("protocol: %s", target.protocol)
 			cmd = f"{base_cmd} -p {protocol}"
 			if src_ip:
 				cmd += f" -s {src_ip}"

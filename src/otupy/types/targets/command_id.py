@@ -21,7 +21,7 @@ class CommandID:
 			raise ValueError("Invalid Command-ID")
 		self._cmdid = cmdid
 
-	def get(cmdid):
+	def get(self, cmdid):
 		""" Returns the value """
 		return self._cmdid
 

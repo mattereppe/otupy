@@ -142,7 +142,7 @@ class MokupSlpfActuator:
 		try:
 			res = slpf.Results(features)
 		except Exception as e:
-			return __servererror(cmd, e)
+			return self.__servererror(cmd, e)
 
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
