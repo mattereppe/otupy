@@ -20,11 +20,6 @@ logger = logging.getLogger(__name__)
 OPENC2VERS=Version(1,0)
 """ Supported OpenC2 Version """
 
-MY_IDS = {
-	'domain': None,
-	'asset_id': None
-}
-
 # An implementation of the ctxd profile. 
 class CTXDActuator:
 	""" CTXD implementation
@@ -42,8 +37,6 @@ class CTXDActuator:
 	def __init__(self, services, links, domain, asset_id):
 		self.my_services = services
 		self.my_links = links
-		MY_IDS['domain'] = domain
-		MY_IDS['asset_id'] = asset_id
 		self.domain = domain
 		self.asset_id = asset_id
 
@@ -83,8 +76,7 @@ class CTXDActuator:
 
 		for k,v in actuator.items():		
 			try:
-				#if v == MY_IDS[k]:
-				if(v == self.asset_id):
+				if(v == self.specifiers['asset_id']):
 					return True
 			except KeyError:
 				pass
@@ -154,27 +146,25 @@ class CTXDActuator:
 	def query_context(self, cmd):
 		services = cmd.target.obj.services
 		links = cmd.target.obj.links
+		res_services = ArrayOf(Name)()
+		res_links = ArrayOf(Name)()
 
 		try:
 			if(services is not None and self.my_services is not None):
 				if(len(services) == 0):
 					if(cmd.args.get('name_only') == True):
-						res_services = ArrayOf(Name)()
 						for i in self.my_services:
 							res_services.append(i.name)
 					else:
-						res_services = ArrayOf(Service)()
 						for i in self.my_services:
 							res_services.append(i)
 				else:
 					if(cmd.args.get('name_only') == True):
-						res_services = ArrayOf(Name)()
 						for i in self.my_services:
 							for j in services:
 								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
 									res_services.append(i.name) 
 					else:
-						res_services = ArrayOf(Service)()
 						for i in self.my_services:
 							for j in services:
 								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
@@ -182,22 +172,18 @@ class CTXDActuator:
 			if(links is not None and self.my_links is not None):
 				if(len(links) == 0):
 					if(cmd.args.get('name_only') == True):
-						res_links = ArrayOf(Name)()
 						for i in self.my_links:
 							res_links.append(i.name)
 					else:
-						res_links = ArrayOf(Link)()
 						for i in self.my_links:
 							res_links.append(i)
 				else:
 					if(cmd.args.get('name_only') == True):
-						res_links = ArrayOf(Name)()
 						for i in self.my_links:
 							for j in links:
 								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
 									res_links.append(i.name) 
 					else:
-						res_links = ArrayOf(Link)()
 						for i in self.my_links:
 							for j in links:
 								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
@@ -215,6 +201,12 @@ class CTXDActuator:
 			
 		if(cmd.args.get('name_only') == False):
 			if(services is not None and links is not None):
+				print("------------ Before error")
+				print("res_services: ", res_services)
+				print("res_links: ", res_links)
+				Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services, links = res_links))
+
+				print("-------------- After error")
 				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services, links = res_links))
 			elif(services is not None and links is None):
 				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services))

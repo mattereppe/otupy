@@ -12,6 +12,7 @@ import dataclasses
 import requests
 import logging
 import copy
+import re
 
 from flask import Flask, request, make_response
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
@@ -73,6 +74,7 @@ class HTTPTransfer(oc2.Transfer):
 			raise UnsupportedMediaType("Unsupported content type")
 
 		enctype = (content_type.removeprefix('application/'+oc2.Message.content_type+'+').split(';')[0]).strip()
+		
 		try:
 			encoder = oc2.Encoders[enctype].value
 		except KeyError:
@@ -80,10 +82,13 @@ class HTTPTransfer(oc2.Transfer):
 
 		# HTTP processing to extract the headers
 		# and the transport body
-		if encoder.is_binary:
-			data_text = data.decode('utf-8') #binary data (cbor)
+
+		# Both Flask and response returns strings as binary data. They must be translated back to ascii format that can
+		# be processed by text-based decoders (json, xml, yaml, ...)
+		if data.isascii():
+			data_text = data.decode('utf-8') # Convert to a string whenever possible
 		else:
-			data_text = data # text data 
+			data_text = data # Binary data, the encoder will take care of deserializing it
 		msg = encoder.decode(data_text, Message).get()
 		msg.content_type = hdr['Content-type'].removeprefix('application/').split('+')[0]
 		msg.version = oc2.Version.fromstr(hdr['Content-type'].split(';')[1].removeprefix("version="))
@@ -122,7 +127,6 @@ class HTTPTransfer(oc2.Transfer):
 		date = msg.created if msg.created else int(oc2.DateTime())
 		openc2headers={'Content-Type': content_type, 
 							'Accept': content_type, 
-							'Content-Encoding': encoder.getName(),
 							'Date': oc2.DateTime(date).httpdate()}
 
 		logger.info("Sending to %s", self.url)
@@ -137,15 +141,21 @@ class HTTPTransfer(oc2.Transfer):
 	
 		# TODO: How to manage HTTP response code? Can we safely assume they always match the Openc2 response?
 		try:
-			content_encoding = response.headers['Content-Encoding']
-			if content_encoding is not None and oc2.Encoders[content_encoding].value.is_binary:
-				logger.debug("Content is not text!")
-				msg, encoder = self._fromhttp(response.headers, response.content)
-			else:
-				if response.text != "":
-					msg, encoder = self._fromhttp(response.headers, response.text)
-				else:
-					msg = None
+			# Parse the encoder from the 'Content-Type' string
+			content_encoding = None
+			p = re.search("application/"+content_type+"\+([a-z]+);version",response.headers["Content-Type"])
+			if p:
+				content_encoding = p.group(1)	
+			msg, encoder = self._fromhttp(response.headers, response.content)
+#content_encoding = response.headers['Content-Encoding']
+#			if content_encoding is not None and oc2.Encoders[content_encoding].value.is_binary:
+#				logger.debug("Content is not text!")
+#				msg, encoder = self._fromhttp(response.headers, response.content)
+#			else:
+#				if response.text != "":
+#					msg, encoder = self._fromhttp(response.headers, response.text)
+#				else:
+#					msg = None
 		except ValueError as e:
 			msg = oc2.Message(oc2.Content())
 			msg.status = response.status_code
@@ -165,9 +175,6 @@ class HTTPTransfer(oc2.Transfer):
 			else:	
 				content_type = f"text/plain"
 			headers['Content-Type']= content_type
-			# This is not required by the HTTP Transfer specification, but
-			# it helps manage binary data
-			headers['Content-encoding']=encoder.getName()
 			date = msg.created if msg.created else int(oc2.DateTime())
 			data = self._tohttp(msg, encoder)
 		else:
