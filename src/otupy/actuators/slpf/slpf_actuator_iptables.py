@@ -1,16 +1,15 @@
-import logging
-import subprocess
-import os
 import ipaddress
+import logging
+import os
+import subprocess
 
-
+from otupy import Actions, IPv4Net, IPv4Connection, IPv6Net, IPv6Connection, StatusCode
 from otupy.actuators.slpf.slpf_actuator import SLPFActuator
-
-from otupy import Actions, IPv4Net, IPv4Connection , IPv6Net, IPv6Connection, StatusCode
 from otupy.profiles.slpf.args import Direction
 from otupy.profiles.slpf.data import DropProcess
 
 logger = logging.getLogger(__name__)
+
 
 class SLPFActuator_iptables(SLPFActuator):
     """ `iptables-based` SLPF Actuator implementation.
@@ -18,7 +17,11 @@ class SLPFActuator_iptables(SLPFActuator):
         This class provides an implementation of the SLPFActuator using `iptables`.
     """
 
-    def __init__(self, iptables_rules_directory_path=None, iptables_rules_v4_filename=None, iptables_rules_v6_filename=None, iptables_input_chain_name=None, iptables_output_chain_name=None, iptables_forward_chain_name=None, iptables_cmd=None, ip6tables_cmd=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
+    def __init__(self, iptables_rules_directory_path=None, iptables_rules_v4_filename=None,
+                 iptables_rules_v6_filename=None, iptables_input_chain_name=None, iptables_output_chain_name=None,
+                 iptables_forward_chain_name=None, iptables_cmd=None, ip6tables_cmd=None, hostname=None,
+                 named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None,
+                 db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
         """ Initialization of the `iptables-based` SLPF Actuator.
 
             This method creates `custom iptables chain` to manage OpenC2 Commands, 
@@ -67,77 +70,92 @@ class SLPFActuator_iptables(SLPFActuator):
             self.iptables_forward_chain_name = iptables_forward_chain_name if iptables_forward_chain_name else "FORWARD_OC2"
             self.iptables_cmd = iptables_cmd if iptables_cmd else "sudo iptables"
             self.ip6tables_cmd = ip6tables_cmd if ip6tables_cmd else "sudo ip6tables"
-        
+
             try:
-            #   Creating personalized iptables/ip6tables chains and linking them with iptables/ip6tables chains
+                #   Creating personalized iptables/ip6tables chains and linking them with iptables/ip6tables chains
                 if not self.iptables_existing_chain(self.iptables_cmd, self.iptables_input_chain_name):
                     logger.info("[IPTABLES] Creating personalized iptables chain %s", self.iptables_input_chain_name)
                     self.iptables_execute_command(self.iptables_cmd + " -N " + self.iptables_input_chain_name)
                 if not self.iptables_find_link(self.iptables_cmd, 'INPUT', self.iptables_input_chain_name):
-                    logger.info("[IPTABLES] Linking INPUT v4 chain to personalized %s v4 chain", self.iptables_input_chain_name)
+                    logger.info("[IPTABLES] Linking INPUT v4 chain to personalized %s v4 chain",
+                                self.iptables_input_chain_name)
                     self.iptables_execute_command(self.iptables_cmd + " -A INPUT -j " + self.iptables_input_chain_name)
 
                 if not self.iptables_existing_chain(self.iptables_cmd, self.iptables_output_chain_name):
                     logger.info("[IPTABLES] Creating personalized iptables chain %s", self.iptables_output_chain_name)
                     self.iptables_execute_command(self.iptables_cmd + " -N " + self.iptables_output_chain_name)
                 if not self.iptables_find_link(self.iptables_cmd, 'OUTPUT', self.iptables_output_chain_name):
-                    logger.info("[IPTABLES] Linking OUTPUT v4 chain to personalized %s v4 chain", self.iptables_output_chain_name)
-                    self.iptables_execute_command(self.iptables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)     
-                
+                    logger.info("[IPTABLES] Linking OUTPUT v4 chain to personalized %s v4 chain",
+                                self.iptables_output_chain_name)
+                    self.iptables_execute_command(
+                        self.iptables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)
+
                 if not self.iptables_existing_chain(self.iptables_cmd, self.iptables_forward_chain_name):
                     logger.info("[IPTABLES] Creating personalized iptables chain %s", self.iptables_forward_chain_name)
                     self.iptables_execute_command(self.iptables_cmd + " -N " + self.iptables_forward_chain_name)
                 if not self.iptables_find_link(self.iptables_cmd, 'FORWARD', self.iptables_forward_chain_name):
-                    logger.info("[IPTABLES] Linking FORWARD v4 chain to personalized %s v4 chain", self.iptables_forward_chain_name)
-                    self.iptables_execute_command(self.iptables_cmd + " -A FORWARD -j " + self.iptables_forward_chain_name)
+                    logger.info("[IPTABLES] Linking FORWARD v4 chain to personalized %s v4 chain",
+                                self.iptables_forward_chain_name)
+                    self.iptables_execute_command(
+                        self.iptables_cmd + " -A FORWARD -j " + self.iptables_forward_chain_name)
 
                 if not self.iptables_existing_chain(self.ip6tables_cmd, self.iptables_input_chain_name):
                     logger.info("[IPTABLES] Creating personalized ip6tables chain %s", self.iptables_input_chain_name)
                     self.iptables_execute_command(self.ip6tables_cmd + " -N " + self.iptables_input_chain_name)
                 if not self.iptables_find_link(self.ip6tables_cmd, 'INPUT', self.iptables_input_chain_name):
-                    logger.info("[IPTABLES] Linking INPUT v6 chain to personalized %s v6 chain", self.iptables_input_chain_name)
+                    logger.info("[IPTABLES] Linking INPUT v6 chain to personalized %s v6 chain",
+                                self.iptables_input_chain_name)
                     self.iptables_execute_command(self.ip6tables_cmd + " -A INPUT -j " + self.iptables_input_chain_name)
 
                 if not self.iptables_existing_chain(self.ip6tables_cmd, self.iptables_output_chain_name):
                     logger.info("[IPTABLES] Creating personalized ip6tables chain %s", self.iptables_output_chain_name)
                     self.iptables_execute_command(self.ip6tables_cmd + " -N " + self.iptables_output_chain_name)
                 if not self.iptables_find_link(self.ip6tables_cmd, 'OUTPUT', self.iptables_output_chain_name):
-                    logger.info("[IPTABLES] Linking OUTPUT v6 chain to personalized %s v6 chain", self.iptables_output_chain_name)
-                    self.iptables_execute_command(self.ip6tables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)
+                    logger.info("[IPTABLES] Linking OUTPUT v6 chain to personalized %s v6 chain",
+                                self.iptables_output_chain_name)
+                    self.iptables_execute_command(
+                        self.ip6tables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)
 
                 if not self.iptables_existing_chain(self.ip6tables_cmd, self.iptables_forward_chain_name):
                     logger.info("[IPTABLES] Creating personalized ip6tables chain %s", self.iptables_forward_chain_name)
                     self.iptables_execute_command(self.ip6tables_cmd + " -N " + self.iptables_forward_chain_name)
                 if not self.iptables_find_link(self.ip6tables_cmd, 'FORWARD', self.iptables_forward_chain_name):
-                    logger.info("[IPTABLES] Linking FORWARD v6 chain to personalized %s v6 chain", self.iptables_forward_chain_name)
-                    self.iptables_execute_command(self.ip6tables_cmd + " -A FORWARD -j " + self.iptables_forward_chain_name)
+                    logger.info("[IPTABLES] Linking FORWARD v6 chain to personalized %s v6 chain",
+                                self.iptables_forward_chain_name)
+                    self.iptables_execute_command(
+                        self.ip6tables_cmd + " -A FORWARD -j " + self.iptables_forward_chain_name)
 
-            #   Path for iptables/ip6tables files
-            #   These files are used by iptables/ip6tables-save and iptables/ip6tables-restore commands
-                self.iptables_rules_directory_path = iptables_rules_directory_path if iptables_rules_directory_path else os.path.dirname(os.path.abspath(__file__))
+                #   Path for iptables/ip6tables files
+                #   These files are used by iptables/ip6tables-save and iptables/ip6tables-restore commands
+                self.iptables_rules_directory_path = iptables_rules_directory_path if iptables_rules_directory_path else os.path.dirname(
+                    os.path.abspath(__file__))
                 if not os.path.exists(self.iptables_rules_directory_path):
                     raise ValueError("Iptables rules files path does not exists")
-        
-            #   Creating the files
+
+                #   Creating the files
                 self.iptables_rules_v4_filename = iptables_rules_v4_filename if iptables_rules_v4_filename else "iptables_rules.v4"
-                ext = os.path.splitext(self.iptables_rules_v4_filename)[1] 
+                ext = os.path.splitext(self.iptables_rules_v4_filename)[1]
                 if ext != '.v4':
                     raise ValueError("Iptables rules v4 file must have a .v4 extension")
-                if not os.path.exists(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v4_filename)):
+                if not os.path.exists(
+                        os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v4_filename)):
                     logger.info("[IPTABLES] Creating file %s", self.iptables_rules_v4_filename)
-                    with open(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v4_filename), "w") as file:
+                    with open(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v4_filename),
+                              "w") as file:
                         file.write("")
-                    
+
                 self.iptables_rules_v6_filename = iptables_rules_v6_filename if iptables_rules_v6_filename else "iptables_rules.v6"
-                ext = os.path.splitext(self.iptables_rules_v6_filename)[1] 
+                ext = os.path.splitext(self.iptables_rules_v6_filename)[1]
                 if ext != '.v6':
                     raise ValueError("Iptables rules v6 file must have a .v6 extension")
-                if not os.path.exists(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename)):
+                if not os.path.exists(
+                        os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename)):
                     logger.info("[IPTABLES] Creating file %s", self.iptables_rules_v6_filename)
-                    with open(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename), "w") as file:
+                    with open(os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename),
+                              "w") as file:
                         file.write("")
-                
-            #   Initializing SLPF Actuator Manager
+
+                #   Initializing SLPF Actuator Manager
                 super().__init__(hostname=hostname,
                                  named_group=named_group,
                                  asset_id=asset_id if asset_id else 'iptables',
@@ -150,7 +168,7 @@ class SLPFActuator_iptables(SLPFActuator):
             except Exception as e:
                 logger.info("[IPTABLES] Initialization error: %s", str(e))
                 raise e
-            
+
     def iptables_existing_chain(self, base_cmd, chain_name):
         """ This method checks if a custom iptables v4/v6 chain already exists.
 
@@ -168,8 +186,7 @@ class SLPFActuator_iptables(SLPFActuator):
             return True
         except subprocess.CalledProcessError:
             return False
-    
-    
+
     def iptables_find_link(self, base_cmd, chain_name, personalized_chain_name):
         """ This method checks if a custom iptables v4/v6 chain is linked to its corresponding main chain.
 
@@ -195,7 +212,7 @@ class SLPFActuator_iptables(SLPFActuator):
                 if '-j' in rule_parts:
                     j_index = rule_parts.index('-j')
                     if j_index + 1 < len(rule_parts):
-                        founded_chain = rule_parts[j_index + 1] 
+                        founded_chain = rule_parts[j_index + 1]
                         if founded_chain == personalized_chain_name:
                             return True
             return False
@@ -204,15 +221,15 @@ class SLPFActuator_iptables(SLPFActuator):
         except Exception as e:
             raise e
 
-
     def validate_action_target_args(self, action, target, args):
-        try:   
+        try:
             if action == Actions.deny:
                 if 'drop_process' in args and args['drop_process'] == DropProcess.false_ack:
-                    raise ValueError(StatusCode.NOTIMPLEMENTED, "Drop process argument with false ack value not implemented for iptables")
-                
+                    raise ValueError(StatusCode.NOTIMPLEMENTED,
+                                     "Drop process argument with false ack value not implemented for iptables")
+
             if action == Actions.update:
-                ext = os.path.splitext(target['name'])[1] 
+                ext = os.path.splitext(target['name'])[1]
                 if ext != '.v4' and ext != '.v6':
                     raise ValueError(StatusCode.BADREQUEST, "File not supported")
             return None
@@ -227,7 +244,7 @@ class SLPFActuator_iptables(SLPFActuator):
                                             target=target,
                                             direction=direction)
         except Exception as e:
-            raise e   
+            raise e
 
     def execute_deny_command(self, target, direction, drop_process, custom_data=None):
         try:
@@ -237,7 +254,6 @@ class SLPFActuator_iptables(SLPFActuator):
                                             drop_process=drop_process)
         except Exception as e:
             raise e
-        
 
     def execute_delete_command(self, command_to_delete, custom_data=None):
         try:
@@ -252,7 +268,6 @@ class SLPFActuator_iptables(SLPFActuator):
         except Exception as e:
             raise e
 
-        
     def iptables_direction_handler(self, **kwargs):
         """ This method handles the direction of OpenC2 `allow`, `deny` or `delete` commands and 
             the iptables `forward chain`.
@@ -289,7 +304,8 @@ class SLPFActuator_iptables(SLPFActuator):
             logger.info("[IPTABLES] Exception: %s", str(e))
             raise e
 
-    def iptables_create_command(self, action, target, direction, drop_process=None, action_to_delete=None, forward=False):   
+    def iptables_create_command(self, action, target, direction, drop_process=None, action_to_delete=None,
+                                forward=False):
         """ This method creates an iptables v4/v6 `accept rule`, `drop rule` or `delete rule` command.
 
             :param action: Command action.
@@ -347,7 +363,7 @@ class SLPFActuator_iptables(SLPFActuator):
                 if target.dst_port:
                     cmd += f"--dport {target.dst_port} "
             elif type(target) == IPv4Net or type(target) == IPv6Net:
-            #   The address is always considered as a destination address
+                #   The address is always considered as a destination address
                 cmd += "--destination " + target.__str__() + " "
 
             if action == Actions.allow or action_to_delete == Actions.allow:
@@ -362,7 +378,6 @@ class SLPFActuator_iptables(SLPFActuator):
             return cmd
         except Exception as e:
             raise e
-        
 
     def iptables_get_rule_position(self, target, direction, forward):
         """ This method returns the position where the new rule should be inserted in the considered iptables custom chain.
@@ -409,7 +424,7 @@ class SLPFActuator_iptables(SLPFActuator):
                 addr_specifity = 2
                 prot_specifity = 1
                 target_cidr = ipaddress.ip_network(target.__str__(), strict=False)
-                
+
             if not forward:
                 if direction == Direction.ingress:
                     chain = self.iptables_input_chain_name
@@ -424,7 +439,7 @@ class SLPFActuator_iptables(SLPFActuator):
             cmd.append(chain)
             output = subprocess.check_output(cmd, text=True)
             rules = output.strip().splitlines()
-            
+
             pos = 1
             for rule in rules:
                 if not rule.startswith("-A"):
@@ -432,7 +447,7 @@ class SLPFActuator_iptables(SLPFActuator):
 
                 rule_cidr = None
                 rule_parts = rule.split()
-                
+
                 rule_addr_specifity = None
                 if "-d" in rule_parts and "-s" in rule_parts:
                     rule_addr_specifity = 5
@@ -459,7 +474,8 @@ class SLPFActuator_iptables(SLPFActuator):
                 elif not "-p" in rule_parts:
                     rule_prot_specifity = 1
 
-                if rule_addr_specifity < addr_specifity or (rule_addr_specifity == addr_specifity and rule_prot_specifity <= prot_specifity):
+                if rule_addr_specifity < addr_specifity or (
+                        rule_addr_specifity == addr_specifity and rule_prot_specifity <= prot_specifity):
                     if addr_specifity != 2:
                         return pos
                     else:
@@ -468,64 +484,66 @@ class SLPFActuator_iptables(SLPFActuator):
                                 return pos
                         elif rule_addr_specifity < 2:
                             return pos
-                
+
                 pos += 1
 
             return pos
         except Exception as e:
             raise e
 
-
     def save_persistent_commands(self):
         try:
             logger.info("[IPTABLES] Saving iptables v4 rules")
-            cmd = self.iptables_cmd + "-save > " + os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v4_filename)
+            cmd = self.iptables_cmd + "-save > " + os.path.join(self.iptables_rules_directory_path,
+                                                                self.iptables_rules_v4_filename)
             self.iptables_execute_command(cmd)
             logger.info("[IPTABLES] Saving iptables v6 rules")
-            cmd = self.ip6tables_cmd + "-save > " + os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename)
+            cmd = self.ip6tables_cmd + "-save > " + os.path.join(self.iptables_rules_directory_path,
+                                                                 self.iptables_rules_v6_filename)
             self.iptables_execute_command(cmd)
         except Exception as e:
             logger.info("[IPTABLES] An error occurred saving iptables v4/v6 rules: %s", str(e))
             raise e
-        
-    
+
     def restore_persistent_commands(self):
         try:
             logger.info("[IPTABLES] Restoring iptables v4 rules")
-            cmd = self.iptables_cmd + "-restore < " + os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v4_filename)
+            cmd = self.iptables_cmd + "-restore < " + os.path.join(self.iptables_rules_directory_path,
+                                                                   self.iptables_rules_v4_filename)
             self.iptables_execute_command(cmd)
             logger.info("[IPTABLES] Restoring iptables v6 rules")
-            cmd = self.ip6tables_cmd + "-restore < " + os.path.join(self.iptables_rules_directory_path, self.iptables_rules_v6_filename)
+            cmd = self.ip6tables_cmd + "-restore < " + os.path.join(self.iptables_rules_directory_path,
+                                                                    self.iptables_rules_v6_filename)
             self.iptables_execute_command(cmd)
         except Exception as e:
             logger.info("[IPTABLES] An error occurred restoring iptables v4/v6 rules: %s", str(e))
             raise e
-        
+
     def clean_actuator_rules(self):
         try:
-            logger.info("[IPTABLES] Deleting all iptables v4 rules") 
-        #   Deleting rules from iptables
+            logger.info("[IPTABLES] Deleting all iptables v4 rules")
+            #   Deleting rules from iptables
             cmd = self.iptables_cmd + " -F"
             self.iptables_execute_command(cmd)
-        #   Linking personalized iptables chains with iptables chains
+            #   Linking personalized iptables chains with iptables chains
             self.iptables_execute_command(self.iptables_cmd + " -A INPUT -j " + self.iptables_input_chain_name)
-            self.iptables_execute_command(self.iptables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)     
+            self.iptables_execute_command(self.iptables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)
             self.iptables_execute_command(self.iptables_cmd + " -A FORWARD -j " + self.iptables_forward_chain_name)
 
-            logger.info("[IPTABLES] Deleting all iptables v6 rules") 
-        #   Deleting rules from ip6tables
+            logger.info("[IPTABLES] Deleting all iptables v6 rules")
+            #   Deleting rules from ip6tables
             cmd = self.ip6tables_cmd + " -F"
             self.iptables_execute_command(cmd)
-        #   Linking personalized ip6tables chains with ip6tables chains
+            #   Linking personalized ip6tables chains with ip6tables chains
             self.iptables_execute_command(self.ip6tables_cmd + " -A INPUT -j " + self.iptables_input_chain_name)
             self.iptables_execute_command(self.ip6tables_cmd + " -A OUTPUT -j " + self.iptables_output_chain_name)
             self.iptables_execute_command(self.ip6tables_cmd + " -A FORWARD -j " + self.iptables_forward_chain_name)
         except Exception as e:
             logger.info("[IPTABLES] An error occurred deleting all iptables v4/v6 rules: %s", str(e))
             raise e
-        
+
     def execute_update_command(self, name, path):
-        try:             
+        try:
             ext = os.path.splitext(name)[1]
 
             if ext == '.v4':
@@ -538,8 +556,7 @@ class SLPFActuator_iptables(SLPFActuator):
 
             self.restore_persistent_commands()
         except Exception as e:
-            raise e  
-    
+            raise e
 
     def iptables_execute_command(self, cmd):
         """ This method executes an iptables v4/v6 command.
@@ -551,7 +568,6 @@ class SLPFActuator_iptables(SLPFActuator):
         try:
             subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
-             raise e
+            raise e
         except Exception as e:
             raise e
-        

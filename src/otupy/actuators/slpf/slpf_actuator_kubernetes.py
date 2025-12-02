@@ -1,17 +1,18 @@
+import ipaddress
 import logging
 import os
-import ipaddress
 
 from kubernetes import config, client, utils
-from kubernetes.client.rest import ApiException
 
-from otupy.actuators.slpf.slpf_actuator import SLPFActuator
-from otupy import Actions, StatusCode, IPv4Net, IPv4Connection, IPv6Net, IPv6Connection, Response, StatusCodeDescription, Feature, ArrayOf, Version, Nsid, ActionTargets, TargetEnum, L4Protocol
 import otupy.profiles.slpf as slpf
-from otupy.profiles.slpf.profile import Profile
+from otupy import Actions, StatusCode, IPv4Net, IPv4Connection, IPv6Net, IPv6Connection, Response, \
+    StatusCodeDescription, Feature, ArrayOf, Version, Nsid, ActionTargets, TargetEnum, L4Protocol
+from otupy.actuators.slpf.slpf_actuator import SLPFActuator
 from otupy.profiles.slpf.args import Direction
+from otupy.profiles.slpf.profile import Profile
 
 logger = logging.getLogger(__name__)
+
 
 class SLPFActuator_kubernetes(SLPFActuator):
     """ `Kubernetes-based` SLPF Actuator implementation.
@@ -19,7 +20,10 @@ class SLPFActuator_kubernetes(SLPFActuator):
         This class provides an implementation of the SLPFActuator using `Kubernetes`.
     """
 
-    def __init__(self, config_file=None, kube_context=None, namespace=None, subnet_base_label_key=None, generate_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
+    def __init__(self, config_file=None, kube_context=None, namespace=None, subnet_base_label_key=None,
+                 generate_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None,
+                 db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None,
+                 update_directory_path=None):
         """ Initialization of the `Kubernetes-based` SLPF Actuator.
 
             This method connects to Kubernetes and initializes the `SLPF Actuator Manager`.
@@ -53,7 +57,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
             :param update_directory_path: Path to the default directory containing files to be used as update.
             :type update_directory_path: str
         """
-        
+
         try:
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
                 self.config_file = config_file if config_file else None
@@ -62,17 +66,18 @@ class SLPFActuator_kubernetes(SLPFActuator):
                 self.subnet_base_label_key = subnet_base_label_key if subnet_base_label_key else "OC2_NET"
                 self.generate_name = generate_name if generate_name else "slpf-np-"
 
-                self.OPENC2VERS=Version(1,0)
+                self.OPENC2VERS = Version(1, 0)
 
                 self.AllowedCommandTarget = ActionTargets()
                 self.AllowedCommandTarget[Actions.query] = [TargetEnum.features]
-                self.AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection, TargetEnum.ipv4_net, TargetEnum.ipv6_net]
-                self.AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':rule_number']]
+                self.AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
+                                                            TargetEnum.ipv4_net, TargetEnum.ipv6_net]
+                self.AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid + ':rule_number']]
                 self.AllowedCommandTarget[Actions.update] = [TargetEnum.file]
 
-            #   Connecting to Kubernetes
+                #   Connecting to Kubernetes
                 self.connect_to_kubernetes()
-            #   Initializing SLPF Actuator Manager
+                #   Initializing SLPF Actuator Manager
                 super().__init__(hostname=hostname,
                                  named_group=named_group,
                                  asset_id=asset_id if asset_id else 'kubernetes',
@@ -85,7 +90,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
         except Exception as e:
             logger.info("[KUBERNETES] Initialization error: %s", str(e))
             raise e
-        
 
     def connect_to_kubernetes(self):
         """ Kubernetes connection.
@@ -106,7 +110,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
         except Exception as e:
             logger.info("[KUBERNETES] Connection failed.")
             raise e
-        
 
     def query_feature(self, cmd):
         try:
@@ -114,22 +117,22 @@ class SLPFActuator_kubernetes(SLPFActuator):
             for f in cmd.target.getObj():
                 match f:
                     case Feature.versions:
-                        features[Feature.versions.name]=ArrayOf(Version)([self.OPENC2VERS])	
+                        features[Feature.versions.name] = ArrayOf(Version)([self.OPENC2VERS])
                     case Feature.profiles:
                         pf = ArrayOf(Nsid)()
                         pf.append(Nsid(slpf.Profile.nsid))
-                        features[Feature.profiles.name]=pf
+                        features[Feature.profiles.name] = pf
                     case Feature.pairs:
-                        features[Feature.pairs.name]=self.AllowedCommandTarget
+                        features[Feature.pairs.name] = self.AllowedCommandTarget
                     case Feature.rate_limit:
-                        return Response(status=StatusCode.NOTIMPLEMENTED, status_text="Feature 'rate_limit' not yet implemented")
+                        return Response(status=StatusCode.NOTIMPLEMENTED,
+                                        status_text="Feature 'rate_limit' not yet implemented")
                     case _:
                         return Response(status=StatusCode.NOTIMPLEMENTED, status_text="Invalid feature '" + f + "'")
             res = slpf.Results(features)
-            return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
+            return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
         except Exception as e:
             raise e
-        
 
     def validate_action_target_args(self, action, target, args):
         try:
@@ -142,27 +145,27 @@ class SLPFActuator_kubernetes(SLPFActuator):
             if action == Actions.deny:
                 raise ValueError(StatusCode.NOTIMPLEMENTED, "Command not supported.")
             elif action == Actions.update:
-                ext = os.path.splitext(target['name'])[1] 
+                ext = os.path.splitext(target['name'])[1]
                 if ext != '.yaml':
                     raise ValueError(StatusCode.BADREQUEST, "File not supported")
         except ValueError as e:
             raise e
         except Exception as e:
             raise e
-        
 
     def execute_allow_command(self, target, direction, custom_data):
         try:
-            protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else None
+            protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(
+                target) == IPv6Connection) and target.protocol else None
             cidr = None
             port = None
             ports = None
-            
-            metadata=client.V1ObjectMeta(
+
+            metadata = client.V1ObjectMeta(
                 generate_name=self.generate_name,
                 namespace=self.namespace
             )
-            
+
             if direction == Direction.ingress or direction == Direction.both:
                 policy_types = ['Ingress']
                 pod_selector = client.V1LabelSelector(
@@ -183,14 +186,14 @@ class SLPFActuator_kubernetes(SLPFActuator):
                                 port=port
                             )
                         ]
-                
+
                 if cidr:
                     _from = [
                         client.V1NetworkPolicyPeer(
                             ip_block=client.V1IPBlock(cidr=cidr)
                         )
                     ]
-                    
+
                 if _from or ports:
                     ingress = [
                         client.V1NetworkPolicyIngressRule(
@@ -207,11 +210,11 @@ class SLPFActuator_kubernetes(SLPFActuator):
                         pod_selector=pod_selector
                     )
                 )
-                
+
                 self.networking_api.create_namespaced_network_policy(
                     namespace=self.namespace,
                     body=network_policy
-                )   
+                )
 
             if direction == Direction.egress or direction == Direction.both:
                 policy_types = ['Egress']
@@ -246,7 +249,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
                         )
                     ]
 
-                if to or ports: 
+                if to or ports:
                     egress = [
                         client.V1NetworkPolicyEgressRule(
                             to=to,
@@ -270,7 +273,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
 
         except Exception as e:
             raise e
-        
 
     def execute_delete_command(self, command_to_delete, custom_data):
         try:
@@ -278,7 +280,8 @@ class SLPFActuator_kubernetes(SLPFActuator):
             direction = command_to_delete.args['direction']
 
             cidr = None
-            protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else None
+            protocol = target.protocol.name.upper() if (type(target) == IPv4Connection or type(
+                target) == IPv6Connection) and target.protocol else None
             port = None
 
             if direction == Direction.ingress or direction == Direction.both:
@@ -322,7 +325,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
 
                 if not deleted:
                     raise ValueError(StatusCode.INTERNALERROR, "Kubernetes network policy not found.")
-                
+
                 if label_cnt == 1:
                     label_selector = f"{label_key}={label_value}"
                     pods = self.core_api.list_namespaced_pod(namespace=self.namespace, label_selector=label_selector)
@@ -331,13 +334,14 @@ class SLPFActuator_kubernetes(SLPFActuator):
                         if label_key in labels and labels[label_key] == label_value:
                             labels[label_key] = None
                             patch = {"metadata": {"labels": labels}}
-                            self.core_api.patch_namespaced_pod(name=pod.metadata.name, namespace=self.namespace, body=patch)
-                
+                            self.core_api.patch_namespaced_pod(name=pod.metadata.name, namespace=self.namespace,
+                                                               body=patch)
+
             if direction == Direction.egress or direction == Direction.both:
                 policy_types = ['Egress']
                 cidr = None
                 port = None
-                
+
                 label_cnt = 0
                 deleted = False
                 label_key, label_value = list(custom_data['egress_label'].items())[0]
@@ -378,7 +382,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
 
                 if not deleted:
                     raise ValueError(StatusCode.INTERNALERROR, "Kubernetes network policy not found.")
-                
+
                 if label_cnt == 1:
                     label_selector = f"{label_key}={label_value}"
                     pods = self.core_api.list_namespaced_pod(namespace=self.namespace, label_selector=label_selector)
@@ -387,13 +391,13 @@ class SLPFActuator_kubernetes(SLPFActuator):
                         if label_key in labels and labels[label_key] == label_value:
                             labels[label_key] = None
                             patch = {"metadata": {"labels": labels}}
-                            self.core_api.patch_namespaced_pod(name=pod.metadata.name, namespace=self.namespace, body=patch)
+                            self.core_api.patch_namespaced_pod(name=pod.metadata.name, namespace=self.namespace,
+                                                               body=patch)
 
         except ValueError as e:
-            raise e    
+            raise e
         except Exception as e:
             raise e
-        
 
     def kubernetes_get_custom_data(self, target, direction):
         """ This method retrieves the actuator-specific custom data for Kubernetes.
@@ -429,13 +433,12 @@ class SLPFActuator_kubernetes(SLPFActuator):
                 if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_addr:
                     src_addr = target.src_addr.__str__()
                 custom_data['egress_label'] = self.kubernetes_get_label(src_addr)
-                
+
             return custom_data
         except ValueError as e:
             raise e
         except Exception as e:
             raise e
-        
 
     def kubernetes_get_label(self, cidr):
         """ This method creates Kubernetes labels and associates them with the pods affected by the OpenC2 command.
@@ -473,11 +476,10 @@ class SLPFActuator_kubernetes(SLPFActuator):
 
             if not found:
                 raise ValueError(StatusCode.BADREQUEST, f"No pod founded for ip address {cidr}")
-            
-            return { label_key: label_value }
+
+            return {label_key: label_value}
         except Exception as e:
             raise e
-        
 
     def kubernetes_match_policy(self, cidr, protocol, port, direction, policy):
         """ This method checks wheter a Kubernetes `network policy` matches the `cidr`, `protocol` and `port` for the specified direction.
@@ -503,7 +505,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
                 return True
             elif not policy and (cidr or protocol or port):
                 return False
-            
+
             from_or_to = policy._from if direction == Direction.ingress else policy.to
             if (cidr and not from_or_to) or (not cidr and from_or_to):
                 return False
@@ -515,7 +517,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
                     return False
                 if peer.ip_block.cidr != cidr:
                     return False
-                
+
             ports = policy.ports
             if (protocol and not ports) or (not protocol and ports):
                 return False
@@ -530,7 +532,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
             return True
         except Exception as e:
             raise e
-        
 
     def clean_actuator_rules(self):
         try:
@@ -545,7 +546,6 @@ class SLPFActuator_kubernetes(SLPFActuator):
         except Exception as e:
             logger.info("[KUBERNETES] An error occurred deleting all Kubernetes Network Policy: %s", str(e))
             raise e
-    
 
     def execute_update_command(self, name, path):
         try:

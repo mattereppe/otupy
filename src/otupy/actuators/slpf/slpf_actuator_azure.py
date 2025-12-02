@@ -1,23 +1,24 @@
-import logging
-import json
-import uuid
 import ipaddress
-
+import json
+import logging
+import uuid
 from ipaddress import IPv4Network, IPv6Network
 
-from azure.identity import DefaultAzureCredential, ClientSecretCredential
-from azure.mgmt.resource.resources import ResourceManagementClient
-from azure.mgmt.network import NetworkManagementClient
-from azure.mgmt.network.models import NetworkSecurityGroup, SecurityRule
 from azure.core.exceptions import ResourceNotFoundError
+from azure.identity import ClientSecretCredential
+from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.network.models import SecurityRule
+from azure.mgmt.resource.resources import ResourceManagementClient
 
+import otupy.profiles.slpf as slpf
+from otupy import Feature, Version, Actions, IPv4Net, IPv4Connection, IPv6Net, IPv6Connection, L4Protocol, StatusCode, \
+    ArrayOf, ActionTargets, TargetEnum, Nsid, Response, StatusCodeDescription
 from otupy.actuators.slpf.slpf_actuator import SLPFActuator
-from otupy import Feature, Version, Actions, IPv4Net, IPv4Connection , IPv6Net, IPv6Connection, L4Protocol, StatusCode, ArrayOf, ActionTargets, TargetEnum, Nsid, Response, StatusCodeDescription
-import otupy.profiles.slpf as slpf 
-from otupy.profiles.slpf.profile import Profile
 from otupy.profiles.slpf.args import Direction
+from otupy.profiles.slpf.profile import Profile
 
 logger = logging.getLogger(__name__)
+
 
 class SLPFActuator_azure(SLPFActuator):
     """ `MSAzure-based` SLPF Actuator implementation.
@@ -25,7 +26,9 @@ class SLPFActuator_azure(SLPFActuator):
         This class provides an implementation of the SLPFActuator using `MS Azure`.
     """
 
-    def __init__(self, authentication_file, resource_group_name=None, network_security_group_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
+    def __init__(self, authentication_file, resource_group_name=None, network_security_group_name=None, hostname=None,
+                 named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None,
+                 db_commands_table_name=None, db_jobs_table_name=None):
         """ Initialization of the `MSAzure-based` SLPF Actuator.
 
             This method connects to MS Azure and initializes the `SLPF Actuator Manager`.
@@ -55,25 +58,27 @@ class SLPFActuator_azure(SLPFActuator):
             :param update_directory_path: Path to the default directory containing files to be used as update.
             :type update_directory_path: str
         """
-        
+
         try:
             self.authentication_file = authentication_file
             self.resource_group_name = resource_group_name if resource_group_name else "slpf_rg"
             self.network_security_group_name = network_security_group_name if network_security_group_name else "slpf_nsg"
             self.max_num_security_rules = 1000
 
-            self.OPENC2VERS=Version(1,0)
+            self.OPENC2VERS = Version(1, 0)
 
             self.AllowedCommandTarget = ActionTargets()
             self.AllowedCommandTarget[Actions.query] = [TargetEnum.features]
-            self.AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection, TargetEnum.ipv4_net, TargetEnum.ipv6_net]
-            self.AllowedCommandTarget[Actions.deny] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection, TargetEnum.ipv4_net, TargetEnum.ipv6_net]
-            self.AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':rule_number']]
+            self.AllowedCommandTarget[Actions.allow] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
+                                                        TargetEnum.ipv4_net, TargetEnum.ipv6_net]
+            self.AllowedCommandTarget[Actions.deny] = [TargetEnum.ipv4_connection, TargetEnum.ipv6_connection,
+                                                       TargetEnum.ipv4_net, TargetEnum.ipv6_net]
+            self.AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid + ':rule_number']]
 
-        #   Connecting to MS Azure
-            #self.connect_to_azure()
+            #   Connecting to MS Azure
+            # self.connect_to_azure()
 
-        #   Initializing SLPF Actuator Manager
+            #   Initializing SLPF Actuator Manager
             super().__init__(hostname=hostname,
                              named_group=named_group,
                              asset_id=asset_id if asset_id else 'azure',
@@ -85,7 +90,6 @@ class SLPFActuator_azure(SLPFActuator):
         except Exception as e:
             logger.info("[AZURE] Initialization error: %s", str(e))
             raise e
-        
 
     def connect_to_azure(self):
         """ MS Azure connection.
@@ -97,28 +101,28 @@ class SLPFActuator_azure(SLPFActuator):
         try:
             with open(self.authentication_file) as f:
                 credentials = json.load(f)
-            
-        #   Authentication parameters
+
+            #   Authentication parameters
             tenant_id = credentials["tenantId"]
             client_id = credentials["clientId"]
             client_secret = credentials["clientSecret"]
             subscription_id = credentials["subscriptionId"]
-            location = "italynorth" #westeurope
-        #   Authentication
+            location = "italynorth"  # westeurope
+            #   Authentication
             credential = ClientSecretCredential(
                 tenant_id=tenant_id,
                 client_id=client_id,
                 client_secret=client_secret
             )
-        #   Creating resource group
+            #   Creating resource group
             resource_client = ResourceManagementClient(credential, subscription_id)
             if not resource_client.resource_groups.check_existence(self.resource_group_name):
                 resource_group_params = {"location": location}
                 resource_client.resource_groups.create_or_update(self.resource_group_name, resource_group_params)
-        
-        #   Client for network resources management
+
+            #   Client for network resources management
             self.network_client = NetworkManagementClient(credential, subscription_id)
-        #   Creating the NSG if it does not exist
+            #   Creating the NSG if it does not exist
             try:
                 self.network_client.network_security_groups.get(
                     resource_group_name=self.resource_group_name,
@@ -136,7 +140,6 @@ class SLPFActuator_azure(SLPFActuator):
         except Exception as e:
             logger.info("[AZURE] Connection failed.")
             raise e
-        
 
     def query_feature(self, cmd):
         try:
@@ -144,22 +147,22 @@ class SLPFActuator_azure(SLPFActuator):
             for f in cmd.target.getObj():
                 match f:
                     case Feature.versions:
-                        features[Feature.versions.name]=ArrayOf(Version)([self.OPENC2VERS])	
+                        features[Feature.versions.name] = ArrayOf(Version)([self.OPENC2VERS])
                     case Feature.profiles:
                         pf = ArrayOf(Nsid)()
                         pf.append(Nsid(slpf.Profile.nsid))
-                        features[Feature.profiles.name]=pf
+                        features[Feature.profiles.name] = pf
                     case Feature.pairs:
-                        features[Feature.pairs.name]=self.AllowedCommandTarget
+                        features[Feature.pairs.name] = self.AllowedCommandTarget
                     case Feature.rate_limit:
-                        return Response(status=StatusCode.NOTIMPLEMENTED, status_text="Feature 'rate_limit' not yet implemented")
+                        return Response(status=StatusCode.NOTIMPLEMENTED,
+                                        status_text="Feature 'rate_limit' not yet implemented")
                     case _:
                         return Response(status=StatusCode.NOTIMPLEMENTED, status_text="Invalid feature '" + f + "'")
             res = slpf.Results(features)
-            return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
+            return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
         except Exception as e:
             raise e
-        
 
     def validate_action_target_args(self, action, target, args):
         try:
@@ -168,8 +171,8 @@ class SLPFActuator_azure(SLPFActuator):
                     if target.protocol and target.protocol != L4Protocol.tcp and target.protocol != L4Protocol.udp and target.protocol != L4Protocol.icmp:
                         raise ValueError(StatusCode.NOTIMPLEMENTED, "Provided protocol not implemented for MS Azure.")
                 if action == Actions.deny and 'drop_process' in args:
-                    raise ValueError(StatusCode.NOTIMPLEMENTED, "Drop process argument not implemented for MS Azure.")    
-            #    security_rules = self.network_client.security_rules.list(self.resource_group, self.nsg_name)
+                    raise ValueError(StatusCode.NOTIMPLEMENTED, "Drop process argument not implemented for MS Azure.")
+                    #    security_rules = self.network_client.security_rules.list(self.resource_group, self.nsg_name)
             #    if len(security_rules) == self.max_num_security_rules:
             #        raise ValueError(StatusCode.INTERNALERROR, "Maximum number of security rule inserted.")
             elif action == Actions.update:
@@ -178,7 +181,6 @@ class SLPFActuator_azure(SLPFActuator):
             raise e
         except Exception as e:
             raise e
-        
 
     def execute_allow_command(self, target, direction):
         try:
@@ -190,7 +192,6 @@ class SLPFActuator_azure(SLPFActuator):
             )
         except Exception as e:
             raise e
-        
 
     def execute_deny_command(self, target, direction, drop_process):
         try:
@@ -202,7 +203,6 @@ class SLPFActuator_azure(SLPFActuator):
             )
         except Exception as e:
             raise e
-        
 
     def azure_create_security_rule(self, action, target, direction):
         """ This method handles the execution of OpenC2 `allow` and `deny` commands for `MS Azure`.
@@ -234,7 +234,6 @@ class SLPFActuator_azure(SLPFActuator):
             ).result()
         except Exception as e:
             raise e
-        
 
     def execute_delete_command(self, command_to_delete):
         try:
@@ -246,7 +245,6 @@ class SLPFActuator_azure(SLPFActuator):
             )
         except Exception as e:
             raise e
-        
 
     def azure_delete_security_rule(self, action, target, direction):
         """ This method handles the execution of OpenC2 `delete` commands for `MS Azure`.
@@ -270,11 +268,13 @@ class SLPFActuator_azure(SLPFActuator):
                 direction=direction
             )
 
-            security_rules = self.network_client.security_rules.list(resource_group_name=self.resource_group, network_security_group_name=self.nsg_name)
-            security_rules = [ rule for rule in security_rules if rule.direction and rule.direction.lower() == security_rule.direction.lower() ]
+            security_rules = self.network_client.security_rules.list(resource_group_name=self.resource_group,
+                                                                     network_security_group_name=self.nsg_name)
+            security_rules = [rule for rule in security_rules if
+                              rule.direction and rule.direction.lower() == security_rule.direction.lower()]
             security_rules = sorted(security_rules, key=lambda sr: sr.priority if sr.priority else 9999)
             security_rule = self.azure_get_security_rule(security_rule=security_rule, security_rules=security_rules)
-            
+
             if security_rule:
                 logger.info("[AZURE] Deleting Azure security rule " + security_rule.name)
                 self.network_client.security_rules.begin_delete(
@@ -284,11 +284,10 @@ class SLPFActuator_azure(SLPFActuator):
                 ).result()
             else:
                 raise ValueError("[AZURE] Security rule not found.")
-            
+
             self.azure_shift_rules(security_rule, security_rules)
         except Exception as e:
             raise e
-        
 
     def azure_direction_handler(self, func, **kwargs):
         """ This method handles the direction of OpenC2 `allow`, `deny` or `delete` commands.
@@ -309,7 +308,6 @@ class SLPFActuator_azure(SLPFActuator):
             func(**kwargs)
         except Exception as e:
             raise e
-        
 
     def azure_get_security_rule(self, security_rule, security_rules):
         """ This method retrieves the Azure security rule from the list of security rules passed as an argument 
@@ -326,14 +324,14 @@ class SLPFActuator_azure(SLPFActuator):
 
         try:
             for rule in security_rules:
-                if(
-                    rule.direction.lower() == security_rule.direction.lower() and
-                    rule.access.lower() == security_rule.access.lower() and
-                    rule.source_address_prefix == security_rule.source_address_prefix and
-                    rule.destination_address_prefix == security_rule.destination_address_prefix and
-                    rule.protocol.lower() == security_rule.protocol.lower() and
-                    rule.source_port_range == security_rule.source_port_range and
-                    rule.destination_port_range == security_rule.destination_port_range
+                if (
+                        rule.direction.lower() == security_rule.direction.lower() and
+                        rule.access.lower() == security_rule.access.lower() and
+                        rule.source_address_prefix == security_rule.source_address_prefix and
+                        rule.destination_address_prefix == security_rule.destination_address_prefix and
+                        rule.protocol.lower() == security_rule.protocol.lower() and
+                        rule.source_port_range == security_rule.source_port_range and
+                        rule.destination_port_range == security_rule.destination_port_range
                 ):
                     return rule
             return None
@@ -355,7 +353,6 @@ class SLPFActuator_azure(SLPFActuator):
                                                        rule_name)
             except ResourceNotFoundError:
                 return rule_name
-        
 
     def azure_get_priority(self, security_rule):
         """ This method computes the proper priority to assign to the Azure security rule that will be created.
@@ -369,7 +366,7 @@ class SLPFActuator_azure(SLPFActuator):
 
         try:
             address_priority = self.azure_get_address_priority(security_rule)
-            protocol_priority = self.azure_get_protocol_priority(security_rule)  
+            protocol_priority = self.azure_get_protocol_priority(security_rule)
 
             base_priority = 500 * address_priority + 100 * protocol_priority + 100
             if address_priority > 2:
@@ -380,7 +377,8 @@ class SLPFActuator_azure(SLPFActuator):
                 network_security_group_name=self.nsg_name
             )
 
-            security_rules = [ rule for rule in security_rules if rule.direction and rule.direction.lower() == security_rule.direction.lower() ]
+            security_rules = [rule for rule in security_rules if
+                              rule.direction and rule.direction.lower() == security_rule.direction.lower()]
             security_rules = sorted(security_rules, key=lambda sr: sr.priority if sr.priority else 9999)
 
             first_of_this_group = None
@@ -392,12 +390,17 @@ class SLPFActuator_azure(SLPFActuator):
                 rule_prot_priority = self.azure_get_protocol_priority(rule)
 
                 if precedent_rule:
-                    if (rule.priority - (rule.priority % 100)) > (precedent_rule.priority - (precedent_rule.priority % 100)):
-                        if address_priority > rule_addr_priority or (address_priority == rule_addr_priority and protocol_priority > rule_prot_priority):
-                            if (self.azure_get_address_priority(precedent_rule) == rule_addr_priority and self.azure_get_protocol_priority(precedent_rule) == rule_prot_priority):
+                    if (rule.priority - (rule.priority % 100)) > (
+                            precedent_rule.priority - (precedent_rule.priority % 100)):
+                        if address_priority > rule_addr_priority or (
+                                address_priority == rule_addr_priority and protocol_priority > rule_prot_priority):
+                            if (self.azure_get_address_priority(
+                                    precedent_rule) == rule_addr_priority and self.azure_get_protocol_priority(
+                                    precedent_rule) == rule_prot_priority):
                                 base_priority += 100
- 
-                if address_priority < rule_addr_priority or (address_priority == rule_addr_priority and protocol_priority < rule_prot_priority):
+
+                if address_priority < rule_addr_priority or (
+                        address_priority == rule_addr_priority and protocol_priority < rule_prot_priority):
                     break
                 elif address_priority == rule_addr_priority and protocol_priority == rule_prot_priority:
                     if not first_of_this_group:
@@ -409,7 +412,7 @@ class SLPFActuator_azure(SLPFActuator):
                         if rule.priority - precedent_rule.priority > 1:
                             priority_hole = rule.priority - 1
                     if priority_hole and address_priority != 2:
-                        break      
+                        break
                 precedent_rule = rule
 
             if not first_of_this_group:
@@ -420,37 +423,40 @@ class SLPFActuator_azure(SLPFActuator):
                 if priority_hole and address_priority != 2:
                     return priority_hole
                 if not priority_hole and (last_of_this_group.priority + 1) % 100 == 0:
-                    rules = [ rule for rule in security_rules if rule.priority and rule.priority > last_of_this_group.priority ]
+                    rules = [rule for rule in security_rules if
+                             rule.priority and rule.priority > last_of_this_group.priority]
                     rules.reverse()
                     for rule in rules:
                         self.azure_update_priority(
                             security_rule=rule,
-                            new_priority= rule.priority + 100
+                            new_priority=rule.priority + 100
                         )
-            
+
                 if address_priority != 2:
                     return last_of_this_group.priority + 1
                 else:
                     rules = None
                     mov = None
                     new_cidr = ipaddress.ip_network(security_rule.destination_address_prefix, strict=False)
-                    rules = [ rule for rule in security_rules if rule.priority and rule.priority >= first_of_this_group.priority and rule.priority <= last_of_this_group.priority ]
+                    rules = [rule for rule in security_rules if
+                             rule.priority and rule.priority >= first_of_this_group.priority and rule.priority <= last_of_this_group.priority]
                     if priority_hole:
-                        rules_after_hole = [ rule for rule in rules if rule.priority and rule.priority > priority_hole ]
-                        first_cidr_after_hole = ipaddress.ip_network(rules_after_hole[0].destination_address_prefix, strict=False)
+                        rules_after_hole = [rule for rule in rules if rule.priority and rule.priority > priority_hole]
+                        first_cidr_after_hole = ipaddress.ip_network(rules_after_hole[0].destination_address_prefix,
+                                                                     strict=False)
                         if first_cidr_after_hole.prefixlen >= new_cidr.prefixlen:
                             rules = rules_after_hole
                             mov = -1
                         else:
-                            rules = [ rule for rule in rules if rule.priority and rule.priority < priority_hole ]
+                            rules = [rule for rule in rules if rule.priority and rule.priority < priority_hole]
                             if not rules:
                                 return priority_hole
                             rules.reverse()
                             mov = 1
                     else:
                         rules.reverse()
-                        mov = 1                    
-                    
+                        mov = 1
+
                     last_priority = None
                     for rule in rules:
                         cidr = ipaddress.ip_network(rule.destination_address_prefix, strict=False)
@@ -463,10 +469,9 @@ class SLPFActuator_azure(SLPFActuator):
                             )
                         else:
                             return rule.priority + mov
-                    return last_priority                                        
+                    return last_priority
         except Exception as e:
             raise e
-        
 
     def azure_shift_rules(self, security_rule, security_rules):
         """ This method recompacts the priorities of the active Azure security rules due to the removal of a security rule.
@@ -479,7 +484,7 @@ class SLPFActuator_azure(SLPFActuator):
 
         try:
             address_priority = self.azure_get_address_priority(security_rule)
-            protocol_priority = self.azure_get_protocol_priority(security_rule)  
+            protocol_priority = self.azure_get_protocol_priority(security_rule)
             base_priority = 500 * address_priority + 100 * protocol_priority + 100
             if address_priority > 2:
                 base_priority -= 400
@@ -491,22 +496,28 @@ class SLPFActuator_azure(SLPFActuator):
                 rule_prot_priority = self.azure_get_protocol_priority(rule)
 
                 if precedent_rule:
-                    if (rule.priority - (rule.priority % 100)) > (precedent_rule.priority - (precedent_rule.priority % 100)):
-                        if address_priority > rule_addr_priority or (address_priority == rule_addr_priority and protocol_priority > rule_prot_priority):
-                            if (self.azure_get_address_priority(precedent_rule) == rule_addr_priority and self.azure_get_protocol_priority(precedent_rule) == rule_prot_priority):
+                    if (rule.priority - (rule.priority % 100)) > (
+                            precedent_rule.priority - (precedent_rule.priority % 100)):
+                        if address_priority > rule_addr_priority or (
+                                address_priority == rule_addr_priority and protocol_priority > rule_prot_priority):
+                            if (self.azure_get_address_priority(
+                                    precedent_rule) == rule_addr_priority and self.azure_get_protocol_priority(
+                                    precedent_rule) == rule_prot_priority):
                                 base_priority += 100
 
-                if address_priority < rule_addr_priority or (address_priority == rule_addr_priority and protocol_priority < rule_prot_priority):
+                if address_priority < rule_addr_priority or (
+                        address_priority == rule_addr_priority and protocol_priority < rule_prot_priority):
                     break
                 elif address_priority == rule_addr_priority and protocol_priority == rule_prot_priority:
                     last_priority = rule.priority
                 precedent_rule = rule
 
-            rules = [ rule for rule in security_rules if rule.priority and rule.priority >= base_priority and rule.priority <= last_priority ]
+            rules = [rule for rule in security_rules if
+                     rule.priority and rule.priority >= base_priority and rule.priority <= last_priority]
             last_hundreds = last_priority - (last_priority % 100)
             if last_hundreds != base_priority and len(rules) - 1 <= last_hundreds - base_priority:
                 count = 0
-                for rule in rules: 
+                for rule in rules:
                     if rule.priority != security_rule.priority:
                         if rule.priority > base_priority + count:
                             pass
@@ -516,7 +527,7 @@ class SLPFActuator_azure(SLPFActuator):
                         #    )
                         count += 1
 
-                rules = [ rule for rule in security_rules if rule.priority and rule.priority > last_priority ]
+                rules = [rule for rule in security_rules if rule.priority and rule.priority > last_priority]
                 for rule in rules:
                     pass
                 #    self.azure_update_priority(
@@ -526,7 +537,6 @@ class SLPFActuator_azure(SLPFActuator):
 
         except Exception as e:
             raise e
-        
 
     def azure_update_priority(self, security_rule, new_priority):
         """ This method updates the priority of a security rule with a new value passed as an argument.
@@ -546,8 +556,7 @@ class SLPFActuator_azure(SLPFActuator):
                 security_rule_parameters=security_rule
             )
         except Exception as e:
-            raise e  
-        
+            raise e
 
     def azure_get_address_priority(self, security_rule):
         """ This method calculates the level of specificity of an Azure security rule in terms of address (source address, destination address, both, or neither).
@@ -563,12 +572,13 @@ class SLPFActuator_azure(SLPFActuator):
             address_priority = None
             src_addr = security_rule.source_address_prefix if security_rule.source_address_prefix and security_rule.source_address_prefix != "*" else None
             dst_addr = security_rule.destination_address_prefix if security_rule.destination_address_prefix and security_rule.destination_address_prefix != "*" else None
-            
+
             if dst_addr and src_addr:
                 address_priority = 0
             elif dst_addr and not src_addr:
                 dst_addr = ipaddress.ip_network(dst_addr, strict=False)
-                if (type(dst_addr) == IPv4Network and dst_addr.prefixlen != 32) or (type(dst_addr) == IPv6Network and dst_addr.prefixlen != 128):
+                if (type(dst_addr) == IPv4Network and dst_addr.prefixlen != 32) or (
+                        type(dst_addr) == IPv6Network and dst_addr.prefixlen != 128):
                     address_priority = 2
                 else:
                     address_priority = 1
@@ -580,7 +590,6 @@ class SLPFActuator_azure(SLPFActuator):
             return address_priority
         except Exception as e:
             raise e
-        
 
     def azure_get_protocol_priority(self, security_rule):
         """ This method calculates the level of specificity of an Azure security rule in terms of protocol (combination of protocol and source and destionation ports).
@@ -591,7 +600,7 @@ class SLPFActuator_azure(SLPFActuator):
             :return: The protocol priority of the Azure security rule.
             :rtype: int
         """
-        
+
         try:
             protocol_priority = None
             protocol = security_rule.protocol if security_rule.protocol and security_rule.protocol != "*" else None
@@ -612,7 +621,6 @@ class SLPFActuator_azure(SLPFActuator):
             return protocol_priority
         except Exception as e:
             raise e
-        
 
     def azure_from_openc2(self, action, target, direction):
         """ This method generates an MS Azure security rule.
@@ -631,18 +639,23 @@ class SLPFActuator_azure(SLPFActuator):
             :rtype: SecurityRule
         """
 
-        try:           
+        try:
             security_rule = SecurityRule(
                 access=action.__repr__().capitalize(),
                 direction="Inbound" if direction == Direction.ingress else "Outbound",
-                source_address_prefix=target.src_addr.__str__() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_addr else "*",
-                destination_address_prefix=target.__str__() if type(target) == IPv4Net or type(target) == IPv6Net else "*",
-                protocol=target.protocol.name.capitalize() if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.protocol else "*",
-                source_port_range=str(target.src_port) if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.src_port else "*",
-                destination_port_range=str(target.dst_port) if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_port else "*"
+                source_address_prefix=target.src_addr.__str__() if (type(target) == IPv4Connection or type(
+                    target) == IPv6Connection) and target.src_addr else "*",
+                destination_address_prefix=target.__str__() if type(target) == IPv4Net or type(
+                    target) == IPv6Net else "*",
+                protocol=target.protocol.name.capitalize() if (type(target) == IPv4Connection or type(
+                    target) == IPv6Connection) and target.protocol else "*",
+                source_port_range=str(target.src_port) if (type(target) == IPv4Connection or type(
+                    target) == IPv6Connection) and target.src_port else "*",
+                destination_port_range=str(target.dst_port) if (type(target) == IPv4Connection or type(
+                    target) == IPv6Connection) and target.dst_port else "*"
             )
 
-            if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_addr:                
+            if (type(target) == IPv4Connection or type(target) == IPv6Connection) and target.dst_addr:
                 security_rule.destination_address_prefix = target.dst_addr.__str__()
 
             return security_rule
