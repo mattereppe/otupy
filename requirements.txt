@@ -61,3 +61,9 @@ azure-identity==1.23.0
 azure-mgmt-resource==24.0.0
 azure-mgmt-network==29.0.0
 azure-core==1.35.0
+cbor2==5.7.1
+docker-py==1.10.6
+graphviz==0.21
+pymongo==4.15.4
+paho-mqtt==2.1.0
+xmltodict==1.0.2
