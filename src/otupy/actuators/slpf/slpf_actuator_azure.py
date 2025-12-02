@@ -28,7 +28,7 @@ class SLPFActuator_azure(SLPFActuator):
 
     def __init__(self, authentication_file, resource_group_name=None, network_security_group_name=None, hostname=None,
                  named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None,
-                 db_commands_table_name=None, db_jobs_table_name=None):
+                 db_commands_table_name=None, db_jobs_table_name=None, **kwargs):
         """ Initialization of the `MSAzure-based` SLPF Actuator.
 
             This method connects to MS Azure and initializes the `SLPF Actuator Manager`.

@@ -54,7 +54,7 @@ class SLPFActuator:
         file = 'File'
 
     def __init__(self, hostname=None, named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None,
-                 db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
+                 db_name=None, db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None, **kwargs):
         """ Initialization of the `SLPF Actuator Manager`.
 
             Initializes an `sqlite3` database to store `allow` and `deny` OpenC2 Commands, 

@@ -23,7 +23,7 @@ class SLPFActuator_kubernetes(SLPFActuator):
     def __init__(self, config_file=None, kube_context=None, namespace=None, subnet_base_label_key=None,
                  generate_name=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None,
                  db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None,
-                 update_directory_path=None):
+                 update_directory_path=None, **kwargs):
         """ Initialization of the `Kubernetes-based` SLPF Actuator.
 
             This method connects to Kubernetes and initializes the `SLPF Actuator Manager`.

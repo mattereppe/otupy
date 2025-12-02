@@ -19,6 +19,9 @@ OPENC2VERS = Version(1, 0)
 # A dumb actuator that does not implement any function but can
 # be used to test the openc2 communication.
 class DumbActuator:
+    def __init__(self, **kwargs):
+        pass
+
     def run(self, cmd):
 
         try:

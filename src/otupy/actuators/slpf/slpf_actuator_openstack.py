@@ -23,7 +23,7 @@ class SLPFActuator_openstack(SLPFActuator):
 
     def __init__(self, environment_variables_file, project_name, security_group_base_name=None,
                  security_group_base_description=None, hostname=None, named_group=None, asset_id=None, asset_tuple=None,
-                 db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None):
+                 db_directory_path=None, db_name=None, db_commands_table_name=None, db_jobs_table_name=None, **kwargs):
         """ Initialization of the `OpenStack-based` SLPF Actuator.
 
             This method connects to OpenStack and initializes the `SLPF Actuator Manager`.

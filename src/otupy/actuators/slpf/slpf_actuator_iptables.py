@@ -21,7 +21,7 @@ class SLPFActuator_iptables(SLPFActuator):
                  iptables_rules_v6_filename=None, iptables_input_chain_name=None, iptables_output_chain_name=None,
                  iptables_forward_chain_name=None, iptables_cmd=None, ip6tables_cmd=None, hostname=None,
                  named_group=None, asset_id=None, asset_tuple=None, db_directory_path=None, db_name=None,
-                 db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None):
+                 db_commands_table_name=None, db_jobs_table_name=None, update_directory_path=None, **kwargs):
         """ Initialization of the `iptables-based` SLPF Actuator.
 
             This method creates `custom iptables chain` to manage OpenC2 Commands, 
