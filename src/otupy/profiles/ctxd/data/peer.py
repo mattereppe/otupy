@@ -29,13 +29,13 @@ class Peer(otupy.types.base.Record):
 
 	def __repr__(self):
 		return (f"Peer(service_name={self.service_name}, role={self.role},"
-	             f"consumer={self.consumer})")
+	             f"consumer={self.consumer}")
 	
 	def __str__(self):
 		return f"Peer(" \
-	            f"service_name={self.service_name}, " \
-				f"role={self.role}, " \
-	            f"consumer={self.consumer})"
+	            f"service_name={self.service_name.getObj()}, " \
+					f"role={self.role}, " \
+	            f"consumer={self.consumer}" 
 
 	def validate_fields(self):
 		if self.service_name is not None and not isinstance(self.service_name, Name):

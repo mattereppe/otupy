@@ -17,3 +17,16 @@ class Name(Choice):
         else:
             super().__init__(name)
 
+    def __str__(self):
+        return self.getObj()
+
+    def __eq__(self, other):
+        if other == None:
+            return False
+        if( self.getName() != other.getName() ):
+            return False
+        if( self.getObj() == other.getObj() ):
+            return True
+
+        return False
+

@@ -27,16 +27,16 @@ class CTXDActuator:
 		This class provides an implementation of the CTXD `Actuator`.
 	"""
 
-	my_services: ArrayOf(Service) = None # type: ignore
+	services: ArrayOf(Service) = None # type: ignore
 	""" Name of the service """
-	my_links: ArrayOf(Link) = None # type: ignore
+	links: ArrayOf(Link) = None # type: ignore
 	"""It identifies the type of the service"""
 	domain : str = None
 	asset_id : str = None
 	
-	def __init__(self, services, links, domain, asset_id):
-		self.my_services = services
-		self.my_links = links
+	def __init__(self, services=None, links=None, domain=None, asset_id=None):
+		self.services = ArrayOf(Service)()
+		self.links = ArrayOf(Link)()
 		self.domain = domain
 		self.asset_id = asset_id
 
@@ -150,22 +150,22 @@ class CTXDActuator:
 		res_links = ArrayOf(Name)()
 
 		try:
-			if(services is not None and self.my_services is not None):
+			if(services is not None and self.services is not None):
 				if(len(services) == 0):
 					if(cmd.args.get('name_only') == True):
-						for i in self.my_services:
+						for i in self.services:
 							res_services.append(i.name)
 					else:
-						for i in self.my_services:
+						for i in self.services:
 							res_services.append(i)
 				else:
 					if(cmd.args.get('name_only') == True):
-						for i in self.my_services:
+						for i in self.services:
 							for j in services:
 								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
 									res_services.append(i.name) 
 					else:
-						for i in self.my_services:
+						for i in self.services:
 							for j in services:
 								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
 									res_services.append(i) 
@@ -201,12 +201,8 @@ class CTXDActuator:
 			
 		if(cmd.args.get('name_only') == False):
 			if(services is not None and links is not None):
-				print("------------ Before error")
-				print("res_services: ", res_services)
-				print("res_links: ", res_links)
 				Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services, links = res_links))
 
-				print("-------------- After error")
 				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services, links = res_links))
 			elif(services is not None and links is None):
 				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services))
@@ -215,6 +211,14 @@ class CTXDActuator:
 			
 		return Response(status=StatusCode.OK, status_text="Command received: heartbeat")
 		
+	def _get_services(self, name = None, filter = None):
+		service_list= []
+		for s in self.services:
+			if filter == None or ( type(s.type.getObj()) == filter ):
+				if name == None or ( s.name == name ):
+					service_list.append(s)
+
+		return service_list
 		
 
 	def __notimplemented(self, cmd):

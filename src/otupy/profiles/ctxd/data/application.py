@@ -15,15 +15,17 @@ class Application(otupy.types.base.Record):
 	app_type: str = None
 	""" type of the application """
 
-	def __init__(self, description = None, name = None, version = None, owner = None, app_type = None):
+	def __init__(self, description = None, id = None, name = None, version = None, owner = None, app_type = None):
 		if isinstance(description, Application):
 			self.description = description.description
+			self.id = description.id
 			self.name = description.name
 			self.version = description.version
 			self.owner = description.owner
 			self.app_type = description.app_type
 		else:	
 			self.description = description if description is not None else None
+			self.id = id if id is not None else None
 			self.name = name if name is not None else None
 			self.version = version if version is not None else None
 			self.owner = owner if owner is not None else None
@@ -47,6 +49,8 @@ class Application(otupy.types.base.Record):
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):
 			raise TypeError(f"Expected 'description' to be of type {str}, but got {type(self.description)}")
+		if self.id is not None and not isinstance(self.id, str):
+			raise TypeError(f"Expected 'id' to be of type {str}, but got {type(self.id)}")
 		if self.name is not None and not isinstance(self.name, str):
 			raise TypeError(f"Expected 'name' to be of type {str}, but got {type(self.name)}")
 		if self.version is not None and not isinstance(self.version, str):
