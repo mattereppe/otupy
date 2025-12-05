@@ -2,9 +2,11 @@ import logging
 import time
 from otupy import Version, StatusCode
 from otupy import  StatusCodeDescription, Actions, Command, Response
-import otupy.profiles.ebpf as ebpf
-from bcc import BPF
+from otupy.profiles.ebpf.targets.eBPFload_target import eBPFload_file_target
 import ctypes as ct
+from otupy.actuators.Ebpf.manager_eBPF import EBPFManager
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +17,9 @@ MY_IDS = {
 	'domain': None,
 	'asset_id': None
 }
-class Data(ct.Structure):
-    _fields_ = [
-    ("pid", ct.c_ulonglong),
-    ("comm", ct.c_char * 16)
-]
+
 class EbpfActuator:
     
-    # Internal state storage
-    installed_programs = {}
-    ebpf_maps = {} 
     domain : str = None
     asset_id : str = None
     
@@ -40,23 +35,43 @@ class EbpfActuator:
             return self.__servererror(cmd, e)
 
 
-    def print_event(cpu, data, size):
-        event = ct.cast(data, ct.POINTER(Data)).contents
-        print("%-18.9f %-6d %s" % (time.time(), event.pid >> 32, event.comm.decode()))
+
     def create(self, cmd):
+        """
+        Create (attach) an eBPF program via EBPFManager.
+        """
+        # Get the ebpf_program object from the command
+        obj: eBPFload_file_target = cmd.target.getObj()
 
+        # Validate required fields
+        if obj.file is None or obj.direction is None or obj.attach_type is None:
+            return Response(
+                status=StatusCode.BAD_REQUEST,
+                status_text="Missing required eBPF parameters: file, direction, attach_type"
+            )
 
-        source_code = cmd.target.obj.file_path
-        hook_point = cmd.target.obj.prog_type
-        b = BPF(text=source_code)
+        
+        
+        # Load the BPF program
+        #todo handle the interfaces
+        try:
+            EBPFManager.load_ebpf_program(
+                ifaces=["wlp7s0"],
+                bpf_prog=obj.file.Name, 
+                section=obj.file.Section,
+                direction=obj.direction.Name.lower(),
+                attach_type=obj.attach_type.Name.lower()
+            )
+        except Exception as e:
+            return Response(
+                status=StatusCode.INTERNAL_ERROR,
+                status_text=f"Failed to attach eBPF program: {e}"
+            )
 
-        #mi aggancio alla system che mi serve
-        b.attach_kprobe(event=b.get_syscall_fnname(hook_point), fn_name="syscall__"+ hook_point)
-
-        b["events"].open_perf_buffer(self.print_event)
-
-
-        return Response(status=StatusCode.OK, status_text=f"Programma BPF agganciato con successo (CREATE).")
+        return Response(
+            status=StatusCode.OK,
+            status_text="Programma BPF agganciato con successo (CREATE)."
+        )
 
     
     

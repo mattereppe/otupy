@@ -17,8 +17,10 @@ import signal
 import subprocess
 import time
 from pathlib import Path
-from typing import List, Tuple, Optional
+import re
+from typing import List, Optional
 import requests
+
 
 class EBPFManager:
     #RUNDIR → ensures a place to store runtime files.
@@ -33,16 +35,68 @@ class EBPFManager:
         self.PIDFILE = Path(pidfile) if pidfile else self.RUNDIR / "userland.pid"
         self.IFACELIST = self.RUNDIR / "iface.list"
 
+    @staticmethod
+    def secure_validate_token(token: str, allow_abs: bool = True):
+        FORBIDDEN_CHARS = set(";|&$><`\\")
+        DANGEROUS_PATTERNS = [
+            r"\.\.",      # no parent directory traversal
+            r"\s",        # no whitespace inside a token
+            r"[;&|`]",    # no shell metacharacters
+        ]
+        if not isinstance(token, str):
+            raise TypeError(f"Invalid command element (not string): {token}")
+
+        # Basic forbidden characters
+        if any(c in token for c in FORBIDDEN_CHARS):
+            raise ValueError(f"Unsafe character in token: '{token}'")
+
+        # Regex-based checks
+        for pat in DANGEROUS_PATTERNS:
+            if re.search(pat, token):
+                raise ValueError(f"Unsafe token detected: '{token}'")
+
+        # No absolute paths unless explicitly allowed
+        if not allow_abs and token.startswith("/") or token.startswith("~"):
+            raise ValueError(f"Absolute paths are not allowed: '{token}'")
+    @staticmethod
+    def secure_middleware(args):
+        """
+        Validate every element of the command before executing.
+        """
+        if not isinstance(args, (list, tuple)):
+            raise TypeError("Command must be a list or tuple of tokens.")
+
+        if len(args) == 0:
+            raise ValueError("Empty command is not allowed.")
+
+        for token in args:
+            EBPFManager.secure_validate_token(token)
+
+        return args
+
     # -----------------------------
     # Helper: run shell commands
     # -----------------------------
     @staticmethod
     def run_cmd(cmd, check=False, capture_output=False, text=True):
+        # Convert input into list of tokens
         if isinstance(cmd, (list, tuple)):
-            args = cmd
+            args = list(cmd)
         else:
+            # Only allow shlex for string commands
             args = shlex.split(cmd)
-        return subprocess.run(args, check=check, capture_output=capture_output, text=text)
+
+        # --- MIDDLEWARE HERE ---
+        args = EBPFManager.secure_middleware(args)
+        # ------------------------
+
+        # Safe: no shell=True
+        return subprocess.run(
+            args,
+            check=check,
+            capture_output=capture_output,
+            text=text
+    )
 
     # -----------------------------
     # Fetch remote programs
@@ -215,8 +269,9 @@ class EBPFManager:
         return cp.stdout.strip()
 
 # -----------------------------
-# Example usage
+# Sample
 # -----------------------------
+''''
 if __name__ == "__main__":
     manager = EBPFManager()
     interfaces = ["wlp7s0"]
@@ -239,3 +294,8 @@ if __name__ == "__main__":
     manager.stop_userland()
     manager.remove_ebpf_programs()
     print("Cleanup complete.")
+
+
+
+'''
+
