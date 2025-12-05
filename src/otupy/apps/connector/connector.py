@@ -1,9 +1,9 @@
 """The connector."""
 
+import logging
 from argparse import ArgumentParser
 from glob import glob
 from os.path import dirname
-import logging
 
 from yaml import safe_load
 
@@ -54,17 +54,17 @@ def main() -> None:
                 data = safe_load(f)
                 for name, values in data.items():
                     # The name of the configuration section is currently not used. 
-						  # It may be used in future releases when a better mechanism to
-						  # dispatch commands to actuators is implemented in the consumer
-						  # (for now, the consumer dispatches to 1 actuator only, based on
-						  # its profile and actuator_id).
+                    # It may be used in future releases when a better mechanism to
+					# dispatch commands to actuators is implemented in the consumer
+					# (for now, the consumer dispatches to 1 actuator only, based on
+					# its profile and actuator_id).
                     logger.info("Loading actuator: %s", name)
                     identifier = values["actuator"]
                     if identifier not in Actuators:
                         raise RuntimeError(f"{identifier} is not a registered actuator")
 
                     # By default, we give the actuator this consumer, if the configuration file
-						  # does not provide one
+				    # does not provide one
                     if 'consumer' not in values:
                        values['consumer'] = consumer
                     clazz = Actuators[identifier]
@@ -77,12 +77,12 @@ def main() -> None:
 
         # Load the encoder.
         if consumer['encoding'] not in Encoders.__members__:
-            raise RuntimeError(f"{encoding} is not a registered encoding schema")
+            raise RuntimeError(f"{consumer['encoding']} is not a registered encoding schema")
         encoder = Encoders[consumer['encoding']]
 
         # Load the transferer (beautiful name, eh?).
         if consumer['transfer'] not in Transfers:
-            raise RuntimeError(f"{transfer} is not a registered transfer schema")
+            raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
         transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
 
         consumer = Consumer("connector", actuators, encoder, transferer)
