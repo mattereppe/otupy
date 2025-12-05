@@ -6,6 +6,8 @@ class Application(otupy.types.base.Record):
 	"""
 	description: str = None
 	""" Generic description of the application """
+	id: str = None
+	""" Unique local identifier of the application """
 	name: str = None
 	""" name of the application """
 	version: str = None
