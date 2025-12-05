@@ -1,0 +1,32 @@
+slpf-openstack-example:
+  actuator: "slpf-openstack"
+  profile: "slpf"
+  owner: "something"
+  specifiers:
+    domain: null
+    asset_id: "slpf-openstack-example"
+  consumer:
+    host: "something"
+    port: 8080
+    protocol: "tcp"
+    endpoint: "/.well-known/openc2"
+    transfer: "http"
+    encoding: "json"
+  auth:
+    username: "something"
+    password: "something"
+    project_name: "something"
+    user_domain_name: "Default"
+    project_domain_name: "Default"
+    auth_url: "something"
+  config:
+    cacert: "something"
+  platform:
+    project_name: "something"
+    security_group_base_name: "something"
+    security_group_base_description: "SLPF Actuator security group"
+  db:
+    name: "slpf_commands.sqlite"
+    path: "something"
+    commands_table_name: "slpf_openstack_commands"
+    jobs_table_name: "slpf_openstack_jobs"
