@@ -117,7 +117,6 @@ def recursive_process_links(links, cmd, pf, p, dot, parent_node):
 
             # Add the node if it doesn't exist
             pf['asset_id'] = peer_hostname
-            pf.fieldtypes['asset_id'] = peer_hostname
             if(peer_hostname != peer_service_name):
                 dot.node(peer_hostname, peer_hostname + "\n"+peer_service_name, color= text_color, fontcolor=font_color)
             else:
@@ -161,8 +160,7 @@ def main(openstack_parameters, collection):
                                                                           openstack_parameters['port'],
                                                                           openstack_parameters['endpoint']))
     pf = ctxd.Specifiers({'asset_id': openstack_parameters['asset_id']})
-    pf.fieldtypes['asset_id'] = openstack_parameters['asset_id']  # I have to repeat a second time to have no bugs
-    arg = ctxd.Args({'name_only': False})
+    arg = ctxd.Args({'name_only': False, 'cached': False})
     context = ctxd.Context(services=ArrayOf(Name)(), links=ArrayOf(Name)())  # expected all services and links
     cmd = oc2.Command(action=oc2.Actions.query, target=context, args=arg, actuator=pf)
 

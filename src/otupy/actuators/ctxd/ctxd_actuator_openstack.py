@@ -58,17 +58,21 @@ class CTXDActuator_openstack(CTXDActuator):
 	config: dict = None
 	conn : any = None #connection to openstack
 	
-	def __init__(self, owner, auth, config, peers=[], **kwargs):
-		super().__init__(owner, auth, config, peers, **kwargs)
+	def __init__(self, auth, **kwargs):
+		""" Initialize the actuator
+
+			:param auth: (mandatory) Authentication information to connect to OpenStack.
+			:param config: (optional) Include additional info for configuration the OpenStack 
+				connection (e.g., "cacert" certificate of a custom CA).
+			:param specifiers: (optional) The identification of this Actuator.
+			:param owner: (optional) Onwer of this service.
+			:param peers: (optional) A list of peer services, including their consumer endpoints.
+		"""
+		kwargs['auth']=auth
+		super().__init__(**kwargs)
 
 		self.connect_to_openstack()
 
-		# This should be moved to another method
-		self.discover_services()
-		self.discover_links()
-		print("+++++= self.links: ", self.links)
-
-		print("+++++= self.services: ", self.services)
 
 	def _discover_os_services(self):
 		""" Discover Openstack as a composite service made of multiple applications """
@@ -241,8 +245,6 @@ class CTXDActuator_openstack(CTXDActuator):
 		self._discover_vms_link_computers()
 		self._discover_sg_link_vms()
 
-		print("************* links: ", self.links)
-	
 	
 	def get_name_links(self, links):
 		

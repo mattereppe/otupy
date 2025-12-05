@@ -35,11 +35,12 @@ class CTXDActuator:
 	domain : str = None
 	asset_id : str = None
 	
-	def __init__(self, owner, auth, config, peers=[], **kwargs):
-		self.auth = auth
-		self.config = config
-		self.peers = peers
-		self.owner = owner
+	def __init__(self, **kwargs):
+		self.auth = kwargs['auth'] if 'auth' in kwargs else None
+		self.config = kwargs['config'] if 'config' in kwargs else None
+		self.peers = kwargs['peers'] if 'peers' in kwargs else None
+		self.owner = kwargs['owner'] if 'owner' in kwargs else None
+		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
 
@@ -60,25 +61,26 @@ class CTXDActuator:
 		except Exception as e:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Unable to identify actuator')
 
-		try:
-			match cmd.action:
-				case Actions.query:
-					response = self.query(cmd)
-				case _:
-					response = self.__notimplemented(cmd)
-		except Exception as e:
-			return self.__servererror(cmd, e)
+#		try:
+		match cmd.action:
+			case Actions.query:
+				response = self.query(cmd)
+			case _:
+				response = self.__notimplemented(cmd)
+#		except Exception as e:
+#			return self.__servererror(cmd, e)
 
 		return response
 
 	def __is_addressed_to_actuator(self, actuator):
 		""" Checks if this Actuator must run the command """
-		if len(actuator) == 0:
+		if actuator is None or len(actuator) == 0:
 			# Empty specifier: run the command
 			return True
 
 		for k,v in actuator.items():		
 			try:
+				# For now, just check if the asset_id matches
 				if(v == self.specifiers['asset_id']):
 					return True
 			except KeyError:
@@ -93,24 +95,26 @@ class CTXDActuator:
 			:param cmd: The `Command` including `Target` and optional `Args`.
 			:return: A `Response` including the result of the query and appropriate status code and messages.
 		"""
-		# Sec. 4.1 Implementation of the 'query features' command and 'query context'
-		if cmd.args is not None:
-			if ( len(cmd.args) > 1 ):
-				return Response(satus=StatusCode.BADREQUEST, statust_text="Invalid query argument")
-			if ( len(cmd.args) == 1 ):
-				try:
-					if cmd.args.get('response_requested') is not None:
-						if not(cmd.args['response_requested'] == ResponseType.complete):
-							raise KeyError
-					elif cmd.args.get('name_only') is not None: #Query can also accept 'name_only' arg
-						if not(isinstance(cmd.args['name_only'],bool)):
-							raise KeyError
-				except KeyError:
-					return Response(status=StatusCode.BADREQUEST, status_text="Invalid query argument")
+# The following should not be necessary, since the validation of valid arguments is already performed 
+# (and I would say in a better way) in the run() method.
+#		# Sec. 4.1 Implementation of the 'query features' command and 'query context'
+#		if cmd.args is not None:
+#			if ( len(cmd.args) > 1 ):
+#				return Response(status=StatusCode.BADREQUEST, statust_text="Invalid query argument")
+#			if ( len(cmd.args) == 1 ):
+#				try:
+#					if cmd.args.get('response_requested') is not None:
+#						if not(cmd.args['response_requested'] == ResponseType.complete):
+#							raise KeyError
+#					elif cmd.args.get('name_only') is not None: #Query can also accept 'name_only' arg
+#						if not(isinstance(cmd.args['name_only'],bool)):
+#							raise KeyError
+#				except KeyError:
+#					return Response(status=StatusCode.BADREQUEST, status_text="Invalid query argument")
 
-		if ( cmd.target.getObj().__class__ == Features): 
+		if ( type(cmd.target.getObj()) == Features): 
 			r = self.query_feature(cmd)
-		elif (cmd.target.getObj().__class__ == ctxd.Context): #Discovery Context can accept also "context" as a target
+		elif (type(cmd.target.getObj()) == ctxd.Context): #Discovery Context can accept also "context" as a target
 			r = self.query_context(cmd)
 		else:
 			return Response(status=StatusCode.BADREQUEST, status_text="Querying " + cmd.target.getName() + " not supported")
@@ -149,70 +153,48 @@ class CTXDActuator:
 	def query_context(self, cmd):
 		services = cmd.target.obj.services
 		links = cmd.target.obj.links
-		res_services = ArrayOf(Name)()
-		res_links = ArrayOf(Name)()
+		res = {}
 
-		try:
-			if(services is not None and self.services is not None):
-				if(len(services) == 0):
-					if(cmd.args.get('name_only') == True):
-						for i in self.services:
-							res_services.append(i.name)
-					else:
-						for i in self.services:
-							res_services.append(i)
-				else:
-					if(cmd.args.get('name_only') == True):
-						for i in self.services:
-							for j in services:
-								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
-									res_services.append(i.name) 
-					else:
-						for i in self.services:
-							for j in services:
-								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
-									res_services.append(i) 
-			if(links is not None and self.my_links is not None):
-				if(len(links) == 0):
-					if(cmd.args.get('name_only') == True):
-						for i in self.my_links:
-							res_links.append(i.name)
-					else:
-						for i in self.my_links:
-							res_links.append(i)
-				else:
-					if(cmd.args.get('name_only') == True):
-						for i in self.my_links:
-							for j in links:
-								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
-									res_links.append(i.name) 
-					else:
-						for i in self.my_links:
-							for j in links:
-								if(str(i.name.obj) == str(j.obj) and str(i.name.choice) == str(j.choice)):
-									res_links.append(i)
-		except Exception as e:
-			return self.__servererror(cmd, e)
+		if not (cmd.args.get('cached') == True):
+			self.update()
 
-		if(cmd.args.get('name_only') == True):
-			if(services is not None and links is not None):
-				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(service_names = res_services, link_names = res_links))
-			elif(services is not None and links is None):
-				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(service_names = res_services))
-			elif(services is None and links is not None):
-				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(link_names = res_links))
+		if(services is not None):
+			if(cmd.args.get('name_only') == True):
+				res['service_names'] = ArrayOf(Name)()
+			else:
+				res['services'] = ArrayOf(Service)()
+			if self.services is not None:
+				for i in self.services:
+					if (len(services) == 0) or i.name in services:
+						if(cmd.args.get('name_only') == True):
+							res['service_names'].append(i.name)
+						else:
+							res['services'].append(i)
+		if(links is not None):
+			if(cmd.args.get('name_only') == True):
+				res['link_names'] = ArrayOf(Name)()
+			else:
+				res['links'] = ArrayOf(Link)()
+			if self.links is not None:
+				for i in self.links:
+					if(len(links) == 0) or i.name in links:
+						if(cmd.args.get('name_only') == True):
+							res['link_names'].append(i.name)
+						else:
+							res['links'].append(i)
+
+		if len(res) > 0:
+			return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(**res))
+		else:
+			return Response(status=StatusCode.OK, status_text="Command received: heartbeat")
 			
-		if(cmd.args.get('name_only') == False):
-			if(services is not None and links is not None):
-				Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services, links = res_links))
+	def update(self):
+		""" Update services and links
 
-				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services, links = res_links))
-			elif(services is not None and links is None):
-				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(services = res_services))
-			elif(services is None and links is not None):
-				return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(links = res_links))
-			
-		return Response(status=StatusCode.OK, status_text="Command received: heartbeat")
+			This method should be run before getting links and services
+		"""
+		self.discover_services()
+		self.discover_links()
 		
 	def _get_services(self, name = None, filter = None):
 		service_list= []
