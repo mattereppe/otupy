@@ -14,6 +14,7 @@ import otupy.profiles.ctxd as ctxd
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service import Service
 from otupy.profiles.ctxd.data.link import Link
+from otupy.profiles.ctxd.data.consumer import Consumer
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,13 @@ class CTXDActuator:
 	domain : str = None
 	asset_id : str = None
 	
-	def __init__(self, services=None, links=None, domain=None, asset_id=None):
+	def __init__(self, owner, auth, config, peers=[], **kwargs):
+		self.auth = auth
+		self.config = config
+		self.peers = peers
+		self.owner = owner
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
-		self.domain = domain
-		self.asset_id = asset_id
 
 
 	def run(self, cmd):
@@ -220,6 +223,16 @@ class CTXDActuator:
 
 		return service_list
 		
+	def _get_consumer(self, service_name):
+		consumer=None
+		for p in self.peers:
+			if Name(p['service_name']) == service_name:
+				consumer = Consumer(**p['consumer'])
+				logger.debug("Found consumer %s for %s", consumer, service_name)
+				break
+
+		return consumer
+
 
 	def __notimplemented(self, cmd):
 		""" Default response

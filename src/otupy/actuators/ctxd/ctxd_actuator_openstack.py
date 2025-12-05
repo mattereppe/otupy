@@ -11,6 +11,8 @@ import logging
 import sys
 import openstack
 
+import otupy.profiles
+from otupy import Extensions
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.actuator import Specifiers
 from otupy.profiles.ctxd.data.cloud import Cloud
@@ -57,29 +59,26 @@ class CTXDActuator_openstack(CTXDActuator):
 	conn : any = None #connection to openstack
 	
 	def __init__(self, owner, auth, config, peers=[], **kwargs):
-		self.auth = auth
-		self.config = config
-		self.peers = peers
-		self.owner = owner
-
-		super().__init__()
+		super().__init__(owner, auth, config, peers, **kwargs)
 
 		self.connect_to_openstack()
 
 		# This should be moved to another method
 		self.discover_services()
-		self.links = self.get_links()
+		self.discover_links()
+		print("+++++= self.links: ", self.links)
 
 		print("+++++= self.services: ", self.services)
 
 	def _discover_os_services(self):
+		""" Discover Openstack as a composite service made of multiple applications """
 		cloud_services = self.openstack_service_list()
 
 		# The root service: OpenStack as cloud environment
 		# --------------------------------------------------
 		os = Cloud(description='cloud', id=None, name='openstack', type='IaaS')
 		# TODO: Fill in with Openstack version/release
-		self.services.append(Service(name=Name(os.name),type=ServiceType(os), links=ArrayOf(Name)(),
+		self.services.append(Service(name=Name(os.name),type=ServiceType(os), #links=ArrayOf(Name)(),
 				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
 		# Software components of openstack
@@ -90,13 +89,17 @@ class CTXDActuator_openstack(CTXDActuator):
 			logger.debug("Found application: %s", str(app.name))
 			# TODO: Add software release (maybe with its SBOM)
 			name=Name(app.name)
-			self.services.append(Service(name=name, type=ServiceType(app), links=ArrayOf(Link)(),
+			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
 						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
 			# Paranoid check nobody modified the order of the instraction
-			assert ( str(self.services[0].name) == os.name , "Wrong position of parent openstack service in array!")
+			assert  str(self.services[0].name) == os.name , "Wrong position of parent openstack service in array!"
 			self.services[0].subservices.append(name)
 		
 	def _discover_os_servers(self):
+		""" Discover VMs created and controlled by this OpenStack instance.
+
+			VMs are known as "servers" in OpenStack terminology.
+		"""
 		vms = self.openstack_server_list()
 
 		# Servers (VMs) deployed by this instance of OpenStack
@@ -109,10 +112,15 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			logger.debug("Found server: %s", str(server))
 
-			self.services.append(Service(name=Name(str(server.name)), type=ServiceType(server), links=ArrayOf(Name)(),
+			self.services.append(Service(name=Name(str(server.name)), type=ServiceType(server), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=None))
+
 			
 	def _discover_os_hypervisors(self):
+		""" Discover OpenStack hypervisors
+
+			Hypervisors are the physical servers that host VMs.
+		"""
 		hvs = self.openstack_hypervisor_list()
 
 		# Hypervisors running VMs in the cloud infrastructure
@@ -122,11 +130,16 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
-			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), links=ArrayOf(Name)(),
+			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=None))
 
+
 	def _discover_os_link_vms(self):
-		""" Add link between nova and VMs """
+		""" Add links between nova and VMs 
+		
+			We create explicit links from nova because this is the software components that concretely
+			manage VMs. Vulnerabilities applies to nova and other services rather than OpenStack as a whole.	
+		"""
 
 		os_services = self._get_services(name=Name('nova'), filter=Application)
 		os_vms = self._get_services(filter=VM)
@@ -134,24 +147,77 @@ class CTXDActuator_openstack(CTXDActuator):
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
 		for s in os_services:
 			for v in os_vms:
-				consumer={}
-				for p in self.peers:
-					if p['service_name'] == v.name.getObj():
-						consumer = p['consumer']
-						break
-				print(">>>>>> consumer: ", consumer)
-				peer = Peer(service_name= s.name,
-							role= PeerRole.controlled,  #VM is controlled by Openstack
-							consumer=Consumer(**consumer)) # This is the consumer running on that service.
-				link_name=Name("openstack-"+v.name.getObj())
-				self.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
-				s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+				peer = Peer(service_name= v.name,
+							role= PeerRole.controlled)  #VM is controlled by Openstack
+				description="Openstack VM: "+v.name.getObj()
+				self.links.append(Link(name = s.name, description=description, 
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+#s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+
 				
+	def _discover_os_link_sg(self):
+		""" Add link between OpenStack (neutron) and Security Groups
+
+			Security Groups implement a slpf firewall, hence they are a security function. However, they are not
+			standalone software, and they are implemented by neutron.
+		"""
+		os_services = self._get_services(name=Name('neutron'), filter=Application)
+
+		# There will be only 1 nova instance, since we are connected to a single openstack cloud
+		for s in os_services:
+			consumer = self._get_consumer(Name("openstack-securitygroups"))
+			if s is not None:
+				peer = Peer(service_name=Name("openstack-securitygroups"),
+						role=PeerRole.controlled, consumer=consumer)
+				description="OpenStack Security Groups"
+				self.links.append(Link(name = s.name, description=description, 
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
 
-		print(">>>> Cloud services: ", os_services)
+	def _discover_vms_link_hypervisors(self):
+		""" Add links between VMs and hypervisors that host them
+
+		"""	
+		pass
+
+	def _discover_vms_link_computers(self):
+		""" Add links between VMs and the software they host
+
+			This is something outside the OpenStack scope, which is delegated to a remote peer
+			(currently read by configuration file).
+		"""
+		os_vms = self._get_services(filter=VM)
+
+		for v in os_vms:
+			consumer=self._get_consumer(v.name)
+
+			if consumer is not None:
+				peer = Peer(service_name= v.name,
+							role= PeerRole.host,  #VM is controlled by Openstack
+							consumer=consumer) # This is the consumer running on that service.
+				description="System and application software installed on "+v.name.getObj()
+				self.links.append(Link(name = v.name, description=description, 
+							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+# I don't like to replicate the link as standalone structure and embedded in Service
+#s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+
+	def _discover_sg_link_vms(self):
+		""" Add links from Security Groups to VMs's ports
+
+			Automatically add a link from Security Group service and all VMs. 
+			Security groups are modelled as a security function implemented by an external actuator.
+			They protect all VMs hosted in OpenStack.
+		"""
+		# TODO
+		pass
+
 
 	def discover_services(self):
+		""" Discover all services related to OpenStack
+
+			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
+			including VMs, networks, image repositories.
+		"""
 		self._discover_os_services()
 		self._discover_os_servers()
 		self._discover_os_hypervisors()		
@@ -160,31 +226,22 @@ class CTXDActuator_openstack(CTXDActuator):
 		# - images
 		
 
-	def get_links(self):
+	def discover_links(self):
+		""" Automatically discover links between OpenStack components
+
+			The current implementation discovers links between:
+			- OpenStack services (nove) and VMs (servers)
+			- VMs (servers) and physical servers (hypervisors)
+			- SLPF firewall (iptables) and VMs (servers)
+			- VMs (servers) and computers (System and application software), only from a configuration file
+		"""
 		self._discover_os_link_vms()
-	
-		#definisco il link control tra cloud e vm
-#		links = ArrayOf(Link)()
-#
-#			service_name=Name(vm['name'])
-#
-#
-#		# By default, each link has the format "openstack-[name of node]"
-#
-#		#create a dumb slpf peer
-#		slpf_peer = Peer(service_name= Name('slpf'),
-#						role= PeerRole(3), #The slpf is hosted by Openstack
-#						consumer=Consumer(server=Server(Hostname('os-fw')),
-#											port=self.port,
-#											protocol= L4Protocol(self.protocol),
-#											endpoint= self.endpoint,
-#											transfer=Transfer(self.transfer),
-#											encoding=Encoding(self.encoding)))
-#				
-#		links.append(Link(name = Name('os-fw'), link_type=LinkType(2), peers=ArrayOf(Peer)([slpf_peer])))
-#		#end creation of dumb slpf
-#		
-#		return links
+		self._discover_os_link_sg()
+		self._discover_vms_link_hypervisors()
+		self._discover_vms_link_computers()
+		self._discover_sg_link_vms()
+
+		print("************* links: ", self.links)
 	
 	
 	def get_name_links(self, links):

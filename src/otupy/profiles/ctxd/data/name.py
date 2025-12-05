@@ -10,9 +10,16 @@ class Name(Choice):
     #Il tipo Hostname è utilizzabile per reverse-dns
 
     def __init__(self, name):
+        if ( isinstance(name, dict) ):
+            if len(name) != 1:
+               raise ValueError
+            for key, value in name.items():
+               n=self.getClass(key)(value) 
+            name=n
         if(isinstance(name, Name)):
             super().__init__(name.obj)
         elif not((isinstance(name, URI) or isinstance(name, Hostname) or isinstance(name, uuid.UUID) or isinstance(name, str))):
+				# Instantiate as 'local' by default
             super().__init__(name.name.obj)
         else:
             super().__init__(name)

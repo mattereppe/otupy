@@ -1,10 +1,14 @@
+import logging
+
 import otupy.types.base
 import otupy.transfers
 import otupy.encoders
-from otupy import Transfer, Transfers, Encoder, Encoders
+from otupy import Transfer, Transfers, Encoder, Encoders, Map, Extensions
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
-from otupy.profiles.ctxd.profile import Profile
+from otupy.profiles.ctxd.profile import nsid
+
+logger = logging.getLogger(__name__)
 
 class Consumer(otupy.types.base.Record):
 	"""Consumer
@@ -28,7 +32,7 @@ class Consumer(otupy.types.base.Record):
 
 	def __init__(self, host:str = None, port:int = None, protocol:int = None, endpoint:str = None, 
 			transfer:str = None, encoding:str = None,
-			profile:str = Profile.nsid, actuator = None):
+			profile:str = nsid, actuator = None):
 		self.host = Hostname(host) if host is not None else None
 		self.port = port if port is not None else None
 		self.protocol = L4Protocol[protocol] if protocol is not None else None
@@ -36,7 +40,15 @@ class Consumer(otupy.types.base.Record):
 		self.transfer = Transfers[transfer] if transfer is not None else None
 		self.encoding = Encoders[encoding].value if encoding is not None else None
 		self.profile = profile # Default value assigned in function declaration
-		self.actuator = actuator if actuator is not None else None
+#self.actuator = actuator if actuator is not None else None
+		specifiers = None
+		if actuator is not None:
+			try:
+				specifiers = Extensions['Actuators'][profile](actuator)
+			except:
+				logger.error("Cannot instantiate %s profile for consumer: %s", profile, consumer)
+		self.actuator=specifiers
+
 		self.validate_fields()
 
 	def __repr__(self):
