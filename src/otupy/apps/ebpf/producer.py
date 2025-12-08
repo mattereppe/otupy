@@ -1,68 +1,13 @@
+from otupy.apps.ebpf.producerManager import create_producer, load_program, query_programs
 
-import logging
-import os
-import sys
-import otupy as oc2
+# Create producer
+p = create_producer()
 
-from otupy.encoders.json import JSONEncoder
-from otupy.transfers.http import HTTPTransfer
-from otupy.profiles.ebpf.actuator import Specifiers as EbpfSpecifiers
-from otupy.profiles.ebpf.targets.eBPFload_target import eBPFload_file_target
-from otupy.profiles.ebpf.data.source_file import ProgramFile
-from otupy.profiles.ebpf.data.direction_ebpf import Direction
-from otupy.profiles.ebpf.data.hook_program import AttachType
-from otupy.types.targets.features import Features
+#The asset id to identify the test consumer
+assetid = "ebpfTest1"
 
+# Load a program
+load_program(p, program_path="./src/otupy/apps/ebpf/allow_all.o", asset_id=assetid,iface="wlp7s0")
 
-logging.basicConfig(stream=sys.stdout,level=logging.INFO)
-logger = logging.getLogger('openc2producer')
-
-def main():
-    logger.info("Starting eBPF Producer")
- 
-   
-    p = oc2.Producer(
-        "producer", 
-        JSONEncoder(), 
-        HTTPTransfer("127.0.0.1", 8080)
-    )
-
-    
-    
-
-    logger.info("Defining eBPF Actuator Specifiers")
-    asset_id = 'test'
-    pf = EbpfSpecifiers({'asset_id':asset_id})
-    pf.fieldtypes['asset_id'] = asset_id
-
-
-   
-    bpf_program = "./src/otupy/apps/ebpf/allow_all.o" 
-    full_path_bpf_program = os.path.abspath(bpf_program)
-    prog = ProgramFile(full_path_bpf_program,Section="main") 
-    direction = Direction("ingress")
-    attach_type = AttachType("tc") 
-
-    target_features = eBPFload_file_target(
-        file=prog,
-        direction=direction,
-        attach_type=attach_type
-    )
-
-    
-
-    #target_features = eBPFload_file_target()
-    # target_features =  Features()
-    cmd = oc2.Command(
-        action=oc2.Actions.create, 
-        target=target_features, 
-        actuator=pf
-    )
-    logger.info("Sending command: %s", cmd)
-
-    resp = p.sendcmd(cmd) 
-
-    logger.info("Got response: %s", resp)
-
-if __name__ == '__main__':
-    main()
+# Query programs and print nicely
+query_programs(p,asset_id=assetid)

@@ -14,7 +14,7 @@ class Interfaces(Record):
 
     Names: List[str]
 
-    def __init__(self, interfaces: Optional[Union[List[str], "Interfaces"]] = None):
+    def __init__(self, interfaces: Optional[Union[str,List[str], "Interfaces"]] = None):
         """
         Accepts:
         - List of interface names (strings)
@@ -27,6 +27,8 @@ class Interfaces(Record):
             self.Names = interfaces.Names.copy()
         elif isinstance(interfaces, list):
             self.Names = interfaces.copy()
+        elif isinstance(interfaces, str):  # allow single string
+            self.Names = [interfaces]
         elif interfaces is None:
             self.Names = []
         else:
@@ -70,3 +72,24 @@ class Interfaces(Record):
 
     def __str__(self):
         return f"Interfaces: {', '.join(self.Names)}"
+       # ------------------------
+    # Serialization
+    # ------------------------
+    def to_dict(self):
+        return {"Name": self.Names}
+
+    # ------------------------
+    # Deserialization
+    # ------------------------
+    @classmethod
+    def fromdict(cls, dic, encoder=None):
+        """
+        Build an AttachType instance from a dictionary.
+        Used during Otupy deserialization.
+        """
+        if not isinstance(dic, dict):
+            raise TypeError(f"Expected dict to build {cls.__name__}, got {type(dic).__name__}")
+
+        name = dic.get("Names")
+        return cls(interfaces=name)
+

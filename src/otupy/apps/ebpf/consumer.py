@@ -11,7 +11,7 @@ logger = logging.getLogger('openc2')
 	
 def main():
 
-	asset_id = 'test'
+	asset_id = 'ebpfTest1'
 	actuators = {}
 	actuators[(Profile.nsid,asset_id)]=EbpfActuator()
 

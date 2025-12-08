@@ -1,11 +1,15 @@
 import logging
-import time
 from otupy import Version, StatusCode
 from otupy import  StatusCodeDescription, Actions, Command, Response
+from otupy.profiles.ebpf.data.direction_ebpf import Direction
+from otupy.profiles.ebpf.data.hook_program import AttachType
+from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.targets.eBPFload_target import eBPFload_file_target
-import ctypes as ct
+from otupy.profiles.ebpf.targets.eBPF_query import eBPF_query
 from otupy.actuators.Ebpf.manager_eBPF import EBPFManager
-
+from otupy.profiles.ebpf.query_results import QueryResults
+from otupy.types.base.array_of import ArrayOf
 
 
 logger = logging.getLogger(__name__)
@@ -19,9 +23,17 @@ MY_IDS = {
 }
 
 class EbpfActuator:
-    
     domain : str = None
     asset_id : str = None
+    def __init__(self):
+        
+        EBPFManager.init(
+            rundir="./tmp/ebpfmgr",
+            json_logs=True,
+            log_level=logging.DEBUG
+        )
+
+
     
     def run(self, cmd: Command) -> Response:
         """ Dispatches the OpenC2 command to the appropriate action method. """
@@ -29,13 +41,52 @@ class EbpfActuator:
             match cmd.action:
                 case Actions.create:
                     return self.create(cmd)
+                case Actions.query:
+                    return self.query(cmd)
                 case _:
                     return self.__notimplemented(cmd)
         except Exception as e:
             return self.__servererror(cmd, e)
 
+    def query(self, cmd):
+        """
+        Docstring for query: retrieve the eBPF program loaded
+        
+        :param self: Description
+        :param cmd: command from received
+        """
+        target: eBPF_query = cmd.target.getObj()
+        # The query support empty value
+        try:
+            programs = EBPFManager.query_loaded_programs(
+                iface=target.interfaces.Names if target.interfaces is not None else None,
+                prog_name=target.file.Name if target.file is not None else None,
+                attach_type=target.attach_type.Name.lower() if target.attach_type is not None else None
+            )
+            program_files = [
+                ProgramFile(Program=p["program"], Section=p.get("section"))
+                for p in programs]
 
 
+            Results = QueryResults(
+                Program=ArrayOf(ProgramFile)(program_files),
+                hook_point= ArrayOf(AttachType)([p["attach_type"] for p in programs]),
+                Direction=ArrayOf(Direction)([p["direction"] for p in programs]),
+                Interfaces= ArrayOf(Interfaces)([p["interface"] for p in programs])
+
+            )
+            return Response(
+                status=StatusCode.OK,
+                status_text=f"Number of ebpf {len(programs)}",
+                results = Results
+
+            )
+        except Exception as e:
+            return Response(
+                status=StatusCode.INTERNAL_ERROR,
+                status_text=f"Failed to retrivies eBPF programs {type(e)}"
+            )
+            
     def create(self, cmd):
         """
         Create (attach) an eBPF program via EBPFManager.
@@ -65,12 +116,12 @@ class EbpfActuator:
         except Exception as e:
             return Response(
                 status=StatusCode.INTERNAL_ERROR,
-                status_text=f"Failed to attach eBPF program: {e}"
+                status_text=f"Failed to attach eBPF program: {type(e)}"
             )
 
         return Response(
             status=StatusCode.OK,
-            status_text="Programma BPF agganciato con successo (CREATE)."
+            status_text="The program has been loaded in the kernel correctly"
         )
 
     

@@ -6,13 +6,15 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "sudo": true
         },
         {
             "name": "Python Debugger: Python File",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}"
+            "program": "${file}",
+            "sudo": true
         }
     ]
 }

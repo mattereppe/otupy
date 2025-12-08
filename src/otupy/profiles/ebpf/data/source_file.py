@@ -33,7 +33,7 @@ class ProgramFile(Record):
         """
         Supports:
         - Name / Section (for deserialization)
-        - Program + Section (legacy / convenience)
+        - Program + Section 
         """
         super().__init__()  # Must call first for OpenC2 Record
 
