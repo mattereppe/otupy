@@ -68,7 +68,7 @@ class SLPFOpenStackActuator(SLPFActuator):
 
             super().__init__(
                 asset_id=owner,
-                db_directory_path=db["path"],
+                db_path=db["path"],
                 db_name=db["name"],
                 db_commands_table_name=db["commands_table_name"],
                 db_jobs_table_name=db["jobs_table_name"],

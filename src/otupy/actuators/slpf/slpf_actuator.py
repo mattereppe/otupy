@@ -70,11 +70,11 @@ class SLPFActuator:
     def __init__(
         self,
         asset_id=None,
-        db_directory_path=None,
+        db_path=None,
         db_name=None,
         db_commands_table_name=None,
         db_jobs_table_name=None,
-        update_directory_path=None,
+        update_path=None,
         **kwargs,
     ):
         """Initialization of the `SLPF Actuator Manager`.
@@ -88,16 +88,16 @@ class SLPFActuator:
 
         :param asset_id: SLPF Actuator asset id.
         :type asset_id: str
-        :param db_directory_path: sqlite3 database directory path.
-        :type db_directory_path: str
+        :param db_path: sqlite3 database directory path.
+        :type db_path: str
         :param db_name: sqlite3 database name.
         :type db_name: str
         :param db_commands_table_name: Name of the `OpenC2 Commands` table in the sqlite3 database.
         :type db_commands_table_name: str
         :param db_jobs_table_name: Name of the `APScheduler jobs` table in the sqlite3 database.
         :type db_jobs_table_name: str
-        :param update_directory_path: Path to the default directory containing files to be used as update.
-        :type update_directory_path: str
+        :param update_path: Path to the default directory containing files to be used as update.
+        :type update_path: str
         """
 
         # Needed in development phase
@@ -108,15 +108,13 @@ class SLPFActuator:
 
             try:
                 #   Path where update files are stored
-                self.update_directory_path = (
-                    update_directory_path if update_directory_path else os.path.dirname(os.path.abspath(__file__))
-                )
+                self.update_directory_path = update_path if update_path else os.path.dirname(os.path.abspath(__file__))
                 if not os.path.exists(self.update_directory_path):
                     raise ValueError("Update directory path does not exists")
                 #   Initializing database
                 logger.info(self.tag + " Initializing database")
                 self.db_directory_path = (
-                    db_directory_path if db_directory_path else os.path.dirname(os.path.abspath(__file__))
+                    db_path if db_path else os.path.dirname(os.path.abspath(__file__))
                 )
                 self.db_name = db_name if db_name else "slpf_commands.sqlite"
                 if not os.path.exists(self.db_directory_path):
