@@ -76,7 +76,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	def _discover_os_services(self):
 		""" Discover Openstack as a composite service made of multiple applications """
-		cloud_services = self.openstack_service_list()
+		cloud_services = self._openstack_service_list()
 
 		# The root service: OpenStack as cloud environment
 		# --------------------------------------------------
@@ -104,7 +104,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			VMs are known as "servers" in OpenStack terminology.
 		"""
-		vms = self.openstack_server_list()
+		vms = self._openstack_server_list()
 
 		# Servers (VMs) deployed by this instance of OpenStack
 		# ----------------------------------------------------
@@ -123,14 +123,17 @@ class CTXDActuator_openstack(CTXDActuator):
 	def _discover_os_hypervisors(self):
 		""" Discover OpenStack hypervisors
 
-			Hypervisors are the physical servers that host VMs.
+			Hypervisors are the physical servers that host VMs. It is questionable if such service 
+			should be reported, since the Computer subsystem should have its own actuator describing 
+			the full stack of services/software hosted.
 		"""
-		hvs = self.openstack_hypervisor_list()
+		hvs = self._openstack_hypervisor_list()
 
 		# Hypervisors running VMs in the cloud infrastructure
 		# ---------------------------------------------------
 		for h in hvs:
-			hyper = Computer(hostname=Hostname(h['name']), id=h['service_details']['id'])
+			hyper = Computer(hostname=Hostname(h['name']), id=h['service_details']['id'],
+					description="OpenStack hypervisor")
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
@@ -153,7 +156,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			for v in os_vms:
 				peer = Peer(service_name= v.name,
 							role= PeerRole.controlled)  #VM is controlled by Openstack
-				description="Openstack VM: "+v.name.getObj()
+				description="Openstack controls "+v.name.getObj()
 				self.links.append(Link(name = s.name, description=description, 
 							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 #s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
@@ -262,9 +265,6 @@ class CTXDActuator_openstack(CTXDActuator):
 			# Get access to OpenStack (the following mechanism is largely undocumented.
 			# See: https://github.com/openstack/openstacksdk/blob/3d45cecb3a897bf9bb10613bfc6ec82a395c153f/doc/source/user/transition_from_profile.rst#L154
 			config_dict=openstack.config.defaults.get_defaults()
-			config_dict.update(
-				{'name': 'iccio', 'cacert': '/etc/ssl/certs/TNTCA2.crt'},
-			)
 	
 			loader = openstack.config.OpenStackConfig(
 	  		  load_yaml_config=False,
@@ -304,7 +304,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			return data_list
 
 
-	def openstack_service_list(self):
+	def _openstack_service_list(self):
 		self._check_connection()
 		
 		try:
@@ -318,7 +318,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		return self._format_os_data(services)
 		
 		
-	def openstack_server_list(self):
+	def _openstack_server_list(self):
 		self._check_connection()
 
 		try:
@@ -331,7 +331,7 @@ class CTXDActuator_openstack(CTXDActuator):
       # Return the formatted server list as a pretty-printed JSON string
 		return self._format_os_data(servers)
 		
-	def openstack_hypervisor_list(self):
+	def _openstack_hypervisor_list(self):
 		self._check_connection()
 
 		try:
@@ -346,7 +346,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		return self._format_os_data(hypervisors)
 
 
-	def openstack_server_os(self, image_id):
+	def _openstack_server_os(self, image_id):
 		try:
         # Get image details using the OpenStack client
 			image = self.conn.compute.get_image(image_id)

@@ -1,0 +1,29 @@
+ctxd-kubernetes-example:
+  actuator: "ctxd-kubernetes"
+  profile: "x-ctxd"
+  owner: "tnt-lab"
+  specifiers:
+    domain: null
+    asset_id: "ctxd-kubernetes-example"
+  auth:
+    api_key: "xxxxxx"
+    host: "https://127.0.0.1:6443"
+  config:
+    cacert: "/etc/ssl/certs/kubernetes.crt"
+    namespaces:
+      - default
+  peers:
+    - service_name: 
+        local: kube0
+      consumer:
+        host: "kube0"
+        port: 8080
+        actuator:
+          asset_id: "ctxd-kube0"
+    - service_name: kubernetes-networkpolicies
+      consumer:
+        host: "127.0.0.1"
+        port: 8080
+        profile: slpf
+        actuator:
+          asset_id: "np"  

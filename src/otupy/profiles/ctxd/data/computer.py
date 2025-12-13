@@ -10,7 +10,7 @@ class Computer(Record):
 		server or virtual machine.	  
 	"""
 	description: str = None
-	""" Generic description of the VM """
+	""" Generic description of the Computing environment """
 	id: str = None
 	""" ID of the computer """
 	hostname: Hostname = None
@@ -23,29 +23,31 @@ class Computer(Record):
 	def __init__(self, description:str = None, id:str = None, hostname:Hostname = None, os:OS = None, apps: ArrayOf(Application)=None):
 		if(isinstance(description, Computer)):
 			self.description = description.description
-			self.id = description.apps
+			self.id = description.id
+			self.apps = description.apps
 			self.hostname = description.hostname
 			self.os = description.os
 		else:
 			self.description = description if description is not None else None
 			self.apps = apps if apps is not None else None
+			self.id = id if id is not None else None
 			self.hostname = hostname if hostname is not None else None
 			self.os = os if os is not None else None
 		self.validate_fields()
 
 	def __repr__(self):
-		return (f"VM(description='{self.description}', id={self.id}, "
+		return (f"Computer(description='{self.description}', id={self.id}, "
 	             f"hostname='{self.hostname}', os={self.os})")
 	
 	def __str__(self):
-		return f"VM(" \
+		return f"Computer(" \
 	            f"description={self.description}, " \
 	            f"id={self.id}, " \
 	            f"hostname={self.hostname}, " \
 	            f"os={self.os})"
 
 	def validate_fields(self):
-		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, VM)):
+		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, Computer)):
 			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
 		if self.apps is not None and not isinstance(self.id, ArrayOf(Application)):
 			raise TypeError(f"Expected 'id' to be of type str, but got {type(self.id)}")

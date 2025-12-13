@@ -130,14 +130,14 @@ class HTTPTransfer(oc2.Transfer):
 							'Date': oc2.DateTime(date).httpdate()}
 
 		logger.info("Sending to %s", self.url)
-		logger.info("HTTP Request Content:\n%s", openc2data)
+		logger.debug("HTTP Request Content:\n%s", openc2data)
 
 		# Send the OpenC2 message and get the response
 		if self.scheme == 'https':
 			logger.warning("Certificate validation disabled!")
 		response = requests.post(self.url, data=openc2data, headers=openc2headers, verify=False)
 		logger.info("HTTP got response: %s", response)
-		logger.info("HTTP Response Content:\n%s", response.text)
+		logger.debug("HTTP Response Content:\n%s", response.text)
 	
 		# TODO: How to manage HTTP response code? Can we safely assume they always match the Openc2 response?
 		try:
@@ -199,7 +199,7 @@ class HTTPTransfer(oc2.Transfer):
 			:return: An otupy `Message` (first) and an `Encoder` instance (second).
 		"""
 
-		logger.info("Received HTTP body: \n%s", str(data))
+		logger.debug("Received HTTP body: \n%s", str(data))
 		logger.debug(data)
 		msg, encoder = self._fromhttp(headers, data)
   			
@@ -270,15 +270,15 @@ class HTTPTransfer(oc2.Transfer):
 				resp.status=oc2.StatusCode.INTERNALERROR
 				resp.to = [ str(request.remote_addr) ]
 			else:
-				logger.info("Received command: %s", cmd)
+				logger.debug("Received command: %s", cmd)
 				resp = callback(cmd)
 
 			
-			logger.info("Got response: %s", resp)
+			logger.debug("Got response: %s", resp)
 			
 			# TODO: Set HTTP headers as appropriate
 			hdrs, data = server._respond(resp, encoder)
-			logger.info("Sending response:\n%s", data)
+			logger.debug("Sending response:\n%s", data)
 			httpresp = make_response(data if data is not None else "") 
 			httpresp.headers = hdrs
 
