@@ -193,7 +193,9 @@ class CTXDActuator:
 
 			This method should be run before getting links and services
 		"""
+		self.services = ArrayOf(Service)()
 		self.discover_services()
+		self.links = ArrayOf(Link)()
 		self.discover_links()
 		
 	def _get_services(self, name = None, filter = None):

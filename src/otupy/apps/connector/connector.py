@@ -45,8 +45,13 @@ def main() -> None:
     with open(args.config) as config_file:
         config = safe_load(config_file)
 
-        consumer = config["consumer"]	
-        configs = config["configs"]
+        try:  
+            consumer = config["consumer"]	
+            configs = config["configs"]
+            connector = config["id"]
+        except:
+            logger.error("Missing configuration item: %s", e)
+            exit
 
         actuators = {}
         for file in glob(f"{configs}/**/*.yaml", recursive=True):
@@ -85,7 +90,7 @@ def main() -> None:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
         transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
 
-        consumer = Consumer("connector", actuators, encoder, transferer)
+        consumer = Consumer(connector, actuators, encoder, transferer)
         consumer.run()
 
 

@@ -1,0 +1,31 @@
+ctxd-openstack-example:
+  actuator: "ctxd-openstack"
+  profile: "x-ctxd"
+  owner: "acme.com"
+  specifiers:
+    domain: null
+    asset_id: "ctxd-openstack-example"
+  auth:
+    username: "user"
+    password: "password"
+    project_name: "name"
+    user_domain_name: "Default"
+    project_domain_name: "Default"
+    auth_url: "https://127.0.0.1:5000/v3"
+  config:
+    cacert: "/etc/ssl/certs/acme.crt"
+  peers:
+    - service_name: 
+        local: kube0
+      consumer:
+        host: "kube0"
+        port: 8080
+        actuator:
+          asset_id: "ctxd-kube0"
+    - service_name: openstack-securitygroups
+      consumer:
+        host: "127.0.0.1"
+        port: 8080
+        profile: slpf
+        actuator:
+          asset_id: "sg"  
