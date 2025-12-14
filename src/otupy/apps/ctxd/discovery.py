@@ -24,7 +24,7 @@ from pymongo import MongoClient
 
 logger = logging.getLogger()
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # Create stdout handler for logging to the console 
 stdout_handler = logging.StreamHandler()
 stdout_handler.setLevel(logging.INFO)
@@ -33,9 +33,40 @@ hdls = [ stdout_handler ]
 # Add both handlers to the logger
 logger.addHandler(stdout_handler)
 
-DEFAULT_OPENC2_HTTP_PORT=443
-DEFAULT_OPENC2_ENDPOINT="/.well-known/openc2"
-DEFAULT_LOOP_FREQUENCY=60 # seconds
+defaults = { # Default values for context discovery operation
+				'ctxd': {
+					'loop': -1,
+					'frequency': 60},
+				# Default values for OpenC2 communication
+				'openc2': {
+					'host': '127.0.0.1',
+					'port': 443,
+					'endpoint': "/.well-known/openc2",
+					'encoding': 'json',
+					'transfer': 'http'},
+				# Default values for Mongodb connection
+				'database': {
+					'host': '127.0.0.1',
+					'port': 27017,
+					'db_name': '',
+					'user': None,
+					'pass': None}
+}
+
+def set_defaults(config, type_, param):
+	try:
+		if config[param] is not None:
+			return config[param]
+	except:
+		pass
+
+	try:
+		logger.info("Using default value %s for %s", defaults[type_][param], param)
+		return defaults[type_][param]
+	except:
+		logger.warn("No default value for: %s/%s", type_, param)
+		return None
+
 
 #edges_set = set()  # Track visited edges
 #processed_links_set = set()  # Track processed links to avoid recursion on the same links
@@ -61,39 +92,54 @@ DEFAULT_LOOP_FREQUENCY=60 # seconds
 #            unprocessed_links.append(it_link)
 #    return unprocessed_links
 #
-#def connect_to_database(username, password, ip, port, database_name, collection_name):
-#
-#        try:
-#            client = MongoClient("mongodb://"+ip+":"+str(port)+"/")
-#        except Exception:
-#            client = MongoClient("mongodb://"+username+":"+password+"@"+ip+":"+str(port)+"/")    
-#
-#        # Create or switch to a database
-#        db = client[database_name]
-#
-#        # Create or switch to a collection
-#        collection = db[collection_name]
-#
-#        # Delete all documents in the collection
-#        collection.delete_many({})
-#
-#        #return an empty collection
-#        return collection 
-#
-#
-#def insert_data_database(collection, response, peer_hostname =None):
-#        #if the node is not already visited -> add to the database
-#        if peer_hostname not in nodes_visited:
-#            m = Message()
-#            m.set(response)
-#            data = JSONEncoder().encode(m)
-#            parsed_data = json.loads(data)
-#            #insert only the results into the database
-#            result = parsed_data['body']['openc2']['response']['results']['x-ctxd']
-#            collection.insert_one(result).inserted_id
-#            nodes_visited.add(peer_hostname)
-#
-#
+def connect_to_database(config):
+
+	databases = {}
+	for db in config['database']:
+		for name, conf in db.items():
+			match name:
+				case "mongodb":
+					try: 
+						if conf['user'] is not None and conf['pass'] is not None:
+							client = MongoClient("mongodb://"+conf['user']+":"+conf['pass']+"@"+conf['host']+":"+str(conf['port']))
+						else:
+							client = MongoClient("mongodb://"+conf['host']+":"+str(conf['port']))
+						# Create or switch to a database
+						databases['mongodb'] = client[conf['db_name']]
+					except Exception:
+						logger.error("Unable to connect to mongodb")
+						databases['mongodb'] = None
+				case _:
+					logger.warning("Skipping unsupported db: %s", db)
+	
+	return databases
+
+
+
+
+def insert_data_database(config, ctx):
+
+	databases = connect_to_database(config)
+
+	for name, db  in databases.items(): 
+		match name:
+			case 'mongodb':
+				for type_ in ['services', 'links']:
+					collection = db[type_]
+					# Delete all documents in the collection
+					collection.delete_many({})
+					for data in ctx[type_]:
+						jsondata = otupy.encoders.JSONEncoder().encode(data)
+						# Note: otupy encoders return str, so we must convert them to dict
+						collection.insert_one(json.loads(jsondata)).inserted_id
+			case _:
+				# Unrecognized names have been already pruned in the connect phase
+				pass
+
+	
+	
+
+
 #def recursive_process_links(links, cmd, pf, p, dot, parent_node):
 #    print(">>>>>>>>> processing links with cmd: ", cmd)
 #    for it_link in links:
@@ -160,32 +206,10 @@ DEFAULT_LOOP_FREQUENCY=60 # seconds
 #    return
 #
 
-def _log_service(s):
-	logger.info("Found service: %s", s)
-
-def _log_services(services):
-	try:
-		for s in services:
-			_log_service(s)
-	except:
-		logger.info("No service")
-
-def _log_link(l):
-	logger.info("Found link: %s", l)
-
-def _log_links(links):
-	try:
-		for l in links:
-			_log_link(l)
-	except:
-		logger.info("No link")
-
 def _log_context(ctx):
-	for c in ctx:
-		if 'service' in c:
-			_log_service(c['service'])
-		else:
-			_log_link(c['link'])
+	for type_ in ctx.keys():
+		for item in ctx[type_]:
+			logger.info("Found %s: %s", type_, item)
 
 def parse_and_default(config_file):
 	""" Parse config file and assign default values to mising items
@@ -195,54 +219,30 @@ def parse_and_default(config_file):
 	with open(config_file) as cf:
 	    config = safe_load(cf)
 
-	if 'services' in config:
+	# Service section (ctxd actuators)
+	if 'services' in config and config['services'] is not None:
 		for service in config["services"]:
 			
-			try:
-				encoder = otupy.Encoders[service['encoding']].value
-			except:
-				if 'encoding' in service:
-					logger.error("No valid encoder: %s", service['encoding'])
-				logger.info("Using default encoder: json")
-				encoder = otupy.Encoders["json"].value
-			service['encoding']=encoder
+			# Load default values for missing parameters
+			for p in defaults['openc2'].keys():
+				service[p] = set_defaults(service,'openc2',p)
 
-			try:
-				endpoint = service['endpoint']
-			except:
-				endpoint = DEFAULT_OPENC2_ENDPOINT
-			service['endpoint']=endpoint
-
-			try:
-				port = service['port']
-			except:
-				port = DEFAULT_OPENC2_HTTP_PORT
-
-			# Load the transferer (beautiful name, eh?).
-			try:
-				transferer = otupy.Transfers[service['transfer']](service['host'], port, endpoint)
-			except:
-				if 'transfer' in service:
-					logger.error("No valid transfer: %s", service['transfer'])
-				logger.info("Using default transfer: http")
-				transferer = otupy.Transfers['http'](service['host'], port, endpoint)
-			service['transfer']=transferer
-
-			# Check number of loops
-			try:
-				loop = config['loop']
-			except:
-				loop = -1
-			config['loop']=loop
-
-			# Check frequency of loops
-			try:
-				freq = config['frequency']
-			except:
-				freq = DEFAULT_LOOP_FREQUENCY
-			config['frequency']=freq
+			# Check discovery params
+			for p in 'loop', 'frequency':
+				config[p] = set_defaults(config, 'ctxd', p)	
 	else:
-		config['service'] = []
+		config['services'] = []
+
+	# Database section:
+	if 'database' in config:
+		for db in config['database']:
+			for name in db.keys():
+				if db[name] is None:
+					db[name]={}
+				for p in defaults['database'].keys():
+					db[name][p] = set_defaults(db[name], 'database',  p)
+	else:
+		config['database']=None
 
 	return config
 
@@ -263,6 +263,8 @@ def loop(num=0, freq=0):
 	return decorator
 
 def add_resource(context, root, res_type, resource_list):
+	if context is None:
+		context = []
 	for r in resource_list:
 		res = {}
 		res['source'] = root
@@ -276,16 +278,17 @@ def discovery(config):
 
 		Start the discovery process for each root service provided by configuration.
 	"""
-	ctx = []
+	ctx = {'services': None, 'links': None}
 
 	# Start recursive discovery
 	for root in config['services']:
 		service_list, link_list = discover(root)
-		ctx = add_resource(ctx, root, 'service', service_list)
-		ctx = add_resource(ctx, root, 'link', link_list)
+		ctx['services'] = add_resource(ctx['services'], root, 'service', service_list)
+		ctx['links'] = add_resource(ctx['links'], root, 'link', link_list)
 		# TODO: recursive discovery of peers with valid actuators in links
 
 	_log_context(ctx)
+	insert_data_database(config, ctx)
 
 def discover(service):
 	""" Query an OpenC2 discovery service
@@ -294,7 +297,27 @@ def discover(service):
 		:param service: The endpoint to query from the configuration file.
 		:return: service and link lists
 	"""
-	producer = otupy.Producer("ctxd-discovery.mirandaproject.eu", service['encoding'], service['transfer'])
+	try:
+		encoder = otupy.Encoders[service['encoding']].value
+	except:
+		service['encoding'] = set_defaults(service, 'openc2', 'encoding')
+		logger.error("No valid encoder: %s", service['encoding'])
+		logger.info("Using default encoder: %s", )
+		encoder = otupy.Encoders[service['encoding']].value
+
+	# Load the transferer (beautiful name, eh?).
+	try:
+		transferer = otupy.Transfers[service['transfer']](service['host'], 
+				service['port'], service['endpoint'])
+	except:
+		service['transfer'] = set_defaults(service, 'openc2', 'transfer')
+		logger.error("No valid transfer: %s", service['transfer'])
+		logger.info("Using default transfer: %s", service['transfer'])
+		transferer = otupy.Transfers[service['transfer']](service['host'], 
+				service['port'], service['endpoint'])
+
+
+	producer = otupy.Producer("ctxd-discovery.mirandaproject.eu", encoder, transferer)
                                                              
 	actuator = ctxd.Specifiers({'asset_id': service['actuator']['asset_id']})
 	arg = ctxd.Args({'name_only': False, 'cached': False})
@@ -321,14 +344,12 @@ def main() -> None:
 	
 	config = parse_and_default(args.config)
 
-
 	# Set loop and frequency of the discovery process
 	repeat_discovery = loop(config['loop'],config['frequency'])(discovery)
 	repeat_discovery(config)
 
 						
 
-#    insert_data_database(collection, resp_openstack, openstack_parameters['asset_id'])
 
 
 #    if not arg['name_only']: #explore actuators only if it is false
