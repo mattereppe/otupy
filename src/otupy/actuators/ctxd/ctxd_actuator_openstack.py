@@ -11,16 +11,20 @@ import logging
 import sys
 import openstack
 
+import otupy.profiles
+from otupy import Extensions
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
+from otupy.profiles.ctxd.actuator import Specifiers
 from otupy.profiles.ctxd.data.cloud import Cloud
+from otupy.profiles.ctxd.data.application import Application
 from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.container import Container
 from otupy.profiles.ctxd.data.encoding import Encoding
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.os import OS
+from otupy.profiles.ctxd.data.computer import Computer
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.transfer import Transfer
 from otupy.profiles.ctxd.data.vm import VM
@@ -29,7 +33,7 @@ from otupy.types.data.l4_protocol import L4Protocol
 
 
 
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 import otupy.profiles.ctxd as ctxd
 
 from otupy.profiles.ctxd.data.name import Name
@@ -41,117 +45,209 @@ logger = logging.getLogger(__name__)
 OPENC2VERS=Version(1,0)
 """ Supported OpenC2 Version """
 
-MY_IDS = {
-	'domain': None,
-	'asset_id': None
-}
-
 # An implementation of the ctxd profile. 
+@actuator_implementation("ctxd-openstack")
 class CTXDActuator_openstack(CTXDActuator):
 	""" CTXD implementation
 
 		This class provides an implementation of the CTXD `Actuator`.
 	"""
 
-	my_services: ArrayOf(Service) = None # type: ignore
-	""" Name of the service """
-	my_links: ArrayOf(Link) = None # type: ignore
-	"""It identifies the type of the service"""
-	domain : str = None
-	asset_id : str = None
-	hostname: any = None
-	ip: any = None
-	port: any = None
-	protocol: any = None
-	endpoint: any = None
-	transfer: any = None
-	encoding: any = None
-	file_enviroment_variables : any = None
+	auth: dict = None
+	peers: list = None
+	config: dict = None
 	conn : any = None #connection to openstack
 	
-	def __init__(self, domain, asset_id, hostname, ip, port, protocol, endpoint, transfer, encoding, file_enviroment_variables):
-		MY_IDS['domain'] = domain
-		MY_IDS['asset_id'] = asset_id
-		self.domain = domain
-		self.asset_id = asset_id
-		self.hostname = hostname
-		self.ip = ip
-		self.port = port
-		self.protocol = protocol
-		self.endpoint = endpoint
-		self.transfer = transfer
-		self.encoding = encoding
-		self.file_enviroment_variables = file_enviroment_variables
+	def __init__(self, auth, **kwargs):
+		""" Initialize the actuator
+
+			:param auth: (mandatory) Authentication information to connect to OpenStack.
+			:param config: (optional) Include additional info for configuration the OpenStack 
+				connection (e.g., "cacert" certificate of a custom CA).
+			:param specifiers: (optional) The identification of this Actuator.
+			:param owner: (optional) Onwer of this service.
+			:param peers: (optional) A list of peer services, including their consumer endpoints.
+		"""
+		kwargs['auth']=auth
+		super().__init__(**kwargs)
 
 		self.connect_to_openstack()
-		self.my_links = self.get_links()
-		self.my_services = self.get_services()
 
 
-		
-	def get_services(self):
-		#process = subprocess.Popen('openstack service list -f json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#stdout, stderr = process.communicate()
-		cloud_services = self.openstack_service_list()
-		array_cloud_services = ArrayOf(Cloud)()
+	def _discover_os_services(self):
+		""" Discover Openstack as a composite service made of multiple applications """
+		cloud_services = self._openstack_service_list()
 
+		# The root service: OpenStack as cloud environment
+		# --------------------------------------------------
+		os = Cloud(description='cloud', id=None, name='openstack', type='IaaS')
+		# TODO: Fill in with Openstack version/release
+		self.services.append(Service(name=Name(os.name),type=ServiceType(os), #links=ArrayOf(Name)(),
+				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+
+		# Software components of openstack
+		# ---------------------------------
 		for service in cloud_services:
-			if(service['name'] == 'nova'):
-				array_cloud_services.append(Cloud(description='cloud', id=service['id'], name=service['id'], type=service['type']))
-
-		openstack_service = Service(name= Name('openstack'), type=ServiceType(array_cloud_services[0]), links=self.get_name_links(self.my_links),
-									 subservices=None, owner= self.asset_id, release=None, security_functions=None,
-									 actuator=Consumer(server=Server(Hostname(self.hostname)), 
-													   port=self.port,
-													   protocol= L4Protocol(self.protocol),
-													   endpoint= self.endpoint,
-													   transfer=Transfer(self.transfer),
-													   encoding=Encoding(self.encoding)))
-		return ArrayOf(Service)([openstack_service])
-
-
-	def get_links(self):
-		#process = subprocess.Popen('openstack server list --status ACTIVE -f json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#stdout, stderr = process.communicate()
-		vms = self.openstack_server_list()
-		array_vms = ArrayOf(VM)()
-
-		#definisco il link control tra cloud e vm
-		links = ArrayOf(Link)()
-		for vm in vms:
-			tmp_vm = VM(description='vm', 
-							id= vm['id'], 
-							hostname= Hostname(vm['name']),
-							os = OS(name=self.openstack_server_os(vm['image']['id'])))
-
-			array_vms.append(tmp_vm)
-			
-			tmp_peer = Peer(service_name= Name('vm\n'+ vm['addresses']['Net01'][0]['addr']), 
-							role= PeerRole(9), #VM is controlled by Openstack
-							consumer=Consumer(server=Server(Hostname(vm['name'])),
-												port=self.port,
-												protocol= L4Protocol(self.protocol),
-												endpoint= self.endpoint,
-												transfer=Transfer(self.transfer),
-												encoding=Encoding(self.encoding)))
-
-			links.append(Link(name = Name(vm['id']), link_type=LinkType(4), peers=ArrayOf(Peer)([tmp_peer])))
-
-		#create a dumb slpf peer
-		slpf_peer = Peer(service_name= Name('slpf'),
-						role= PeerRole(3), #The slpf is hosted by Openstack
-						consumer=Consumer(server=Server(Hostname('os-fw')),
-											port=self.port,
-											protocol= L4Protocol(self.protocol),
-											endpoint= self.endpoint,
-											transfer=Transfer(self.transfer),
-											encoding=Encoding(self.encoding)))
-				
-		links.append(Link(name = Name('os-fw'), link_type=LinkType(2), peers=ArrayOf(Peer)([slpf_peer])))
-		#end creation of dumb slpf
+			app = (Application(description=service['description'], name=service['name'], 
+						id=service['id'], owner=self.owner, app_type=service['type']))
+			logger.debug("Found application: %s", str(app.name))
+			# TODO: Add software release (maybe with its SBOM)
+			name=Name(app.name)
+			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
+						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
+			# Paranoid check nobody modified the order of the instraction
+			assert  str(self.services[0].name) == os.name , "Wrong position of parent openstack service in array!"
+			self.services[0].subservices.append(name)
 		
-		return links
-	
+	def _discover_os_servers(self):
+		""" Discover VMs created and controlled by this OpenStack instance.
+
+			VMs are known as "servers" in OpenStack terminology.
+		"""
+		vms = self._openstack_server_list()
+
+		# Servers (VMs) deployed by this instance of OpenStack
+		# ----------------------------------------------------
+		for vm in vms:
+			server = VM(vm['description'],
+							id= vm['id'], 
+							name= vm['name'],
+							image = vm['image']['id'])
+
+			logger.debug("Found server: %s", str(server))
+
+			self.services.append(Service(name=Name(str(server.name)), type=ServiceType(server), #links=ArrayOf(Name)(),
+						subservices=None, owner=self.owner, release=None))
+
+			
+	def _discover_os_hypervisors(self):
+		""" Discover OpenStack hypervisors
+
+			Hypervisors are the physical servers that host VMs. It is questionable if such service 
+			should be reported, since the Computer subsystem should have its own actuator describing 
+			the full stack of services/software hosted.
+		"""
+		hvs = self._openstack_hypervisor_list()
+
+		# Hypervisors running VMs in the cloud infrastructure
+		# ---------------------------------------------------
+		for h in hvs:
+			hyper = Computer(hostname=Hostname(h['name']), id=h['service_details']['id'],
+					description="OpenStack hypervisor")
+
+			logger.debug("Found hypervisor: %s", str(hyper))
+
+			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), #links=ArrayOf(Name)(),
+						subservices=None, owner=self.owner, release=None))
+
+
+	def _discover_os_link_vms(self):
+		""" Add links between nova and VMs 
+		
+			We create explicit links from nova because this is the software components that concretely
+			manage VMs. Vulnerabilities applies to nova and other services rather than OpenStack as a whole.	
+		"""
+
+		os_services = self._get_services(name=Name('nova'), filter=Application)
+		os_vms = self._get_services(filter=VM)
+
+		# There will be only 1 nova instance, since we are connected to a single openstack cloud
+		for s in os_services:
+			for v in os_vms:
+				peer = Peer(service_name= v.name,
+							role= PeerRole.controlled)  #VM is controlled by Openstack
+				description="Openstack controls "+v.name.getObj()
+				self.links.append(Link(name = s.name, description=description, 
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+#s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+
+				
+	def _discover_os_link_sg(self):
+		""" Add link between OpenStack (neutron) and Security Groups
+
+			Security Groups implement a slpf firewall, hence they are a security function. However, they are not
+			standalone software, and they are implemented by neutron.
+		"""
+		os_services = self._get_services(name=Name('neutron'), filter=Application)
+
+		# There will be only 1 nova instance, since we are connected to a single openstack cloud
+		for s in os_services:
+			consumer = self._get_consumer(Name("openstack-securitygroups"))
+			if s is not None:
+				peer = Peer(service_name=Name("openstack-securitygroups"),
+						role=PeerRole.controlled, consumer=consumer)
+				description="OpenStack Security Groups"
+				self.links.append(Link(name = s.name, description=description, 
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+
+
+	def _discover_vms_link_hypervisors(self):
+		""" Add links between VMs and hypervisors that host them
+
+		"""	
+		pass
+
+	def _discover_vms_link_computers(self):
+		""" Add links between VMs and the software they host
+
+			This is something outside the OpenStack scope, which is delegated to a remote peer
+			(currently read by configuration file).
+		"""
+		os_vms = self._get_services(filter=VM)
+
+		for v in os_vms:
+			consumer=self._get_consumer(v.name)
+
+			if consumer is not None:
+				peer = Peer(service_name= v.name,
+							role= PeerRole.host,  #VM is controlled by Openstack
+							consumer=consumer) # This is the consumer running on that service.
+				description="System and application software installed on "+v.name.getObj()
+				self.links.append(Link(name = v.name, description=description, 
+							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+# I don't like to replicate the link as standalone structure and embedded in Service
+#s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+
+	def _discover_sg_link_vms(self):
+		""" Add links from Security Groups to VMs's ports
+
+			Automatically add a link from Security Group service and all VMs. 
+			Security groups are modelled as a security function implemented by an external actuator.
+			They protect all VMs hosted in OpenStack.
+		"""
+		# TODO
+		pass
+
+
+	def discover_services(self):
+		""" Discover all services related to OpenStack
+
+			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
+			including VMs, networks, image repositories.
+		"""
+		self._discover_os_services()
+		self._discover_os_servers()
+		self._discover_os_hypervisors()		
+		# TODO: Discover:
+		# - networks
+		# - images
+		
+
+	def discover_links(self):
+		""" Automatically discover links between OpenStack components
+
+			The current implementation discovers links between:
+			- OpenStack services (nove) and VMs (servers)
+			- VMs (servers) and physical servers (hypervisors)
+			- SLPF firewall (iptables) and VMs (servers)
+			- VMs (servers) and computers (System and application software), only from a configuration file
+		"""
+		self._discover_os_link_vms()
+		self._discover_os_link_sg()
+		self._discover_vms_link_hypervisors()
+		self._discover_vms_link_computers()
+		self._discover_sg_link_vms()
+
 	
 	def get_name_links(self, links):
 		
@@ -159,88 +255,98 @@ class CTXDActuator_openstack(CTXDActuator):
 		
 		for link in links:
 			name_links.append(link.name.obj)
-			
+
 		return name_links
 	
 
 	def connect_to_openstack(self):
-		#load enviroment variables into linux OS to connect to openstack
-		if(self.file_enviroment_variables is not None): #if it is none, it will use the enviroment variables already present in the system
-			with open(self.file_enviroment_variables, 'r') as f:
-				for line in f:
-					line = line.strip()
-					if line.startswith('export '):  # Only process lines starting with 'export'
-						# Remove 'export ' and split on the first '='
-						line = line[len('export '):]
-						if '=' in line:
-							key, value = line.split('=', 1)
-							# Strip quotes around the value if they exist (handle the case of values like "SreX1$")
-							value = value.strip('"').strip("'")
-							os.environ[key] = value
-		
+
 		try:
-		# Initialize the OpenStack connection using environment variables
-			self.conn = openstack.connect()
+			# Get access to OpenStack (the following mechanism is largely undocumented.
+			# See: https://github.com/openstack/openstacksdk/blob/3d45cecb3a897bf9bb10613bfc6ec82a395c153f/doc/source/user/transition_from_profile.rst#L154
+			config_dict=openstack.config.defaults.get_defaults()
+	
+			loader = openstack.config.OpenStackConfig(
+	  		  load_yaml_config=False,
+	    		app_name='unused',
+	    		app_version='1.0')
+			cloud_region = loader.get_one_cloud(
+	    		region_name='',
+	    		auth_type='password',
+				auth=self.auth,
+				cacert=self.config['cacert'],
+	    		)
+			self.conn = openstack.connection.from_config(cloud_config=cloud_region)
+	
 
         # Get the token from the connection object (it will automatically handle authentication)
 			token = self.conn.authorize()
 
         # Verify successful authentication by checking token
 			if token:
-				print("Authentication successful!")
-				print(f"Token: {token}")
+				logger.info("Authentication successful!")
+				logger.debug(f"Token: {token}")
 			else:
-				print("Authentication failed.")
+				logger.error("Authentication failed.")
     
 		except Exception as e:
-			print(f"An error occurred: {e}")
+			logger.error(f"An error occurred: {e}")
 
-	
-	def openstack_service_list(self):
+	def _check_connection(self):
 		if not self.conn:
-			print("Connection to OpenStack is not established.")
-			return
+			logger.error("Connection to OpenStack is not established.")
+			raise 
+	
+	def _format_os_data(self, data):
+			data_list = []
+			for d in data:
+				 data_list.append( {key: value for key, value in d.to_dict().items()} )
+			return data_list
+
+
+	def _openstack_service_list(self):
+		self._check_connection()
 		
 		try:
 		    # List services available in OpenStack
 			services = self.conn.identity.services()
-		
-			# Format the response as a JSON-like structure for pretty printing
-			services_list = []
-			for service in services:
-				service_data = {key: value for key, value in service.to_dict().items()}
-				services_list.append(service_data)
-			# Return the formatted services list
-			return services_list
-		
 		except Exception as e:
-			print(f"Failed to retrieve service list: {e}")
+			logger.warning("Failed to retrieve service list: %s",e)
 			return Exception("Failed to retrieve service list")
 		
-	def openstack_server_list(self):
-		if not self.conn:
-			print("Connection to OpenStack is not established.")
-			return
+		# Format the response as a JSON-like structure for pretty printing
+		return self._format_os_data(services)
+		
+		
+	def _openstack_server_list(self):
+		self._check_connection()
 
 		try:
 			# Use the OpenStack client to list active servers
 			servers = self.conn.compute.servers(details=True, status="ACTIVE")
-
-			# Format the response as a JSON-like structure for pretty printing
-			server_list = []
-			for server in servers:
-				server_data = {key: value for key, value in server.to_dict().items()}
-				server_list.append(server_data)
-
-        	# Return the formatted server list as a pretty-printed JSON string
-			return server_list
-
 		except Exception as e:
-			print(f"Failed to retrieve server list: {e}")
+			logger.warning("Failed to retrieve server list: %s", e)
 			return Exception("Failed to retrieve server list")
-		
 
-	def openstack_server_os(self, image_id):
+      # Return the formatted server list as a pretty-printed JSON string
+		return self._format_os_data(servers)
+		
+	def _openstack_hypervisor_list(self):
+		self._check_connection()
+
+		try:
+			# Use the OpenStack client to list hypervisors
+			hypervisors = self.conn.compute.hypervisors(details=True) # No filters set
+			# Note: this API is not documented
+		except Exception as e:
+			logger.warning("Failed to retrieve hypervisors list: %s", e)
+			return Exception("Failed to retrieve hypervisors list")
+
+     	# Return the formatted server list as a pretty-printed JSON string
+		return self._format_os_data(hypervisors)
+
+
+	def _openstack_server_os(self, image_id):
 		try:
         # Get image details using the OpenStack client
 			image = self.conn.compute.get_image(image_id)
@@ -249,8 +355,8 @@ class CTXDActuator_openstack(CTXDActuator):
 			if image:
 				return image.name  # Return the name of the image (OS name)
 			else:
-				print(f"Image with ID {image_id} not found.")
+				logger.warning("Image with ID %s not found.", image_id)
 				return None
 		except Exception as e:
-			print(f"Failed to retrieve OS for image ID {image_id}: {e}")
+			logger.warning(f"Failed to retrieve OS for image ID %s: %s", image_id, e)
 			return None

@@ -26,6 +26,9 @@ from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.container import Container
+from otupy.profiles.ctxd.data.pod import Pod
+from otupy.profiles.ctxd.data.port import Port
+from otupy.profiles.ctxd.data.computer import Computer
 from otupy.profiles.ctxd.data.encoding import Encoding
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.network import Network
@@ -42,7 +45,7 @@ from otupy.types.data.l4_protocol import L4Protocol
 
 
 
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 import otupy.profiles.ctxd as ctxd
 
 from otupy.profiles.ctxd.data.name import Name
@@ -60,63 +63,91 @@ MY_IDS = {
 }
 
 # An implementation of the ctxd profile (it implements my5gtestbed). 
+@actuator_implementation("ctxd-kubernetes")
 class CTXDActuator_kubernetes(CTXDActuator):
 	""" CTXD implementation
 
 		This class provides an implementation of the CTXD `Actuator`.
 	"""
 
-	my_services: ArrayOf(Service) = None # type: ignore
-	""" Name of the service """
-	my_links: ArrayOf(Link) = None # type: ignore
-	"""It identifies the type of the service"""
-	domain : str = None
-	asset_id : str = None
-	actuators: any = None
-	hostname: any = None
-	ip: any = None
-	port: any = None
-	protocol: any = None
-	endpoint: any = None
-	transfer: any = None
-	encoding: any = None
 	namespace = [] #it contains only the name of the namespaces
 	api_client : any = None #api client for kubernetes
 	config_file : any = None #configuration file path
 	kube_context : any = None #kubernetes context
 
-	def __init__(self, domain, asset_id, actuators, hostname, ip, port, protocol, endpoint, transfer, encoding, namespace, config_file, kube_context):
-		MY_IDS['domain'] = domain
-		MY_IDS['asset_id'] = asset_id
-		self.domain = domain
-		self.asset_id = asset_id
-		self.actuators = actuators
-		self.hostname = hostname
-		self.ip = ip
-		self.port = port
-		self.protocol = protocol
-		self.endpoint = endpoint
-		self.transfer = transfer
-		self.encoding = encoding
-		self.namespace = namespace
-		self.config_file = config_file
-		self.kube_context = kube_context
+	def __init__(self, auth, **kwargs):
+		kwargs['auth']=auth
+		super().__init__(**kwargs)
+
+		try:
+			self.namespaces = kwargs['config']['namespaces']
+		except:
+			self.namespaces = None
 
 		self.connect_to_kubernetes()
 
-		self.namespace = self.get_name_namespace()
-		self.my_links = self.get_links()
-		self.my_services = self.get_services()
-		self.get_connected_actuators(actuators)
+#	self.namespace = self.get_name_namespace()
 
-	def get_name_namespace(self):
-		if len(self.namespace) == 0: #devo controllare tutti i namespaces attivi -> estraggo solo i nomi
-			#process = subprocess.Popen('kubectl get namespaces --field-selector=status.phase=Active -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			#stdout, stderr = process.communicate()
-			api_namespaces = self.api_client.list_namespace(field_selector="status.phase=Active")
-			return [namespace.metadata.name for namespace in api_namespaces.items]
+
+	def discover_services(self):
+		self._discover_k8s_services()
+		self._discover_k8s_pods()
+		self._discover_k8s_namespaces()		
+		self._discover_k8s_nodes()
+		# TODO: Discover:
+		# - networks
+		# - images
+
+	def discover_links(self):
+		""" Automatically discover links between Kubernetes components
+
+			The current implementation discovers links between:
+			- Kubernetes and nodes
+			- Kubernetes  and pods 
+			- Pods and containers
+			- Network Policy firewall and pods
+		"""
+		self._discover_k8s_links_nodes()
+		self._discover_k8s_links_pods()
+		self._discover_pod_links_nodes()
+		self._discover_k8s_links_np()
+		self._discover_np_links_pods()
+		pass
+
+
+	def _discover_k8s_namespaces(self):
+		namespaces = self._k8s_namespaces_list()
+
+		# There might be a null configuration
+		if namespaces is []:
+			return
+
+		# WARNING: Namespaces are not converted to services so far!!!
+
+#for ns in namespaces:
+#			n = (Application(description=service.spec.type, name=ns
+#						id=service.metadata.uid, owner=self.owner, app_type='service'))
+#			logger.debug("Found application: %s", str(app.name))
+#			# TODO: Add software release (maybe with its SBOM)
+#			name=Name(app.name)
+#			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
+#						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
+#			# Paranoid check nobody modified the order of the instraction
+#			assert  str(self.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
+#			self.services[0].subservices.append(name)
+			
+			
+
+	def _k8s_namespaces_list(self):
+		namespace_list = []
+		namespace_list = self.api_client.list_namespace(field_selector="status.phase=Active").items
+
+		if self.namespaces is None: # Retrieve all namespaces
+			return namespace_list
+		else:
+			return [ ns for ns in namespace_list if ns.metadata.name in self.namespaces ]
+
 		
-		return self.namespace		
 
 	def get_name_links(self, links):
 		
@@ -127,298 +158,248 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			
 		return name_links
 
-	def get_services(self):
+	def _discover_k8s_services(self):
+		""" Discover Kubernetes services 
 
-		kubernetes = Cloud(description='cloud', id= None, name=self.asset_id, type= None)
+			Currently a single service is returned, but additional subservices can be returned in the future for network
+			and other components
+		"""
+		cloud_services = self._k8s_service_list(namespaces=['kube-system'])
+
+		# The root service: K8S system
+		# --------------------------------------------------
+		# K8S is considered PaaS when managed by an external service provider
+		k8s = Cloud(description='Kubernetes cloud', id=None, name='kubernetes', type='IaaS')
+		# TODO: Fill in with k8s version/release
+		# Subservices should be kube-adm and kubelets
+		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), #links=ArrayOf(Name)(),
+				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+
+		# Services of openstack
+		# ---------------------------------
+		for service in cloud_services:
+			# I couldn't find a "description" field in the service data
+			app = (Application(description=service.spec.type, name=service.metadata.name,
+						id=service.metadata.uid, owner=self.owner, app_type='service'))
+			logger.debug("Found application: %s", str(app.name))
+			# TODO: Add software release (maybe with its SBOM)
+			name=Name(app.name)
+			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
+						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
+			# Paranoid check nobody modified the order of the instraction
+			assert  str(self.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
+			self.services[0].subservices.append(name)
+
+	def _k8s_service_list(self, namespaces=None):
+		""" Discover k8s services in the given namespace
+
+			:param namespace: the namespace name
+		"""
+		service_list=[]
+		if namespaces is None:
+			service_list+= self.api_client.list_service_for_all_namespaces().items 
+		else:
+			for n in namespaces:
+				service_list+= self.api_client.list_service_for_all_namespaces(field_selector='metadata.namespace='+n).items 
+		
+		return service_list	
+	
+	def _k8s_pod_node(self, pod):
+		nodes = self.api_client.list_pod_for_all_namespaces(field_selector="metadata.name="+pod.name+",metadata.namespace="+pod.namespace)
+#nodes = self.api_client.list_pod_for_all_namespaces(field_selector="metadata.name="+pod+", metadata.namespace=default")
+		for n in nodes.items:
+			# Just one item will be present because the pod name is unique in the same namespace
+			return n.spec.node_name
 			
 
-		kubernetes_service = Service(name= Name(self.asset_id), type=ServiceType(kubernetes), links=self.get_name_links(self.my_links),
-									 subservices=None, owner= None, release=None, security_functions=None,
-									 actuator=Consumer(server=Server(Hostname(self.asset_id)), 
-													   port=self.port,
-													   protocol= L4Protocol(self.protocol),
-													   endpoint=self.endpoint,
-													   transfer=Transfer(self.transfer),
-													   encoding=Encoding(self.encoding)))
-        
-	
-		return ArrayOf(Service)([kubernetes_service])
+	def _discover_pod_links_nodes(self):
+		""" Add links between pods and nodes where they are hosted 
+		"""
 
-	def get_links(self):
-		#process = subprocess.Popen('kubectl get nodes -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#stdout, stderr = process.communicate()
-		api_nodes = self.api_client.list_node()
-		vms = api_nodes.items
-		array_vms = ArrayOf(VM)()
+		k8s_pods = self._get_services(filter=Pod)
+		k8s_nodes = self._get_services(filter=Computer)
 
-		#definisco il link control tra kubernetes e vm
-		links = ArrayOf(Link)()
-		
-		for vm in vms:
-			tmp_vm = VM(description='vm', 
-							id= vm.metadata.uid, 
-							hostname= Hostname(vm.metadata.name), 
-							os= OS(family=vm.status.node_info.operating_system, name=vm.status.node_info.os_image))
+		for p in k8s_pods:
+			node = self._k8s_pod_node(p.type.getObj())
+			consumer=self._get_consumer(Name(node))
+			peer = Peer(service_name=Name(node),
+						role=PeerRole.host, # Node hosts pods
+						consumer=consumer)
+			description="Pod "+p.name.getObj()+" hosted on "+node
+			self.links.append(Link(name=p.name, description=description,
+						link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
-			array_vms.append(tmp_vm)
+	def _discover_k8s_links_nodes(self):
+		""" Discover K8S links to nodes
+
+			Kube-api is hosted on master
+			Kubelets are hosted on slaves(/master)
 			
-			tmp_peer = Peer(service_name= Name('vm\n' + vm.status.addresses[0].address), 
-							role= PeerRole(9), #VM is controlled by kubernetes
-							consumer=Consumer(server=Server(Hostname(vm.metadata.name)),
-												port=self.port,
-												protocol= L4Protocol(self.protocol),
-											    endpoint=self.endpoint,
-												transfer=Transfer(self.transfer),
-												encoding=Encoding(self.encoding)))
+			For now, a simplification is used and only Kubernetes hosted on master is reported
+		"""
 
-			links.append(Link(name = Name(vm.metadata.uid), link_type=LinkType(4), peers=ArrayOf(Peer)([tmp_peer])))
+		k8s_service = self._get_services(name=Name('kubernetes'),filter=Cloud)
 
-		#i link per trovare i namespace collegato al cloud kubernetes
-		try:
-			for it_namespace in self.namespace:
+		master = self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane")
+		k8s_nodes = self._get_services(name=Name(master[0].metadata.name), filter=Computer)
 
-				#process = subprocess.Popen('kubectl get namespace ' + it_namespace +' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#stdout, stderr = process.communicate()
-				#namespace = json.loads(stdout.decode())
-				namespace = self.api_client.read_namespace(name=it_namespace)
+		for k in k8s_service:
+			for n in k8s_nodes:
+					consumer=self._get_consumer(n.name)
+					peer = Peer(service_name=n.name,
+								role=PeerRole.host, # K8S is hosted on master node
+								consumer=consumer)
+					description="Kubernetes hosted on "+n.name.getObj()
+					self.links.append(Link(name=k.name, description=description,
+								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
-		
-				namespace_peer = Peer(service_name= Name(namespace.metadata.name), 
-        	        	            role= PeerRole(3),
-            	        	        consumer=Consumer(server=Server(Hostname(namespace.metadata.name)),
-                	        	                        port=self.port,
-														protocol= L4Protocol(self.protocol),
-													    endpoint=self.endpoint,
-														transfer=Transfer(self.transfer),
-														encoding=Encoding(self.encoding)))
+
 			
-				links.append(Link(name=Name(namespace.metadata.name), #the name of the link is the name of the namespace
-            		                       description= 'namespace',
-                		                   versions=None,
-                    		               link_type=LinkType(2),
-                        		           peers=ArrayOf(Peer)([namespace_peer]),
-                            		       security_functions=None))
-		except Exception as e:
-			print(f"An error occurred: {e}")
 
-		#create a dumb slpf peer
-		slpf_peer = Peer(service_name= Name('slpf'), 
-						role= PeerRole(3), #The slpf controls the vm
-						consumer=Consumer(server=Server(Hostname('kube-fw')),
-											port=self.port,
-											protocol= L4Protocol(self.protocol),
-											endpoint= self.endpoint,
-											transfer=Transfer(self.transfer),
-											encoding=Encoding(self.encoding)))
-				
-		links.append(Link(name = Name('kube-fw'), description="slpf", link_type=LinkType(2), peers=ArrayOf(Peer)([slpf_peer])))
-		#end creation of dumb slpf
 
-		return links
+	def _discover_k8s_links_pods(self):
+		""" Discover K8S links to pods
 
-	def get_connected_actuators(self, actuators):
-		#create dumb slpf actuators
-		actuators[(ctxd.Profile.nsid,str('os-fw'))] = self.getDumbSLPF(name='os-fw')
-		actuators[(ctxd.Profile.nsid,str('kube-fw'))] = self.getDumbSLPF(name='kube-fw')
-		#end creation of dumb slpf actuators
+			This is an oversimplification: indeed, kude-admin (hosted on master) controls kubelets (hosted on slaves),
+			and kubelets controls pods. The first relationship should be build by _discover_k8s_links_nodes().
+		"""
 
-		for link in self.my_links: #explore link between kubernetes and vm
-			if(link.description == "namespace" ): #but if the description = namespace -> find namespace and not vm
-				actuators[(ctxd.Profile.nsid,str(link.name.obj))] = CTXDActuator(services= self.get_namespace_service(str(link.name.obj)),
-                                                                            	links= ArrayOf(Link)(),
-                                                                                domain=None,
-                                                                                asset_id=str(link.name.obj))
-			elif(link.description != "slpf"):
-				for vm in link.peers: #explore vm (kube0, kube1, kube2)
-					actuators[(ctxd.Profile.nsid,str(vm.consumer.server.obj._hostname))] = CTXDActuator(services= self.get_vm_service(vm.consumer.server.obj._hostname),
-                                                                                                        links= self.get_vm_links(vm.consumer.server.obj._hostname),
-                                                                                                        domain=None,
-                                                                                                        asset_id=str(vm.consumer.server.obj._hostname))
-                    
-					for vm_link in actuators[(ctxd.Profile.nsid,str(vm.consumer.server.obj._hostname))].my_links: #explore link between vm and container
-						if(vm_link.description != "kubernetes" and vm_link.description != "slpf"):
-							for container in vm_link.peers: #explore containers connect to a vm
-								actuators[(ctxd.Profile.nsid,str(container.consumer.server.obj._hostname))] = CTXDActuator(services= self.get_container_service(container.consumer.server.obj._hostname),
-																														links=self.get_container_links(str(container.consumer.server.obj._hostname)),
-																														domain=None,
-																														asset_id=str(container.consumer.server.obj._hostname))
+		k8s_service = self._get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_pods = self._get_services(filter=Pod)
 
-	def get_vm_service(self, asset_id):
-		#process = subprocess.Popen('kubectl get nodes '+ str(asset_id) +' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#stdout, stderr = process.communicate()
-		node_name = str(asset_id)
-		vm = self.api_client.read_node(name=node_name)
+		for s in k8s_service:
+			for p in k8s_pods:
+				peer = Peer(service_name=p.name,
+							role=PeerRole.controlled, # Kubernetes controls its pods
+							consumer=None)
+				description="Kubernetes controls pod "+p.name.getObj()
+				self.links.append(Link(name=s.name, description=description,
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
-		tmp_vm = VM(description='vm', 
-                        id= vm.metadata.uid, 
-                        hostname= Hostname(vm.metadata.name), 
-                        os= OS(family=vm.status.node_info.operating_system, name=vm.status.node_info.os_image))
-		
-		vm_service = Service(name= Name(node_name), type=ServiceType(tmp_vm), links= self.get_name_links(self.get_vm_links(asset_id)),
-                                         subservices=None, owner='openstack', release=None, security_functions=None,
-                                         actuator=Consumer(server=Server(Hostname(vm.metadata.name)),
-                                                            port=self.port,
-															protocol= L4Protocol(self.protocol),
-											    			endpoint=self.endpoint,
-															transfer=Transfer(self.transfer),
-															encoding=Encoding(self.encoding))) 
 
-		return ArrayOf(Service)([vm_service])
+
+	def _discover_k8s_nodes(self):
+		""" Discover kubernetes working nodes
+
+			Nodes are the physical servers/vms that host pods. It is questionable if such service 
+			should be reported, since the Computer subsystem should have its own actuator describing 
+			the full stack of services/software hosted.
+		"""
+		nodes = self._k8s_node_list()
+
+		for n in nodes:
+			node = Computer(hostname=Hostname(n.metadata.name), id=n.metadata.uid,
+						description="Kubernetes node",
+                  os= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
+			logger.debug("Found node: %s", str(node))
+
+			self.services.append(Service(name=Name(str(n.metadata.name)), type=ServiceType(node), #links=ArrayOf(Name)(),
+						subservices=None, owner=self.owner, release=n.metadata.resource_version))
+
+	def _k8s_node_list(self, field_selector=None, label_selector=None):
+		return self.api_client.list_node(field_selector=field_selector, label_selector=label_selector).items
 	
-	def get_vm_links(self, asset_id):
-		#trovo i container collegati alla VM per ogni namespace
-		links = ArrayOf(Link)()
-		for it_namespace in self.namespace:
-			try:
-				#process = subprocess.Popen('kubectl get pods -n ' + it_namespace +' --field-selector spec.nodeName=' +str(asset_id)+ ' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#stdout, stderr = process.communicate()
-				pods = self.api_client.list_namespaced_pod(namespace=str(it_namespace), field_selector="spec.nodeName=" + str(asset_id))
-				containers = pods.items
+	def _discover_k8s_links_np(self):
+		""" Add link between Kubernetes and Network Policies
 
-				for it_container in containers:
-					tmp_peer_container = Peer(service_name= Name('container\n'+ it_container.status.pod_ip),
-            	    	                          role= PeerRole(3),
-                	    	                      consumer=Consumer(server=Server(Hostname(it_container.metadata.name)),
-                    	    	                                    port=self.port,
-																	protocol= L4Protocol(self.protocol),
-													    			endpoint=self.endpoint,
-																	transfer=Transfer(self.transfer),
-																	encoding=Encoding(self.encoding)))
-					links.append(Link(name=Name(it_container.metadata.uid),
-                    	                     	link_type=LinkType(2),
-                        	                 	peers=ArrayOf(Peer)([tmp_peer_container])))
-			except Exception as e:
-				continue
-		
-		#trovo il link tra vm e kubernetes solo per il master del cluster (role = control-plane)
-		#process = subprocess.Popen('kubectl get nodes -l node-role.kubernetes.io/control-plane -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#stdout, stderr = process.communicate()
-		label_selector = "node-role.kubernetes.io/control-plane"
-		control_plane_nodes = self.api_client.list_node(label_selector=label_selector)
-		array_masters = control_plane_nodes.items
-		is_master = False
+			Network Policies implement sort of a slpf firewall, hence they are a security function. However, they are not
+			standalone software, and they are implemented by kubernetes..
+		"""
+		k8s_service = self._get_services(name=Name('kubernetes'),filter=Cloud)
 
-		for it_master in array_masters:
-			if(str(it_master.metadata.name) == str(asset_id)):
-				is_master = True
-		
-		if(is_master is True): #solo per il master aggiungo il link
-			tmp_peer_kubernetes = Peer(service_name= Name('kubernetes'),
-                                          	role= PeerRole(3),
-                                          	consumer=Consumer(server=Server(Hostname(self.asset_id)),
-                                                            	port=self.port,
-																protocol= L4Protocol(self.protocol),
-											    				endpoint=self.endpoint,
-																transfer=Transfer(self.transfer),
-																encoding=Encoding(self.encoding)))
+		for s in k8s_service:
+			consumer = self._get_consumer(Name("kubernetes-networkpolicies"))
+			peer = Peer(service_name=Name("kubernetes-networkpolicies"),
+							role=PeerRole.controlled, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
+							consumer=consumer)
+			description="Kubernetes Network Policies"
+			self.links.append(Link(name=s.name, description=description,
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
-			links.append(Link(name=Name('kubernetes'),
-							description='kubernetes',
-                            link_type=LinkType(2),
-                            peers=ArrayOf(Peer)([tmp_peer_kubernetes])))
-
-		#create a dumb slpf peer
-		slpf_peer = Peer(service_name= Name('slpf'), 
-						role= PeerRole(8), #The slpf controls the vm
-						consumer=Consumer(server=Server(Hostname('os-fw')),
-											port=self.port,
-											protocol= L4Protocol(self.protocol),
-											endpoint= self.endpoint,
-											transfer=Transfer(self.transfer),
-											encoding=Encoding(self.encoding)))
-				
-		links.append(Link(name = Name('os-fw'), description="slpf", link_type=LinkType(5), peers=ArrayOf(Peer)([slpf_peer])))
-		#end creation of dumb slpf
-
-		#create a link to docker service if it is active
-		if(str(asset_id) == self.get_hostname_if_docker_active()):
-			docker_peer = Peer(service_name= Name('docker'),
-					  			role= PeerRole(3), #docker is hosted on the vm
-								consumer=Consumer(server=Server(Hostname('docker')),
-								port=self.port,
-								protocol= L4Protocol(self.protocol),
-								endpoint=self.endpoint,
-								transfer=Transfer(self.transfer),
-								encoding=Encoding(self.encoding)))
-			links.append(Link(name = Name('docker'), description="docker", link_type=LinkType(2), peers=ArrayOf(Peer)([docker_peer])))
-		#end creation link to docker
-
-		return links
+ 
 	
-	def get_container_service(self, asset_id):
+	def _discover_k8s_pods(self):
+		pods = self._k8s_pod_list()
+
+		for pod in pods:
+			# pod.status.pod_ip and pod.status.pod_i_ps return wrong values (host ip) and
+			# do not include multus networks
+			if pod.metadata.annotations is not None and 'k8s.v1.cni.cncf.io/network-status' in pod.metadata.annotations:
+				ports = json.loads(pod.metadata.annotations['k8s.v1.cni.cncf.io/network-status'])
+				port_list = []
+				for p in ports:
+					name = p['name'] if 'name' in p else None
+					iface = p['iface'] if 'iface' in p else None
+					ips = []
+					if 'ips' in p:
+						for ip in p['ips']:
+							ips.append(ip)
+					port_list.append( Port(id=name, description="Pod network interfaces",  iface=iface, addresses=ips) )
+			pod_type = Pod(description="Kubernetes pod", id=pod.metadata.uid,
+				  name=Hostname(pod.metadata.name), namespace=pod.metadata.namespace, ports=port_list)	
+
+			# Get the Containers (init and main) used by this pod
+			def _get_container_status(c):
+				state='unknown'
+				if c.state.running is not None:
+					state='running'
+				if c.state.waiting is not None:
+					state='waiting'
+				if c.state.terminated is not None:
+					state='terminated'
+				return state
+
+			def _get_container_list(containers, description=None):
+				container_list = []
+				try:
+					for c in containers:
+						state=_get_container_status(c)
+						container_list.append( Container(name=c.name, id=c.container_id, 
+								description=description, image=c.image, status=state))
+				except:	# no containers
+					pass
+				return container_list
+
+
+			container_list = _get_container_list(pod.status.container_statuses, "Kubernetes container") + _get_container_list(pod.status.init_container_statuses, "Kubernetes init container")
+
+			# Create services for each container
+			container_name_list = ArrayOf(Name)()
+			for c in container_list:
+				self.services.append(Service(name=Name(c.name), type=ServiceType(c), 
+                  subservices=None, owner=self.owner, release=None))
+				container_name_list.append(Name(c.name))
+
+			# Create the pod service with containers as subservices 
+			self.services.append(Service(name= Name(pod.metadata.name), 
+						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
+                  subservices=container_name_list, owner=self.owner, release=pod.metadata.resource_version))
+
+
+	def _k8s_pod_list(self):
 		array_container = ArrayOf(Service)()
-		for it_namespace in self.namespace:
-			try:
-				#process = subprocess.Popen('kubectl get pod '+ asset_id +' -n ' + it_namespace +' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#stdout, stderr = process.communicate()
-				container = self.api_client.read_namespaced_pod(name=str(asset_id), namespace=str(it_namespace) )
-				
 
-				tmp_container = Container(description='container',
-                	              id=container.metadata.uid,
-                    	          hostname=Hostname(container.metadata.name),
-                        	      runtime = None,
-                            	  os=None)
-
-				service_container = Service(name= Name(container.metadata.name), type=ServiceType(tmp_container), links= ArrayOf(Name)([]),
-            		                             subservices=None, owner='openstack', release=None, security_functions=None,
-                		                         actuator=Consumer(server=Server(Hostname(container.metadata.name)),
-                    		                                        port=self.port,
-																	protocol= L4Protocol(self.protocol),
-													    			endpoint=self.endpoint,
-																	transfer=Transfer(self.transfer),
-																	encoding=Encoding(self.encoding)))
-				array_container.append(service_container)
-			except Exception as e:
-					continue
-		return array_container
+		if self.namespaces is None:
+			return self.api_client.list_pod_for_all_namespaces().items
 	
-	def get_container_links(self, asset_id):
-		links = ArrayOf(Link)()
+		pods = []
+		for ns in self.namespaces:
+			pods += self.api_client.list_pod_for_all_namespaces(field_selector="metadata.namespace="+ns).items 
 
-		#each container is connected to a namespaces
-		for it_namespace in self.namespace:
-			try:
-				#process = subprocess.Popen('kubectl get pod ' + asset_id +' --namespace=' + it_namespace +' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#stdout, stderr = process.communicate()
-				pod = self.api_client.read_namespaced_pod(name=str(asset_id), namespace=str(it_namespace))
+		return pods
 
-				if(pod.metadata.name == asset_id):
-					#process = subprocess.Popen('kubectl get namespace '  + it_namespace + ' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					#stdout, stderr = process.communicate()
-					namespace = self.api_client.read_namespace(name=str(it_namespace))
 
-					namespace_peer = Peer(service_name= Name(namespace.metadata.name), 
-            			                role= PeerRole(3),
-                			            consumer=Consumer(server=Server(Hostname(namespace.metadata.name)),
-                    			                			            port=self.port,
-																		protocol= L4Protocol(self.protocol),
-														    			endpoint=self.endpoint,
-																		transfer=Transfer(self.transfer),
-																		encoding=Encoding(self.encoding)))
-					links.append(Link(name=Name(namespace.metadata.name),
-            		                       description=None,
-                		                   versions=None,
-                    		               link_type=LinkType(3),
-                        		           peers=ArrayOf(Peer)([namespace_peer]),
-                            		       security_functions=None))
-			except Exception as e:
-				continue
-		
-		#create a dumb slpf peer
-		slpf_peer = Peer(service_name= Name('slpf'), 
-						role= PeerRole(8), #The slpf controls the vm
-						consumer=Consumer(server=Server(Hostname('kube-fw')),
-											port=self.port,
-											protocol= L4Protocol(self.protocol),
-											endpoint= self.endpoint,
-											transfer=Transfer(self.transfer),
-											encoding=Encoding(self.encoding)))
-				
-		links.append(Link(name = Name('kube-fw'), description="slpf", link_type=LinkType(5), peers=ArrayOf(Peer)([slpf_peer])))
-		#end creation of dumb slpf
 
-		return links
+	def _discover_np_links_pods(self):
+		""" Add links from Network Policies to pods
+
+			Automatically add a link from Network Policies to pods
+			Network policies are modelled as a security function implemented by an external actuator.
+			They protect all pods hosted in Kubernetes..
+		"""
+		# TODO
+		pass
+
 
 	def get_namespace_service(self, namespace_name):
 		#process = subprocess.Popen('kubectl get namespace '  + namespace_name + ' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -442,22 +423,29 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		return ArrayOf(Service)([namespace_service])
 	
 	def connect_to_kubernetes(self):
+		# The config module loads configuration from .kube (or provided file) into the _default member of the client.Configuration
+		# class (which is a class member!). After invoking one of the config method to load these values, the client module
+		# has access to such configuration through the Configuration. Note that certificates provided as values in the 
+		# configuration file are then stored as files by the Configuration class.
+
 		try:
-			if self.config_file is not None:
-				if self.kube_context is not None:
-					config.load_kube_config(config_file= self.config_file, context= self.kube_context)
-				else:	
-					config.load_kube_config(config_file= self.config_file)
+			configuration = client.Configuration()
+			# Configure API key authorization: BearerToken
+			configuration.api_key['authorization'] = self.auth['api_key']
+			# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+			configuration.api_key_prefix['authorization'] = 'Bearer'
+			# Defining host is optional and default to http://localhost
+			configuration.host = self.auth['host']
+			# Set the cluster CA	certificate or disable certificate validation
+			if self.config is not None and 'cacert' in self.config:
+				configuration.ssl_ca_cert=self.config['cacert']
 			else:
-				# Load the kubeconfig file (by default it loads from ~/.kube/config)
-				if self.kube_context is not None:
-					config.load_kube_config(context=self.kube_context)
-				else:
-					config.load_kube_config()
+				configuration.verify_ssl=False
+	
 			# Create an API client
-			self.api_client = client.CoreV1Api()
+			self.api_client = client.CoreV1Api(client.ApiClient(configuration))
 		except Exception as e:
-			print(f"Failed to connect to kubernetes: {e}")
+			logger.error("Failed to connect to kubernetes: ", e)
 			return Exception("Failed to connect to kubernetes")
 		
 	def getDumbSLPF(self, name):

@@ -40,7 +40,7 @@ from otupy.types.data.l4_protocol import L4Protocol
 
 
 
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 import otupy.profiles.ctxd as ctxd
 
 from otupy.profiles.ctxd.data.name import Name
@@ -58,6 +58,7 @@ MY_IDS = {
 }
 
 # An implementation of the ctxd profile (it implements my5gtestbed). 
+@actuator_implementation("ctxd-docker")
 class CTXDActuator_docker(CTXDActuator):
 	""" CTXD implementation
 

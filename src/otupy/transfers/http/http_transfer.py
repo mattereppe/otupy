@@ -12,6 +12,7 @@ import dataclasses
 import requests
 import logging
 import copy
+import re
 
 from flask import Flask, request, make_response
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
@@ -23,6 +24,7 @@ from otupy.transfers.http.message import Message
 logger = logging.getLogger(__name__)
 """ The logging facility in otupy """
 
+@oc2.transfer("http")
 class HTTPTransfer(oc2.Transfer):
 	""" HTTP Transfer Protocol
 
@@ -72,6 +74,7 @@ class HTTPTransfer(oc2.Transfer):
 			raise UnsupportedMediaType("Unsupported content type")
 
 		enctype = (content_type.removeprefix('application/'+oc2.Message.content_type+'+').split(';')[0]).strip()
+		
 		try:
 			encoder = oc2.Encoders[enctype].value
 		except KeyError:
@@ -79,10 +82,13 @@ class HTTPTransfer(oc2.Transfer):
 
 		# HTTP processing to extract the headers
 		# and the transport body
-		if encoder.is_binary:
-			data_text = data.decode('utf-8') #binary data (cbor)
+
+		# Both Flask and response returns strings as binary data. They must be translated back to ascii format that can
+		# be processed by text-based decoders (json, xml, yaml, ...)
+		if data.isascii():
+			data_text = data.decode('utf-8') # Convert to a string whenever possible
 		else:
-			data_text = data # text data 
+			data_text = data # Binary data, the encoder will take care of deserializing it
 		msg = encoder.decode(data_text, Message).get()
 		msg.content_type = hdr['Content-type'].removeprefix('application/').split('+')[0]
 		msg.version = oc2.Version.fromstr(hdr['Content-type'].split(';')[1].removeprefix("version="))
@@ -121,30 +127,35 @@ class HTTPTransfer(oc2.Transfer):
 		date = msg.created if msg.created else int(oc2.DateTime())
 		openc2headers={'Content-Type': content_type, 
 							'Accept': content_type, 
-							'Content-Encoding': encoder.getName(),
 							'Date': oc2.DateTime(date).httpdate()}
 
 		logger.info("Sending to %s", self.url)
-		logger.info("HTTP Request Content:\n%s", openc2data)
+		logger.debug("HTTP Request Content:\n%s", openc2data)
 
 		# Send the OpenC2 message and get the response
 		if self.scheme == 'https':
 			logger.warning("Certificate validation disabled!")
 		response = requests.post(self.url, data=openc2data, headers=openc2headers, verify=False)
 		logger.info("HTTP got response: %s", response)
-		logger.info("HTTP Response Content:\n%s", response.text)
+		logger.debug("HTTP Response Content:\n%s", response.text)
 	
 		# TODO: How to manage HTTP response code? Can we safely assume they always match the Openc2 response?
 		try:
-			content_encoding = response.headers['Content-Encoding']
-			if content_encoding is not None and oc2.Encoders[content_encoding].value.is_binary:
-				logger.debug("Content is not text!")
-				msg, encoder = self._fromhttp(response.headers, response.content)
-			else:
-				if response.text != "":
-					msg, encoder = self._fromhttp(response.headers, response.text)
-				else:
-					msg = None
+			# Parse the encoder from the 'Content-Type' string
+			content_encoding = None
+			p = re.search("application/"+content_type+"\+([a-z]+);version",response.headers["Content-Type"])
+			if p:
+				content_encoding = p.group(1)	
+			msg, encoder = self._fromhttp(response.headers, response.content)
+#content_encoding = response.headers['Content-Encoding']
+#			if content_encoding is not None and oc2.Encoders[content_encoding].value.is_binary:
+#				logger.debug("Content is not text!")
+#				msg, encoder = self._fromhttp(response.headers, response.content)
+#			else:
+#				if response.text != "":
+#					msg, encoder = self._fromhttp(response.headers, response.text)
+#				else:
+#					msg = None
 		except ValueError as e:
 			msg = oc2.Message(oc2.Content())
 			msg.status = response.status_code
@@ -164,9 +175,6 @@ class HTTPTransfer(oc2.Transfer):
 			else:	
 				content_type = f"text/plain"
 			headers['Content-Type']= content_type
-			# This is not required by the HTTP Transfer specification, but
-			# it helps manage binary data
-			headers['Content-encoding']=encoder.getName()
 			date = msg.created if msg.created else int(oc2.DateTime())
 			data = self._tohttp(msg, encoder)
 		else:
@@ -191,7 +199,7 @@ class HTTPTransfer(oc2.Transfer):
 			:return: An otupy `Message` (first) and an `Encoder` instance (second).
 		"""
 
-		logger.info("Received HTTP body: \n%s", str(data))
+		logger.debug("Received HTTP body: \n%s", str(data))
 		logger.debug(data)
 		msg, encoder = self._fromhttp(headers, data)
   			
@@ -262,15 +270,15 @@ class HTTPTransfer(oc2.Transfer):
 				resp.status=oc2.StatusCode.INTERNALERROR
 				resp.to = [ str(request.remote_addr) ]
 			else:
-				logger.info("Received command: %s", cmd)
+				logger.debug("Received command: %s", cmd)
 				resp = callback(cmd)
 
 			
-			logger.info("Got response: %s", resp)
+			logger.debug("Got response: %s", resp)
 			
 			# TODO: Set HTTP headers as appropriate
 			hdrs, data = server._respond(resp, encoder)
-			logger.info("Sending response:\n%s", data)
+			logger.debug("Sending response:\n%s", data)
 			httpresp = make_response(data if data is not None else "") 
 			httpresp.headers = hdrs
 

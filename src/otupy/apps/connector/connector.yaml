@@ -1,0 +1,8 @@
+id: connector@mirandaproject.eu
+consumer:
+   host: '127.0.0.1'
+   port: 8080
+   endpoint: "/.well-known/openc2"
+   encoding: "json"
+   transfer: "http"
+configs: "configs"
