@@ -39,5 +39,7 @@ specification).
 
 Implementation of new ``Transfer``\ s included in ``otupy`` must be
 placed in the ``transfers`` folder and be self-contained in a single
-module.
+module. To make the ``Transfer`` available, use the ``@transfer``
+decorator and provide a meaningful name (e.g., the protocol implemented).
+Also remember to import the main class in the ``transfers/__init__.py``.
 

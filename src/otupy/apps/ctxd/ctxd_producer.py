@@ -20,10 +20,10 @@ from pymongo import MongoClient
 
 logger = logging.getLogger()
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.DEBUG)
 # Create stdout handler for logging to the console 
 stdout_handler = logging.StreamHandler()
-stdout_handler.setLevel(logging.WARNING)
+stdout_handler.setLevel(logging.INFO)
 stdout_handler.setFormatter(oc2.LogFormatter(datetime=True,name=True))
 hdls = [ stdout_handler ]
 # Add both handlers to the logger
@@ -87,6 +87,7 @@ def insert_data_database(collection, response, peer_hostname =None):
 
 
 def recursive_process_links(links, cmd, pf, p, dot, parent_node):
+    print(">>>>>>>>> processing links with cmd: ", cmd)
     for it_link in links:
         link_key = (parent_node, it_link.link_type.name, it_link.name.obj)  # Create a unique key for the link
 
@@ -116,7 +117,6 @@ def recursive_process_links(links, cmd, pf, p, dot, parent_node):
 
             # Add the node if it doesn't exist
             pf['asset_id'] = peer_hostname
-            pf.fieldtypes['asset_id'] = peer_hostname
             if(peer_hostname != peer_service_name):
                 dot.node(peer_hostname, peer_hostname + "\n"+peer_service_name, color= text_color, fontcolor=font_color)
             else:
@@ -133,6 +133,7 @@ def recursive_process_links(links, cmd, pf, p, dot, parent_node):
                     add_edge(dot, parent_node, peer_hostname, str(it_link.link_type.name), color=edge_color, fontcolor=edge_font_color)
 
                 # Send command and log response
+                print(">>>>>>>>> processing links with cmd: ", cmd)
                 tmp_resp = p.sendcmd(cmd)
                 logger.info("Got response: %s", tmp_resp)
 
@@ -153,12 +154,13 @@ def recursive_process_links(links, cmd, pf, p, dot, parent_node):
 def main(openstack_parameters, collection):
     logger.info("Creating Producer")
 
+    print("Parameters: ", openstack_parameters)
+
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer(openstack_parameters['ip'],
                                                                           openstack_parameters['port'],
                                                                           openstack_parameters['endpoint']))
     pf = ctxd.Specifiers({'asset_id': openstack_parameters['asset_id']})
-    pf.fieldtypes['asset_id'] = openstack_parameters['asset_id']  # I have to repeat a second time to have no bugs
-    arg = ctxd.Args({'name_only': False})
+    arg = ctxd.Args({'name_only': False, 'cached': False})
     context = ctxd.Context(services=ArrayOf(Name)(), links=ArrayOf(Name)())  # expected all services and links
     cmd = oc2.Command(action=oc2.Actions.query, target=context, args=arg, actuator=pf)
 
@@ -166,30 +168,31 @@ def main(openstack_parameters, collection):
     resp_openstack = p.sendcmd(cmd)
     logger.info("Got response: %s", resp_openstack)
 
-    insert_data_database(collection, resp_openstack, openstack_parameters['asset_id'])
+#    insert_data_database(collection, resp_openstack, openstack_parameters['asset_id'])
 
 
-    if not arg['name_only']: #explore actuators only if it is false
-        dot = Digraph("example_graph", graph_attr={'rankdir': 'LR'})
-        dot.node('openstack', 'OpenStack')
-        recursive_process_links(resp_openstack.content['results']['links'], cmd, pf, p, dot, 'openstack')
-
-        with dot.subgraph() as s:
-            s.attr(rank='min')
-            s.node('os-fw')
-            s.node('kubernetes')
-            s.node('openstack')
-    
-        with dot.subgraph() as s:
-            s.attr(rank='same')
-            s.node('kube-fw')
-            s.node('kube0')
-            s.node('kube1')
-            s.node('kube2')
-
-
-        dot.render(os.path.dirname(os.path.abspath(__file__))+'/example_graph' , view=False)
-        dot.save(os.path.dirname(os.path.abspath(__file__))+'/example_graph.gv')
+#    if not arg['name_only']: #explore actuators only if it is false
+#        dot = Digraph("example_graph", graph_attr={'rankdir': 'LR'})
+#        dot.node('openstack', 'OpenStack')
+## TODO: Add recursive discovery of links
+##        recursive_process_links(resp_openstack.content['results']['links'], cmd, pf, p, dot, 'openstack')
+#
+#        with dot.subgraph() as s:
+#            s.attr(rank='min')
+#            s.node('os-fw')
+#            s.node('kubernetes')
+#            s.node('openstack')
+#    
+#        with dot.subgraph() as s:
+#            s.attr(rank='same')
+#            s.node('kube-fw')
+#            s.node('kube0')
+#            s.node('kube1')
+#            s.node('kube2')
+#
+#
+#        dot.render(os.path.dirname(os.path.abspath(__file__))+'/example_graph' , view=False)
+#        dot.save(os.path.dirname(os.path.abspath(__file__))+'/example_graph.gv')
 
 if __name__ == '__main__':
 	
@@ -197,13 +200,14 @@ if __name__ == '__main__':
     with open(configuration_file, 'r') as file:
         configuration_parameters = json.load(file)
 
-    collection = connect_to_database(username=configuration_parameters['mongodb']['username'],
-                                     password=configuration_parameters['mongodb']['password'],
-                                     ip = configuration_parameters['mongodb']['ip'],
-                                     port = configuration_parameters['mongodb']['port'],
-                                     database_name= configuration_parameters['mongodb']['database_name'],
-                                     collection_name= configuration_parameters['mongodb']['collection_name'])
+#    collection = connect_to_database(username=configuration_parameters['mongodb']['username'],
+#                                     password=configuration_parameters['mongodb']['password'],
+#                                     ip = configuration_parameters['mongodb']['ip'],
+#                                     port = configuration_parameters['mongodb']['port'],
+#                                     database_name= configuration_parameters['mongodb']['database_name'],
+#                                     collection_name= configuration_parameters['mongodb']['collection_name'])
 
+    collection=None
     for element in configuration_parameters['clusters']:
         if (element["type"] == "openstack"):      
             main(element, collection) #start the discovery at the openstack service

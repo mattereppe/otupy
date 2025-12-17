@@ -44,9 +44,9 @@ def fillin_allowed_command_arguments(AllowedCommandArguments, action, targets, a
 	return AllowedCommandArguments
 
 # TODO: complete the list (if necessary)
-args = ['response_requested', 'name_only']
+args = ['response_requested', 'name_only', 'cached']
 AllowedCommandArguments[(Actions.query, TargetEnum.features)] = ['response_requested']
-AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid+':context'])] = ['name_only']
+AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid+':context'])] = ['name_only', 'cached']
 
 def validate_command(cmd):
 	""" Validate a `Command` 

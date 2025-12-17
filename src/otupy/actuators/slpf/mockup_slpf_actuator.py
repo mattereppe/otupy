@@ -1,11 +1,12 @@
-""" Skeleton `Actuator` for SLPF profile
+""" Mockup `Actuator` for SLPF profile
 
-	This module provides an example to create an `Actuator` for the SLPF profile.
-	It only answers to the request for available features.
+	This module can be used to test the SLPF without a real backend.
+	It only answers to the request for available features; any other request
+	is answered with NOTIMPLEMENTED.
 """
 import logging
 
-from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Actions, Command, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
+from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Actions, Command, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 from otupy.actuators.SQLDatabase import SQLDatabase
 from otupy.actuators.iptables_manager import IptablesManager
 from otupy.core.actions import Actions
@@ -18,20 +19,17 @@ OPENC2VERS=Version(1,0)
 
 MY_IDS = {'hostname': None,
 			'named_group': None,
-			'asset_id': 'iptables',
+			'asset_id': 'mockup',
 			'asset_tuple': None }
 
 # An implementation of the slpf profile. 
-class IptablesActuator:
-	""" Iptables SLPF implementation
+@actuator_implementation("slpf-mockup")
+class MockupSlpfActuator:
+	""" Mockup SLPF implementation
 
-		This class provides an implementation of the SLPF `Actuator` for iptables.
+		This class provides a mockup of the SLPF `Actuator`.
 	"""
 	
-	def __init__(self, args=None,db_name = "openc2_commands.db"):
-		self.db = SQLDatabase(db_name)
-		self.db.init_db()
-
 	def run(self, cmd):
 
 
@@ -57,14 +55,16 @@ class IptablesActuator:
 			match cmd.action:
 				case Actions.query:
 					response = self.query(cmd)
-				case Actions.allow:
-					response = self.allow(cmd)
-				case Actions.deny:
-					response = self.deny(cmd)
-				case Actions.update:
-					response = self.update(cmd)
-				case Actions.delete:
-					response = self.delete(cmd)
+# DO NOT DELETE THESE LINES!!!
+# They can be used to provide fake actions
+#				case Actions.allow:
+#					response = self.allow(cmd)
+#				case Actions.deny:
+#					response = self.deny(cmd)
+#				case Actions.update:
+#					response = self.update(cmd)
+#				case Actions.delete:
+#					response = self.delete(cmd)
 				case _:
 					response = self.__notimplemented(cmd)
 		except Exception as e:
@@ -148,58 +148,6 @@ class IptablesActuator:
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
 
-	# def action_mapping(self, action, target):
-	# 	action_method = getattr(self, f"{action}", None)
-	# 	return action_method(target, self.args)
-
-	def insert_handler(self, target, args, action, rule_number=None):
-		error, cmd = IptablesManager.insert_rule(target, action)
-		rule_number = self.db.insert_command(cmd, rule_number)
-
-		if error is not 200:
-			return Response(status=StatusCode.INTERNALERROR, status_text="Internal error")
-		elif rule_number < 0:
-			return Response(status=StatusCode.INTERNALERROR, status_text="Internal error")
-		else:
-			res = slpf.Results(rule_number=slpf.RuleID(rule_number))
-			return Response(status=StatusCode.OK, status_text="OK", results=res)
-				
-		return error, rule_number 
-
-	def allow(self, cmd):
-		target = cmd.target.getObj()
-		args = cmd.args
-		return self.insert_handler(target, args, "ACCEPT")
-
-	def deny(self, cmd):
-		target = cmd.target.getObj()
-		args = cmd.args
-		return self.insert_handler(target, args, "DROP")
-
-	def update(self, cmd):
-		target = cmd.target.getObj()
-		args = cmd.args
-		rule_number = int(cmd.target.getObj())
-		delete_result = self.delete_handler(target, args, rule_number)
-		iptables_target = cmd.args.get('iptables_target')
-		return self.insert_handler(target, args, iptables_target, rule_number)
-
-	def delete(self, cmd):
-		target = cmd.target.getObj()
-		args = cmd.args
-		rule_number = int(target)
-		cmd_data = self.db.get_command_from_rule_number(rule_number)
-		if cmd_data is None:
-			return Response(status=StatusCode.INTERNALERROR, status_text="Internal error")
-		modified_cmd = IptablesManager.modify_command_for_deletion(cmd_data[0])
-		err_code = IptablesManager.delete_rule(modified_cmd)
-		if err_code is 200:
-			err_db = self.db.delete_command_by_rule_number(rule_number)
-			if err_db >= 0:
-				return Response(status=StatusCode.OK, status_text="OK")
-			
-		return Response(status=StatusCode.INTERNALERROR, status_text="Internal error")
-				
 	def __notimplemented(self, cmd):
 		""" Default response
 

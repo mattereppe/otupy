@@ -1,0 +1,38 @@
+ctxd-openstack-example:
+  actuator: "ctxd-openstack"
+  profile: "x-ctxd"
+  owner: "tnt-lab"
+  specifiers:
+    domain: null
+    asset_id: "ctxd-openstack-example"
+  consumer:
+    host: "something"
+    port: 8080
+    protocol: "tcp"
+    endpoint: "/.well-known/openc2"
+    transfer: "http"
+    encoding: "json"
+  auth:
+    username: "matteo"
+    password: "SreX1$"
+    project_name: "astrid"
+    user_domain_name: "Default"
+    project_domain_name: "Default"
+    auth_url: "https://controller.cloud.tnt-lab.local:5000/v3"
+  config:
+#    identity_api_version: 3
+    cacert: "/etc/ssl/certs/TNTCA2.crt"
+  peers:
+    - service_name: kube0
+      consumer:
+        host: "kube0"
+        port: 8080
+        actuator:
+          asset_id: "ctxd-kube0"
+    - service_name: openstack-securitygroups
+      consumer:
+        host: "127.0.0.1"
+        port: 8080
+        profile: slpf
+        actuator:
+          asset_id: "sg"  

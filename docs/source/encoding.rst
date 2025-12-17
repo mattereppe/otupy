@@ -33,8 +33,10 @@ Encoder; - registration of the new ``Encoder`` via the
         ...
         ( return Encoder.fromdict(msgtype, msg) )
 
+Remeber to import every new ``Encoder`` in __init__.py that you want to make available to the system.
 See the `Developer
 guide <https://github.com/mattereppe/openc2/blob/main/docs/developerguide.md#developer-guide>`__
 for more detail about the base ``Encoder`` class and the available
 Encoders.
+
 

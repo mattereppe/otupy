@@ -3,6 +3,14 @@
 	Interface that defines the basic behavior of the Transfer Protocols.
 """
 
+from otupy.core.register import Register
+
+Transfers = Register()
+""" Keep a list of available Transfers. 
+
+	Transfer implementation needs the `@transfer` decorator.
+"""
+
 class Transfer:
 	""" Transfer protocol
 
@@ -46,3 +54,17 @@ class Transfer:
 			:return: None
 		"""
 		pass
+
+def transfer(name):
+	""" The `@transfer` decorator.
+
+		Use this decorator to declare the implementation of a Transfer. 
+		The implementation is identified by its name, which should be something meaningful to identify the 
+		protocol (e.g., `http`, `mqtt`).
+		:param name: The name for this Transfer implementation.
+		:result: The following class definition is registered as available `Transfer` implementation in otupy.
+	"""
+	def transfer_registration(cls):
+		Transfers.add(name, cls)
+		return cls
+	return transfer_registration

@@ -32,6 +32,20 @@ class Specifiers(oc2.Map):
 		"""
 		self.nsid = Profile.nsid
 		oc2.Map.__init__(self, dic)
+
+	def __eq__(self, other):
+		""" The comparison operator
+
+			Return true if two specifiers are equal.
+		"""
+		for k,v in self.items():
+			if k not in other:
+				return False
+			# else: k is in other
+			if v != other[k]:
+				return False
+		return True
+
 	
 	def __str__(self):
 		id = self.nsid + '('
