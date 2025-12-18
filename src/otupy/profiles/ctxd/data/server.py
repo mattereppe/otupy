@@ -5,6 +5,13 @@ from otupy.core.register import Register
 
 
 class Server(Choice):
+	""" Generic computing environment
+
+		A Server is a generic computing environment (no cloud).
+		Probably not used.
+
+		It can be identified by either its hostname or IPv4 address.
+	"""
 
     #hostname: hostname of the server
 	#ipv4_addr: 32 bit IPv4 address as defined in [RFC0791]
