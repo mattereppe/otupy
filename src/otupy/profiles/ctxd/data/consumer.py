@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 class Consumer(otupy.types.base.Record):
 	"""Consumer
-    consumer connected on the other side of the link
+
+		This class contains all mandatory and optional data to connect to an OpenC2 Consumer.
+		Although a typical OpenC2 communication stack will likely use JSON/HTTPS, there
+		are not default settings for this class.
 	"""
 	host: str = None
 	""" Hostname or IP address """

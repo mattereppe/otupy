@@ -52,8 +52,18 @@ defaults = { # Default values for context discovery operation
 					'user': None,
 					'pass': None}
 }
+""" Defaults value to be used for missing input parameters """
 
 def set_defaults(config, type_, param):
+	""" Sets default values
+
+		Checks if input parameters have value, and assign a default value in case no value was provided.
+		:param config: The dictionary with input config parameter.
+		:param type_: The group to which the parameter belongs (check `defaults`). There might be parameters with the same name under different stanzas.
+		:param param: The name of the parameter.
+		:return: The value to be assigned to the parameter.
+	"""
+
 	try:
 		if config[param] is not None:
 			return config[param]
@@ -92,6 +102,7 @@ def set_defaults(config, type_, param):
 #            unprocessed_links.append(it_link)
 #    return unprocessed_links
 #
+
 def connect_to_database(config):
 
 	databases = {}
@@ -117,7 +128,7 @@ def connect_to_database(config):
 
 
 
-def insert_data_database(config, ctx):
+def publish_data(config, ctx):
 
 	databases = connect_to_database(config)
 
@@ -192,7 +203,7 @@ def insert_data_database(config, ctx):
 #                logger.info("Got response: %s", tmp_resp)
 #
 #                #insert data into database
-#                insert_data_database(collection, tmp_resp, peer_hostname)
+#                publish_data(collection, tmp_resp, peer_hostname)
 #
 #                # Safeguard for recursive calls
 #                if 'results' in tmp_resp.content and 'links' in tmp_resp.content['results']:
@@ -207,6 +218,7 @@ def insert_data_database(config, ctx):
 #
 
 def _log_context(ctx):
+	""" Debug-only function to check what was reported """
 	for type_ in ctx.keys():
 		for item in ctx[type_]:
 			logger.info("Found %s: %s", type_, item)
@@ -250,6 +262,7 @@ def parse_and_default(config_file):
 # The loop "decorator", which cannot be used as decorator
 # because the two arguments are only known at run-time
 def loop(num=0, freq=0):
+	""" Sort of decorator to manage loops of the main function """
 	def decorator(func):
 		def wrapper(*args, **kwargs):
 			nonlocal num, freq
@@ -263,6 +276,7 @@ def loop(num=0, freq=0):
 	return decorator
 
 def add_resource(context, root, res_type, resource_list):
+	""" Add discovered service/link to the internal list for publishing """
 	if context is None:
 		context = []
 	for r in resource_list:
@@ -277,6 +291,10 @@ def discovery(config):
 	""" Orchestrate discovery
 
 		Start the discovery process for each root service provided by configuration.
+		TODO: Add a recursive mechanism to discover new services found in `Links`.
+
+		:param config: A dictionary reporting the known list of services to discover.
+		:return: None. Data are directly inserted in the output sinks.
 	"""
 	ctx = {'services': None, 'links': None}
 
@@ -288,7 +306,7 @@ def discovery(config):
 		# TODO: recursive discovery of peers with valid actuators in links
 
 	_log_context(ctx)
-	insert_data_database(config, ctx)
+	publish_data(config, ctx)
 
 def discover(service):
 	""" Query an OpenC2 discovery service
@@ -331,9 +349,10 @@ def discover(service):
 
 def main() -> None:
 	"""
-	The main function.
+		The main function
+
+		Loads configuration file, parses it, and run the discovery loop.
 	
-	:raise RuntimeError: if something goes wrong
 	"""
 	
 	# Parse the CLI arguments.
