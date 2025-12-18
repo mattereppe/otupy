@@ -1,14 +1,10 @@
-""" Skeleton `Actuator` for CTXD profile
+""" Openstack Actuator Manager
 
-	This module provides an example to create an `Actuator` for the CTXD profile.
-	It only answers to the request for available features.
+	This module implements a simple Actuator Manager for Openstack..
+	It discovers Openstack. resources by invoking its APIs. 
 """
 
-import json
-import subprocess
-import os
 import logging
-import sys
 import openstack
 
 import otupy.profiles
@@ -42,22 +38,14 @@ from otupy.profiles.ctxd.data.link import Link
 
 logger = logging.getLogger(__name__)
 
-OPENC2VERS=Version(1,0)
-""" Supported OpenC2 Version """
-
-# An implementation of the ctxd profile. 
 @actuator_implementation("ctxd-openstack")
 class CTXDActuator_openstack(CTXDActuator):
-	""" CTXD implementation
+	""" Openstack Actuator Manager
 
-		This class provides an implementation of the CTXD `Actuator`.
+		Extend the base `CTDXActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
+		hypervisors, and OpenStack sw components. It should be extended in future releases with additional resources (e.g., networks, ports).
 	"""
 
-	auth: dict = None
-	peers: list = None
-	config: dict = None
-	conn : any = None #connection to openstack
-	
 	def __init__(self, auth, **kwargs):
 		""" Initialize the actuator
 
@@ -71,7 +59,36 @@ class CTXDActuator_openstack(CTXDActuator):
 		kwargs['auth']=auth
 		super().__init__(**kwargs)
 
-		self.connect_to_openstack()
+		self._connect_to_openstack()
+
+	def discover_services(self):
+		""" Discover all services related to OpenStack
+
+			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
+			including VMs, networks, image repositories.
+		"""
+		self._discover_os_services()
+		self._discover_os_servers()
+		self._discover_os_hypervisors()		
+		# TODO: Discover:
+		# - networks
+		# - images
+		
+
+	def discover_links(self):
+		""" Automatically discover links between OpenStack components
+
+			The current implementation discovers links between:
+			- OpenStack services (nove) and VMs (servers)
+			- VMs (servers) and physical servers (hypervisors)
+			- SLPF firewall (iptables) and VMs (servers)
+			- VMs (servers) and computers (System and application software), only from a configuration file
+		"""
+		self._discover_os_link_vms()
+		self._discover_os_link_sg()
+		self._discover_vms_link_hypervisors()
+		self._discover_vms_link_computers()
+		self._discover_sg_link_vms()
 
 
 	def _discover_os_services(self):
@@ -148,8 +165,8 @@ class CTXDActuator_openstack(CTXDActuator):
 			manage VMs. Vulnerabilities applies to nova and other services rather than OpenStack as a whole.	
 		"""
 
-		os_services = self._get_services(name=Name('nova'), filter=Application)
-		os_vms = self._get_services(filter=VM)
+		os_services = self.get_services(name=Name('nova'), filter=Application)
+		os_vms = self.get_services(filter=VM)
 
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
 		for s in os_services:
@@ -168,11 +185,11 @@ class CTXDActuator_openstack(CTXDActuator):
 			Security Groups implement a slpf firewall, hence they are a security function. However, they are not
 			standalone software, and they are implemented by neutron.
 		"""
-		os_services = self._get_services(name=Name('neutron'), filter=Application)
+		os_services = self.get_services(name=Name('neutron'), filter=Application)
 
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
 		for s in os_services:
-			consumer = self._get_consumer(Name("openstack-securitygroups"))
+			consumer = self.get_consumer(Name("openstack-securitygroups"))
 			if s is not None:
 				peer = Peer(service_name=Name("openstack-securitygroups"),
 						role=PeerRole.controlled, consumer=consumer)
@@ -193,10 +210,10 @@ class CTXDActuator_openstack(CTXDActuator):
 			This is something outside the OpenStack scope, which is delegated to a remote peer
 			(currently read by configuration file).
 		"""
-		os_vms = self._get_services(filter=VM)
+		os_vms = self.get_services(filter=VM)
 
 		for v in os_vms:
-			consumer=self._get_consumer(v.name)
+			consumer=self.get_consumer(v.name)
 
 			if consumer is not None:
 				peer = Peer(service_name= v.name,
@@ -219,47 +236,8 @@ class CTXDActuator_openstack(CTXDActuator):
 		pass
 
 
-	def discover_services(self):
-		""" Discover all services related to OpenStack
-
-			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
-			including VMs, networks, image repositories.
-		"""
-		self._discover_os_services()
-		self._discover_os_servers()
-		self._discover_os_hypervisors()		
-		# TODO: Discover:
-		# - networks
-		# - images
-		
-
-	def discover_links(self):
-		""" Automatically discover links between OpenStack components
-
-			The current implementation discovers links between:
-			- OpenStack services (nove) and VMs (servers)
-			- VMs (servers) and physical servers (hypervisors)
-			- SLPF firewall (iptables) and VMs (servers)
-			- VMs (servers) and computers (System and application software), only from a configuration file
-		"""
-		self._discover_os_link_vms()
-		self._discover_os_link_sg()
-		self._discover_vms_link_hypervisors()
-		self._discover_vms_link_computers()
-		self._discover_sg_link_vms()
-
 	
-	def get_name_links(self, links):
-		
-		name_links = ArrayOf(Name)()
-		
-		for link in links:
-			name_links.append(link.name.obj)
-
-		return name_links
-	
-
-	def connect_to_openstack(self):
+	def _connect_to_openstack(self):
 
 		try:
 			# Get access to OpenStack (the following mechanism is largely undocumented.
@@ -305,6 +283,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 
 	def _openstack_service_list(self):
+		""" Retrieve list of OpenStack services """
 		self._check_connection()
 		
 		try:
@@ -319,6 +298,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		
 		
 	def _openstack_server_list(self):
+		""" Retrieve list of servers (VMs) from OpenStack APIs """
 		self._check_connection()
 
 		try:
@@ -332,6 +312,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		return self._format_os_data(servers)
 		
 	def _openstack_hypervisor_list(self):
+		""" Retrieve list of hypervisors (servers) from OpenStack APIs """
 		self._check_connection()
 
 		try:
@@ -347,6 +328,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 
 	def _openstack_server_os(self, image_id):
+		""" Retrieve the image installed in a VM from OpenStack APIs """
 		try:
         # Get image details using the OpenStack client
 			image = self.conn.compute.get_image(image_id)

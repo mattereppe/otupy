@@ -1,7 +1,7 @@
-""" Skeleton `Actuator` for CTXD profile
+""" Kubernetes Actuator Manager
 
-	This module provides an example to create an `Actuator` for the CTXD profile.
-	It only answers to the request for available features.
+	This module implements a simple Actuator Manager for Kubernetes.
+	It discovers Kubernetes resources by invoking its APIs. 
 """
 
 import socket
@@ -11,14 +11,11 @@ import os
 import logging
 import sys
 
-import docker
-
 from otupy.profiles import slpf
 from otupy.profiles.ctxd.data.application import Application
 from otupy.profiles.ctxd.data.openc2_endpoint import OpenC2Endpoint
 from otupy.types.data.ipv4_addr import IPv4Addr
 
-import requests
 from kubernetes import config, client
 from kubernetes.client.rest import ApiException
 
@@ -54,28 +51,29 @@ from otupy.profiles.ctxd.data.link import Link
 
 logger = logging.getLogger(__name__)
 
-OPENC2VERS=Version(1,0)
-""" Supported OpenC2 Version """
 
-MY_IDS = {
-	'domain': None,
-	'asset_id': None
-}
-
-# An implementation of the ctxd profile (it implements my5gtestbed). 
 @actuator_implementation("ctxd-kubernetes")
 class CTXDActuator_kubernetes(CTXDActuator):
-	""" CTXD implementation
+	""" Kubernetes Actuator Manager
 
-		This class provides an implementation of the CTXD `Actuator`.
+		Extend the base `CTDXActuator` to retrieve services and links for a Kubernetes cluster. Currently discovery is mostly limited to pods,
+		nodes, and containers. It should be extended in future releases with additional resources (e.g., services and file systems).
 	"""
 
 	namespace = [] #it contains only the name of the namespaces
+	""" Namespaces list"""
 	api_client : any = None #api client for kubernetes
 	config_file : any = None #configuration file path
 	kube_context : any = None #kubernetes context
 
 	def __init__(self, auth, **kwargs):
+		""" Initialization
+
+			The necessary parameters are:
+			- auth: Authentication information to connect to a Kubernetes cluster
+			Optional parameters:
+			- namespaces: List of namespaces which resources are to be discovered. If not provided, resources from all namespaces will be discovered.
+		"""
 		kwargs['auth']=auth
 		super().__init__(**kwargs)
 
@@ -84,12 +82,18 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		except:
 			self.namespaces = None
 
-		self.connect_to_kubernetes()
-
-#	self.namespace = self.get_name_namespace()
+		self._connect_to_kubernetes()
 
 
 	def discover_services(self):
+		""" Discovers K8S services
+
+			Implements the required method to discover services. Currently it discover:
+			- K8S base services (e.g., dns)
+			- Pods in selected namespaces
+			- Nodes
+			- Namespaces available
+		"""
 		self._discover_k8s_services()
 		self._discover_k8s_pods()
 		self._discover_k8s_namespaces()		
@@ -124,19 +128,6 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 		# WARNING: Namespaces are not converted to services so far!!!
 
-#for ns in namespaces:
-#			n = (Application(description=service.spec.type, name=ns
-#						id=service.metadata.uid, owner=self.owner, app_type='service'))
-#			logger.debug("Found application: %s", str(app.name))
-#			# TODO: Add software release (maybe with its SBOM)
-#			name=Name(app.name)
-#			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
-#						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
-#			# Paranoid check nobody modified the order of the instraction
-#			assert  str(self.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
-#			self.services[0].subservices.append(name)
-			
-			
 
 	def _k8s_namespaces_list(self):
 		namespace_list = []
@@ -148,15 +139,6 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			return [ ns for ns in namespace_list if ns.metadata.name in self.namespaces ]
 
 		
-
-	def get_name_links(self, links):
-		
-		name_links = ArrayOf(Name)()
-		
-		for link in links:
-			name_links.append(link.name.obj)
-			
-		return name_links
 
 	def _discover_k8s_services(self):
 		""" Discover Kubernetes services 
@@ -216,12 +198,12 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		""" Add links between pods and nodes where they are hosted 
 		"""
 
-		k8s_pods = self._get_services(filter=Pod)
-		k8s_nodes = self._get_services(filter=Computer)
+		k8s_pods = self.get_services(filter=Pod)
+		k8s_nodes = self.get_services(filter=Computer)
 
 		for p in k8s_pods:
 			node = self._k8s_pod_node(p.type.getObj())
-			consumer=self._get_consumer(Name(node))
+			consumer=self.get_consumer(Name(node))
 			peer = Peer(service_name=Name(node),
 						role=PeerRole.host, # Node hosts pods
 						consumer=consumer)
@@ -238,14 +220,14 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			For now, a simplification is used and only Kubernetes hosted on master is reported
 		"""
 
-		k8s_service = self._get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
 
 		master = self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane")
-		k8s_nodes = self._get_services(name=Name(master[0].metadata.name), filter=Computer)
+		k8s_nodes = self.get_services(name=Name(master[0].metadata.name), filter=Computer)
 
 		for k in k8s_service:
 			for n in k8s_nodes:
-					consumer=self._get_consumer(n.name)
+					consumer=self.get_consumer(n.name)
 					peer = Peer(service_name=n.name,
 								role=PeerRole.host, # K8S is hosted on master node
 								consumer=consumer)
@@ -264,8 +246,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			and kubelets controls pods. The first relationship should be build by _discover_k8s_links_nodes().
 		"""
 
-		k8s_service = self._get_services(name=Name('kubernetes'),filter=Cloud)
-		k8s_pods = self._get_services(filter=Pod)
+		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_pods = self.get_services(filter=Pod)
 
 		for s in k8s_service:
 			for p in k8s_pods:
@@ -305,10 +287,10 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			Network Policies implement sort of a slpf firewall, hence they are a security function. However, they are not
 			standalone software, and they are implemented by kubernetes..
 		"""
-		k8s_service = self._get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
 
 		for s in k8s_service:
-			consumer = self._get_consumer(Name("kubernetes-networkpolicies"))
+			consumer = self.get_consumer(Name("kubernetes-networkpolicies"))
 			peer = Peer(service_name=Name("kubernetes-networkpolicies"),
 							role=PeerRole.controlled, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
 							consumer=consumer)
@@ -319,6 +301,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
  
 	
 	def _discover_k8s_pods(self):
+		""" Discovers pods
+
+			Discovers pods and describes them including network interfaces and hosted containers.
+		"""
+			
 		pods = self._k8s_pod_list()
 
 		for pod in pods:
@@ -377,6 +364,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 
 	def _k8s_pod_list(self):
+		""" Retrieve the list of pods from the K8S API. """
 		array_container = ArrayOf(Service)()
 
 		if self.namespaces is None:
@@ -400,29 +388,34 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		# TODO
 		pass
 
+# Old implementation, kept only as reference.
+#	def get_namespace_service(self, namespace_name):
+#		#process = subprocess.Popen('kubectl get namespace '  + namespace_name + ' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#		#stdout, stderr = process.communicate()
+#		namespace = self.api_client.read_namespace(name=str(namespace_name))
+#        
+#		namespace_network = Network(description='network',
+#                                      name=Name(namespace.metadata.name),
+#                                      type=NetworkType('wan'))
+#        
+#		namespace_service = Service(name=Name(namespace.metadata.name),
+#                                      type=ServiceType(namespace_network),
+#                                      links= ArrayOf(Name)(),
+#                                      subservices=None,
+#                                      owner=None,
+#                                      release=None,
+#                                      security_functions=None,
+#                                      actuator=None)
+#        
+#	
+#		return ArrayOf(Service)([namespace_service])
+	
+	def _connect_to_kubernetes(self):
+		""" Connects to Kubernetes
 
-	def get_namespace_service(self, namespace_name):
-		#process = subprocess.Popen('kubectl get namespace '  + namespace_name + ' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#stdout, stderr = process.communicate()
-		namespace = self.api_client.read_namespace(name=str(namespace_name))
-        
-		namespace_network = Network(description='network',
-                                      name=Name(namespace.metadata.name),
-                                      type=NetworkType('wan'))
-        
-		namespace_service = Service(name=Name(namespace.metadata.name),
-                                      type=ServiceType(namespace_network),
-                                      links= ArrayOf(Name)(),
-                                      subservices=None,
-                                      owner=None,
-                                      release=None,
-                                      security_functions=None,
-                                      actuator=None)
-        
-	
-		return ArrayOf(Service)([namespace_service])
-	
-	def connect_to_kubernetes(self):
+			Use the available configuration to carry out authentication to a Kubernetes cluster.
+		"""
+			
 		# The config module loads configuration from .kube (or provided file) into the _default member of the client.Configuration
 		# class (which is a class member!). After invoking one of the config method to load these values, the client module
 		# has access to such configuration through the Configuration. Note that certificates provided as values in the 
@@ -448,39 +441,3 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			logger.error("Failed to connect to kubernetes: ", e)
 			return Exception("Failed to connect to kubernetes")
 		
-	def getDumbSLPF(self, name):
-		ex_application = Application(description="slpf", name=name, app_type="Packet Filtering")
-		array_security_functions = ArrayOf(OpenC2Endpoint)()
-		array_security_functions.append(OpenC2Endpoint(actuator=Nsid(slpf.Profile.nsid),
-												consumer = Consumer(server=Server(Hostname(name)),
-                    			                			            port=self.port,
-																		protocol= L4Protocol(self.protocol),
-														    			endpoint=self.endpoint,
-																		transfer=Transfer(self.transfer),
-																		encoding=Encoding(self.encoding))))
-		ex_consumer = Consumer(server=Server(Hostname(name)),
-                    			port=self.port,
-								protocol= L4Protocol(self.protocol),
-								endpoint=self.endpoint,
-								transfer=Transfer(self.transfer),
-								encoding=Encoding(self.encoding))
-			
-		slpf_service = Service(name = Name(name), 
-						 type = ServiceType(ex_application),
-						 links=None, 
-						 security_functions=array_security_functions,
-						 actuator= ex_consumer)
-		
-		return CTXDActuator(services= ArrayOf(Service)([slpf_service]),
-                            links= ArrayOf(Link)([]),
-                            domain=None,
-                        	asset_id=str(name))
-
-	def get_hostname_if_docker_active(self):
-		try:
-			client = docker.from_env()
-			client.ping()  # This will raise an exception if Docker isn't running
-			return socket.gethostname()
-		except Exception as e:
-			print(f"Docker is not running or not accessible: {e}")
-			return None
