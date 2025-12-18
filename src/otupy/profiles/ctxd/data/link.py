@@ -9,7 +9,9 @@ from otupy.core.version import Version
 
 class Link(otupy.types.base.Record):
 	"""Link
-    Link associated with the service
+
+		A Link is a relationship between Services. The Link class contains all Peers of a given LinkType for the given service Name.
+		Implementations might instantiate multiple Links for different Peers of the same LinkType or provide all Peers in the same instance.
 	"""
 
 	name: Name = None

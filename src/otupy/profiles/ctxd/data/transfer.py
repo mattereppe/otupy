@@ -1,6 +1,9 @@
 from otupy.types.base import Enumerated
 
 class Transfer(Enumerated):
+	""" Transfer protocol type
+	
+	"""
 
 	http=1
 	https=2
