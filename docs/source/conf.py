@@ -32,7 +32,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-	 "sphinx_autodoc_typehints",
+#"sphinx_autodoc_typehints",
 #'enum_tools.autoenum',
 ]
 
