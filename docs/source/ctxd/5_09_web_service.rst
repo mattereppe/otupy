@@ -1,9 +1,9 @@
-5.8 Web Service
-===============
+5.9 Web Service
+================
 
 It describes a generic web service.
 
-Type: Web Service (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.web_service.WebService` (:py:class:`~otupy.types.base.record.Record`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -16,27 +16,27 @@ Type: Web Service (Record)
      - Description
    * - 1
      - description
-     - String
+     - ``str``
      - 1
      - Generic description of the web service.
    * - 2
      - server
-     - String
+     - :py:class:`~otupy.profiles.ctxd.data.server.Server`
      - 1
      - Hostname or IP address of the server.
    * - 3
      - port
-     - Integer
+     - ``int``
      - 1
      - The port used to connect to the web service.
    * - 4
      - endpoint
-     - String
+     - ``str``
      - 1
      - The endpoint used to connect to the web service.
    * - 5
      - owner
-     - String
+     - ``str``
      - 1
      - Owner of the web service.
 

@@ -2,6 +2,23 @@
 
 	This module implements a simple Actuator Manager for Openstack..
 	It discovers Openstack. resources by invoking its APIs. 
+
+	The actuator-specific configuration includes:
+		
+		- ``auth``:
+
+			- ``username``: Username used to manage the openstack instance
+			- ``password``: Password of the openstack user
+			- ``project_name``: Openstack tenant/project name (only 1 tenant supported so far)
+			- ``user_domain_name``: Usually set to "Default"
+			- ``project_domain_name``: Usually set to "Default"
+			- ``auth_url``: Entry point of openstack identity server (``hostname:port/endpoint``)
+
+		- ``config``:
+		
+			- ``cacert``: Location of the CA certificate used to sign the endpoint HTTPS certificate (if not installed in the local host).
+
+
 """
 
 import logging
@@ -15,14 +32,12 @@ from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.application import Application
 from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.container import Container
-from otupy.profiles.ctxd.data.encoding import Encoding
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.computer import Computer
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.transfer import Transfer
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
@@ -44,6 +59,8 @@ class CTXDActuator_openstack(CTXDActuator):
 
 		Extend the base `CTDXActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
 		hypervisors, and OpenStack sw components. It should be extended in future releases with additional resources (e.g., networks, ports).
+
+
 	"""
 
 	def __init__(self, auth, **kwargs):

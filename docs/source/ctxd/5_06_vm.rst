@@ -3,7 +3,7 @@
 
 It describes a Virtual Machine.
 
-Type: VM (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.vm.VM` (:py:class:`~otupy.types.base.record.Record`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -16,24 +16,24 @@ Type: VM (Record)
      - Description
    * - 1
      - description
-     - String
+     - ``str``
      - 1
      - Generic description of the VM.
    * - 2
      - id
-     - String
+     - ``str``
      - 1
      - ID of the VM.
    * - 3
-     - hostname
-     - Hostname
+     - name
+     - ``str``
      - 1
      - Hostname of the VM.
    * - 4
-     - os
-     - OS
+     - image
+     - ``str``
      - 1
-     - Operating System of the VM.
+     - Software image loaded in the VM.
 
 Sample VM object represented in JSON Format:
 

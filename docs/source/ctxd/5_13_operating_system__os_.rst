@@ -1,9 +1,9 @@
-5.2 Operating System (OS)
+5.13 Operating System (OS)
 ==========================
 
 It describes an Operating System.
 
-Type: OS (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.os.OS` (:py:class:`~otupy.types.base.record.Record`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -16,22 +16,22 @@ Type: OS (Record)
      - Description
    * - 1
      - name
-     - String
+     - ``str``
      - 1
      - Name of the OS.
    * - 2
      - version
-     - String
+     - ``str``
      - 1
      - Version of the OS.
    * - 3
      - family
-     - String
+     - ``str``
      - 1
      - Family of the OS.
    * - 4
      - type
-     - String
+     - ``str``
      - 1
      - Type of the OS.
 

@@ -43,4 +43,3 @@ class Command(Content, Record):
 		if not isinstance(self.actuator, Actuator) and self.actuator is not None:
 			self.actuator = Actuator(self.actuator)
 
-

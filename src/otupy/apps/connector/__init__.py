@@ -1,0 +1,26 @@
+""" MIRANDA Connector
+	
+	The Connector is a local OpenC2 agent that runs multiple profiles.
+	It reades its own configuration in ``connector.yaml`` (or any other file
+	given at the command line); additionally, it loads all actuator-specific
+  	configuration files in a given folder and sets them up.
+
+	The `connector.yaml <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/connector/connector.yaml>
+	contains a working configuration for running the ``connector`` locally, including comments
+	to explains the different parameters.
+
+	The `config-templates <https://github.com/mattereppe/otupy/tree/main/src/otupy/apps/connector/config-templates>`__  
+	folder includes templates for configuring the different actuators. Each actuator is described by an item in a
+	``yaml`` dictionary, which key is a name that will be assigned to the instance of an actuator, to distinguish 
+	between multiple instances of the same class (e.g., ``ctxd-kubernetes-example``). 
+	It is mostly an internal identifier not visible to Producers. 
+	Multiple actuator configurations may be includedin the same file, or split in different files. 
+
+	The configuration of each actuator must include the following parameters:
+	
+	- ``actuator``: the identifier of the actuator class (it is not the class name, but an identifier used to register it in otupy (see the ``@actuator`` decorator)
+	- ``profile``: namespace identifier of the implemented profile (this might be necessary for actuators that implement multiple profiles
+
+	See the documentation of specific actuators to know additional configuration.
+"""
+#from connector import main

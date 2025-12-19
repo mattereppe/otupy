@@ -1,3 +1,13 @@
+""" Service discovery
+
+	To run the MIRANDA connector, load an ``otupy`` python environment (see 
+	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
+
+	Run the discovery service: ::
+
+		python3 discovery.py [-c | --config <config.yaml>]
+
+"""
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
@@ -35,6 +45,7 @@ logger.addHandler(stdout_handler)
 
 defaults = { # Default values for context discovery operation
 				'ctxd': {
+
 					'loop': -1,
 					'frequency': 60},
 				# Default values for OpenC2 communication
@@ -58,6 +69,7 @@ def set_defaults(config, type_, param):
 	""" Sets default values
 
 		Checks if input parameters have value, and assign a default value in case no value was provided.
+
 		:param config: The dictionary with input config parameter.
 		:param type_: The group to which the parameter belongs (check `defaults`). There might be parameters with the same name under different stanzas.
 		:param param: The name of the parameter.

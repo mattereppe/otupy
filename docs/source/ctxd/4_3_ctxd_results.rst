@@ -4,7 +4,7 @@
 These results are not included in the Language Specification and are
 introduced specifically for the CTXD Actuator Profile.
 
-Type: Results (Map0..*)
+Type: :py:class:`~otupy.core.results.Results` (:py:class:`~otupy.types.base.map.Map`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -17,22 +17,22 @@ Type: Results (Map0..*)
      - Description
    * - 2
      - services
-     - ArrayOf(Service)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.service.Service`)
      - 0
      - List all the services.
    * - 2
      - links
-     - ArrayOf(Link)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.link.Link`)
      - 0
      - List all the links of the services.
    * - 2
      - services_names
-     - ArrayOf(Name)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
      - List the names of all services.
    * - 2
      - link_names
-     - ArrayOf(Name)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
      - List the names of all links.
 

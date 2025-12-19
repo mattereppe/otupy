@@ -1,17 +1,12 @@
-""" StateLess Packet Filter profile
-
-	This modules contains the definition of the `slpf` profile. It is mostly used as a container
-	for the namespace identifier.
-"""
-import otupy as oc2
-
-from otupy.profiles.slpf.profile import Profile
-
 """ SLPF Specifiers
 
 	Define the set of specifiers defined in this specification that are meaningful in the context of SLPF.
 	It implements the data structure define in Sec. 2.1.4.
 """
+import otupy as oc2
+
+from otupy.profiles.slpf.profile import Profile
+
 @oc2.actuator(nsid=Profile.nsid)
 class Specifiers(oc2.Map):
 	fieldtypes = dict(hostname=str, named_group=str, asset_id=str, asset_tuple = [str])
@@ -36,8 +31,9 @@ class Specifiers(oc2.Map):
 		""" Initialize the `Actuator` profile
 
 			The profile can be initialized by passing the internal fields explicitely 
-			(i.e., by giving them as ***key=value*** pair.
-			:param dic: A list of ***key=value*** pair which allowed values are given
+			(i.e., by giving them as ``key=value`` pair.
+
+			:param dic: A list of ``key=value`` pair which allowed values are given
 				by `fieldtype`.
 		"""
 		self.nsid = Profile.nsid

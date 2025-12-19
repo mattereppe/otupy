@@ -9,10 +9,10 @@ from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnu
 from otupy.profiles.slpf.profile import Profile
 
 AllowedActions = [ Actions.query, Actions.deny, Actions.allow, Actions.deny, Actions.update, Actions.delete]
-""" List of allowed `Action`s """
+""" List of allowed `Action`\s """
 
 AllowedTargets = [ 'feature', 'file', 'ipv4_net', 'ipv6_net', 'ipv4_connection', 'ipv6_connection' , Profile.nsid+':rule_number']
-""" List of allowed `Target`s 
+""" List of allowed `Target`\s 
 
 	 This is probably not strictly necessary
 """

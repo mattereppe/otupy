@@ -48,6 +48,7 @@ def actuator(nsid):
 	""" The `@actuator` decorator
 
 		Use this decorator to declare an `Actuator` in otupy extensions.
+
 		:param nsid: The Profile NameSpace identifier (must be the same as defined by the corresponding Profile specification.
 		:result: The following class definition is registered as valid `Actuator` in otupy.
 	"""
@@ -65,6 +66,7 @@ def actuator_implementation(name):
 		which should be something meaningful to identify the scope (security function and Profile) of the implementation.
 		There is no need to declare here the profile(s) implemented by this Actuator,
 		since this remains fully trasparent to the Consumer.
+
 		:param name: The name for this Actuator implementation.
 		:result: The following class definition is registered as available `Actuator` implementation in otupy.
 	"""

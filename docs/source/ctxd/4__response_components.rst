@@ -18,17 +18,17 @@ Type: OpenC2-Response (Map)
      - Description
    * - 1
      - status
-     - Status-Code
+     - :py:class:`~otupy.core.response.StatusCode`
      - 1
      - Status code.
    * - 2
      - status_text
-     - String
+     - ``str``
      - 1
      - Description of the Response status.
    * - 3
      - results
-     - Results
+     - :py:class:`~otupy.core.results.Results`
      - 1
      - Results derived from the executed Command.
 

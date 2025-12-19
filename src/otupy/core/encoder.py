@@ -26,7 +26,7 @@ class EncoderError(Exception):
 class Encoders(aenum.Enum):
 	""" List of available Encoders
 	
-		This list can be used in `Transfer` protocols to select the correct class to decode an incoming OpenC2 Message
+		This list can be used in Transfer protocols to select the correct class to decode an incoming OpenC2 Message
 		based on its metadata. The list is created as enumeration, which associate the name of the encoding
 		formats to the class that implements it.
 	"""

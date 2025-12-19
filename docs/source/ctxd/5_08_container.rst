@@ -1,9 +1,9 @@
-5.7 Container
+5.8 Container
 =============
 
 It describes a generic Container.
 
-Type: Container (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.container.Container` (:py:class:`~otupy.types.base.record.Record`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -16,29 +16,34 @@ Type: Container (Record)
      - Description
    * - 1
      - description
-     - String
+     - ``str``
      - 1
      - Generic description of the container.
    * - 2
      - id
-     - String
+     - ``str``
      - 1
      - ID of the Container.
    * - 3
-     - hostname
-     - Hostname
+     - name
+     - ``str``
      - 1
      - Hostname of the Container.
    * - 4
-     - runtime
-     - String
+     - namespace
+     - ``str``
      - 1
-     - Runtime managing the Container.
+     - Namespace of the pod hosting the Container.
    * - 5
-     - os
-     - OS
+     - status
+     - ``str``
      - 1
-     - Operating System of the Container.
+     - Current status of the contaienr.
+   * - 6
+     - image
+     - ``str``
+     - 1
+     - Software image used to boot the container.
 
 Sample Container object represented in JSON Format:
 
@@ -48,12 +53,7 @@ Sample Container object represented in JSON Format:
      "description": "container",
      "id": "123456",
      "hostname": "container_name",
-     "runtime": "docker",
-     "os": {
-       "name": "ubuntu",
-       "version": "22.04.3",
-       "family": "debian",
-       "type": "linux"
-     }
+     "namespace": "default",
+     "image": "debian-stable.img"
    }
 

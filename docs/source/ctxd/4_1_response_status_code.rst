@@ -1,7 +1,7 @@
 4.1 Response status code
 =========================
 
-Type: Status-Code (Enumerated.ID)
+Type: :py:class:`~otupy.core.response.StatusCode` (:py:class:`~otupy.types.base.enumerated_id.EnumeratedID`)
 
 .. list-table::
    :widths: 3 60

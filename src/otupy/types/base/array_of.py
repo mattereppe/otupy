@@ -8,13 +8,13 @@ logger = logging.getLogger(__name__)
 class ArrayOf:
 	""" OpenC2 ArrayOf
 
-		Implements OpenC2 ArrayOf(*vtype*):
-		>An ordered list of fields with the same semantics. 
-		Each field has a position and type *vtype*.
+		Implements OpenC2 ArrayOf(*vtype*): 
 
-		It extends the `Array` type. However, to make its usage simpler and compliant 
-		to the description given in the
-		Language Specification, the implementation is quite different.
+			*An ordered list of fields with the same semantics. 
+			Each field has a position and type <vtype>.*
+
+		It extends the :py:class:`~otupy.types.base.array.Array` type. However, to make its usage simpler and compliant 
+		to the description given in the Language Specification, the implementation is quite different.
 		Note that in many cases `ArrayOf` is only used to create arrays without the need
 		to derive an additional data type.
 	"""
@@ -22,15 +22,18 @@ class ArrayOf:
 	def __new__(self, fldtype):
 		""" `ArrayOf` builder
 
-			Creates a unnamed derived class from `Array`, which `fieldtypes` is set to `fldtype`.
+			Creates a unnamed derived class from :py:class:`~otupy.types.base.array.Array`, which 
+			:py:attr:`~otupy.types.base.array.Array.fieldtypes` is set to ``fldtype``.
+
 			:param fldtype: The type of the fields stored in the array (indicated as *vtype* in 
-					the Language Specification.
+				the Language Specification.
 			:return: A new unnamed class definition.
 		"""
 		class ArrayOf(Array):
 			""" OpenC2 unnamed `ArrayOf`
 
-				This class inherits from `Array` and sets its `fieldtypes` to a given type.
+				This class inherits from :py:class:`~otupy.types.base.array.Array` and sets its 
+				:py:attr:`~otupy.types.base.array.Array.fieldtypes` to a given type.
 		
 				One might like to check the type of the elements before inserting them.
 				However, this is not the Python-way. Python use the duck typing approach:
@@ -38,7 +41,7 @@ class ArrayOf:
 				We ask for the type of objects just to keep this information according to
 				the OpenC2 data model.
 
-				Note: no `todict()` method is provided, since `Array.todict()` is fine here.
+				Note: no ``todict()`` method is provided, since :py:method:`~otupy.types.base.array.Array.todict`() is fine here.
 			"""
 			fieldtype = fldtype
 			""" The type of values stored in this container """
@@ -48,12 +51,12 @@ class ArrayOf:
 				""" Builds instance from dictionary 
 		
 					It is used during deserialization to create an otupy instance from the text message.
-					It takes an `Encoder` instance that is used to recursively build instances of the inner
-					objects (the `Encoder` provides standard methods to create instances of base objects like
+					It takes an :py:class:`~otupy.core.encoder.Encoder` instance that is used to recursively build instances of the inner
+					objects (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods to create instances of base objects like
 					strings, integers, boolean).
 		
 					:param lis: The intermediary dictionary representation from which the object is built.
-					:param e: The `Encoder that is being used.
+					:param e: The :py:class:`:py:class:`~otupy.core.encoder.Encoder` that is being used.
 					:return: An instance of this class initialized from the dictionary values.
 				"""
 				objlis = cls()

@@ -41,12 +41,22 @@ class Binary(Openc2Type):
 			return ""
 			
 	def todict(self, e=None):
-		""" Encodes with base64 """
+		""" Encodes with base64 
+
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
+			:return: A dictionary compliants to the Language Specification's serialization
+				rules.
+		"""
 		return base64.b64encode(self._data).decode('ascii')	
 
 	@classmethod
 	def fromdict(cls, dic, e=None):
-		""" Builds from base64encoding """
+		""" Builds from base64encoding 
+
+			:param dic: The intermediary dictionary representation from which the object is built.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
+			:return: An instance of this class initialized from the dictionary values.
+		"""
 		try:
 #return cls( base64.b64decode(dic.encode('ascii')) )
 			return cls( base64.b64decode(dic))

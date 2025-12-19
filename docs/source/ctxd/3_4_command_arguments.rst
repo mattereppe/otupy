@@ -14,12 +14,12 @@ Type: Args (Map)
      - Description
    * - 4
      - response_requested
-     - Response-Type
+     - :py:class:`~otupy.types.data.response_type.ResponseType`
      - 0
      - The type of Response required for the Command: none, ack, status, complete.
    * - 2
      - name_only
-     - Boolean
+     - ``bool``
      - 0
      - The response includes either only the name or all the details about the services and the links.
 
@@ -27,7 +27,7 @@ Command Arguments are optional, and a new one called “name_only” has
 been defined, which is not present in the Language Specification.
 
 Usage requirements:
-===================
+-------------------
 
 -  The “response_requested”: “complete” argument can be present in the
    “query features” Command. (Language specification 4.1)

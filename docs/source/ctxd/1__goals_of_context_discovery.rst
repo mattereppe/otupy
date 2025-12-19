@@ -10,7 +10,7 @@ service also provides essential information, such as hostname, encoding
 format, and transfer protocol, for connecting to it and to any linked
 services. In this way, the context in which the service is operating is
 identified. This new Actuator Profile has been named “Context
-Discovery”, herein referred as CTXD, with the nsid “ctxd”.
+Discovery”, herein referred as CTXD, with the nsid “x-ctxd”.
 
 The Context Discovery employs a recursive function to achieve this task,
 querying each digital resource to determine its features. Thus, once the

@@ -1,10 +1,10 @@
-5.10 Network
+5.11 Network
 =============
 
 It describes a generic network service. The Network-Type is described in
 the following sections.
 
-Type: Network (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.network.Network` (:py:class:`~otupy.types.base.record.Record`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -17,17 +17,17 @@ Type: Network (Record)
      - Description
    * - 1
      - description
-     - String
+     - ``str``
      - 1
      - Generic description of the network.
    * - 2
      - name
-     - String
+     - ``str``
      - 1
      - Name of the network provider.
    * - 3
      - type
-     - Network-Type
+     - :py:class:`~otupy.profiles.ctxd.data.network_type.NetworkType`
      - 1
      - Type of the network service.
 

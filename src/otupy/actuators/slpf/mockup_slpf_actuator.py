@@ -7,8 +7,6 @@
 import logging
 
 from otupy import ArrayOf,ActionTargets, TargetEnum, Nsid, Version,Actions, Command, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
-from otupy.actuators.SQLDatabase import SQLDatabase
-from otupy.actuators.iptables_manager import IptablesManager
 from otupy.core.actions import Actions
 import otupy.profiles.slpf as slpf 
 

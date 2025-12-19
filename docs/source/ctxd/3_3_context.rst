@@ -14,12 +14,12 @@ Type: Context (Record)
      - Description
    * - 1
      - services
-     - ArrayOf(Name)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
      - List the service names that the command refers to.
    * - 2
      - links
-     - ArrayOf(Name)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
      - List the link names that the command refers to.
 
@@ -28,8 +28,8 @@ information of all active services and links of the Consumer. The
 Producer can specify the names of the services and links it is
 interested in.
 
-Usage Requirements
-=================
+Usage requirements
+------------------
 
 -  Producer may send a “query” Command with no fields to the Consumer,
    which could return a heartbeat to this command.

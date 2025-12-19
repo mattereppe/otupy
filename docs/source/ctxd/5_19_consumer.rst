@@ -1,10 +1,10 @@
-5.17 Consumer
+5.19 Consumer
 =============
 
 The Consumer provides all the networking parameters to connect to an
-OpenC2 Consumer.
+OpenC2 Consumer. Despite of the name, it indeed points to an actuator.
 
-Type: Consumer (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.consumer.Consumer` (:py:class:`~otupy.types.base.record.Record`)
 
 
 .. list-table::
@@ -17,32 +17,44 @@ Type: Consumer (Record)
      - #
      - Description
    * - 1
-     - server
-     - Server
+     - host
+     - ``str``
      - 1
      - Hostname or IP address of the server
    * - 2
      - port
-     - Integer
+     - ``int``
      - 1
      - Port used to connect to the actuator
    * - 3
      - protocol
-     - L4-Protocol
+     - :py:class:`~otupy.types.data.l4_protocol.L4Protocol`
      - 1
-     - Protocol used to connect to the actuator
+     - Protocol used to connect to the actuator (this will be probably removed)
    * - 4
      - endpoint
-     - String
+     - ``str``
      - 1
      - Path to the endpoint (e.g., /.wellknown/openc2)
    * - 5
      - transfer
-     - Transfer
+     - ``str``
      - 1
      - Transfer protocol used to connect to the actuator
    * - 6
      - encoding
-     - Encoding
+     - ``str``
      - 1
      - Encoding format used to connect to the actuator
+   * - 7
+     - profile
+     - ``str``
+     - 1
+     - Profile name available for this actuator
+   * - 8
+     - actuator
+     - ``dict``
+     - 1
+     - Actuator specifiers (depending on the specific profile served)
+
+		

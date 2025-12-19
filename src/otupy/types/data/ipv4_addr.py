@@ -1,14 +1,3 @@
-""" IPv4 Address
-
-	This module implements an IPv4 Address as described in Sec. 3.4.2.8.
-
-The usage of the ipaddress module is compliant to what required in the
-language specification for IPv4 addresses, especially the following points:
-a) The IPv4 address should be available both in string and binary form
-b) The network representation is an array according to RFC 4632 Sec. 3.1
-   (host/prefix, host/mask, host/hostmask, etc.)
-"""
-
 import ipaddress
 
 class IPv4Addr:
@@ -18,9 +7,9 @@ class IPv4Addr:
 
 		The usage of the ipaddress module is compliant to what required in the
 		language specification for IPv4 addresses, especially the following points:
+
 		a) The IPv4 address should be available both in string and binary form
-		b) The network representation is an array according to RFC 4632 Sec. 3.1
-		   (host/prefix, host/mask, host/hostmask, etc.)
+		b) The network representation is an array according to RFC 4632 Sec. 3.1 (host/prefix, host/mask, host/hostmask, etc.)
 
 """
 	__ipv4_addr = ipaddress.IPv4Address("0.0.0.0")
