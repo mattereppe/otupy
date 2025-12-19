@@ -9,16 +9,17 @@ class Map(Openc2Type, dict):
 	""" OpenC2 Map
 
 		Implements OpenC2 Map:
-		>An unordered map from a set of specified keys to values with semantics 
-			bound to each key. Each field has an id, name and type.
+		
+			*An unordered map from a set of specified keys to values with semantics 
+			bound to each key. Each field has an id, name and type.*
 
 		However, the id is not considered in this implementation.
 
-		The implementation follows a similar logic than `Array`. Each derived class
+		The implementation follows a similar logic than :py:class:`~otupy.types.base.array.Array`. Each derived class
 		is expected to provide a `fieldtypes` class attribute that associate field names 
 		with their class definition. 
 		
-		Additionally, according to the Language Specification, `Map`s may be extended by
+		Additionally, according to the Language Specification, ``Map``\s may be extended by
 		Profiles. Such extensions must use the `base` and `register` class attributes to 
 		bind to the base element they extend and the `Profile` in which they are defined.
 
@@ -112,6 +113,7 @@ class Map(Openc2Type, dict):
 			This method can be used as a decorator to make a Map-derived class recurive, namely to hold objects
 			of the same type in `fieldtypes`. To use this function, just declare the field that must be of the same
 			type as the class as `typing.Self`, and use the `@make_recursive` decorator at declaration time.
+
 			:param: No arguments must be specified when using this method as a decorator.
 			:return: A new instance of the class, where all types in `fieldtypes` marked as `typing.Self` are replaced
 		  		with the class instance.
@@ -126,13 +128,13 @@ class Map(Openc2Type, dict):
 		""" Converts to dictionary 
 		
 			It is used to convert this object to an intermediary representation during 
-			serialization. It takes an `Encoder` argument that is used to recursively
-			serialize inner data and structures (the `Encoder` provides standard methods
+			serialization. It takes an :py:class:`~otupy.core.encoder.Encoder` argument that is used to recursively
+			serialize inner data and structures (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods
 			for converting base types to dictionaries).. 
 
-			:param e: The `Encoder` that is being used.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
 			:return: A dictionary compliants to the Language Specification's serialization
-			rules.
+				rules.
 		"""
 		newdic=dict()
 
@@ -157,12 +159,12 @@ class Map(Openc2Type, dict):
 		""" Builds instance from dictionary 
 
 			It is used during deserialization to create an otupy instance from the text message.
-			It takes an `Encoder` instance that is used to recursively build instances of the inner
-			objects (the `Encoder` provides standard methods to create instances of base objects like
+			It takes an :py:class:`~otupy.core.encoder.Encoder` instance that is used to recursively build instances of the inner
+			objects (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods to create instances of base objects like
 			strings, integers, boolean).
 
 			:param dic: The intermediary dictionary representation from which the object is built.
-			:param e: The `Encoder that is being used.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
 			:return: An instance of this class initialized from the dictionary values.
 		"""
 		objdic = {}

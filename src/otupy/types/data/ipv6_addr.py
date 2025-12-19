@@ -1,14 +1,3 @@
-""" IPv6 Address
-
-	This module implements an IPv6 Address as described in Sec. 3.4.2.9.
-
-The usage of the ipaddress module is compliant to what required in the
-language specification for IPv6 addresses, especially the following points:
-a) The IPv6 address should be available both in string and binary form
-b) The network representation is an array according to RFC 4291 Sec. 2.3
-   (host/prefix, host/mask, host/hostmask, etc.)
-"""
-
 import ipaddress
 
 class IPv6Addr:
@@ -18,9 +7,9 @@ class IPv6Addr:
 
 		The usage of the ipaddress module is compliant to what required in the
 		language specification for IPv6 addresses, especially the following points:
+
 		a) The IPv6 address should be available both in string and binary form
-		b) The network representation is an array according to RFC 4291 Sec. 2.3
-		   (host/prefix, host/mask, host/hostmask, etc.)
+		b) The network representation is an array according to RFC 4291 Sec. 2.3 (host/prefix, host/mask, host/hostmask, etc.)
 
 """
 	__ipv6_addr = ipaddress.IPv6Address("::")

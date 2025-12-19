@@ -1,4 +1,15 @@
-"""The connector."""
+""" MIRANDA Connector 
+
+	To run the MIRANDA connector, load an ``otupy`` python environment (see 
+	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
+
+	Run the connector: ::
+		
+		python3 connector.py [-c | --config  <config.yaml>]
+
+"""
+
+		
 
 import logging
 from argparse import ArgumentParser

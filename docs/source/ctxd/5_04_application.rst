@@ -1,9 +1,9 @@
-5.5 Application
+5.4 Application
 ===============
 
 It describes a generic application.
 
-Type: Application (Record)
+Type: :py:class:`~otupy.profiles.ctxd.data.application.Application` (:py:class:`~otupy.types.base.record.Record`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -16,27 +16,27 @@ Type: Application (Record)
      - Description
    * - 1
      - description
-     - String
+     - ``str``
      - 1
      - Generic description of the application.
    * - 2
      - name
-     - String
+     - ``str``
      - 1
      - Name of the application.
    * - 3
      - version
-     - String
+     - ``str``
      - 1
      - Version of the application.
    * - 4
      - owner
-     - String
+     - ``str``
      - 1
      - Owner of the application.
    * - 5
-     - type
-     - String
+     - app_type
+     - ``str``
      - 1
      - Type of the application.
 

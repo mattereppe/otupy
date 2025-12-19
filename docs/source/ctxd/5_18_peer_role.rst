@@ -1,10 +1,10 @@
-5.16 Peer-Role
+5.18 Peer-Role
 ==============
 
 It defines the role of the Peer in the link with the service under
 analysis.
 
-Type: Peer-Role (Enumerated)
+Type: :py:class:`~otupy.profiles.ctxd.data.peer_role.PeerRole` (:py:class:`~otupy.types.base.enumerated.Enumerated`)
 
 .. list-table::
    :widths: 3 5 45
@@ -32,7 +32,7 @@ Type: Peer-Role (Enumerated)
      - egress
      - Egress communication.
    * - 7
-     - bidirectional
+     - both
      - Both ingress and egress communication.
    * - 8
      - control

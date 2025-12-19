@@ -32,6 +32,7 @@ class Consumer(otupy.types.base.Record):
 	profile: str = None
 	""" profile implemented by this Consumer. Default to the context discovery profile. """
 	actuator: dict = None
+	""" actuator specifiers """
 
 	def __init__(self, host:str = None, port:int = None, protocol:int = None, endpoint:str = None, 
 			transfer:str = None, encoding:str = None,

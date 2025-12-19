@@ -18,12 +18,12 @@ Type: Specifiers (Map)
      - Description
    * - 1
      - domain
-     - String
+     - ``str``
      - 0
      - Domain under the responsibility of the actuator.
    * - 2
      - asset_id
-     - String
+     - ``str``
      - 0
      - Identifier of the actuator.
 

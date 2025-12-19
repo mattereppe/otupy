@@ -13,14 +13,16 @@ class IPv6Net:
 		(where ipv6-net --lowercase!-- is never defined!)
 		However, the json serialization requirements explicitely
 		define:
-		Array /ipv6-net: JSON string containing the text representation 
-		 						of an IPv6 address range as specified in 
-		 						[RFC4291], Section 2.3.
+
+			Array /ipv6-net: JSON string containing the text representation 
+		 	of an IPv6 address range as specified in 
+		 	[RFC4291], Section 2.3.
+
 		According to this definition, I assume a single network address
 		should be managed. Extension to an array of IP network addresses
 		is rather straightforward by using a list for ipv6_net attribute.
 		Note that I have to keep both the string representation of the
-		network address as well as the IPv6Network object to easily 
+		network address as well as the ``IPv6Network`` object to easily 
 		manage the code and to automate the creation of the dictionary.
 		
 	"""
@@ -28,9 +30,10 @@ class IPv6Net:
 	def __init__(self, ipv6_net=None, prefix=None):
 		""" Initialize IPv6 Address Range
 
-			Initialize `IPv6Net with IPv6 address and prefix.
+			Initialize ``IPv6Net`` with IPv6 address and prefix.
 			If no IPv6 address is given, initialize to null address.
 			If no prefix is given, assume /128 (IPv6 address only).
+
 			:param ipv6_net: IPv6 Network Address.
 			:param prefix: IPv6 Network Adress Prefix.
 		"""

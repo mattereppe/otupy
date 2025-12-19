@@ -38,6 +38,7 @@ class HTTPTransfer(oc2.Transfer):
 
 			The `host` and `port` parameters are used either for selecting the remote server (`Producer`) or
 			for local binding (`Consumer`). This implementation only supports TCP as transport protocol.
+
 			:param host: Hostname or IP address of the OpenC2 server.
 			:param port: Transport port of the OpenC2 server.
 			:param endpoint: The remote endpoint to contact the OpenC2 server (`Producer` only).
@@ -108,6 +109,7 @@ class HTTPTransfer(oc2.Transfer):
 		""" Sends OpenC2 message
 
 			This method implements the required `Transfer` interface to send message to an OpenC2 server.
+
 			:param msg: The message to send (otupy `Message`).
 			:param encoder: The encoder to use for encoding the `msg`.
 			:return: An OpenC2  response (`Response`).
@@ -211,11 +213,12 @@ class HTTPTransfer(oc2.Transfer):
 			This method implements the `Transfer` interface to listen for and receive OpenC2 messages.
 			The internal implementation uses `Flask` as HTTP server. The method invokes the `callback`
 			for each received message, which must be provided by a `Producer` to properly dispatch 
-			`Command`s to the relevant server(s). It also takes an `Encoder` that is used to create
-			responses to `Command`s encoded with unknown encoders.
+			`Command`\s to the relevant server(s). It also takes an `Encoder` that is used to create
+			responses to :py:class:`~otupy.core.command.Command`\s encoded with unknown encoders.
+
 			:param callback: The function that is invoked to process OpenC2 messages.
 			:param encoder: Default `Encoder` instance to respond to unknown or wrong messages.
-			:return :None
+			:return: None
 		"""
 		app = Flask(__name__)
 		app.config['OPENC2']=self

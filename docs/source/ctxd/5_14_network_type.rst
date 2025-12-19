@@ -1,10 +1,10 @@
-5.12 Network-Type
+5.14 Network-Type
 =================
 
 This class describes the type of the network service. The details of
 these types are not further elaborated upon in this document.
 
-Type: Network-Type (Choice)
+Type: :py:class:`~otupy.profiles.ctxd.data.network_type.NetworkType` (:py:class:`~otupy.types.base.choice.Choice`)
 
 .. list-table::
    :widths: 3 4 4 3 40

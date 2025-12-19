@@ -44,12 +44,14 @@ class CTXDActuator:
 		""" Initialization
 
 			Common parameters expected for all actuators:
+
 			- auth: Authentication information to connect to external APIs for discovering services and links
 			- config: Additional configuration parameters specific for each actuator (ofter related to endpoints or parameters of the external APIs)
-			- peers: A list of `Consumer`s that host the definition of external services (usually found as peers in links). They are currently provided
+			- peers: A list of `Consumer`\s that host the definition of external services (usually found as peers in links). They are currently provided
 				at initialization time, waiting for some more automated discovery mechanism.
 			- owner: The owner of the resource (in case of cloud resources, effective owners should be discovered by the actuator)
 			- specifiers: This is the description of the actuator (e.g., its identifiers).
+
 		"""
 		self.auth = kwargs['auth'] if 'auth' in kwargs else None
 		self.config = kwargs['config'] if 'config' in kwargs else None
@@ -64,6 +66,7 @@ class CTXDActuator:
 		""" Entry point for running commands
 
 			This is the actuator entry point to receive OpenC2 commands from the otupy `Consumer`.
+
 			:param cmd: A `Command` in the format of the otupy framework.
 			:return: `Response` to the provided command.
 		"""
@@ -113,6 +116,7 @@ class CTXDActuator:
 		""" Query action
 
 			This method implements the `query` action.
+
 			:param cmd: The `Command` including `Target` and optional `Args`.
 			:return: A `Response` including the result of the query and appropriate status code and messages.
 		"""
@@ -129,6 +133,7 @@ class CTXDActuator:
 		""" Query features
 
 			Implements the 'query features' command according to the requirements in Sec. 4.1 of the Language Specification.
+
 			:param cmd: The `Command` including `Target` and optional `Args`.
 			:return: A `Response` including the result of the query and appropriate status code and messages.
 		"""
@@ -157,9 +162,10 @@ class CTXDActuator:
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
 	def get_services(self, name: Name = None, filter: ServiceType = None) -> [] :
-		""" Return the list of current services
+		""" Returns the list of current services
 
-			Return the list of discovered services. Filter by name and type.
+			Returns the list of discovered services. Filter by name and type.
+
 			:param name: The name of the service to retrieve (all if not set).
 			:param filter: The type of service (given by a void instance of `ServiceType`).
 			:return: A list of services that match the searching criteria.
@@ -176,6 +182,7 @@ class CTXDActuator:
 		""" Returns consumer data
 
 			Returns the `Consumer` data for the selected service name.
+
 			:param service_name: name of the service which consumer is searched.
 			:return: The consumer serving the given service, if any, None otherwise.
 		"""
@@ -238,6 +245,7 @@ class CTXDActuator:
 			This method should be run before getting links and services
 			Every concrete implementation of actuators must implement the `discover_services()` and `discover_links()` methods.
 			Does not return anything, just update the internal members `services` and `links`.
+
 			:return: None
 		"""
 		self.services = ArrayOf(Service)()
@@ -250,6 +258,7 @@ class CTXDActuator:
 
 			Default response returned in case an `Action` is not implemented.
 			The `cmd` argument is only present for uniformity with the other handlers.
+
 			:param cmd: The `Command` that triggered the error.
 			:return: A `Response` with the appropriate error code.
 
@@ -260,6 +269,7 @@ class CTXDActuator:
 		""" Internal server error
 
 			Default response in case something goes wrong while processing the command.
+
 			:param cmd: The command that triggered the error.
 			:param e: The Exception returned.
 			:return: A standard INTERNALSERVERERROR response.

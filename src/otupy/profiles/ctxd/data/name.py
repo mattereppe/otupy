@@ -8,11 +8,9 @@ class Name(Choice):
     """ Service or Link identifier
     
     	The Name class is designed to contain multiple alternative identifiers for a Service. The current options include:
-    	- uri: A valid URI. It is normally expected that the URI corresponds to a reachable service, but this is not
-    			strictly required by this implementation, as the URI is only used as identifier (not as a locator).
-    	- reverse-dns: This field has the same syntax as a DNS name, but in reverse order (e.g., com.apple.service.xyz).
-    			It is commonly used by software frameworks that needs unique names for entities, but does not require to
-    			locate them with a DNS.
+
+    	- uri: A valid URI. It is normally expected that the URI corresponds to a reachable service, but this is not strictly required by this implementation, as the URI is only used as identifier (not as a locator).
+    	- reverse-dns: This field has the same syntax as a DNS name, but in reverse order (e.g., com.apple.service.xyz). It is commonly used by software frameworks that needs unique names for entities, but does not require to locate them with a DNS.
     	- uuid: A UUID of 128 bits following usual formats and structure.
     	- local: A format-free string that might not be unique and has local meaning only (e.g., "host0").
     
@@ -29,6 +27,7 @@ class Name(Choice):
         
            The correct type is automatically inferred from the type of the supplied object. If a plain string is used, the
            "local" type is used.
+
           :param name: The identifier of the Service or Link.
         """
         if ( isinstance(name, dict) ):
@@ -49,6 +48,7 @@ class Name(Choice):
         """ Return the id of the Service/Link
 		  
             Return the identifier stored in this class. 
+
 				:return: A reference to the object that contains the id. The original object type is returned (see 'str' to get a plain string).
         """
         return self.getObj()
@@ -57,6 +57,7 @@ class Name(Choice):
         """ Return the identifier type
 
 			  Return the class of the identifier.
+
 			  :return: The class object of the identifier instance.
         """
         return self.getClass()
@@ -81,6 +82,7 @@ class Name(Choice):
 
            The comparison checks both the object type and its value. Two Names who contains the same string but for different 
 			  object types (e.g., 'local' and 'uuid' are not considered to be the same).
+
 			  :param other: The Name to compare.
 			  :return: True if type and content match.
         """

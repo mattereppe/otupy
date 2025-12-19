@@ -1,6 +1,6 @@
 """ MQTT Transfer Protocol
 
-	This module defines implementation of the `Transfer` interface for the 
+	This module defines implementation of the :py:class:`~otupy.core.transfer.Transfer` interface for the 
   	MQTT/MQTTS protocols. This implementation is mostly provided for 
 	research and development purposes, but it is not suitable for production
 	environments.
@@ -30,6 +30,7 @@ class UnsupportedMediaType(Exception):
 	"""Exception raised for custom error scenarios.
 
 		Attributes:
+
 		    message -- explanation of the error
 	"""
 	
@@ -568,13 +569,15 @@ class MQTTTransfer(oc2.Transfer):
 	def receive(self, callback, encoder):
 		""" Listen for incoming messages
 
-			This method implements the `Transfer` interface to listen for and receive OpenC2 messages.
+			This method implements the :py:class:`~otupy.core.transfer.Transfer` interface 
+			to listen for and receive OpenC2 messages.
 			Note that only Consumers can use this method (it will fail if a Producer invokes it).
 
 			The internal implementation uses Paho MQTT client. The method invokes the `callback`
 			for each received message, which must be provided by a `Consumer` to properly dispatch 
-			`Command`s to the relevant server(s). It also takes an `Encoder` that is used to create
-			responses to `Command`s encoded with unknown encoders.
+			:py:class:`~otupy.core.command.Command`\s to the relevant server(s). 
+			It also takes an :py:class:`~otupy.core.encoder.Encoder` that is used to create
+			responses to `Command`\s encoded with unknown encoders.
 
 			This implemnetation sends the response to the device-specific topic, if available from
 			the command (it SHOULD be available according to the Specification requirements, but
@@ -582,7 +585,8 @@ class MQTTTransfer(oc2.Transfer):
 
 			:param callback: The function that is invoked to process OpenC2 messages.
 			:param encoder: Default `Encoder` instance to respond to unknown or wrong messages.
-			:return :None
+			:return: None
+
 		"""
 		assert self.role == OpenC2Role.Consumer
 

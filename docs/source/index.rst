@@ -66,10 +66,7 @@ the common Language Specification and Profile extensions.
    developerguide
    developingextensions
    logging
-	documentation
-
-
-
+   documentation
 
 
 Extensions
@@ -82,12 +79,14 @@ Extensions
 
    ctxd/ctxd   
 
+
 Additional notes
 ----------------
 
 .. toctree::
    :maxdepth: 1
 
+   relateddocuments
    authors
    contributing
    changelog
