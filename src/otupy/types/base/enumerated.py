@@ -1,9 +1,7 @@
 import aenum
 
 from otupy.types.base.openc2_type import Openc2Type
-import enum_tools.documentation
 
-@enum_tools.documentation.document_enum
 class Enumerated(Openc2Type, aenum.Enum):
 	""" OpenC2 Enumerated
 
