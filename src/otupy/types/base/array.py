@@ -28,8 +28,8 @@ class Array(Openc2Type, list):
 	def __init__(self, args=[]):
 		""" `Array` initialization
 
-			`Array`s are initialized the same way as lists. They only take as input an interable (``list``, ``tuple``,
-			``dict``, or another `Array`/`ArrayOf`). Initialization with scalars is not allowed. In this case, 
+			``Array``\s are initialized the same way as lists. They only take as input an interable (``list``, ``tuple``,
+			``dict``, or another ``Array``/``ArrayOf``). Initialization with scalars is not allowed. In this case, 
 			a `tuple` must be used (mind to add the trailing comma even with a single value!)
 
 			:param args: The ``list``, ``tuple``, ``Array``, ``ArrayOf`` used to initialize. May be empty.

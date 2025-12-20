@@ -26,7 +26,7 @@ class Map(Openc2Type, dict):
 		For derived types that are recursive (i.e., they need to hold an instance of their same
 		type internally), declare the type of the recursive field as `typing.Self`, and 
 		use the `@make_recursive` decorator in front of the class definition.
-		(See also (recursive definitions)[https://github.com/mattereppe/otupy/blob/main/docs/developingextensions.md#recursive-definitions] in the documentation)
+		(See also `recursive definitions <https://github.com/mattereppe/otupy/blob/main/docs/developingextensions.md#recursive-definitions>`__ in the documentation)
 	"""
 	fieldtypes: dict = None
 	""" Field types

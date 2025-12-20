@@ -51,6 +51,18 @@ Getting started
    download
    usage
 
+Applications
+------------
+
+There are a few OpenC2-based applications provided with ``otupy``:
+
+.. toctree::
+	:maxdepth: 1
+
+	MIRANDA Connector <_autosummary/otupy.apps.connector>
+	Context Discovery <_autosummary/otupy.apps.ctxd>
+
+
 Advanced usage
 --------------
 

@@ -1,11 +1,20 @@
-""" MIRANDA Connector
+""" 
 	
-	The Connector is a local OpenC2 agent that runs multiple profiles.
+	The ``connector`` is a local OpenC2 agent that runs multiple profiles.
 	It reades its own configuration in ``connector.yaml`` (or any other file
 	given at the command line); additionally, it loads all actuator-specific
   	configuration files in a given folder and sets them up.
 
-	The `connector.yaml <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/connector/connector.yaml>
+	Setup 
+	-----
+
+	To run the MIRANDA connector, either download the source code or install from ``PyPI`` (see 
+	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
+
+	Configuration
+	-------------
+
+	The `connector.yaml <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/connector/connector.yaml>`__
 	contains a working configuration for running the ``connector`` locally, including comments
 	to explains the different parameters.
 
@@ -22,5 +31,17 @@
 	- ``profile``: namespace identifier of the implemented profile (this might be necessary for actuators that implement multiple profiles
 
 	See the documentation of specific actuators to know additional configuration.
+
+	Run
+	---
+
+	Run the connector: ::
+		
+		python3 connector.py [-c | --config  <config.yaml>]
+
+
+	Code reference
+	--------------
+
 """
 #from connector import main
