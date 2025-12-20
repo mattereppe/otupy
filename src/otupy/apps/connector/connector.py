@@ -1,6 +1,6 @@
 """ MIRANDA Connector 
 
-	To run the MIRANDA connector, load an ``otupy`` python environment (see 
+	To run the connector, either download the source code or install from ``PyPI`` (see 
 	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
 
 	Run the connector: ::

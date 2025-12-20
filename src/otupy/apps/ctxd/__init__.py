@@ -1,5 +1,4 @@
-""" Context discovery
-
+""" 
 	The ``discovery`` application recursively queries context actuators to build
 	a chain of interconnected services. It starts from one or more root services
 	(which consumers are known a priori) and periodically and iteratively queries additional 
@@ -7,7 +6,19 @@
 
 	The application is designed to publish context data to multiple sinks.
 
-	It works according to a ``yaml`` configuration file that contains the following
+
+	Setup 
+	-----
+
+	To run the discovery, either download the source code or install from ``PyPI`` (see 
+	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
+
+
+
+	Configuration
+	-------------
+
+	The ``discovery`` application works according to a ``yaml`` configuration file that contains the following
 	parameters:
 	
 	- ``frequency``: The time interval before starting a new round of queries (the real interval will be longer because the timer starts after receving the last answer). Run one-shot if sets to 0.
@@ -33,5 +44,15 @@
 		- ``actuator`` (x-ctxd py:class:`~otupy.actuators.ctxd.actuator.Specifiers`)
 
 	A template configuration file is available `here <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/ctxd/discovery.yaml.template>`__.
+
+	Run
+	---
+
+	Run the discovery service: ::
+
+		python3 discovery.py [-c | --config <config.yaml>]
+
+	Code reference
+	--------------
+
 """
-#from discovery import discovery

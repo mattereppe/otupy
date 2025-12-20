@@ -1,6 +1,6 @@
 """ Service discovery
 
-	To run the MIRANDA connector, load an ``otupy`` python environment (see 
+	To run the discovery, either download the source code or install from ``PyPI`` (see 
 	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
 
 	Run the discovery service: ::
