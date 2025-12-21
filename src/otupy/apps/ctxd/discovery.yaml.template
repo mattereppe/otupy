@@ -1,3 +1,4 @@
+name: "test-discovery"
 frequency: 10 # seconds
 loop: 1 # -1: forever, 0: no run, >0: number of runs
 database:
@@ -7,6 +8,9 @@ database:
       db_name: 'miranda'
       user: 'xxxx'
       pass: 'xxxx'
+  - file:
+      name: "mycontext.json"
+      path: "/tmp"
 services:
   - host: '127.0.0.1'
     port: 8080
