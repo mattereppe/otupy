@@ -1,0 +1,8 @@
+id: connector@mirandaproject.eu			# OpenC2 identifier for the Consumer
+consumer:										# Communication stack configuration
+   host: '127.0.0.1'							# IP address to listen to (also reported when necessary to the Producer)
+   port: 8080									# TCP port to bind to
+   endpoint: "/.well-known/openc2"		# Endpoint (should not be changed)
+   encoding: "json"							# Serialization format (default to json)
+   transfer: "http"							# Transfer protocol (default to https)
+configs: "configs"							# Config folder with actuator-specific configuration files
