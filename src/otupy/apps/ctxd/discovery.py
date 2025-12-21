@@ -43,9 +43,10 @@ hdls = [ stdout_handler ]
 # Add both handlers to the logger
 logger.addHandler(stdout_handler)
 
+JSONSCHEMA = "http://mirandaproject.eu/ctxd/v1.0/schema.json"
+""" Json schema id currently used to log context data """
 defaults = { # Default values for context discovery operation
 				'ctxd': {
-
 					'loop': -1,
 					'frequency': 60},
 				# Default values for OpenC2 communication
@@ -56,12 +57,17 @@ defaults = { # Default values for context discovery operation
 					'encoding': 'json',
 					'transfer': 'http'},
 				# Default values for Mongodb connection
-				'database': {
+				'mongodb': {
 					'host': '127.0.0.1',
 					'port': 27017,
 					'db_name': '',
 					'user': None,
-					'pass': None}
+					'pass': None},
+				# Default configuration for file publisher
+				'file': {
+					'name': 'contextdata.json',
+					'path': '.'
+				}
 }
 """ Defaults value to be used for missing input parameters """
 
@@ -115,11 +121,12 @@ def set_defaults(config, type_, param):
 #    return unprocessed_links
 #
 
-def connect_to_database(config):
+def connect_to_publishers(config):
 
-	databases = {}
-	for db in config['database']:
-		for name, conf in db.items():
+	publishers = {}
+	# Publishers will always have default values!
+	for pub in config['publishers']:
+		for name, conf in pub.items():
 			match name:
 				case "mongodb":
 					try: 
@@ -128,37 +135,68 @@ def connect_to_database(config):
 						else:
 							client = MongoClient("mongodb://"+conf['host']+":"+str(conf['port']))
 						# Create or switch to a database
-						databases['mongodb'] = client[conf['db_name']]
-					except Exception:
-						logger.error("Unable to connect to mongodb")
-						databases['mongodb'] = None
+						publishers['mongodb'] = client[conf['db_name']]
+					except Exception as e:
+						logger.error("Unable to connect to mongodb: %s", e)
+				case "file":
+					try:
+						publishers['file'] = open(conf['path']+"/"+conf['name'], 'a')
+					except Exception as e:
+						logger.error("Unable to open file: %s, reason: %s", conf['name'], e)
 				case _:
-					logger.warning("Skipping unsupported db: %s", db)
+					logger.warning("Skipping unsupported db: %s", name)
 	
-	return databases
+	return publishers
 
+def disconnect_from_publishers(publishers):
+
+	for name, conf in publishers.items():
+	
+		match name:
+			case "mongodb":
+				pass
+			case "file":
+				conf.close()
+			case _:
+				logger.warning("Skipping unsupported db: %s", name)
 
 
 
 def publish_data(config, ctx):
 
-	databases = connect_to_database(config)
+	publishers = connect_to_publishers(config)
 
-	for name, db  in databases.items(): 
+	# TODO: Add metadata about the service which publish data
+	ctx['date'] = otupy.DateTime()
+	try:
+		ctx['creator'] = config['name']
+	except:
+		ctx['creator'] = "unkwnon"
+	ctx['jsonschema'] = JSONSCHEMA
+
+	jsondata = otupy.encoders.JSONEncoder().encode(ctx)
+
+	for name, pub  in publishers.items(): 
 		match name:
 			case 'mongodb':
-				for type_ in ['services', 'links']:
-					collection = db[type_]
-					# Delete all documents in the collection
-					collection.delete_many({})
-					for data in ctx[type_]:
-						jsondata = otupy.encoders.JSONEncoder().encode(data)
-						# Note: otupy encoders return str, so we must convert them to dict
-						collection.insert_one(json.loads(jsondata)).inserted_id
+				try:
+					collection = pub[config['database']['collection']]
+				except:
+					collection = pub["contextdata"]
+				# Delete all documents in the collection -- NO MORE NECESSARY, because we use metadata right now
+				# collection.delete_many({})
+				# Note: otupy encoders return str, so we must convert them to dict
+				collection.insert_one(json.loads(jsondata)).inserted_id
+			case 'file':
+				try:
+					pub.write(jsondata)
+				except Exception as e:
+					logger.error("Unable to dump data to file: %s", e)
 			case _:
 				# Unrecognized names have been already pruned in the connect phase
 				pass
 
+	disconnect_from_publishers(publishers)
 	
 	
 
@@ -258,15 +296,15 @@ def parse_and_default(config_file):
 		config['services'] = []
 
 	# Database section:
-	if 'database' in config:
-		for db in config['database']:
-			for name in db.keys():
-				if db[name] is None:
-					db[name]={}
-				for p in defaults['database'].keys():
-					db[name][p] = set_defaults(db[name], 'database',  p)
+	if 'publishers' in config:
+		for pub in config['publishers']:
+			for name in pub.keys():
+				if pub[name] is None:
+					pub[name]={}
+				for p in defaults[name].keys():
+					pub[name][p] = set_defaults(pub[name], name,  p)
 	else:
-		config['database']=None
+		config['publishers']=None
 
 	return config
 
