@@ -394,7 +394,7 @@ def discover(service):
 	context = producer.sendcmd(cmd)
 	logger.info("Got context from: %s", context.from_)
 
-	return context.content['results']['services'], context.content['results']['services']
+	return context.content['results']['services'], context.content['results']['links']
 
 
 def main() -> None:
