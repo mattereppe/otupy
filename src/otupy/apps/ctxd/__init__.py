@@ -24,17 +24,30 @@
 	- ``name``: An identifier used to distinguish context originated by different ``discovery``\s
 	- ``frequency``: The time interval before starting a new round of queries (the real interval will be longer because the timer starts after receving the last answer). Run one-shot if sets to 0.
 	- ``loop``: Number of times to repeat the discovery. Loops forever if set to -1, does not run if set to 0.
-	- ``publishers``: a list of places where the context data are published after each round. The configuration changes according to the specific publisher:
+	- ``publishers``: a dictionary of places where the context data are published after each round. The configuration changes according to the specific publisher:
 
 		- ``mongodb``: A dictionary with configuration to write data to MongoDB
 
 			- ``host``: IP address or hostname of the server hosting the database
 			- ``port``: Port number where the mongodb service listens to
-			- ``db_name``: Name of the internal database to store data (data are saved in the ``services`` and ``links`` collections
+			- ``db_name``: Name of the internal database to store data 
+			- ``collection``: Name to be used for the collection of documents
 			- ``user``: username to connect to the database
 			- ``pass``: password to connect to the database
 
-		- ``data``: A dictionary with configuration to write to file (append mode)
+		- ``kafka``: A dictionary with the configuration to publish to Kafka brokers
+
+			- ``host``: IP address or hostname of the server hosting one bootstrap server
+			- ``port``: Port number where the bootstrap server listens to
+			- ``topic``: The topic used to publish data
+			- ``security_protocol``: Security protocol used to connect to Kafka (PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL - see Kafka documentation) 
+ 			- ``sasl_mechanism``: Username/password authentication mechanism (PLAIN, GSSAPI, OAUTHBEARER, SCRAM-SHA-256, SCRAM-SHA-512). Only valid for security protocols SASL_PLAINTEXT or SASL_SSL
+			- ``sasl_plain_username``: Username when sasl mechanism is enabled
+			- ``sasl_plain_password``: Password when sasl mechanism is enabled
+			- ``ssl_cafile``: CA file used to sign the Kafka certificate
+			- ``ssl_check_hostname``: Enable (True) or disable (False) server name validation in the certificate file
+
+		- ``file``: A dictionary with configuration to write to file (append mode)
 
 			- ``name``: Filename (created if does not exist)
 		  	- ``path``: Filesystem path to the file (current directory if not given) 	
