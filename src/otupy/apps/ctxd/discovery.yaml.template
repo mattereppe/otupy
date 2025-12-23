@@ -1,16 +1,24 @@
 name: "test-discovery"
 frequency: 10 # seconds
 loop: 1 # -1: forever, 0: no run, >0: number of runs
-database:
-  - mongodb:
-      host: '127.0.0.1'
-      port: 27017
-      db_name: 'miranda'
-      user: 'xxxx'
-      pass: 'xxxx'
-  - file:
-      name: "mycontext.json"
-      path: "/tmp"
+publishers:
+  mongodb:
+    host: '127.0.0.1'
+    port: 27017
+    db_name: "miranda"
+    collection: "contextdata"
+    user: "xxx"
+    pass: "xxx"
+  file: Null
+  kafka:
+    host: '127.0.0.1'
+    port: 29092
+    topic: "demo"
+    security_protocol: "SSL"
+    sasl_mechanism: Null
+    sasl_plain_username: Null
+    sasl_plain_password: Null
+    ssl_cafile: 'ca-cert'
 services:
   - host: '127.0.0.1'
     port: 8080

@@ -31,6 +31,7 @@ from otupy.profiles.ctxd.data.name import Name
 #from otupy.transfers.http.message import Message
 
 from pymongo import MongoClient
+from kafka import KafkaProducer
 
 logger = logging.getLogger()
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
@@ -63,6 +64,18 @@ defaults = { # Default values for context discovery operation
 					'db_name': '',
 					'user': None,
 					'pass': None},
+				# Default values for Kafka 
+				'kafka': {
+					'host': '127.0.0.1',
+					'port': 9092,
+					'topic': None,
+					'security_protocol': 'PLAINTEXT',
+					'sasl_mechanism': None,
+					'sasl_plain_username': None,
+					'sasl_plain_password': None,
+					'ssl_cafile': None,
+					'ssl_check_hostname': True
+				},
 				# Default configuration for file publisher
 				'file': {
 					'name': 'contextdata.json',
@@ -125,26 +138,38 @@ def connect_to_publishers(config):
 
 	publishers = {}
 	# Publishers will always have default values!
-	for pub in config['publishers']:
-		for name, conf in pub.items():
-			match name:
-				case "mongodb":
-					try: 
-						if conf['user'] is not None and conf['pass'] is not None:
-							client = MongoClient("mongodb://"+conf['user']+":"+conf['pass']+"@"+conf['host']+":"+str(conf['port']))
-						else:
-							client = MongoClient("mongodb://"+conf['host']+":"+str(conf['port']))
-						# Create or switch to a database
-						publishers['mongodb'] = client[conf['db_name']]
-					except Exception as e:
-						logger.error("Unable to connect to mongodb: %s", e)
-				case "file":
-					try:
-						publishers['file'] = open(conf['path']+"/"+conf['name'], 'a')
-					except Exception as e:
-						logger.error("Unable to open file: %s, reason: %s", conf['name'], e)
-				case _:
-					logger.warning("Skipping unsupported db: %s", name)
+	for name, conf in config['publishers'].items():
+		match name:
+			case "mongodb":
+				try: 
+					if conf['user'] is not None and conf['pass'] is not None:
+						client = MongoClient("mongodb://"+conf['user']+":"+conf['pass']+"@"+conf['host']+":"+str(conf['port']))
+					else:
+						client = MongoClient("mongodb://"+conf['host']+":"+str(conf['port']))
+					# Create or switch to a database
+					publishers['mongodb'] = client[conf['db_name']]
+				except Exception as e:
+					logger.error("Unable to connect to mongodb: %s", e)
+			case "kafka":
+				try:
+					producer = KafkaProducer(bootstrap_servers = [ conf['host']+":"+str(conf['port']) ],
+							client_id = config['name'],
+                     sasl_plain_username = conf['sasl_plain_username'],
+                     sasl_plain_password = conf['sasl_plain_password'],
+                     security_protocol = conf['security_protocol'],
+                     sasl_mechanism = conf['sasl_mechanism'],
+							ssl_check_hostname=conf['ssl_check_hostname'],
+							ssl_cafile='ca-cert')
+					publishers['kafka'] = producer
+				except Exception as e:
+					logger.error("Unable to connect to kafka: %s", e)
+			case "file":
+				try:
+					publishers['file'] = open(conf['path']+"/"+conf['name'], 'a')
+				except Exception as e:
+					logger.error("Unable to open file: %s, reason: %s", conf['name'], e)
+			case _:
+				logger.warning("Skipping unsupported db: %s", name)
 	
 	return publishers
 
@@ -155,10 +180,13 @@ def disconnect_from_publishers(publishers):
 		match name:
 			case "mongodb":
 				pass
+			case "kafka":
+				conf.flush()
+				conf.close()
 			case "file":
 				conf.close()
 			case _:
-				logger.warning("Skipping unsupported db: %s", name)
+				logger.warning("Skipping unsupported publisher: %s", name)
 
 
 
@@ -180,13 +208,21 @@ def publish_data(config, ctx):
 		match name:
 			case 'mongodb':
 				try:
-					collection = pub[config['database']['collection']]
+					collection = pub[ config['publishers'][name]['collection'] ]
 				except:
+					# Default collection name if that provided does not work
 					collection = pub["contextdata"]
 				# Delete all documents in the collection -- NO MORE NECESSARY, because we use metadata right now
 				# collection.delete_many({})
 				# Note: otupy encoders return str, so we must convert them to dict
 				collection.insert_one(json.loads(jsondata)).inserted_id
+			case 'kafka':
+				try:
+					pub.send(config['publishers'][name]['topic'], value=jsondata.encode('utf-8'))
+#	pub.send('demo', b'Hello, Kafka!')
+					pub.flush()
+				except Exception as e:
+					logger.error("Unable to publish data to kafka topic: %s", str(e))
 			case 'file':
 				try:
 					pub.write(jsondata)
@@ -273,6 +309,7 @@ def _log_context(ctx):
 		for item in ctx[type_]:
 			logger.info("Found %s: %s", type_, item)
 
+
 def parse_and_default(config_file):
 	""" Parse config file and assign default values to mising items
 	"""
@@ -297,12 +334,11 @@ def parse_and_default(config_file):
 
 	# Database section:
 	if 'publishers' in config:
-		for pub in config['publishers']:
-			for name in pub.keys():
-				if pub[name] is None:
-					pub[name]={}
-				for p in defaults[name].keys():
-					pub[name][p] = set_defaults(pub[name], name,  p)
+		for name in config['publishers'].keys():
+			if config['publishers'][name] is None:
+				config['publishers'][name]={}
+			for p in defaults[name].keys():
+				config['publishers'][name][p] = set_defaults(config['publishers'][name], name,  p)
 	else:
 		config['publishers']=None
 
