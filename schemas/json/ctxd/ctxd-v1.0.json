@@ -116,12 +116,12 @@
 				"name": {
 					"title": "Service name",
 					"description": "Identifier of the service",
-					"$ref": "#/$definitions/ctxd:name"
+					"$ref": "#/$ctxd:datatypes/name"
 				},
 				"type": {
 					"title": "Service type",
 					"description": "Describe service-specific fields",
-					"$ref": "#/$definitions/ctxd:servicetype"
+					"$ref": "#/$ctxd:datatypes/servicetype"
 				},
 				"subservices": {
 					"title": "Subservice list",
@@ -130,7 +130,7 @@
 					"items": {
 						"title": "Subservice",
 						"description": "Name of embedded service (described in a separate service)",
-						"$ref": "#/$definitions/ctxd:name"
+						"$ref": "#/$ctxd:datatypes/name"
 					}
 				},
 				"owner": {
@@ -155,7 +155,7 @@
 				"name": {
 					"title": "Link name",
 					"description": "Identifier of the service at the origin of the relationship",
-					"$ref": "#/$definitions/ctxd:name"
+					"$ref": "#/$ctxd:datatypes/name"
 				},
 				"description": {
 					"title": "Description",
@@ -186,15 +186,20 @@
 					"items": {
 						"title": "Peer",
 						"description": "Identifies each local or remote peer",
-						"$ref": "#/$definitions/ctxd:peer"
+						"$ref": "#/$ctxd:datatypes/peer"
 					}
 				}
 			},
 			"additionalProperties": false
-		},
+		}
 
 
-		"ctxd:name": {
+	},
+
+
+	"$ctxd:datatypes": {
+		
+		"name": {
 			"title": "Resource name",
 			"description": "Identifier of a digital resource",
 			"anyOf": [
@@ -245,7 +250,7 @@
 			]
 		},
 
-		"ctxd:servicetype": {
+		"servicetype": {
 			"title": "Service Type",
 			"description": "Describe specific characteristics based on the resource type",
 			"anyOf": [
@@ -253,7 +258,7 @@
 				"type": "object",
 				"properties": {
 					"application": {
-						"$ref": "#/$ctxd:servicetypes/application"
+						"$ref": "#/$ctxd:datatypes/application"
 					}
 				},
 				"additionalProperties": false
@@ -262,7 +267,7 @@
 				"type": "object",
 				"properties": {
 					"computer": {
-						"$ref": "#/$ctxd:servicetypes/computer"
+						"$ref": "#/$ctxd:datatypes/computer"
 					}
 				},
 				"additionalProperties": false
@@ -271,7 +276,7 @@
 				"type": "object",
 				"properties": {
 					"vm": {
-						"$ref": "#/$ctxd:servicetypes/vm"
+						"$ref": "#/$ctxd:datatypes/vm"
 					}
 				},
 				"additionalProperties": false
@@ -280,7 +285,7 @@
 				"type": "object",
 				"properties": {
 					"pod": {
-						"$ref": "#/$ctxd:servicetypes/pod"
+						"$ref": "#/$ctxd:datatypes/pod"
 					}
 				},
 				"additionalProperties": false
@@ -289,7 +294,7 @@
 				"type": "object",
 				"properties": {
 					"container": {
-						"$ref": "#/$ctxd:servicetypes/container"
+						"$ref": "#/$ctxd:datatypes/container"
 					}
 				},
 				"additionalProperties": false
@@ -298,7 +303,7 @@
 				"type": "object",
 				"properties": {
 					"webservice": {
-						"$ref": "#/$ctxd:servicetypes/webservice"
+						"$ref": "#/$ctxd:datatypes/webservice"
 					}
 				},
 				"additionalProperties": false
@@ -307,7 +312,7 @@
 				"type": "object",
 				"properties": {
 					"cloud": {
-						"$ref": "#/$ctxd:servicetypes/cloud"
+						"$ref": "#/$ctxd:datatypes/cloud"
 					}
 				},
 				"additionalProperties": false
@@ -316,7 +321,7 @@
 				"type": "object",
 				"properties": {
 					"network": {
-						"$ref": "#/$ctxd:servicetypes/network"
+						"$ref": "#/$ctxd:datatypes/network"
 					}
 				},
 				"additionalProperties": false
@@ -325,7 +330,7 @@
 				"type": "object",
 				"properties": {
 					"iot": {
-						"$ref": "#/$ctxd:servicetypes/iot"
+						"$ref": "#/$ctxd:datatypes/iot"
 					}
 				},
 				"additionalProperties": false
@@ -333,14 +338,14 @@
 			]
 		},
 
-		"ctxd:peer": {
+		"peer": {
 			"title": "Service peer",
 			"description": "Identifies the peer of the service in a relationship and the serving consumer in case of remote peers",
 			"properties": {
 				"service_name": {
 					"title": "Service name",
 					"description": "Name of the peer service",
-					"$ref": "#/$definitions/ctxd:name"
+					"$ref": "#/$ctxd:datatypes/name"
 				},
 				"role": {
 					"title": "Peer role",
@@ -355,10 +360,107 @@
 				}
 			},
 			"additionalProperties": false
-		}
-	},
+		},
 
-	"$ctxd:servicetypes": {
+		"operatingsystem": {
+			"title": "Operating System",
+			"description": "Short reference to Operating System family and version",
+			"type": "object",
+			"properties": {
+				"name":{
+				  "title": "Name",
+				  "description": "Main name of the OS",
+				  "type": "string"
+				},
+				"version":{
+				  "title": "Version",
+				  "description": "Version of the OS",
+				  "type": "string"
+				},
+				"family":{
+				  "title": "Family",
+				  "description": "Family of the OS",
+				  "type": "string"
+				},
+				"type":{
+				  "title": "Type",
+				  "description": "Type of the OS",
+				  "type": "string"
+				},
+				"additionalProperties": false
+			}
+		},
+
+		"port": {
+			"title": "Network port",
+			"description": "Network interface",
+			"type": "object",
+			"properties": {
+				"description": {
+					"title": "Description",
+					"description": "Description of the network port",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Local identifier of the interface",
+					"type": "string"
+				},
+				"iface": {
+					"title": "Interface name",
+					"description": "Local name of the interface",
+					"type": "string"
+				},
+				"addresses": {
+					"title": "Addresses",
+					"description": "List of IPv4 addressed assigned to the interface",
+					"type": "array",
+					"items": {
+						"title": "IPv4 Address",
+						"description": "IPv4 address in dotted notation (no netmask)",
+						"type": "string",
+						"format": "ipv4"
+					}
+				},
+				"gateway": {
+					"title": "Gateway",
+					"description": "IPv4 address of the default gateway",
+					"type": "string",
+					"format": "ipv4"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"server": {
+			"title": "Network server",
+			"description": "Identification of a network server",
+			"oneOf": [
+			{
+				"properties": {
+					"hostname": {
+						"title": "Hostname",
+						"description": "Local or DNS hostname",
+						"type": "string",
+						"format": "hostname"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"properties": {
+					"ipv4_addr": {
+						"title": "IPv4 Address",
+						"description": "IPv4 address in dotted notation (no netmask)",
+						"type": "string",
+						"format": "ipv4"
+					}
+				},
+				"additionalProperties": false
+			}
+			]
+		},
+
 		
 		"application": {
 			"title": "Software application",
@@ -432,7 +534,7 @@
 				 "items": {
 					 "title": "Application",
 					 "description": "Description of each individual application",
-					 "$ref": "#/$ctxd:servicetypes/application"
+					 "$ref": "#/$ctxd:datatypes/application"
 				 }
 	        }
 	      },
@@ -658,109 +760,6 @@
 			"additionalProperties": false
 		}
 
-	},
-
-
-	"$ctxd:datatypes": {
-		
-		"operatingsystem": {
-			"title": "Operating System",
-			"description": "Short reference to Operating System family and version",
-			"type": "object",
-			"properties": {
-				"name":{
-				  "title": "Name",
-				  "description": "Main name of the OS",
-				  "type": "string"
-				},
-				"version":{
-				  "title": "Version",
-				  "description": "Version of the OS",
-				  "type": "string"
-				},
-				"family":{
-				  "title": "Family",
-				  "description": "Family of the OS",
-				  "type": "string"
-				},
-				"type":{
-				  "title": "Type",
-				  "description": "Type of the OS",
-				  "type": "string"
-				},
-				"additionalProperties": false
-			}
-		},
-
-		"port": {
-			"title": "Network port",
-			"description": "Network interface",
-			"type": "object",
-			"properties": {
-				"description": {
-					"title": "Description",
-					"description": "Description of the network port",
-					"type": "string"
-				},
-				"id": {
-					"title": "Identifier",
-					"description": "Local identifier of the interface",
-					"type": "string"
-				},
-				"iface": {
-					"title": "Interface name",
-					"description": "Local name of the interface",
-					"type": "string"
-				},
-				"addresses": {
-					"title": "Addresses",
-					"description": "List of IPv4 addressed assigned to the interface",
-					"type": "array",
-					"items": {
-						"title": "IPv4 Address",
-						"description": "IPv4 address in dotted notation (no netmask)",
-						"type": "string",
-						"format": "ipv4"
-					}
-				},
-				"gateway": {
-					"title": "Gateway",
-					"description": "IPv4 address of the default gateway",
-					"type": "string",
-					"format": "ipv4"
-				}
-			},
-			"additionalProperties": false
-		},
-
-		"server": {
-			"title": "Network server",
-			"description": "Identification of a network server",
-			"oneOf": [
-			{
-				"properties": {
-					"hostname": {
-						"title": "Hostname",
-						"description": "Local or DNS hostname",
-						"type": "string",
-						"format": "hostname"
-					}
-				},
-				"additionalProperties": false
-			},
-			{
-				"properties": {
-					"ipv4_addr": {
-						"title": "IPv4 Address",
-						"description": "IPv4 address in dotted notation (no netmask)",
-						"type": "string",
-						"format": "ipv4"
-					}
-				},
-				"additionalProperties": false
-			}
-			]
-		}
 	}
 
 }
