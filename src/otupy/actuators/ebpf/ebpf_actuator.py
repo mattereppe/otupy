@@ -5,9 +5,9 @@ from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.profiles.ebpf.data.source_file import ProgramFile
-from otupy.profiles.ebpf.targets.eBPFload_target import eBPFload_file_target
+from otupy.profiles.ebpf.targets.eBPF_load_program import eBPF_load_program
 from otupy.profiles.ebpf.targets.eBPF_query import eBPF_query
-from otupy.actuators.Ebpf.manager_eBPF import EBPFManager
+from otupy.actuators.ebpf.ebpf_manager import EBPFManager
 from otupy.profiles.ebpf.query_results import QueryResults
 from otupy.types.base.array_of import ArrayOf
 
@@ -22,7 +22,7 @@ MY_IDS = {
 	'asset_id': None
 }
 
-class EbpfActuator:
+class eBPFActuator:
     domain : str = None
     asset_id : str = None
     def __init__(self):
@@ -43,10 +43,33 @@ class EbpfActuator:
                     return self.create(cmd)
                 case Actions.query:
                     return self.query(cmd)
+                case Actions.delete:
+                    return self.delete(cmd)
                 case _:
                     return self.__notimplemented(cmd)
         except Exception as e:
             return self.__servererror(cmd, e)
+        
+    def delete(self,cmd: Command):
+        
+        try:
+            target: eBPF_query = cmd.target.getObj()
+            EBPFManager.remove_ebpf_program(
+                ifaces=target.interfaces.Names if target.interfaces is not None else None,
+                bpf_prog=target.file.Name if target.file is not None else None,
+                attach_type=target.attach_type.Name.lower() if target.attach_type is not None else None,
+                direction=target.direction.Name.lower() if target.direction is not None else None
+            )
+            return Response(
+                status=StatusCode.OK,
+                status_text=f"Program {target.file.Name} removed correctly"
+            )
+        except Exception as e:
+            return Response(
+                status=StatusCode.INTERNAL_ERROR,
+                status_text=f"Failed to attach eBPF program: {type(e)}"
+            )
+            
 
     def query(self, cmd):
         """
@@ -92,7 +115,7 @@ class EbpfActuator:
         Create (attach) an eBPF program via EBPFManager.
         """
         # Get the ebpf_program object from the command
-        obj: eBPFload_file_target = cmd.target.getObj()
+        obj: eBPF_load_program = cmd.target.getObj()
 
         # Validate required fields
         if obj.file is None or obj.direction is None or obj.attach_type is None:
@@ -113,16 +136,21 @@ class EbpfActuator:
                 direction=obj.direction.Name.lower(),
                 attach_type=obj.attach_type.Name.lower()
             )
+            return Response(
+            status=StatusCode.OK,
+            status_text="The program has been loaded in the kernel correctly"
+        )
         except Exception as e:
             return Response(
                 status=StatusCode.INTERNAL_ERROR,
                 status_text=f"Failed to attach eBPF program: {type(e)}"
             )
 
-        return Response(
-            status=StatusCode.OK,
-            status_text="The program has been loaded in the kernel correctly"
-        )
+ 
+    
+            
+            
+
 
     
     

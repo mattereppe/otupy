@@ -2,7 +2,7 @@
 from otupy.profiles.ebpf.profile import *
 from otupy.profiles.ebpf.actuator import *
 
-from otupy.profiles.ebpf.targets.eBPFload_target import *
+from otupy.profiles.ebpf.targets.eBPF_load_program import *
 from otupy.profiles.ebpf.targets.eBPF_query import *
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.source_file import ProgramFile
