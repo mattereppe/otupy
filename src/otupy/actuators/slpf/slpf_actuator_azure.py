@@ -37,7 +37,7 @@ from otupy.profiles.slpf.profile import Profile
 logger = logging.getLogger(__name__)
 
 
-@actuator_implementation("slpf-kubernetes")
+@actuator_implementation("slpf-azure")
 class SLPFActuatorAzure(SLPFActuator):
     """Azure-based SLPF Actuator implementation."""
 
