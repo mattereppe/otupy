@@ -395,7 +395,7 @@ def discovery(config):
 		except:
 			logger.warning("No services returned for %s", root)
 		try:
-			ctx['links'] = add_resource(ctx['links'], root, 'link', resources['link'])
+			ctx['links'] = add_resource(ctx['links'], root, 'link', resources['links'])
 		except:
 			logger.warning("No links returned for %s", root)
 		# TODO: recursive discovery of peers with valid actuators in links
