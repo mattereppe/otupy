@@ -59,12 +59,8 @@ class Record(Openc2Type):
 		"""
 		objdic = {}
 		# Retrieve class type for each field in the dictionary
-		fielddesc = None
 		logger.debug("Decondig: %s with %s", dic, clstype)
-		for tpl in inspect.getmembers(clstype):
-			if tpl[0] == '__annotations__':
-				fielddesc = tpl[1]
-
+		fielddesc = inspect.get_annotations(clstype)
 		
 		if not isinstance(dic, dict):
 			raise EncoderError("Invalid data type for Record")
