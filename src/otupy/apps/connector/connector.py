@@ -1,4 +1,15 @@
-"""The connector."""
+""" MIRANDA Connector 
+
+	To run the connector, either download the source code or install from ``PyPI`` (see 
+	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
+
+	Run the connector: ::
+		
+		python3 connector.py [-c | --config  <config.yaml>]
+
+"""
+
+		
 
 import logging
 from argparse import ArgumentParser
@@ -84,7 +95,6 @@ def main() -> None:
         if consumer['encoding'] not in Encoders.__members__:
             raise RuntimeError(f"{consumer['encoding']} is not a registered encoding schema")
         encoder = Encoders[consumer['encoding']].value
-        print("***** Encoder: ", encoder)
 
         # Load the transferer (beautiful name, eh?).
         if consumer['transfer'] not in Transfers:

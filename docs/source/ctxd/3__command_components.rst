@@ -23,4 +23,3 @@ The components of an OpenC2 Command include:
    3_3_context
    3_4_command_arguments
    3_5_actuator_specifiers
-   3_6_response_components

@@ -2,30 +2,46 @@
 
 	This module collects all public definition that are exported as part of the SLPF profile.
 	All naming follows as much as possible the terminology in the SLPF Specification, by
-	also applying generic otupy conventions.
+	also applying generic ~otupy conventions.
 
 	This definition also registers all extensions defined in the SLPF profile (`Args`, `Target`, `Profile`, `Results`).
 
 	The SLPF profile extends the language specification with the following elements:
-	- `otupy.core.profile.Profile`:
-		- `otupy.profiles.slpf.profile.slpf` profile is defined for all Actuators that will implement it;
-		- `otupy.profiles.slpf.nsid.nsid` is defined as Namespace identifier for the SLPF profile;
-	- `otupy.types.data`:
-		- `otupy.profiles.slpf.data.Direction` is used to specify the rule applies to incoming, outgoing, or both kinds of packets;
-	- `otupy.types.targets`:
-		- `otupy.profiles.slpf.targets.RuleID` identifies a rule identifier to distinguish firewalling rules;
-	- `otupy.core.target.Targets`:
-		- `otupy.profiles.slpf.targets.RuleID` is the identifier of an SLPF rule;
-	- `otupy.core.args.Args`:
-		- `otupy.profiles.slpf.args.Args` is extended with `drop_process`, `persistent`, `direction`, and `insert_rule` arguments;
-	- `otupy.core.response.Results`:
-		- `otupy.profiles.slpf.response.Results` is extended with the `rule_id` field;
+
+	- :py:class:`~otupy.core.profile.Profile`:
+
+		- :py:class:`~otupy.profiles.slpf.profile.Profile` profile is defined for all Actuators that will implement it;
+		- :py:class:`~otupy.profiles.slpf.profile.nsid` is defined as Namespace identifier for the SLPF profile;
+
+	- :py:class:`~otupy.types.data`:
+
+		- :py:class:`~otupy.profiles.slpf.data.direction.Direction` is used to specify the rule applies to incoming, outgoing, or both kinds of packets;
+	- :py:class:`~otupy.types.targets`:
+	
+		- :py:class:`~otupy.profiles.slpf.targets.rule_id.RuleID` identifies a rule identifier to distinguish firewalling rules;
+		
+	- :py:class:`~otupy.core.target.Target`:
+
+		- :py:class:`~otupy.profiles.slpf.targets.rule_id.RuleID` is the identifier of an SLPF rule;
+
+	- :py:class:`~otupy.core.args.Args`:
+
+		- :py:class:`~otupy.profiles.slpf.args.Args` is extended with ``drop_process``, ``persistent``, ``direction``, and ``insert_rule`` arguments;
+	- :py:class:`~otupy.core.results.Results`:
+
+		- :py:class:`~otupy.profiles.slpf.results.Results` is extended with the ``rule_id`` field;
+
 	- validation:
-		- `otupy.profiles.slpf.validation.AllowedCommandTarget` contains all valid `otupy.core.target.Target` for each `otupy.core.actions.Actions`;
-		- `otupy.profiles.slpf.validation.AllowedCommandArguments` contains all valid `otupy.core.args.Args` for each `otupy.core.actions.Actions`/`otupy.core.target.Target` pair;
+
+		- :py:class:`~otupy.profiles.slpf.validation.AllowedCommandTarget` contains all valid :py:class:`~otupy.core.target.Target` for each :py:class:`~otupy.core.actions.Actions`;
+		- :py:class:`~otupy.profiles.slpf.validation.AllowedCommandArguments` contains all valid :py:class:`~otupy.core.args.Args` for each < :py:class:`~otupy.core.actions.Actions`, :py:class:`~otupy.core.target.Target` > pair;
+
 	- helper functions:
-		- `otupy.profiles.slpf.validation.validate_command` checks a `otupy.core.target.Target`-otupy.core.actions.Actions` pair in a `otupy.core.message.Command` is present in `otupy.profiles.slpf.validation.AllowedCommandTarget`;
-	   - `otupy.profiles.slpf.validation.validate_args` checks a `otupy.core.args.Args`-`otupy.core.actions.Actions`-`otupy.core.target.Target` triple in a `otupy.core.message.Command` is present in `otupy.profiles.slpf.validation.AllowedCommandArguments`.	
+
+		- :py:class:`~otupy.profiles.slpf.validation.validate_command` checks a < :py:class:`~otupy.core.target.Target` , :py:class:`~otupy.core.actions.Actions` > pair in a :py:class:`~otupy.core.command.Command` is present in :py:class:`~otupy.profiles.slpf.validation.AllowedCommandTarget`;
+		- :py:class:`~otupy.profiles.slpf.validation.validate_args` checks a < :py:class:`~otupy.core.args.Args` , :py:class:`~otupy.core.actions.Actions` , :py:class:`~otupy.core.target.Target` > triple in a :py:class:`~otupy.core.command.Command` is present in :py:class:`~otupy.profiles.slpf.validation.AllowedCommandArguments`.	
+
+
 """
 
 

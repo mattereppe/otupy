@@ -6,7 +6,8 @@ class Enumerated(Openc2Type, aenum.Enum):
 	""" OpenC2 Enumerated
 
 		Implements OpenC2 Enumerated:
-		>A set of named integral constants. The API value is a name.
+		
+			A set of named integral constants. The API value is a name.
 
 		The constants may be anything, including strings, integers, classes.
 	"""
@@ -16,6 +17,7 @@ class Enumerated(Openc2Type, aenum.Enum):
 		""" Extends the Enumarated 
 	
 			Extends the definition with a new <name, value> pair.
+
 			:param name: The name (tag) used to identify a new element in the Enumeration.
 			:param value: The numeric index associated to the Enumerated (optional).
 			:return: None
@@ -30,13 +32,13 @@ class Enumerated(Openc2Type, aenum.Enum):
 		""" Converts to dictionary 
 		
 			It is used to convert this object to an intermediary representation during 
-			serialization. It takes an `Encoder` argument that is used to recursively
-			serialize inner data and structures (the `Encoder` provides standard methods
+			serialization. It takes an :py:class:`~otupy.core.encoder.Encoder` argument that is used to recursively
+			serialize inner data and structures (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods
 			for converting base types to dictionaries).. 
 
-			:param e: The `Encoder` that is being used.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
 			:return: A dictionary compliants to the Language Specification's serialization
-			rules.
+				rules.
 		"""
 		return self.name
 
@@ -45,12 +47,12 @@ class Enumerated(Openc2Type, aenum.Enum):
 		""" Builds instance from dictionary 
 
 			It is used during deserialization to create an otupy instance from the text message.
-			It takes an `Encoder` instance that is used to recursively build instances of the inner
-			objects (the `Encoder` provides standard methods to create instances of base objects like
+			It takes an :py:class:`~otupy.core.encoder.Encoder` instance that is used to recursively build instances of the inner
+			objects (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods to create instances of base objects like
 			strings, integers, boolean).
 
 			:param dic: The intermediary dictionary representation from which the object is built.
-			:param e: The `Encoder that is being used.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
 			:return: An instance of this class initialized from the dictionary values.
 		"""
 		try:

@@ -1,4 +1,4 @@
-""" Skeleton `Actuator` for CTXD profile
+""" Skeleton `Actuator` for docker (not ready)
 
 	This module provides an example to create an `Actuator` for the CTXD profile.
 	It only answers to the request for available features.
@@ -13,7 +13,6 @@ import sys
 
 from otupy.profiles import slpf
 from otupy.profiles.ctxd.data.application import Application
-from otupy.profiles.ctxd.data.openc2_endpoint import OpenC2Endpoint
 from otupy.types.data.ipv4_addr import IPv4Addr
 
 import requests
@@ -24,7 +23,6 @@ from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.container import Container
-from otupy.profiles.ctxd.data.encoding import Encoding
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.network import Network
 from otupy.profiles.ctxd.data.network_type import NetworkType
@@ -33,7 +31,6 @@ from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.transfer import Transfer
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol

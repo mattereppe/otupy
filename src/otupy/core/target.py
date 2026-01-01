@@ -1,4 +1,4 @@
-""" OpenC2 Target
+""" OpenC2 Target 
 
 	This module implements the Target types defined in Sec. 3.4.1 [OpenC2 Languate specification].
 """
@@ -58,25 +58,24 @@ def target(name, nsid=None):
 	""" The `@target` decorator
 
 		Use this decorator to declare a `Target` in otupy extensions.
+		
 		:param name: The name of the target, as provided by the corresponding specification.
 		:param nsid: The Profile NameSpace identifier (must be the same as defined by the corresponding Profile specification.
 		:result: The following class definition is registered as valid `Target` in otupy.
-	"""
+	""" 
 	def target_register(cls):
 		Extensions['Targets'].add(name, cls, None, nsid)
 		return cls
 	return target_register
 
 class Target(Choice):
-	""" OpenC2 Target in `Command`
+	""" OpenC2 Target in :py:class:`~otupy.core.command.Command`
 
-		This is the definition of the `target` carried in OpenC2 `Command`.
+		This is the definition of the ``target`` carried in OpenC2 ``Command``.
 	"""
 	register = Extensions['Targets']
-	""" Keeps the list of registered `Target`s 
+	""" Keeps the list of registered :py:class:`~otupy.core.target.Target`\s 
 	
 		For internal use only. Do not delete or modify.
 	"""
-
-
 

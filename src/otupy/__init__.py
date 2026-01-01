@@ -10,7 +10,7 @@ All the target and data types defined by the standard are available for creating
 commands.
 
 This is the code documentation for using and extending open2lib.
-Please read the the quick start (:doc:`usage`)  and the advanced documentation (:doc:`developerguide`) 
+Please read the the quick start (:any:`usage`)  and the advanced documentation (:any:`developerguide`) 
 for an overview of otupy operation. 
 
 This documentation uses docstrings in the Python code. You can regenerate it by running 

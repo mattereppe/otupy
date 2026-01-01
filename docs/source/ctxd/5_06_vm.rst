@@ -1,0 +1,53 @@
+5.6 VM
+======
+
+It describes a Virtual Machine.
+
+Type: :py:class:`~otupy.profiles.ctxd.data.vm.VM` (:py:class:`~otupy.types.base.record.Record`)
+
+.. list-table::
+   :widths: 3 4 4 3 40
+   :header-rows: 1
+
+   * - ID
+     - Name
+     - Type
+     - #
+     - Description
+   * - 1
+     - description
+     - ``str``
+     - 1
+     - Generic description of the VM.
+   * - 2
+     - id
+     - ``str``
+     - 1
+     - ID of the VM.
+   * - 3
+     - name
+     - ``str``
+     - 1
+     - Hostname of the VM.
+   * - 4
+     - image
+     - ``str``
+     - 1
+     - Software image loaded in the VM.
+
+Sample VM object represented in JSON Format:
+
+.. code:: json
+
+   {
+     "description": "vm",
+     "id": "123456",
+     "hostname": "My-virtualbox",
+     "os": {
+       "name": "ubuntu",
+       "version": "22.04.3",
+       "family": "debian",
+       "type": "linux"
+     }
+   }
+

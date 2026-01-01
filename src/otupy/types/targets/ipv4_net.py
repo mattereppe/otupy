@@ -5,7 +5,7 @@ from otupy.core.target import target
 
 @target('ipv4_net')
 class IPv4Net:
-	"""OpenC2 IPv4 Address Range
+	""" OpenC2 IPv4 Address Range
 		
 		IPv4 Address Range as defined in Sec. 3.4.1.9.
 
@@ -14,25 +14,26 @@ class IPv4Net:
 		(where ipv4-net --lowercase!-- is never defined!)
 		However, the json serialization requirements explicitely
 		define:
-		Array /ipv4-net: JSON string containing the text representation 
-		 						of an IPv4 address range as specified in 
-		 						[RFC4632], Section 3.1.
+			
+			Array /ipv4-net: JSON string containing the text representation 
+		 	of an IPv4 address range as specified in [RFC4632], Section 3.1.
+
 		According to this definition, I assume a single network address
 		should be managed. Extension to an array of IP network addresses
 		is rather straightforward by using a list for ipv4_net attribute.
 		Note that I have to keep both the string representation of the
-		network address as well as the IPv4Network object to easily 
+		network address as well as the ``IPv4Network`` object to easily 
 		manage the code and to automate the creation of the dictionary.
-		
 	"""
 #ipv4_net: str
 	
 	def __init__(self, ipv4_net=None, prefix=None):
 		""" Initialize IPv4 Address Range
 
-			Initialize `IPv4Net with IPv4 address and prefix.
+			Initialize ``IPv4Net`` with IPv4 address and prefix.
 			If no IPv4 address is given, initialize to null address.
 			If no prefix is given, assume /32 (iPv4 address only).
+
 			:param ipv4_net: IPv4 Network Address.
 			:param prefix: IPv4 Network Adress Prefix.
 		"""
