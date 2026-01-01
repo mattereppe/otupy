@@ -1,0 +1,29 @@
+slpf-iptables-example:
+  actuator: "slpf-iptables"
+  profile: "slpf"
+  owner: "acme.com"
+  specifiers:
+    domain: null
+    asset_id: "slpf-iptables-example"
+  consumer:
+    host: "127.0.0.1"
+    port: 8080
+    protocol: "tcp"
+    endpoint: "/.well-known/openc2"
+    transfer: "http"
+    encoding: "json"
+  platform:
+    iptables_cmd: "sudo iptables"
+    ip6tables_cmd: "sudo ip6tables"
+    iptables_input_chain_name: "INPUT_OC2"
+    iptables_output_chain_name: "OUTPUT_OC2"
+    iptables_forward_chain_name: "FORWARD_OC2"
+  file:
+    path: "path"
+    iptables_rules_v4_filename: "iptables_rules.v4"
+    iptables_rules_v6_filename: "iptables_rules.v6"
+  db:
+    name: "slpf_commands.sqlite"
+    path: "path"
+    commands_table_name: "slpf_iptables_commands"
+    jobs_table_name: "slpf_iptables_jobs"
