@@ -1,0 +1,28 @@
+slpf-kubernetes-example:
+  actuator: "slpf-kubernetes"
+  profile: "slpf"
+  owner: "acme.com"
+  specifiers:
+    domain: null
+    asset_id: "slpf-kubernetes-example"
+  consumer:
+    host: "127.0.0.1"
+    port: 8080
+    protocol: "tcp"
+    endpoint: "/.well-known/openc2"
+    transfer: "http"
+    encoding: "json"
+  auth:
+    context: null # This is the content of your kubeconfig file.
+  platform:
+    namespace: "namespace"
+    subnet_base_label_key: "oc2-net-"
+    generate_name: "slpf-np-"
+    named_group: "firewalls"
+  file:
+    path: "path"
+  db:
+    name: "slpf_commands.sqlite"
+    path: "path"
+    commands_table_name: "slpf_kubernetes_commands"
+    jobs_table_name: "slpf_kubernetes_jobs"
