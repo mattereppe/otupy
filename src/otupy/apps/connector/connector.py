@@ -83,7 +83,8 @@ def main() -> None:
         # Load the encoder.
         if consumer['encoding'] not in Encoders.__members__:
             raise RuntimeError(f"{consumer['encoding']} is not a registered encoding schema")
-        encoder = Encoders[consumer['encoding']]
+        encoder = Encoders[consumer['encoding']].value
+        print("***** Encoder: ", encoder)
 
         # Load the transferer (beautiful name, eh?).
         if consumer['transfer'] not in Transfers:
