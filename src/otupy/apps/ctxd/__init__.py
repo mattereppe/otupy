@@ -62,6 +62,8 @@
 		- ``endpoint``
 		- ``actuator`` (x-ctxd py:class:`~otupy.actuators.ctxd.actuator.Specifiers`)
 
+	- ``logger``: The configuration for the `Logging` framework. See the module `documentation <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
+
 	A template configuration file is available `here <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/ctxd/discovery.yaml.template>`__.
 
 	Run
