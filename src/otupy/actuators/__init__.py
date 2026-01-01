@@ -6,3 +6,8 @@
 from otupy.actuators.ctxd.ctxd_actuator_kubernetes import CTXDActuator_kubernetes
 from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
 from otupy.actuators.ctxd.ctxd_actuator_docker import CTXDActuator_docker
+
+from otupy.actuators.slpf.slpf_actuator_openstack import SLPFOpenStackActuator
+from otupy.actuators.slpf.slpf_actuator_kubernetes import SLPFActuatorKubernetes
+from otupy.actuators.slpf.slpf_actuator_iptables import SLPFActuatorIPTables
+from otupy.actuators.slpf.slpf_actuator_azure import SLPFActuatorAzure

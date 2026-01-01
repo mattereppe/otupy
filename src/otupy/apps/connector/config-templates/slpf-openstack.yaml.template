@@ -1,0 +1,31 @@
+slpf-openstack-example:
+  actuator: "slpf-openstack"
+  profile: "slpf"
+  owner: "acme.com"
+  specifiers:
+    domain: null
+    asset_id: "slpf-openstack-example"
+  consumer:
+    host: "127.0.0.1"
+    port: 8080
+    protocol: "tcp"
+    endpoint: "/.well-known/openc2"
+    transfer: "http"
+    encoding: "json"
+  auth:
+    username: "user"
+    password: "password"
+    project_name: "name"
+    user_domain_name: "Default"
+    project_domain_name: "Default"
+    auth_url: "https://127.0.0.1:5000/v3"
+  config:
+    cacert: "/etc/ssl/certs/acme.crt"
+  platform:
+    security_group_base_name: "OC2_SG_"
+    security_group_base_description: "SLPF Actuator security group"
+  db:
+    name: "slpf_commands.sqlite"
+    path: "path"
+    commands_table_name: "slpf_openstack_commands"
+    jobs_table_name: "slpf_openstack_jobs"
