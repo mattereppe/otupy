@@ -3,7 +3,7 @@ class Nsid(str):
 	""" OpenC2 Namespace Identifier
 
 		Namespace identifiers are described in Sec. 3.1.4. This class implements the required
-			controls on the string length.
+		controls on the string length.
 	"""
 	def __init__(self, nsid):
 		""" Initialize `Nsid`
@@ -21,6 +21,7 @@ class Nsid(str):
 			Create `Nsid` instance from string.
 			This method is provided to deserialize an OpenC2 message according to the otupy approach.
 			This method should only be used internally the otupy.
+
 			:param name: Text string with the namespace identifier..
 			:param e: `Encoder` instance to be used (only included to be compliance with the function footprint).
 			:return: `Version` instance.

@@ -7,6 +7,11 @@
 import otupy as oc2
 
 nsid = 'slpf'
+""" Namespace identifier
+
+	The ``slpf`` namespace identifier is defined by the Language Specification.
+
+"""
 
 @oc2.extension(nsid = nsid)
 class Profile(oc2.Profile):

@@ -6,7 +6,7 @@ define new Targets that are not present in the specifications. Only one
 Target is allowed in a Command, and that’s why the cardinality of each
 one equals to 1.
 
-Type: Target (Choice)
+Type: :py:class:`~otupy.core.target.Target` (:py:class:`~otupy.types.base.choice.Choice`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -19,12 +19,12 @@ Type: Target (Choice)
      - Description
    * - 9
      - features
-     - Features
+     - :py:class:`~otupy.types.targets.features.Features`
      - 1
      - A set of items used with the query Action to determine an Actuator’s capabilities.
    * - 2
      - context
-     - Context
+     - :py:class:`~otupy.profiles.ctxd.targets.context.Context`
      - 1
      - It describes the service environment, its connections and security capabilities.
 

@@ -7,27 +7,22 @@ import otupy as oc2
 
 from otupy.profiles.ctxd.profile import Profile
 
-""" CTXD Specifiers
-
-	Define the set of specifiers defined in this specification that are meaningful in the context of CTXD.
-	It implements the data structure define in the section "Actuator Specifiers"
-"""
 @oc2.actuator(nsid=Profile.nsid)
 class Specifiers(oc2.Map):
+	""" CTXD Specifiers
+	
+		Define the set of specifiers defined in this specification that are meaningful in the context of CTXD.
+		It implements the data structure define in the section "Actuator Specifiers"
+	"""
 	fieldtypes = dict(domain=str, asset_id=str)
 	
-	""" Specifiers for Actuator
-
-		Fields that may be specified to select the specific Actuator implementation.
-
-	"""
-
 	def __init__(self, dic):
 		""" Initialize the `Actuator` profile
 
 			The profile can be initialized by passing the internal fields explicitely 
-			(i.e., by giving them as ***key=value*** pair.
-			:param dic: A list of ***key=value*** pair which allowed values are given
+			(i.e., by giving them as ``key=value`` pair.
+
+			:param dic: A list of ``key=value`` pair which allowed values are given
 				by `fieldtype`.
 		"""
 		self.nsid = Profile.nsid

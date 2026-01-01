@@ -7,7 +7,7 @@ class Features(ArrayOf(Feature)):
 	""" OpenC2 Features
 
 		Implements the `features` target (Section 3.4.1.5).
-		Just defines an `ArrayOf` `Feature`.
+		Just defines an :py:class:`~otupy.types.base.array_of.ArrayOf` :py:class`~otupy.types.data.Feature`.
 	"""
 
 	def __init__(self, feats=[]):

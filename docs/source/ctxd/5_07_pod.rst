@@ -1,0 +1,41 @@
+5.7 Pod
+=======
+
+It describes a Kubernetes Pod
+
+Type: :py:class:`~otupy.profiles.ctxd.data.pod.Pod` (:py:class:`~otupy.types.base.record.Record`)
+
+.. list-table::
+   :widths: 3 4 4 3 40
+   :header-rows: 1
+
+   * - ID
+     - Name
+     - Type
+     - #
+     - Description
+   * - 1
+     - description
+     - ``str``
+     - 1
+     - Generic description of the container.
+   * - 2
+     - id
+     - ``str``
+     - 1
+     - ID of the Container.
+   * - 3
+     - name
+     - ``str``
+     - 1
+     - Name of the Pod.
+   * - 4
+     - namespace
+     - ``str``
+     - 1
+     - Namespace of the Pod.
+   * - 5
+     - ports
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:pu:class:`~otupy.profiles.ctxd.data.port.Port`)
+     - 1
+     - Network ports of the Pod.

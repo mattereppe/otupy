@@ -3,26 +3,27 @@ from otupy.types.base.openc2_type import Openc2Type
 class Choice(Openc2Type):
 	""" OpenC2 Choice
 		Implements the OpenC2 Choice:
-		>One field selected from a set of named fields. The API value has a name and a type.
+		
+			One field selected from a set of named fields. The API value has a name and a type.
 
 		It expect all allowed values to be provided in a `Register` class, which must be defined
 		as class attribute `register` in all derived classes (see `Target` and `Actuator` as examples).
 
 		Note that the current implementation requires all possible choices to be of different types. 
 		Due to this limitation, it is not currently possible to define, e.g., more than an object of
-		type `str`. In such a case, distinct data types must be defined and used for the `str` objects.
-		This limitation should have limited impact, since the `Choice`  is expected to be used
+		type ``str``. In such a case, distinct data types must be defined and used for the ``str`` objects.
+		This limitation should have limited impact, since the ``Choice``  is expected to be used
 		to select between different data types.
 	"""
 	register = None
 	""" List of registered name/class options available """
 
 	def __init__(self, obj):
-		""" Initialize the `Choice` object
+		""" Initialize the ``Choice`` object
 
-			Objects used as `Choice` must be registered in advance in the `register` dictionary.
+			Objects used as ``Choice`` must be registered in advance in the `register` dictionary.
 
-			:arg obj: An object among those defined in the `register`.
+			:arg obj: An object among those defined in the :py:attr:`~otupy.types.base.choice.Choice.register`.
 		"""
 		
 		""" Copy constructor-like semantics """
@@ -52,6 +53,7 @@ class Choice(Openc2Type):
 			
 			It may be implemented by any derived class, if a different logic than the `Register` class 
 			is followed to store the name/class bindings.
+
 			:param choice: The name of the alternative that is being looked for.
 			:return: The class corresponding to the provided `choice`.
 		"""
@@ -67,13 +69,13 @@ class Choice(Openc2Type):
 		""" Converts to dictionary 
 		
 			It is used to convert this object to an intermediary representation during 
-			serialization. It takes an `Encoder` argument that is used to recursively
-			serialize inner data and structures (the `Encoder` provides standard methods
+			serialization. It takes an :py:class:`~otupy.core.encoder.Encoder` argument that is used to recursively
+			serialize inner data and structures (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods
 			for converting base types to dictionaries).. 
 
-			:param e: The `Encoder` that is being used.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
 			:return: A dictionary compliants to the Language Specification's serialization
-			rules.
+				rules.
 		"""
 		# In case of Choice, the specific choice may be the implementation of an additional type,
 		# which affects its representation. So, first of all, get the representation of the inner
@@ -87,12 +89,12 @@ class Choice(Openc2Type):
 		""" Builds instance from dictionary 
 
 			It is used during deserialization to create an otupy instance from the text message.
-			It takes an `Encoder` instance that is used to recursively build instances of the inner
-			objects (the `Encoder` provides standard methods to create instances of base objects like
+			It takes an :py:class:`~otupy.core.encoder.Encoder` instance that is used to recursively build instances of the inner
+			objects (the :py:class:`~otupy.core.encoder.Encoder` provides standard methods to create instances of base objects like
 			strings, integers, boolean).
 
 			:param dic: The intermediary dictionary representation from which the object is built.
-			:param e: The `Encoder that is being used.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
 			:return: An instance of this class initialized from the dictionary values.
 		"""
 		if not len(dic) == 1:

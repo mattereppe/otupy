@@ -1,5 +1,5 @@
-Relevant documents
-==================
+OpenC2 specifications
+=====================
 
 Users of the ``otupy`` are expected to be familiar with the following
 relevant documents: 

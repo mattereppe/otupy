@@ -7,9 +7,8 @@
 import enum
 
 def convert_to(var, fieldtype):
-	try:
-		if issubclass(fieldtype, enum.Enum):
-			return fieldtype[var]
-		else:
-			return fieldtype(var)
+	if issubclass(fieldtype, enum.Enum):
+		return fieldtype[var]
+	else:
+		return fieldtype(var)
 		

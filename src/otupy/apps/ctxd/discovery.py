@@ -1,3 +1,13 @@
+""" Service discovery
+
+	To run the discovery, either download the source code or install from ``PyPI`` (see 
+	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
+
+	Run the discovery service: ::
+
+		python3 discovery.py [-c | --config <config.yaml>]
+
+"""
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
@@ -21,6 +31,7 @@ from otupy.profiles.ctxd.data.name import Name
 #from otupy.transfers.http.message import Message
 
 from pymongo import MongoClient
+from kafka import KafkaProducer
 
 logger = logging.getLogger()
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
@@ -33,6 +44,8 @@ hdls = [ stdout_handler ]
 # Add both handlers to the logger
 logger.addHandler(stdout_handler)
 
+JSONSCHEMA = "http://mirandaproject.eu/ctxd/v1.0/schema.json"
+""" Json schema id currently used to log context data """
 defaults = { # Default values for context discovery operation
 				'ctxd': {
 					'loop': -1,
@@ -45,12 +58,29 @@ defaults = { # Default values for context discovery operation
 					'encoding': 'json',
 					'transfer': 'http'},
 				# Default values for Mongodb connection
-				'database': {
+				'mongodb': {
 					'host': '127.0.0.1',
 					'port': 27017,
 					'db_name': '',
 					'user': None,
-					'pass': None}
+					'pass': None},
+				# Default values for Kafka 
+				'kafka': {
+					'host': '127.0.0.1',
+					'port': 9092,
+					'topic': None,
+					'security_protocol': 'PLAINTEXT',
+					'sasl_mechanism': None,
+					'sasl_plain_username': None,
+					'sasl_plain_password': None,
+					'ssl_cafile': None,
+					'ssl_check_hostname': True
+				},
+				# Default configuration for file publisher
+				'file': {
+					'name': 'contextdata.json',
+					'path': '.'
+				}
 }
 """ Defaults value to be used for missing input parameters """
 
@@ -58,6 +88,7 @@ def set_defaults(config, type_, param):
 	""" Sets default values
 
 		Checks if input parameters have value, and assign a default value in case no value was provided.
+
 		:param config: The dictionary with input config parameter.
 		:param type_: The group to which the parameter belongs (check `defaults`). There might be parameters with the same name under different stanzas.
 		:param param: The name of the parameter.
@@ -103,50 +134,105 @@ def set_defaults(config, type_, param):
 #    return unprocessed_links
 #
 
-def connect_to_database(config):
+def connect_to_publishers(config):
 
-	databases = {}
-	for db in config['database']:
-		for name, conf in db.items():
-			match name:
-				case "mongodb":
-					try: 
-						if conf['user'] is not None and conf['pass'] is not None:
-							client = MongoClient("mongodb://"+conf['user']+":"+conf['pass']+"@"+conf['host']+":"+str(conf['port']))
-						else:
-							client = MongoClient("mongodb://"+conf['host']+":"+str(conf['port']))
-						# Create or switch to a database
-						databases['mongodb'] = client[conf['db_name']]
-					except Exception:
-						logger.error("Unable to connect to mongodb")
-						databases['mongodb'] = None
-				case _:
-					logger.warning("Skipping unsupported db: %s", db)
+	publishers = {}
+	# Publishers will always have default values!
+	for name, conf in config['publishers'].items():
+		match name:
+			case "mongodb":
+				try: 
+					if conf['user'] is not None and conf['pass'] is not None:
+						client = MongoClient("mongodb://"+conf['user']+":"+conf['pass']+"@"+conf['host']+":"+str(conf['port']))
+					else:
+						client = MongoClient("mongodb://"+conf['host']+":"+str(conf['port']))
+					# Create or switch to a database
+					publishers['mongodb'] = client[conf['db_name']]
+				except Exception as e:
+					logger.error("Unable to connect to mongodb: %s", e)
+			case "kafka":
+				try:
+					producer = KafkaProducer(bootstrap_servers = [ conf['host']+":"+str(conf['port']) ],
+							client_id = config['name'],
+                     sasl_plain_username = conf['sasl_plain_username'],
+                     sasl_plain_password = conf['sasl_plain_password'],
+                     security_protocol = conf['security_protocol'],
+                     sasl_mechanism = conf['sasl_mechanism'],
+							ssl_check_hostname=conf['ssl_check_hostname'],
+							ssl_cafile='ca-cert')
+					publishers['kafka'] = producer
+				except Exception as e:
+					logger.error("Unable to connect to kafka: %s", e)
+			case "file":
+				try:
+					publishers['file'] = open(conf['path']+"/"+conf['name'], 'a')
+				except Exception as e:
+					logger.error("Unable to open file: %s, reason: %s", conf['name'], e)
+			case _:
+				logger.warning("Skipping unsupported db: %s", name)
 	
-	return databases
+	return publishers
 
+def disconnect_from_publishers(publishers):
+
+	for name, conf in publishers.items():
+	
+		match name:
+			case "mongodb":
+				pass
+			case "kafka":
+				conf.flush()
+				conf.close()
+			case "file":
+				conf.close()
+			case _:
+				logger.warning("Skipping unsupported publisher: %s", name)
 
 
 
 def publish_data(config, ctx):
 
-	databases = connect_to_database(config)
+	publishers = connect_to_publishers(config)
 
-	for name, db  in databases.items(): 
+	# TODO: Add metadata about the service which publish data
+	ctx['date'] = otupy.DateTime()
+	try:
+		ctx['creator'] = config['name']
+	except:
+		ctx['creator'] = "unkwnon"
+	ctx['jsonschema'] = JSONSCHEMA
+
+	jsondata = otupy.encoders.JSONEncoder().encode(ctx)
+
+	for name, pub  in publishers.items(): 
 		match name:
 			case 'mongodb':
-				for type_ in ['services', 'links']:
-					collection = db[type_]
-					# Delete all documents in the collection
-					collection.delete_many({})
-					for data in ctx[type_]:
-						jsondata = otupy.encoders.JSONEncoder().encode(data)
-						# Note: otupy encoders return str, so we must convert them to dict
-						collection.insert_one(json.loads(jsondata)).inserted_id
+				try:
+					collection = pub[ config['publishers'][name]['collection'] ]
+				except:
+					# Default collection name if that provided does not work
+					collection = pub["contextdata"]
+				# Delete all documents in the collection -- NO MORE NECESSARY, because we use metadata right now
+				# collection.delete_many({})
+				# Note: otupy encoders return str, so we must convert them to dict
+				collection.insert_one(json.loads(jsondata)).inserted_id
+			case 'kafka':
+				try:
+					pub.send(config['publishers'][name]['topic'], value=jsondata.encode('utf-8'))
+#	pub.send('demo', b'Hello, Kafka!')
+					pub.flush()
+				except Exception as e:
+					logger.error("Unable to publish data to kafka topic: %s", str(e))
+			case 'file':
+				try:
+					pub.write(jsondata)
+				except Exception as e:
+					logger.error("Unable to dump data to file: %s", e)
 			case _:
 				# Unrecognized names have been already pruned in the connect phase
 				pass
 
+	disconnect_from_publishers(publishers)
 	
 	
 
@@ -219,9 +305,13 @@ def publish_data(config, ctx):
 
 def _log_context(ctx):
 	""" Debug-only function to check what was reported """
-	for type_ in ctx.keys():
-		for item in ctx[type_]:
-			logger.info("Found %s: %s", type_, item)
+	try:
+		for type_ in ctx.keys():
+			for item in ctx[type_]:
+				logger.info("Found %s: %s", type_, item)
+	except:
+		logger.info("No service/link found!")
+
 
 def parse_and_default(config_file):
 	""" Parse config file and assign default values to mising items
@@ -246,15 +336,14 @@ def parse_and_default(config_file):
 		config['services'] = []
 
 	# Database section:
-	if 'database' in config:
-		for db in config['database']:
-			for name in db.keys():
-				if db[name] is None:
-					db[name]={}
-				for p in defaults['database'].keys():
-					db[name][p] = set_defaults(db[name], 'database',  p)
+	if 'publishers' in config:
+		for name in config['publishers'].keys():
+			if config['publishers'][name] is None:
+				config['publishers'][name]={}
+			for p in defaults[name].keys():
+				config['publishers'][name][p] = set_defaults(config['publishers'][name], name,  p)
 	else:
-		config['database']=None
+		config['publishers']=None
 
 	return config
 
@@ -300,9 +389,15 @@ def discovery(config):
 
 	# Start recursive discovery
 	for root in config['services']:
-		service_list, link_list = discover(root)
-		ctx['services'] = add_resource(ctx['services'], root, 'service', service_list)
-		ctx['links'] = add_resource(ctx['links'], root, 'link', link_list)
+		resources = discover(root)
+		try:
+			ctx['services'] = add_resource(ctx['services'], root, 'service', resources['services'])
+		except:
+			logger.warning("No services returned for %s", root)
+		try:
+			ctx['links'] = add_resource(ctx['links'], root, 'link', resources['link'])
+		except:
+			logger.warning("No links returned for %s", root)
 		# TODO: recursive discovery of peers with valid actuators in links
 
 	_log_context(ctx)
@@ -344,7 +439,10 @@ def discover(service):
 	context = producer.sendcmd(cmd)
 	logger.info("Got context from: %s", context.from_)
 
-	return context.content['results']['services'], context.content['results']['services']
+	try:
+		return context.content['results']
+	except: 
+		return None
 
 
 def main() -> None:

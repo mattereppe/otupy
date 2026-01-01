@@ -25,6 +25,7 @@ class Version(str):
 		""" Initialize `Version` instance
 
 			Initialize with major and minor numbers.
+
 			:param major: Major number of OpenC2 version.
 			:param minor: Minor number of OpenC2 version.
 			:return: `Version` instance.
@@ -40,6 +41,7 @@ class Version(str):
 		""" Split into major and minor numbers
 
 			Assume vers is a string that must be split into major and minor numbers.
+
 			:param vers: A `str` in the format '<major>.<minor>'.
 			:return: A pair made of major and minor values.
 		"""
@@ -51,6 +53,7 @@ class Version(str):
 		""" Create `Version` instance
 
 			Create `Version` instance from string (in the *<major>.<minor>* notation.
+
 			:param v: Text string with the Version.
 			:return: `Version` instance.
 		"""
@@ -64,6 +67,7 @@ class Version(str):
 			Create `Version` instance from string (in the *<major>.<minor>* notation.
 			This method is provided to deserialize an OpenC2 message according to the otupy approach.
 			This method should only be used internally the otupy.
+
 			:param vers: Text string with the Version.
 			:param e: `Encoder` instance to be used (only included to be compliance with the function footprint).
 			:return: `Version` instance.

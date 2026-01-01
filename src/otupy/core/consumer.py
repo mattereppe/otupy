@@ -24,8 +24,8 @@ class Consumer:
 		that reads the relevant configuration from file and passes it to the Consumer.
 
 		The `Consumer` has two main tasks:
-		- creating the OpenC2 stack to process Messages (namely the combination of an Encoding format and
-				a Transfer protocol);
+
+		- creating the OpenC2 stack to process Messages (namely the combination of an Encoding format and a Transfer protocol);
 		- dispatching incoming `Command`s to the relevant `Actuator`.
 
 		Each `Consumer` will only run a single `Transfer` protocol. All registered `Encoder`s can be used,
@@ -35,12 +35,13 @@ class Consumer:
 	"""
 	def __init__(self, consumer: str, actuators: [] =None, encoder: Encoder = None, transfer: Transfer = None):
 		""" Create a `Consumer`
+
 			:param consumer: This is a string that identifies the `Consumer` and is used in `from` 
 				and `to` fields of the OpenC2 `Message` (see Table 3.1 of the Language Specification.
-			:param actuators: This must be a list of available `Actuator`s. The list contains the
+			:param actuators: This must be a list of available `Actuator`\s. The list contains the
 				`Actuator` instances that will be used by the `Consumer`.
 			:param encoder: This is an instance of the `Encoder` that will be used by default.
-			:param transfer: This is the `Transfer` protocol that will be used to send/receive `Message`s.
+			:param transfer: This is the `Transfer` protocol that will be used to send/receive `Message`\s.
 		"""
 		self.consumer = consumer
 		self.encoder = encoder
@@ -83,11 +84,11 @@ class Consumer:
 			This approach is motivated by those Transfer protocols that replies to messages on the same 
 			TCP connection, so to avoid errors with NAT and firewalls 
 			(if a Command were passed back from the `Transfer.receive()` and processed within the `Consumer.run()`, 
-			 the following `Transfer.send() would use a different TCP connection).
+			the following `Transfer.send()` would use a different TCP connection).
 			
 			:param msg: The full otupy `Message` that embeds the `Command` to be processed.
 			:return: A `Message` that embeds the `Response` (from the `Actuator` or elaborated by the `Consumer` in
-					case of errors).
+				case of errors).
 		"""
 		#TODO: The logic to select the actuator that matches the request
 		# OC2 Architecture, Sec. 2.1:
