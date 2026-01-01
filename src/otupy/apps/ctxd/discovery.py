@@ -17,7 +17,10 @@ from os.path import dirname
 from yaml import safe_load
 from graphviz import Digraph
 import json
+
 import logging
+import logging.config
+
 import os
 import sys
 import time
@@ -33,16 +36,8 @@ from otupy.profiles.ctxd.data.name import Name
 from pymongo import MongoClient
 from kafka import KafkaProducer
 
+
 logger = logging.getLogger()
-# Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
-logger.setLevel(logging.INFO)
-# Create stdout handler for logging to the console 
-stdout_handler = logging.StreamHandler()
-stdout_handler.setLevel(logging.INFO)
-stdout_handler.setFormatter(otupy.LogFormatter(datetime=True,name=True))
-hdls = [ stdout_handler ]
-# Add both handlers to the logger
-logger.addHandler(stdout_handler)
 
 JSONSCHEMA = "http://mirandaproject.eu/ctxd/v1.0/schema.json"
 """ Json schema id currently used to log context data """
@@ -80,6 +75,29 @@ defaults = { # Default values for context discovery operation
 				'file': {
 					'name': 'contextdata.json',
 					'path': '.'
+				},
+				# Default configuration for logger
+				'logger': {
+				   'version': 1, 
+				   'formatters': {
+						'otupy': {
+							'()': 'otupy.LogFormatter', 
+							'datetime': True, 
+							'name': True
+						} 
+					},
+					'handlers': {
+						'console': {
+							'class': 'logging.StreamHandler', 
+							'formatter': 'otupy', 
+							'level': 'INFO', 
+							'filters': None
+						}
+					},
+					'root': {
+						'handlers': ['console'], 
+						'level': 'INFO'
+					}
 				}
 }
 """ Defaults value to be used for missing input parameters """
@@ -321,6 +339,10 @@ def parse_and_default(config_file):
 	with open(config_file) as cf:
 	    config = safe_load(cf)
 
+	# Logging framework
+	if 'logger' not in config:
+		config['logger']=defaults['logger']
+
 	# Service section (ctxd actuators)
 	if 'services' in config and config['services'] is not None:
 		for service in config["services"]:
@@ -460,6 +482,9 @@ def main() -> None:
 	args = arguments.parse_args()
 	
 	config = parse_and_default(args.config)
+	
+	# Set up logging
+	logging.config.dictConfig(config["logger"]) 
 
 	# Set loop and frequency of the discovery process
 	repeat_discovery = loop(config['loop'],config['frequency'])(discovery)

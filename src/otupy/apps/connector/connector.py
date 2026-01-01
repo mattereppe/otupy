@@ -9,9 +9,9 @@
 
 """
 
-		
-
 import logging
+import logging.config
+
 from argparse import ArgumentParser
 from glob import glob
 from os.path import dirname
@@ -28,16 +28,28 @@ from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-# Create stdout handler for logging to the console 
-stdout_handler = logging.StreamHandler()
-stdout_handler.setLevel(logging.INFO)
-stdout_handler.setFormatter(LogFormatter(datetime=True,name=True))
-hdls = [ stdout_handler ]
-# Add both handlers to the logger
-logger.addHandler(stdout_handler)
-
-
+default_logging = {
+   'version': 1, 
+   'formatters': {
+		'otupy': {
+			'()': 'otupy.LogFormatter', 
+			'datetime': True, 
+			'name': True
+		} 
+	},
+	'handlers': {
+		'console': {
+			'class': 'logging.StreamHandler', 
+			'formatter': 'otupy', 
+			'level': 'INFO', 
+			'filters': None
+		}
+	},
+	'root': {
+		'handlers': ['console'], 
+		'level': 'INFO'
+	}
+}
 
 def main() -> None:
     """
@@ -63,6 +75,12 @@ def main() -> None:
         except:
             logger.error("Missing configuration item: %s", e)
             exit
+
+        try:
+           logging.config.dictConfig(config["logger"]) 
+        except:
+           logging.config.dictConfig(default_logging)
+           logger.info("No logging configuration found. Using default to stdout")
 
         actuators = {}
         for file in glob(f"{configs}/**/*.yaml", recursive=True):
