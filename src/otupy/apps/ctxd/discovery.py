@@ -305,9 +305,12 @@ def publish_data(config, ctx):
 
 def _log_context(ctx):
 	""" Debug-only function to check what was reported """
-	for type_ in ctx.keys():
-		for item in ctx[type_]:
-			logger.info("Found %s: %s", type_, item)
+	try:
+		for type_ in ctx.keys():
+			for item in ctx[type_]:
+				logger.info("Found %s: %s", type_, item)
+	except:
+		logger.info("No service/link found!")
 
 
 def parse_and_default(config_file):
@@ -386,9 +389,17 @@ def discovery(config):
 
 	# Start recursive discovery
 	for root in config['services']:
-		service_list, link_list = discover(root)
-		ctx['services'] = add_resource(ctx['services'], root, 'service', service_list)
-		ctx['links'] = add_resource(ctx['links'], root, 'link', link_list)
+		resources = discover(root)
+		try:
+			ctx['services'] = add_resource(ctx['services'], root, 'service', resources['services'])
+			logger.warn("No services returned for %s", root)
+		except:
+			pass
+		try:
+			ctx['links'] = add_resource(ctx['links'], root, 'link', resources['link'])
+			logger.warn("No links returned for %s", root)
+		except:
+			pass
 		# TODO: recursive discovery of peers with valid actuators in links
 
 	_log_context(ctx)
@@ -430,7 +441,10 @@ def discover(service):
 	context = producer.sendcmd(cmd)
 	logger.info("Got context from: %s", context.from_)
 
-	return context.content['results']['services'], context.content['results']['links']
+	try:
+		return context.content['results']
+	except: 
+		return None
 
 
 def main() -> None:
