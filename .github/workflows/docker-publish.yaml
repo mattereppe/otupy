@@ -72,7 +72,7 @@ jobs:
           context: ./docker/connector/
           push: ${{ github.event_name != 'pull_request' }}
 #tags: ${{ steps.meta.outputs.tags }}
-          tags: "ghcr.io/mattereppe/connector:v2.2.5"
+          tags: ${{ env.REGISTRY}}/${{ env.IMAGE_NAME }}:${{ github.event.client_payload.tag }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
