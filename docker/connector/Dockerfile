@@ -37,8 +37,6 @@ RUN mkdir -p /config/configs
 WORKDIR /apps/
 
 RUN cp -a /opt/otupy-venv/lib/python3*/site-packages/otupy/apps/*  .
-COPY connector.yaml /config/
-COPY discovery.yaml /config/
 
 CMD ["python3", "connector/connector.py", "-c", "/config/connector.yaml"] 
 
