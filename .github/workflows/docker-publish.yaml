@@ -1,4 +1,4 @@
-name: Docker-connector
+name: Build and publish docker connector
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -71,6 +71,7 @@ jobs:
         with:
           context: ./docker/connector/
           push: ${{ github.event_name != 'pull_request' }}
+          build-args: "VERSION=${{ github.event.client_payload.tag }}"
 #tags: ${{ steps.meta.outputs.tags }}
           tags: ${{ env.REGISTRY}}/${{ env.IMAGE_NAME }}:${{ github.event.client_payload.tag }}
           labels: ${{ steps.meta.outputs.labels }}
