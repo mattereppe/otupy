@@ -31,8 +31,11 @@ jobs:
           python-version: "3.x"
 
       - name: Build release distributions
+        env:
+           VERSION = "1.1.4"
         run: |
           # Update version in project.toml.
+          echo "Version: $VERSION"
           sed -ie 's/^\(version = \).*/\1 "1.0.4"/' pyproject.toml
           python -m pip install build
           python -m build
@@ -69,7 +72,7 @@ jobs:
           name: release-dists
           path: dist/
 
-      - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
+#      - name: Publish release distributions to PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          packages-dir: dist/
