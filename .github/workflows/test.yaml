@@ -24,17 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Dispatch event
-        env:
-           VERSION: ${{ github.event.release.tag_name }}
-        run: |
-          # Update version in project.toml.
-          echo "Version: $VERSION"
-          sed -ie "s/^\(version = \).*/\1 \"$VERSION\"/" pyproject.toml
-          cat pyproject.toml
-          python -m pip install build
-          python -m build
-
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6 
