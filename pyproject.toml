@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "otupy"
+version = "1.1.3"
+authors = [
+  { name="Matteo Repetto", email="matteo.repetto@ge.imati.cnr.it" },
+]
+description = "OpenC2 Utilities for Python - Library and applications"
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["openc2"]
+classifiers = [
+	 "Programming Language :: Python :: 3.11",
+	 "Development Status :: 3 - Alpha",
+	 "Environment :: Console",
+	 "Intended Audience :: Developers",
+	 "Natural Language :: English",
+	 "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
+    "Operating System :: OS Independent",
+	 "Topic :: Security",
+	 "Topic :: Software Development :: Libraries",
+	 "Topic :: System :: Networking"
+]
+licence = "EUPL-1.2"
+licence-files = ["LICEN[CS]E*"]
+dependencies = [
+"aenum>=3.1.15",
+"Flask>=3.1.0",
+"requests>=2.31.0",
+"Werkzeug>=3.0.2",
+"rfc3987>=1.3.8",
+"fqdn>=1.5.1",
+"idna>=3.10",
+"mediatype>=0.1.6",
+"requests>=2.32.3",
+"email_validator>=2.2.0",
+"macaddress>=2.0.2",
+"cbor2==5.6.5",
+"docker_py==1.10.6 ",
+"kubernetes==34.1.0",
+"openstacksdk==4.8.0",
+"paho_mqtt==2.1.0",
+"pymongo==4.15.5",
+"xmltodict==0.14.2",
+"kafka_python==2.3.0",
+"azure-core==1.37.0",
+"azure-identity==1.25.1",
+"azure-mgmt-network==30.1.0",
+"azure-mgmt-resource==24.0.0",
+"apscheduler==3.11.2"
+]
+
+[project.urls]
+Homepage = "https://github.com/mattereppe/otupy/"
+Documentation = "https://otupy.readthedocs.io"
+Issues = "https://github.com/mattereppe/otupy/issues/"
