@@ -1,4 +1,4 @@
-name: Publish docker image for Connector
+name: Docker-connector
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -7,13 +7,14 @@ name: Publish docker image for Connector
 
 on:
   repository_dispatch:
-    types: [trigger-pypi-package]
+    - types: [trigger-pypi-package]
 
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
+  #IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: mattereppe/connector
 
 
 jobs:
@@ -29,38 +30,36 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6 
-        with:
-          ref: ${{ github.event.client_payload.sha }}
+        uses: actions/checkout@v3 #v3.3.0 at the time of change
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
         if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v4.0.0
+        uses: sigstore/cosign-installer@v2.2.0 #v3.0.1 at the time of change
         with:
-          cosign-release: 'v3.0.3'  # This is the default for installer v3
+          cosign-release: 'v2.2.0'  # This is the default for installer v3
 
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2 #v2.4.0 at the time of change
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3 #v2.4.0 at the time of change
+        uses: docker/login-action@v2 #v2.4.0 at the time of change
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.CR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5 #v4.3.0 at the time of change
+        uses: docker/metadata-action@v4 #v4.3.0 at the time of change
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
@@ -68,11 +67,11 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@v4 
+        uses: docker/build-push-action@v4 #v4.0.0 at the time of change
         with:
           context: ./docker/connector/
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ github.event.client_payload.tag }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
