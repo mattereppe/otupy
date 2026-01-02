@@ -36,7 +36,8 @@ jobs:
         run: |
           # Update version in project.toml.
           echo "Version: $VERSION"
-          sed -ie 's/^\(version = \).*/\1 "$VERSION"/' pyproject.toml
+          sed -ie "s/^\(version = \).*/\1 \"$VERSION\"/" pyproject.toml
+          cat pyproject.toml
           python -m pip install build
           python -m build
 
