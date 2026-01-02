@@ -32,7 +32,7 @@ jobs:
 
       - name: Build release distributions
         env:
-           VERSION: ${{ github.event.release.name }}
+           VERSION: ${{ github.event.release.tag_name }}
         run: |
           # Update version in project.toml.
           echo "Version: $VERSION"
