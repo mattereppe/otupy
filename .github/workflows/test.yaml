@@ -1,0 +1,55 @@
+# This workflow will upload a Python Package to PyPI when a release is created
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Test repository dispatch
+
+on:
+  push:
+    branches: [ "main" ]
+    # Publish semver tags as releases.
+    tags: [ 'v*.*.*' ]
+    
+permissions:
+  contents: read
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Dispatch event
+        env:
+           VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          # Update version in project.toml.
+          echo "Version: $VERSION"
+          sed -ie "s/^\(version = \).*/\1 \"$VERSION\"/" pyproject.toml
+          cat pyproject.toml
+          python -m pip install build
+          python -m build
+
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v6 
+        with:
+          context: ./docker/connector/
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ github.event.client_payload.tag }}
+
+      - name: Check tag name
+        run:
+          echo "Tag name: $GITHUB_REF_NAME"
+
+#      - name: Trigger next workflow
+#        uses: peter-evans/repository-dispatch@v1
+#        with:
+#          repository: ${{ github.repository }}
+#          event-type: trigger-pypi
+#          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "tag": "${{ }}}'
