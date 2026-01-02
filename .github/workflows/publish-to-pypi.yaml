@@ -11,10 +11,10 @@ name: Build and Upload Python Package to PyPi
 on:
   release:
     types: [published]
-  push:
-    branches: [ "main" ]
-    # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+#  push:
+#    branches: [ "main" ]
+#    # Publish semver tags as releases.
+#    tags: [ 'v*.*.*' ]
     
 permissions:
   contents: read
