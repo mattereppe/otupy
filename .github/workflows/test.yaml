@@ -44,7 +44,7 @@ jobs:
           tags: ${{ github.event.client_payload.tag }}
 
       - name: Check tag name
-        run:
+        run: |
           TAG=$GITHUB_REF_NAME
           echo "Tag name: $TAG"
 
