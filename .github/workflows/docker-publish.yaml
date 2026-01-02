@@ -70,7 +70,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v6 
         with:
-          context: ./docker/mongodb/
+          context: ./docker/connector/
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ github.event.client_payload.tag }}
           labels: ${{ steps.meta.outputs.labels }}
