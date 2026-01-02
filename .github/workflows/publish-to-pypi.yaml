@@ -33,7 +33,7 @@ jobs:
       - name: Build release distributions
         run: |
           # Update version in project.toml.
-          sed -ie 's/^\(version = \).*/\1 ${{ github.event.release.name }}"/' pyproject.toml
+          sed -ie 's/^\(version = \).*/\1 "1.0.4"/' pyproject.toml
           python -m pip install build
           python -m build
 
