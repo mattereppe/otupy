@@ -32,12 +32,25 @@ Python 3.11+ is required to use otupy.
 
 ### Download and setup
 
-Otupy is available as source code and Python package. 
+Otupy is available as source code, Python package, and docker container.
 
-Install it and its dependencies from TestPyPi:
+#### PyPi
+
+Install it and its dependencies from PyPi:
 ```
-pip install -i https://test.pypi.org/simple/otupy
+pip install otupy
 ```
+
+#### Docker container
+
+Docker containers are provided for specific applications (e.g., MIRANDA Connector). However, the same image can be used to run any other otupy command.
+
+To run the Connector with docker you need to prepare all configuration files in a folder and mount it under the `/config` folder of the container (the folder to mount may contain additional folders for specific actuator's configurations):
+```
+docker run --rm -v ./config:/config -p 8080:8080 --name connector -d otupy
+```
+
+#### Clone repository
 
 Alternatively, dowload it from github:
 ```
