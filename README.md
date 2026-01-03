@@ -48,7 +48,7 @@ Docker containers are provided for specific applications (e.g., MIRANDA Connecto
 To run the Connector with docker you need to prepare all configuration files in a folder and mount it under the `/config` folder of the container (the folder to mount may contain additional folders for specific actuator's configurations):
 ```
 docker run --rm -v ./config:/config -p 8080:8080 --name connector -d otupy
-
+```
 
 #### Clone repository
 
