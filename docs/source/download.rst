@@ -9,13 +9,13 @@ Install the package with `pip`:
 
    pip install otupy
 
-Get the docker image from GitHub:
+Get the base docker image from GitHub:
 
 .. code-block:: bash
 
-	docker image pull ghcr.io/mattereppe/connector:v1.1.7
+	docker pull ghcr.io/mattereppe/otupy:latest
 
-(currently, only the docker image for the MIRANDA Connector is provided, which can run any ``CMD``)
+(the base image does not include any pre-defined ``CMD`` or ``ENTRY_POINT``; it can be used to build containers for specific applications or run any otupy application)
 
 Alternatively, download it from ``github``:
 

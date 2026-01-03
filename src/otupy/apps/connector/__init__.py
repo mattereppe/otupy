@@ -15,7 +15,7 @@
 	subfolders, if necessary), and then mount it under the ``/config`` folder of the container when starting it.
 	Don't forget to expose the HTTP port used in the configuration file. An example of running in docker: ::
 
-		docker run --rm -v ./config:/config -p 8080:8080 --name connector -d otupy
+		docker run --rm -v ./config:/config -p 8080:8080 --name connector -d ghcr.io/mattereppe/connector:latest
 
 
 	Configuration
