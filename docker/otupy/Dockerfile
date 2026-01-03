@@ -4,7 +4,7 @@
 # This file is part of the otupy framework.
 # 
 # Docker image with otupy software.
-# Base Docker image from: ghcr.io/mattereppe/connector
+# Base Docker image from: https://hub.docker.com/_/python/
 # 
 # Check the container image for copyright and licenses that apply to the
 # included software (/usr/share/doc/*/copyright).
@@ -14,11 +14,25 @@
 # Build options:
 # VERSION: release tag to use
 
+FROM python:3-trixie
+
 # Optionally take an argument to specify the otupy version to use
 ARG VERSION=""
 
-FROM ghcr.io/mattereppe/connector:$VERSION
+# Install and activate a virtual environment
+RUN python -m venv /opt/otupy-venv
+ENV PATH="/opt/otupy-venv/bin:$PATH"
 
-RUN cp -a /opt/otupy-venv/lib/python3*/site-packages/otupy/apps/connector/connector.py  .
+ENV TZ="Europe/Rome"
 
-CMD ["python3", "connector.py", "-c", "/config/connector.yaml"]
+
+RUN if [ -n "$VERSION" ]; then \
+		OTUPY_VERSION="==$VERSION"; \
+	 fi; \
+	echo "Otupy version:  ${OTUPY_VERSION}"; \
+	pip install otupy$OTUPY_VERSION;
+
+RUN mkdir -p /config
+
+WORKDIR /apps/
+
