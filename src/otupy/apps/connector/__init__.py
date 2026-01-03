@@ -11,6 +11,13 @@
 	To run the MIRANDA connector, either download the source code or install from ``PyPI`` (see 
 	`setup <https://otupy.readthedocs.io/en/latest/download.html#download-and-setup>`__).
 
+	Alternatively, you can deploy a docker container. Put all configuration files in a local folder (also including
+	subfolders, if necessary), and then mount it under the ``/config`` folder of the container when starting it.
+	Don't forget to expose the HTTP port used in the configuration file. An example of running in docker:
+
+		 docker run --rm -v ./config:/config -p 8080:8080 --name connector -d otupy
+	
+
 	Configuration
 	-------------
 
