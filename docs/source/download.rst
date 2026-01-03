@@ -11,7 +11,9 @@ Install the package with `pip`:
 
 Get the docker image from GitHub:
 
-   docker image pull ghcr.io/mattereppe/connector:v1.1.7
+.. code-block:: bash
+
+	docker image pull ghcr.io/mattereppe/connector:v1.1.7
 
 (currently, only the docker image for the MIRANDA Connector is provided, which can run any ``CMD``)
 
