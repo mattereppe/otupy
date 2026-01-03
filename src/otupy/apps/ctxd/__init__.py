@@ -21,7 +21,7 @@
 	The ``discovery`` application works according to a ``yaml`` configuration file that contains the following
 	parameters:
 	
-	- ``name``: An identifier used to distinguish context originated by different ``discovery``\s
+	- ``name``: An identifier used to distinguish context originated by different ``discovery``s
 	- ``frequency``: The time interval before starting a new round of queries (the real interval will be longer because the timer starts after receving the last answer). Run one-shot if sets to 0.
 	- ``loop``: Number of times to repeat the discovery. Loops forever if set to -1, does not run if set to 0.
 	- ``publishers``: a dictionary of places where the context data are published after each round. The configuration changes according to the specific publisher:

@@ -38,7 +38,7 @@ class Consumer:
 
 			:param consumer: This is a string that identifies the `Consumer` and is used in `from` 
 				and `to` fields of the OpenC2 `Message` (see Table 3.1 of the Language Specification.
-			:param actuators: This must be a list of available `Actuator`\s. The list contains the
+			:param actuators: This must be a list of available `Actuator`s. The list contains the
 				`Actuator` instances that will be used by the `Consumer`.
 			:param encoder: This is an instance of the `Encoder` that will be used by default.
 			:param transfer: This is the `Transfer` protocol that will be used to send/receive `Message`\s.

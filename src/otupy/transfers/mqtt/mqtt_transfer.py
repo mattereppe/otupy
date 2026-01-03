@@ -575,7 +575,7 @@ class MQTTTransfer(oc2.Transfer):
 
 			The internal implementation uses Paho MQTT client. The method invokes the `callback`
 			for each received message, which must be provided by a `Consumer` to properly dispatch 
-			:py:class:`~otupy.core.command.Command`\s to the relevant server(s). 
+			:py:class:`~otupy.core.command.Command`s to the relevant server(s). 
 			It also takes an :py:class:`~otupy.core.encoder.Encoder` that is used to create
 			responses to `Command`\s encoded with unknown encoders.
 

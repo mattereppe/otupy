@@ -74,7 +74,7 @@ class Target(Choice):
 		This is the definition of the ``target`` carried in OpenC2 ``Command``.
 	"""
 	register = Extensions['Targets']
-	""" Keeps the list of registered :py:class:`~otupy.core.target.Target`\s 
+	""" Keeps the list of registered :py:class:`~otupy.core.target.Target`s 
 	
 		For internal use only. Do not delete or modify.
 	"""

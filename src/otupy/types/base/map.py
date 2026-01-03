@@ -19,7 +19,7 @@ class Map(Openc2Type, dict):
 		is expected to provide a `fieldtypes` class attribute that associate field names 
 		with their class definition. 
 		
-		Additionally, according to the Language Specification, ``Map``\s may be extended by
+		Additionally, according to the Language Specification, ``Map``s may be extended by
 		Profiles. Such extensions must use the `base` and `register` class attributes to 
 		bind to the base element they extend and the `Profile` in which they are defined.
 

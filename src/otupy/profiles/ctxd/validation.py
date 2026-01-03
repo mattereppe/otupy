@@ -12,10 +12,10 @@ from otupy.profiles.ctxd.targets import Context
 from otupy.profiles.ctxd.args import Args
 
 AllowedActions = [ Actions.query]
-""" List of allowed `Action`\s """
+""" List of allowed `Action`s """
 
 AllowedTargets = [ 'features', Profile.nsid+':context']
-""" List of allowed `Target`\s 
+""" List of allowed `Target`s 
 
 	 This is probably not strictly necessary
 """
