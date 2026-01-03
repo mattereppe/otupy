@@ -43,11 +43,15 @@ pip install otupy
 
 #### Docker container
 
-Docker containers are provided for specific applications (e.g., MIRANDA Connector). However, the same image can be used to run any other otupy command.
-
-To run the Connector with docker you need to prepare all configuration files in a folder and mount it under the `/config` folder of the container (the folder to mount may contain additional folders for specific actuator's configurations):
+A base docker image is provided, which can be used to build containers for specific applications (e.g., MIRANDA Connector). This image does not provide any default `CMD` or `ENTRY_POINT`. The base image is available at:
 ```
-docker run --rm -v ./config:/config -p 8080:8080 --name connector -d otupy
+ghcr.io/mattereppe/otupy
+```
+A `latest` tag is available to download the latest version; additional tags are provided for main releases.
+
+To download the latest version of the base image:
+```
+docker pull ghcr.io/mattereppe/otupy:latest
 ```
 
 #### Clone repository
