@@ -47,7 +47,7 @@ class CTXDActuator:
 
 			- auth: Authentication information to connect to external APIs for discovering services and links
 			- config: Additional configuration parameters specific for each actuator (ofter related to endpoints or parameters of the external APIs)
-			- peers: A list of `Consumer`\s that host the definition of external services (usually found as peers in links). They are currently provided
+			- peers: A list of `Consumer`s that host the definition of external services (usually found as peers in links). They are currently provided
 				at initialization time, waiting for some more automated discovery mechanism.
 			- owner: The owner of the resource (in case of cloud resources, effective owners should be discovered by the actuator)
 			- specifiers: This is the description of the actuator (e.g., its identifiers).
