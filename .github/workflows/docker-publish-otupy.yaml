@@ -5,6 +5,14 @@ name: Build and publish docker base image for the otupy framework
 # separate terms of service, privacy policy, and support
 # documentation.
 
+# To manually trigger this workflow:
+# % gh api   --method POST   \
+#		-H "Accept: application/vnd.github+json" \
+#		-H "X-GitHub-Api-Version: 2022-11-28"  \ 
+#		/repos/mattereppe/otupy/dispatches   \ 
+#		-f 'event_type=trigger-pypi-package' \
+#		-F "client_payload[tag]=v1.1.7"
+
 on:
   repository_dispatch:
     types: [trigger-pypi-package]
