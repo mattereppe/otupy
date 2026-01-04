@@ -71,9 +71,23 @@
 
 	Run the discovery service: ::
 
-		python3 discovery.py [-c | --config <config.yaml>]
+		python3 discovery.py [-c | --config <config.yaml>] [ -p | --port <port>] [ --host <hostname> ] [  --api ]
 
-	Code reference
-	--------------
+		Enable the API service with the ``--api`` flag. If the hostname/port are not given, default values will be used.
+		Even if the API service expects a configuration file in the start command, the configuration file remains a valid option and
+		can be used to load "default" values and parameters that makes no sense in the API service (e.g., the ``logger`` configuration).
+
+	API service
+	-----------
+
+	The following endpoints are available:
+
+	- ``/start``: POST request with a config in json format to start discovery, returns the id of started thread
+	- ``/stop``: POST request with a list of thread ids to stop
+	- ``/threads``: GET request which returns the list of active threads (active means not cancelled, they may have terminated their job)
+	- ``/clean``: POST request that clean up all threads
+
+	All ``POST`` requests MUST have the ``Content-type`` header set to ``application/json``. The configuration of the start request
+	only includes a subset of the parameters described above: ``logger`` is not allowed and is ignored.
 
 """
