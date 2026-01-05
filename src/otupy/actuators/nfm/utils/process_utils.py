@@ -2,9 +2,9 @@ import subprocess, psutil, threading, logging, time
 from otupy.profiles.nfm import Results
 
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
-from openc2lib.actuators.nmf.database.SQLDB import SQLDatabase
-from openc2lib.actuators.nmf.user.config import PRODUCER_ID
-from openc2lib.actuators.nmf.handlers.response_handler import ok, servererror, notfound, forbidden, badrequest
+from otupy.actuators.nfm.database.SQLDB import SQLDatabase
+from otupy.actuators.nfm.user.config import PRODUCER_ID
+from otupy.actuators.nfm.handlers.response_handler import ok, servererror, notfound, forbidden, badrequest
 
 logger = logging.getLogger(__name__)
 db = SQLDatabase()

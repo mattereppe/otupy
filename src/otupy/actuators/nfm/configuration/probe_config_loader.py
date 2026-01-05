@@ -1,11 +1,7 @@
 import os, json, logging
 from otupy.profiles.nfm.data.ie import IE
-from openc2lib import ArrayOf
+from otupy import ArrayOf
 
-# define Nothing as a string
-from dotenv import load_dotenv
-
-load_dotenv()  # Load environment variables from .env
 Nothing: str = ["Nothing"]
 logger = logging.getLogger(__name__)
 

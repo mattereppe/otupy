@@ -1,14 +1,12 @@
 import psutil, os
 from pyroute2 import IPRoute
-from otupy.profiles.nfm import Interface
-from openc2lib.types.targets.ipv4_net import IPv4Net
-from openc2lib.types.targets.ipv6_net import IPv6Net
-from openc2lib.types.targets import MACAddr
-from otupy.profiles.nfm import IfaceType
-from openc2lib import ArrayOf
-from dotenv import load_dotenv
+from otupy.profiles.nfm.data.interface import Interface
+from otupy.types.targets.ipv4_net import IPv4Net
+from otupy.types.targets.ipv6_net import IPv6Net
+from otupy.types.targets import MACAddr
+from otupy.profiles.nfm.data.iface_type import IfaceType
+from otupy import ArrayOf
 
-load_dotenv()
 
 allowed_interfaces_str = os.getenv("ALLOWED_INTERFACES", "")
 ALLOWED_INTERFACES = [iface.strip() for iface in allowed_interfaces_str.split(",") if iface.strip()]
