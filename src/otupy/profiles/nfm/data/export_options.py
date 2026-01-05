@@ -1,5 +1,6 @@
-from openc2lib.types.base import Record
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat
+from otupy.types.base import Record
+from otupy.profiles.nfm.data.flow_format import FlowFormat
+
 
 class ExportOptions(Record):
     """
@@ -23,10 +24,18 @@ class ExportOptions(Record):
 
     timeout: int = None
     """ Collector UDP timeout """
-    
+
     format: FlowFormat = None
     """ Flow export format (e.g., NetFlow v5, v9, IPFIX) """
-    def __init__(self, sampling: int = None, aggregate: int = None, buffer: int = None, timeout: int = None, format: FlowFormat = None):
+
+    def __init__(
+        self,
+        sampling: int = None,
+        aggregate: int = None,
+        buffer: int = None,
+        timeout: int = None,
+        format: FlowFormat = None,
+    ):
         super().__init__()
         self.sampling = sampling
         self.aggregate = aggregate
@@ -58,7 +67,7 @@ class ExportOptions(Record):
             raise TypeError(f"Expected 'timeout' to be int, got {type(self.timeout)}")
         if self.format is not None and not isinstance(self.format, FlowFormat):
             raise TypeError(f"Expected 'format' to be FlowFormat, got {type(self.format)}")
-        
+
     def get(self, key, default=None):
-        """ Mimics dictionary get method """
+        """Mimics dictionary get method"""
         return getattr(self, key, default)

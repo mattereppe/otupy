@@ -1,6 +1,6 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.nfm.targets.monitor_id import MonitorID
+from otupy.profiles.nfm.targets.monitor_id import MonitorID
 
 @parametrize_from_file("parameters/test_monitor_id_target.yml")
 def test_good_monitor_id_target(monitor_id):

@@ -1,7 +1,7 @@
-from openc2lib.types.base import Record
-from openc2lib.types.data import IPv4Addr, Port
-from openc2lib.types.targets.ipv4_net import IPv4Net
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat
+from otupy.types.base import Record
+from otupy.types.data import Port
+from otupy.types.targets.ipv4_net import IPv4Net
+
 
 class Collector(Record):
     """
@@ -18,8 +18,6 @@ class Collector(Record):
 
     port: Port = None
     """ Port of the exporter """
-
-
 
     def __init__(self, address: IPv4Net, port: Port = None):
         super().__init__()

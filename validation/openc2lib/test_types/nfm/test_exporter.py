@@ -1,11 +1,11 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.nfm.data.exporter import Exporter
-from openc2lib.profiles.nfm.data.collector import Collector
+from otupy.profiles.nfm import Exporter
+from otupy.profiles.nfm.data.collector import Collector
 from openc2lib.types.targets.file import File
 from openc2lib.types.base import ArrayOf
 from openc2lib.types.data import IPv4Addr, Port
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat
+
 
 @parametrize_from_file("parameters/test_exporter.yml")
 def test_good_exporter(storage, collectors):

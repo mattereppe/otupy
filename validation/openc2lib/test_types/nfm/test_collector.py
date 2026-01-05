@@ -1,8 +1,8 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.nfm.data.collector import Collector
+from otupy.profiles.nfm.data.collector import Collector
 from openc2lib.types.data import IPv4Addr, Port
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat  # Assuming FlowFormat is defined
+
 
 @parametrize_from_file("parameters/test_collector.yml")
 def test_good_collector(address, port):
