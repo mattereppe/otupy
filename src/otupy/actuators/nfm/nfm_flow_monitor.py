@@ -1,12 +1,12 @@
 from abc import abstractmethod
 import threading, logging
 from otupy.profiles.nfm import Profile, AllowedCommandTarget, Results, validate_command, validate_args
-from openc2lib.actuators.nmf.utils.interfaces_manager import extract_interfaces
-from openc2lib.actuators.nmf.utils.process_utils import terminate_process_and_children
+from otupy.actuators.nfm.utils.interfaces_manager import extract_interfaces
+from otupy.actuators.nfm.utils.process_utils import terminate_process_and_children
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
 from otupy.profiles.nfm.targets.monitor import FlowMonitor
-from openc2lib.actuators.nmf.handlers.argument_handler import get_sleep_times
-from openc2lib.actuators.nmf.handlers.response_handler import (
+from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
+from otupy.actuators.nfm.handlers.response_handler import (
     badrequest,
     notimplemented,
     ok,
@@ -14,7 +14,7 @@ from openc2lib.actuators.nmf.handlers.response_handler import (
     processing,
     notfound,
 )
-from openc2lib import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
+from otupy import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
 
 Feature.extend("interfaces", 5)
 Feature.extend("information_elements", 6)
