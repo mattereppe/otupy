@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class SQLDatabase:
     """
     A simple SQLite database class to manage copied artifacts and process IDs (PIDs).
@@ -21,9 +22,10 @@ class SQLDatabase:
         """
         with sqlite3.connect(self.db_name) as conn:
             c = conn.cursor()
-            
+
             # Create `files` table
-            c.execute('''
+            c.execute(
+                """
                 CREATE TABLE IF NOT EXISTS files (
                     uid TEXT,
                     file_path TEXT,
@@ -31,16 +33,19 @@ class SQLDatabase:
                     calculated_hash TEXT,
                     UNIQUE(uid, file_path, file_name)
                 )
-            ''')
+            """
+            )
 
             # Create `pids` table
-            c.execute('''
+            c.execute(
+                """
                 CREATE TABLE IF NOT EXISTS pids (
                     uid TEXT,
                     pid TEXT UNIQUE,
                     name TEXT NULL
                 )
-            ''')
+            """
+            )
 
             conn.commit()
 
@@ -56,8 +61,10 @@ class SQLDatabase:
         """
         with sqlite3.connect(self.db_name) as conn:
             c = conn.cursor()
-            c.execute("INSERT INTO files (uid, file_path, file_name, calculated_hash) VALUES (?, ?, ?, ?)", 
-                      (uid, file_path, file_name, calculated_hash))
+            c.execute(
+                "INSERT INTO files (uid, file_path, file_name, calculated_hash) VALUES (?, ?, ?, ?)",
+                (uid, file_path, file_name, calculated_hash),
+            )
             conn.commit()
 
     def add_pid(self, uid, pid, name=None):
@@ -106,8 +113,8 @@ class SQLDatabase:
             c = conn.cursor()
             c.execute("SELECT GROUP_CONCAT(pid) FROM pids WHERE uid = ?", (uid,))
             result = c.fetchone()
-            return result[0].split(',') if result and result[0] else []
-    
+            return result[0].split(",") if result and result[0] else []
+
     def get_pids_and_names(self, uid):
         """
         Retrieves all PIDs associated with a specific UID.
@@ -153,8 +160,9 @@ class SQLDatabase:
         """
         with sqlite3.connect(self.db_name) as conn:
             c = conn.cursor()
-            c.execute("DELETE FROM files WHERE uid = ? AND file_path = ? AND file_name = ?", 
-                      (uid, file_path, file_name))
+            c.execute(
+                "DELETE FROM files WHERE uid = ? AND file_path = ? AND file_name = ?", (uid, file_path, file_name)
+            )
             conn.commit()
 
     def delete_pid(self, pid):
@@ -168,6 +176,7 @@ class SQLDatabase:
             c = conn.cursor()
             c.execute("DELETE FROM pids WHERE pid = ?", (pid,))
             conn.commit()
+
 
 # Example usage
 db = SQLDatabase()

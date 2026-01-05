@@ -1,6 +1,6 @@
 import logging
 import threading
-from openc2lib import ResponseType,  Duration, DateTime
+from openc2lib import ResponseType, Duration, DateTime
 from openc2lib.profiles.rcli.data.process import Process
 
 import openc2lib.profiles.rcli as rcli
@@ -13,13 +13,14 @@ from openc2lib.profiles.rcli.targets.processes import Processes
 
 logger = logging.getLogger(__name__)
 
+
 def start(cmd):
     """
     Handles the `start` action by validating arguments and initiating the process start.
 
-    This method implements the OpenC2 `start` action. It validates the provided arguments, including 
-    `response_requested`, `start_time`, `stop_time`, and `duration`. If any arguments are invalid, 
-    a `badrequest` response is returned. If the target is of type `Process`, the `start_process` function 
+    This method implements the OpenC2 `start` action. It validates the provided arguments, including
+    `response_requested`, `start_time`, `stop_time`, and `duration`. If any arguments are invalid,
+    a `badrequest` response is returned. If the target is of type `Process`, the `start_process` function
     is called to initiate the process. Otherwise, a `notimplemented` response is returned.
 
     Args:
@@ -44,17 +45,17 @@ def start(cmd):
     logger.info(f"Starting action with command: {cmd}")
     if cmd.args is not None:
         try:
-            if cmd.args.get('response_requested') is not None:
-                if not (cmd.args['response_requested']==ResponseType.complete):
+            if cmd.args.get("response_requested") is not None:
+                if not (cmd.args["response_requested"] == ResponseType.complete):
                     raise KeyError
-            elif cmd.args.get('start_time') is not None:
-                if not (isinstance(cmd.args['start_time'], DateTime)):
+            elif cmd.args.get("start_time") is not None:
+                if not (isinstance(cmd.args["start_time"], DateTime)):
                     raise KeyError
-            elif cmd.args.get('stop_time') is not None:  
-                if not (isinstance(cmd.args['stop_time'],DateTime)):
+            elif cmd.args.get("stop_time") is not None:
+                if not (isinstance(cmd.args["stop_time"], DateTime)):
                     raise KeyError
-            elif cmd.args.get('duration') is not None:  
-                if not (isinstance(cmd.args['duration'], Duration)):
+            elif cmd.args.get("duration") is not None:
+                if not (isinstance(cmd.args["duration"], Duration)):
                     raise KeyError
         except KeyError:
             return badrequest("Invalid start argument")
@@ -64,12 +65,13 @@ def start(cmd):
         return notimplemented("Unsupported Target Type.")
     return r
 
+
 def start_process(cmd):
     """
     Starts a process by executing allowed commands or an executable in isolation.
 
-    This function handles both immediate and delayed execution of a process based on the arguments passed in 
-    the `cmd` object. If a `start_time` or `duration` is provided, the process will be started after the 
+    This function handles both immediate and delayed execution of a process based on the arguments passed in
+    the `cmd` object. If a `start_time` or `duration` is provided, the process will be started after the
     specified delay. It also generates a unique process name for delayed starts.
 
     Args:
@@ -102,13 +104,13 @@ def start_process(cmd):
         if not cmd:
             return res
         if sleep_time > 0:
-            scheduled_name= generate_unique_name()
-            threading.Timer(sleep_time, open_process, args=(cmd,scheduled_name,terminate_time)).start()
-            processes.append(Process(name=scheduled_name, command_line= cmd))
+            scheduled_name = generate_unique_name()
+            threading.Timer(sleep_time, open_process, args=(cmd, scheduled_name, terminate_time)).start()
+            processes.append(Process(name=scheduled_name, command_line=cmd))
         else:
-            proc = open_process(cmd,None, terminate_time)
-            if not isinstance(proc,Process):
+            proc = open_process(cmd, None, terminate_time)
+            if not isinstance(proc, Process):
                 return proc
             else:
                 processes.append(proc)
-    return ok("OK", res=rcli.Results(process_status=processes))    
+    return ok("OK", res=rcli.Results(process_status=processes))

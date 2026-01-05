@@ -2,8 +2,8 @@ import pytest
 import parametrize_from_file
 from openc2lib.types.base import ArrayOf
 from openc2lib.types.targets import IPv4Net, IPv6Net, MACAddr
-from openc2lib.profiles.nfm.data.iface_type import IfaceType  # Assuming this path exists
-from openc2lib.profiles.nfm.data.interface import Interface  # Assuming this path exists
+from otupy.profiles.nfm import IfaceType  # Assuming this path exists
+from otupy.profiles.nfm import Interface  # Assuming this path exists
 
 @parametrize_from_file("parameters/test_interface.yml")
 def test_good_interface(name, description, if_id, ipv4_net, ipv6_net, mac_addr, iface_type, active):

@@ -1,19 +1,19 @@
-"""RCLI Arguments
+"""NFM Arguments
 
 This module extends the Args defined by the Language Specification
-(see Sec. 'Command Arguments Unique to RCLI').
+(see Sec. 'Command Arguments Unique to NFM').
 """
 
 import openc2lib as oc2
 
-from openc2lib.profiles.rcli.profile import Profile
-from openc2lib import TargetEnum
-from openc2lib.types.targets.file import File
+from otupy.profiles.nfm.profile import Profile
+from otupy.profiles.nfm.data.exporter import Exporter
+from otupy.profiles.nfm.data.export_options import ExportOptions
 
 
 @oc2.extension(nsid=Profile.nsid)
 class Args(oc2.Args):
-    """RCLI Args
+    """NFM Args
 
     This class extends the Args defined in the Language Specification.
     The extension mechanism is described in the
@@ -22,5 +22,4 @@ class Args(oc2.Args):
 
     """
 
-    # fieldtypes = {'storage': oc2.File}
-    fieldtypes = {"storage": File}
+    fieldtypes = {"exporter": Exporter, "exporter_options": ExportOptions}

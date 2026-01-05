@@ -1,9 +1,9 @@
 import pytest
 import parametrize_from_file
 from openc2lib.types.base import ArrayOf, Array
-from openc2lib.profiles.nfm.targets.monitor import FlowMonitor
-from openc2lib.profiles.nfm.data.interface import Interface  # Assuming this path exists
-from openc2lib.profiles.nfm.data.ie import IE  # Assuming this path exists
+from otupy.profiles.nfm.targets.monitor import FlowMonitor
+from otupy.profiles.nfm import Interface  # Assuming this path exists
+from otupy.profiles.nfm.data.ie import IE  # Assuming this path exists
 from openc2lib.types.data import Port  # Assuming Port is defined
 from openc2lib.types.targets import IPv4Connection, IPv6Connection  # Updated to use Connections
 

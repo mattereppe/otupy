@@ -3,18 +3,21 @@ import os
 import threading
 from openc2lib.actuators.nmf.handlers.argument_handler import get_sleep_times
 from openc2lib.actuators.rcli.utils.random_name_generator import generate_unique_name
-import openc2lib.profiles.nfm as nfm
+import otupy.profiles.nfm as nfm
 from openc2lib.actuators.nmf.utils.bpf_filter_translator import generate_bpf_filter
-from openc2lib.profiles.nfm.targets.monitor_id import MonitorID
+from otupy.profiles.nfm.targets.monitor_id import MonitorID
 from openc2lib.actuators.nmf.handlers.response_handler import badrequest, ok
 from openc2lib.actuators.nmf.utils.process_utils import run_monitor
 from openc2lib.actuators.nmf.nfm_flow_monitor import NetworkFlowMonitor
 from openc2lib import Feature
 from openc2lib.actuators.nmf.configuration.probe_config_loader import ProbeConfigLoader
 from dotenv import load_dotenv
+
 load_dotenv()
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+
 class NprobeActuator(NetworkFlowMonitor):
     def __init__(self, asset_id):
         super().__init__(asset_id)
@@ -25,7 +28,7 @@ class NprobeActuator(NetworkFlowMonitor):
         match f:
             case Feature.information_elements:
                 print("123444")
-                a =  self.config.get_info_element(self.asset_id)
+                a = self.config.get_info_element(self.asset_id)
                 print(a)
                 return a
             case Feature.exports:
@@ -50,7 +53,7 @@ class NprobeActuator(NetworkFlowMonitor):
         sleep_time, terminate_time = get_sleep_times(args)
         monitor_id = generate_unique_name()
         if sleep_time > 0:
-            threading.Timer(sleep_time, run_monitor, args=(cmd_list, terminate_time,monitor_id)).start()
+            threading.Timer(sleep_time, run_monitor, args=(cmd_list, terminate_time, monitor_id)).start()
             return ok("Monitor will start after delay", nfm.Results(monitor_id=MonitorID(monitor_id)))
         return run_monitor(cmd_list, terminate_time, monitor_id)
 
@@ -61,7 +64,11 @@ class NprobeActuator(NetworkFlowMonitor):
         return cmd_list
 
     def _add_bpf_filter(self, cmd_list, monitor):
-        bpf_filters = generate_bpf_filter(monitor.filter_v4, monitor.filter_v6) if monitor.get("filter_v4") or monitor.get("filter_v6") else None
+        bpf_filters = (
+            generate_bpf_filter(monitor.filter_v4, monitor.filter_v6)
+            if monitor.get("filter_v4") or monitor.get("filter_v6")
+            else None
+        )
         if bpf_filters:
             cmd_list += ["-f", f"'{bpf_filters}'"]
         return cmd_list
@@ -69,7 +76,7 @@ class NprobeActuator(NetworkFlowMonitor):
     def _add_information_elements(self, cmd_list, monitor):
         if monitor.get("information_elements"):
             cmd_list += ["-T"]
-            value = self.config.get_info_element(self.asset_id,monitor.information_elements)
+            value = self.config.get_info_element(self.asset_id, monitor.information_elements)
             if value is None:
                 return badrequest("Information element is not supported")
             cmd_list.extend(value)
@@ -80,7 +87,7 @@ class NprobeActuator(NetworkFlowMonitor):
         if exporter:
             cmd_list = self._add_exporter_storage(cmd_list, exporter)
             cmd_list = self._add_exporter_collectors(cmd_list, exporter)
-        
+
         opts = args.get("exporter_options", {})
         cmd_list = self._add_option(cmd_list, opts, "sampling", "--sampling-rate")
         cmd_list = self._add_option(cmd_list, opts, "aggregate", "--aggregate")

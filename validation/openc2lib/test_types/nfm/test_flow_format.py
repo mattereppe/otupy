@@ -1,6 +1,6 @@
 import pytest
 from openc2lib.types.base import Enumerated
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat
+from otupy.profiles.nfm import FlowFormat
 import parametrize_from_file
 
 @parametrize_from_file("parameters/test_flow_format.yml")

@@ -4,17 +4,21 @@ from openc2lib.profiles.fclm.targets.monitor_id import MonitorID
 from openc2lib.actuators.fclm.database.SQLDB import SQLDatabase
 from openc2lib.actuators.fclm.user.config import PRODUCER_ID
 from openc2lib.actuators.fclm.handlers.response_handler import ok, servererror, notfound, forbidden
+
 logger = logging.getLogger(__name__)
 db = SQLDatabase()
+
+
 def stream_output(pipe, log_fn, label, max_lines=10):
     line_count = 0
-    for line in iter(pipe.readline, ''):
+    for line in iter(pipe.readline, ""):
         if line_count >= max_lines:
             log_fn(f"[{label}] Output limit of {max_lines} lines reached, stopping stream.")
             break
         log_fn(f"[{label}] {line.strip()}")
         line_count += 1
     pipe.close()
+
 
 def run_monitor(command, terminate_time, monitor_id):
     """
@@ -26,7 +30,7 @@ def run_monitor(command, terminate_time, monitor_id):
 
     Args:
         command (list[str]): The command to execute as a list of arguments.
-        terminate_time (int | float | None): Time in seconds after which the process should be terminated. 
+        terminate_time (int | float | None): Time in seconds after which the process should be terminated.
                                              If None, the process will not be scheduled for termination.
         monitor_id (str): A unique identifier associated with this monitoring session.
 
@@ -35,30 +39,29 @@ def run_monitor(command, terminate_time, monitor_id):
     """
     try:
         logger.info(f"Executing: {' '.join(command)}")
-        proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            bufsize=1,
-            text=True
-        )
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, text=True)
         pid = proc.pid
 
         # Start threads for logging output in real time
-        threading.Thread(target=stream_output, args=(proc.stdout, logger.info, "Monitor Output",10), daemon=True).start()
-        threading.Thread(target=stream_output, args=(proc.stderr, logger.error, "Monitor Error",10), daemon=True).start()
+        threading.Thread(
+            target=stream_output, args=(proc.stdout, logger.info, "Monitor Output", 10), daemon=True
+        ).start()
+        threading.Thread(
+            target=stream_output, args=(proc.stderr, logger.error, "Monitor Error", 10), daemon=True
+        ).start()
 
         # Wait briefly to check for early crash
         time.sleep(3)
         if proc.poll() is not None:
             return servererror("Monitor exited early", error=f"Return code {proc.returncode}")
-        db.add_pid(PRODUCER_ID,pid,monitor_id)
+        db.add_pid(PRODUCER_ID, pid, monitor_id)
         if terminate_time:
             threading.Timer(terminate_time, terminate_process_and_children, args=(pid,)).start()
         return ok("Monitor started", res=Results(monitor_id=MonitorID(monitor_id)))
     except Exception as e:
         return servererror("Execution failed", error=str(e))
-    
+
+
 def terminate_process_and_children(monitor_id):
     """
     Terminates a process and all its child processes by either PID or monitor ID.
@@ -75,12 +78,12 @@ def terminate_process_and_children(monitor_id):
     """
     try:
         if isinstance(monitor_id, int) or str(monitor_id).isdigit():
-            print('pid',monitor_id)
+            print("pid", monitor_id)
             pid = int(monitor_id)
         else:
             try:
                 pid = int(db.get_pid_by_monitor_id(PRODUCER_ID, monitor_id))
-                print('id',monitor_id)
+                print("id", monitor_id)
             except Exception:
                 return servererror("Process already terminated or monitor ID not found")
         parent = psutil.Process(pid)

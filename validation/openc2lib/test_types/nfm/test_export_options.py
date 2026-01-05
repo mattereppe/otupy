@@ -1,7 +1,7 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.nfm.data.export_options import ExportOptions
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat  # Using the correct FlowFormat
+from otupy.profiles.nfm import ExportOptions
+from otupy.profiles.nfm import FlowFormat  # Using the correct FlowFormat
 
 @parametrize_from_file("parameters/test_export_options.yml")
 def test_good_export_options(sampling, aggregate, buffer, timeout, format):

@@ -1,22 +1,22 @@
-"""Remote CLI profile
+"""Netflow Monitor
 
-This modules contains the definition of the `rcli` profile.
+This module contains the definition of the `nfm` profile.
 """
 
-import openc2lib as oc2
+import otupy as oc2
 
-from openc2lib.profiles.rcli.profile import Profile
+from otupy.profiles.nfm.profile import Profile
 
-""" RCLI Specifiers
+""" NFM Specifiers
 
-	Define the set of specifiers defined in this specification that are meaningful in the context of RCLI.
+	Define the set of specifiers defined in this specification that are meaningful in the context of NFM.
 	It implements the data structure define in the section "Actuator Specifiers"
 """
 
 
 @oc2.actuator(nsid=Profile.nsid)
 class Specifiers(oc2.Map):
-    fieldtypes = dict(hostname=str, named_group=str, asset_id=str, asset_tuple=[str])
+    fieldtypes = dict(asset_id=str)
 
     """ Specifiers for Actuator
 

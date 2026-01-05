@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class SQLDatabase:
     """
     A simple SQLite database class to manage copied artifacts and process IDs (PIDs).
@@ -23,13 +24,15 @@ class SQLDatabase:
             c = conn.cursor()
 
             # Create `pids` table
-            c.execute('''
+            c.execute(
+                """
                 CREATE TABLE IF NOT EXISTS pids (
                     uid TEXT,
                     pid TEXT UNIQUE,
                     monitor_id TEXT NULL
                 )
-            ''')
+            """
+            )
 
             conn.commit()
 
@@ -49,7 +52,7 @@ class SQLDatabase:
                 conn.commit()
             except sqlite3.IntegrityError:
                 pass  # Ignore duplicate entries
-            
+
     def get_pid_by_monitor_id(self, uid, monitor_id):
         """
         Retrieves a PID associated with a specific monitor ID and UID.
@@ -78,4 +81,3 @@ class SQLDatabase:
             c = conn.cursor()
             c.execute("DELETE FROM pids WHERE pid = ?", (pid,))
             conn.commit()
-

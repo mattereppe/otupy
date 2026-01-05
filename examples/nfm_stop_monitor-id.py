@@ -1,10 +1,8 @@
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
-import hashlib
 import logging
 import sys
-import time
 import openc2lib as oc2
 from openc2lib.types.data.uri import  URI
 from openc2lib.types.targets.file import File
@@ -12,7 +10,7 @@ from openc2lib.types.targets.file import File
 from openc2lib.encoders.json import JSONEncoder
 from openc2lib.transfers.http import HTTPTransfer
 
-import openc2lib.profiles.nfm as nfm
+import otupy.profiles.nfm as nfm
 
 # logging.basicConfig(filename='openc2.log',level=logging.DEBUG)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)

@@ -1,6 +1,7 @@
 import psutil
 from openc2lib.types.base import Enumerated
 
+
 class State(Enumerated):
     running = 1
     sleeping = 2
@@ -25,4 +26,3 @@ class State(Enumerated):
         if key in cls.__members__:
             return cls[key]
         raise ValueError(f"Unrecognized state: {value!r}")
-

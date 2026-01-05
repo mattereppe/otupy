@@ -6,18 +6,27 @@ import os
 import psutil
 import logging
 import openc2lib.profiles.rcli as rcli
-from openc2lib import ArrayOf,File
-#from openc2lib.profiles.rcli.data.extended_process import Process
+from openc2lib import ArrayOf, File
+
+# from openc2lib.profiles.rcli.data.extended_process import Process
 from openc2lib.profiles.rcli.data.process import Process
 from openc2lib.profiles.rcli.data.state import State
 
 from openc2lib.actuators.rcli.cli.commands import Commands
 from openc2lib.actuators.rcli.database.SQLDB import db
 from openc2lib.actuators.rcli.user.config import PRODUCER_ID
-from openc2lib.actuators.rcli.handlers.response_handler import servererror, badrequest, notfound, ok, forbidden, unauthorized
+from openc2lib.actuators.rcli.handlers.response_handler import (
+    servererror,
+    badrequest,
+    notfound,
+    ok,
+    forbidden,
+    unauthorized,
+)
 
 
 logger = logging.getLogger(__name__)
+
 
 def get_command(target):
     """
@@ -36,31 +45,33 @@ def get_command(target):
     command_line = target.get("command_line")
     executable = target.get("executable")
     cmd = None
-    
+
     if name:
         if not Commands.validate_command(name, command_line):
-            return None ,badrequest("Command is not supported")
+            return None, badrequest("Command is not supported")
         try:
             cmd = shutil.which(name)
             if command_line:
                 cmd = f"{cmd} {command_line}" if cmd else command_line
             return cmd, name
         except Exception as e:
-            return None,servererror("Command is not supported",error=e)
+            return None, servererror("Command is not supported", error=e)
     elif executable:
         if isinstance(executable, File):
             path_executable = executable.get("path")
             file_executable = executable.get("name")
             if path_executable:
-                ex  = os.path.join(path_executable, file_executable)
-            else: 
+                ex = os.path.join(path_executable, file_executable)
+            else:
                 ex = file_executable
             cmd = f"docker run --rm -v ~/Downloads/docker-script:/mnt ubuntu bash /mnt/{ex}"
             if command_line:
                 cmd = f"{cmd} {command_line}" if cmd else command_line
             return cmd, ex
-    else : 
+    else:
         None, badrequest("Command is not supported")
+
+
 def open_process(cmd, scheduled_name, terminate_time):
     """
     Starts a new process and returns its process ID (PID) or error message.
@@ -78,24 +89,26 @@ def open_process(cmd, scheduled_name, terminate_time):
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         parent_process = psutil.Process(process.pid)
         pid = process.pid
-        time.sleep(3)  
+        time.sleep(3)
         stdout, stderr = None, None
-        if process.poll() is not None:  # f"{res}:{arguments.get("start_time")}"`poll()` returns None if the process is still running
+        if (
+            process.poll() is not None
+        ):  # f"{res}:{arguments.get("start_time")}"`poll()` returns None if the process is still running
             stdout, stderr = process.communicate()
             stdout, stderr = stdout.decode().strip(), stderr.decode().strip()
         if stderr:
             return servererror("Error in processing command", error=stderr)
-        if terminate_time and terminate_time > 0:            
+        if terminate_time and terminate_time > 0:
             threading.Timer(terminate_time, terminate_process_and_children, args=(pid,)).start()
         if scheduled_name:
-            db.add_pid(PRODUCER_ID,pid,scheduled_name)
-        else: 
-            db.add_pid(PRODUCER_ID,pid)
-            return Process(pid=pid,  command_line= cmd)
-        
+            db.add_pid(PRODUCER_ID, pid, scheduled_name)
+        else:
+            db.add_pid(PRODUCER_ID, pid)
+            return Process(pid=pid, command_line=cmd)
 
     except Exception as e:
         return servererror("Internal Server Error", error=str(e))
+
 
 def terminate_process_and_children(process_pid):
     """
@@ -143,7 +156,7 @@ def terminate_process_and_children(process_pid):
         logger.info(f"Process and its children have been terminated successfully.")
         db.delete_pid(process_pid)
         return ok("Process(es) terminated")
-    
+
     except psutil.TimeoutExpired:
         return servererror("Timeout during termination")
     except psutil.NoSuchProcess:
@@ -151,6 +164,7 @@ def terminate_process_and_children(process_pid):
         return notfound("Process is already terminated")
     except Exception as e:
         return servererror("Error in terminating process(es)", error=str(e))
+
 
 def get_process_state(pid):
     """
@@ -162,7 +176,7 @@ def get_process_state(pid):
     Returns:
         response: OK response with process state, or an error response.
     """
-    #use the user name which exists in the system
+    # use the user name which exists in the system
     if are_pids_authorized(str(pid)):
         try:
             process = psutil.Process(pid)
@@ -173,7 +187,8 @@ def get_process_state(pid):
             return servererror("Error getting process state", error=str(e))
     else:
         return unauthorized("Unauthorized access to process")
-        
+
+
 def terminate_all_processes(pids=None):
     """
     Terminates specified processes if pids are provided and authorized;
@@ -191,13 +206,14 @@ def terminate_all_processes(pids=None):
                 terminate_process_and_children(pid)
                 db.delete_pid(pid)
         else:
-            user_pids =list(map(int, db.get_pids(PRODUCER_ID))) 
+            user_pids = list(map(int, db.get_pids(PRODUCER_ID)))
             for user_pid in user_pids:
                 terminate_process_and_children(user_pid)
                 db.delete_pid(user_pid)
         return ok("Process(es) terminated")
     except Exception as e:
-        return servererror("Error in terminating process(es)", error= str(e))
+        return servererror("Error in terminating process(es)", error=str(e))
+
 
 def are_pids_authorized(pids):
     """
@@ -210,9 +226,8 @@ def are_pids_authorized(pids):
         bool: True if all given PIDs are authorized, False otherwise.
     """
     user_pids = db.get_pids(PRODUCER_ID)
-    
+
     if isinstance(pids, str):
         return pids in user_pids
-    
-    return all(str(pid) in user_pids for pid in pids)
 
+    return all(str(pid) in user_pids for pid in pids)

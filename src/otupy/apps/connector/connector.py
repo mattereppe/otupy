@@ -104,7 +104,7 @@ def main() -> None:
             consumer = config["consumer"]	
             configs = config["configs"]
             connector = config["id"]
-        except:
+        except Exception as e:
             logger.error("Missing configuration item: %s", e)
             exit
 
