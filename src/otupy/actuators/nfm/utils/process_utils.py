@@ -24,9 +24,7 @@ def stream_output(pipe, log_fn, label, max_lines=10):
 def run_monitor(command, terminate_time, monitor_id):
     try:
         logger.info(f"Executing: {' '.join(command)}")
-        proc = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, text=True, shell=False
-        )
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, text=True)
         pid = proc.pid
 
         # Start threads for logging output in real time
