@@ -15,7 +15,6 @@ from argparse import ArgumentParser
 from glob import glob
 from os.path import dirname
 from yaml import safe_load
-from graphviz import Digraph
 
 import logging
 import logging.config
