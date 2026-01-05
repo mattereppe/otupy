@@ -1,19 +1,17 @@
 import logging
 import os
 import threading
-from openc2lib.actuators.nmf.handlers.argument_handler import get_sleep_times
+from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
 from openc2lib.actuators.rcli.utils.random_name_generator import generate_unique_name
 import otupy.profiles.nfm as nfm
-from openc2lib.actuators.nmf.utils.bpf_filter_translator import generate_bpf_filter
+from otupy.actuators.nfm.utils.bpf_filter_translator import generate_bpf_filter
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
-from openc2lib.actuators.nmf.handlers.response_handler import badrequest, ok
-from openc2lib.actuators.nmf.utils.process_utils import run_monitor
-from openc2lib.actuators.nmf.nfm_flow_monitor import NetworkFlowMonitor
-from openc2lib import Feature
-from openc2lib.actuators.nmf.configuration.probe_config_loader import ProbeConfigLoader
-from dotenv import load_dotenv
+from otupy.actuators.nfm.handlers.response_handler import badrequest, ok
+from otupy.actuators.nfm.utils.process_utils import run_monitor
+from otupy.actuators.nfm.nfm_flow_monitor import NetworkFlowMonitor
+from otupy import Feature
+from otupy.actuators.nfm.configuration.probe_config_loader import ProbeConfigLoader
 
-load_dotenv()
 # Initialize logger
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
-from openc2lib.types.targets import IPv4Connection, IPv6Connection
-from openc2lib import ArrayOf
+from otupy.types.targets import IPv4Connection, IPv6Connection
+from otupy import ArrayOf
 
 
 def generate_bpf_filter(ipv4_connections: ArrayOf(IPv4Connection), ipv6_connections: ArrayOf(IPv6Connection)):  # type: ignore
