@@ -7,6 +7,7 @@
 	the novel service/link structure.
 """
 
+#from graphviz import Digraph
 
 
 #edges_set = set()  # Track visited edges
