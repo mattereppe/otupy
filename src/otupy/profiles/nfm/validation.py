@@ -1,13 +1,12 @@
-"""FCLM validation rules
+"""NFM validation rules
 
-This module defines specific FCLM constraints on the usable `Action`s and `Args` defined by the Language Specification.
+This module defines specific NFM constraints on the usable `Action`s and `Args` defined by the Language Specification.
 
 """
 
-from openc2lib import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
+from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
 
-from openc2lib.profiles.fclm.profile import Profile
-from openc2lib.profiles.fclm.args import Args
+from otupy.profiles.nfm.profile import Profile
 
 AllowedActions = [Actions.query, Actions.start, Actions.stop]
 """ List of allowed `Action`s """
@@ -63,9 +62,8 @@ AllowedCommandArguments[(Actions.start, TargetEnum[Profile.nsid + ":monitor"])] 
     "start_time",
     "stop_time",
     "duration",
-    "log_exporter",
-    "export_fields",
-    "import_controls",
+    "exporter",
+    "exporter_options",
 ]
 AllowedCommandArguments[(Actions.stop, TargetEnum[Profile.nsid + ":monitor_id"])] = [
     "response_requested",
@@ -78,7 +76,7 @@ def validate_command(cmd):
     """Validate a `Command`
 
     Helper function to check the `Target` in a `Command` are valid for the `Action` according
-    to the FCLM profile.
+    to the nfm profile.
     :param cmd: The `Command` class to validate.
     """
 
@@ -95,7 +93,7 @@ def validate_args(cmd):
     """Validate a `Command`
 
     Helper function to check the `Args` in a `Command` are valid for the `Action` and `Target`  according
-    to the FCLM profile.
+    to the nfm profile.
     :param cmd: The `Command` class to validate.
     """
     try:

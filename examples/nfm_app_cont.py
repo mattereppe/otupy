@@ -1,30 +1,25 @@
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
-import hashlib
 import logging
-import sys
-import time
 import openc2lib as oc2
 from openc2lib.types.data.uri import  URI
 from openc2lib.types.targets.file import File
-from openc2lib.profiles.nfm.targets.monitor import FlowMonitor 
-from openc2lib.profiles.nfm.data.exporter import Exporter 
-from openc2lib.profiles.nfm.data.export_options import ExportOptions 
-from openc2lib.profiles.nfm.data.collector import Collector 
-from openc2lib.profiles.nfm.data.flow_format import FlowFormat 
+from otupy.profiles.nfm import Exporter
+from otupy.profiles.nfm import ExportOptions
+from otupy.profiles.nfm.data.collector import Collector
+from otupy.profiles.nfm import FlowFormat
 from openc2lib.types.base import Record, ArrayOf, Array
 from openc2lib.types.data import IPv4Addr, IPv6Addr, Port
 from openc2lib.types.targets import MACAddr , IPv4Net
-from openc2lib.profiles.nfm.data.iface_type import IfaceType 
-from openc2lib.profiles.nfm.data.ie import IE  
-from openc2lib.profiles.nfm.data.interface import Interface 
+from otupy.profiles.nfm.data.ie import IE
+from otupy.profiles.nfm import Interface
 from openc2lib.encoders.json import JSONEncoder
 from openc2lib.transfers.http import HTTPTransfer
 from openc2lib.types.targets import IPv4Connection, IPv6Connection
 from openc2lib.types.data.l4_protocol import L4Protocol
 
-import openc2lib.profiles.nfm as nfm
+import otupy.profiles.nfm as nfm
 # logging.basicConfig(filename='openc2.log',level=logging.DEBUG)
 '''logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger('openc2producer')'''
@@ -105,7 +100,7 @@ def main():
     #    IPv6Connection(src_addr="2001:db8::1", dst_addr="2001:db8::2", protocol=L4Protocol.tcp, src_port=1234, dst_port=443),
     #    IPv6Connection(dst_addr="2001:db8::2", protocol=L4Protocol.icmp),
     ]
-    command = nfm.FlowMonitor(interfaces=ifaces,information_elements=ies,filter_v4=ArrayOf(IPv4Connection)(ipv4_connections),filter_v6 = ArrayOf(IPv6Connection)(ipv6_connections))
+    command = nfm.FlowMonitor(interfaces=ifaces, information_elements=ies, filter_v4=ArrayOf(IPv4Connection)(ipv4_connections), filter_v6 = ArrayOf(IPv6Connection)(ipv6_connections))
     #command = nfm.Monitor(FlowMonitor(interfaces=ifaces, information_elements= ies))
     cmd = oc2.Command(oc2.Actions.start, command, arg, actuator=pf)
 

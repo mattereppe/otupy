@@ -1,5 +1,6 @@
 from openc2lib.types.base import Enumerated
 
+
 class FileFormat(Enumerated):
     """File Format
 

@@ -1,6 +1,7 @@
 from openc2lib.types.base import Map
 from openc2lib.types.data.duration import Duration
 
+
 class ImportOptions(Map):
     """
     ImportOptions Class (File Monitoring Profile)
@@ -16,11 +17,11 @@ class ImportOptions(Map):
     """
 
     fieldtypes = {
-        'scan_frequency': Duration,
-        'clean_inactive': Duration,
-        'max_backoff': Duration,
-        'close_inactive': Duration,
-        'ignore_older': Duration
+        "scan_frequency": Duration,
+        "clean_inactive": Duration,
+        "max_backoff": Duration,
+        "close_inactive": Duration,
+        "ignore_older": Duration,
     }
 
     def __init__(self, *args, **kwargs):
@@ -35,4 +36,3 @@ class ImportOptions(Map):
 
     def __repr__(self):
         return f"ImportOptions({super().__repr__()})"
-    

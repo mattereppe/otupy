@@ -1,4 +1,3 @@
-
 import threading, logging, os
 from ruamel.yaml import YAML
 from openc2lib import Feature
@@ -13,8 +12,10 @@ from openc2lib.actuators.fclm.configuration.log_config_loader import LogConfigLo
 from openc2lib.actuators.fclm.utils.process_utils import run_monitor
 from dotenv import load_dotenv
 import openc2lib.profiles.fclm as fclm
+
 load_dotenv()
 logger = logging.getLogger(__name__)
+
 
 class FilebeatActuator(LogCollectionMonitor):
     """
@@ -33,6 +34,7 @@ class FilebeatActuator(LogCollectionMonitor):
         log_dir (str): Directory where log output will be written.
         data_dir (str): Directory for Filebeat data storage.
     """
+
     def __init__(self, asset_id):
         """
         Initialize the FilebeatActuator.
@@ -184,30 +186,31 @@ class FilebeatActuator(LogCollectionMonitor):
         config["filebeat.inputs"] = []
 
         if file:
-            file_input = {'type': 'filestream', 'id': 'filestream-input', 'enabled': True, 'paths': [file]}
+            file_input = {"type": "filestream", "id": "filestream-input", "enabled": True, "paths": [file]}
             config["filebeat.inputs"].append(self._apply_import_controls(file_input, import_controls))
 
         if uri:
             uri_input = {
-                'type': 'httpjson', 'enabled': True,
-                'interval': '1m',
-                'request.url': uri.get(),
-                'request.method': 'GET',
-                'response.split': {'target': 'body.data'}
+                "type": "httpjson",
+                "enabled": True,
+                "interval": "1m",
+                "request.url": uri.get(),
+                "request.method": "GET",
+                "response.split": {"target": "body.data"},
             }
             config["filebeat.inputs"].append(self._apply_import_controls(uri_input, import_controls))
 
         if socket:
             socket_input = {
-                'type': socket.protocol.name,
-                'id': 'socket-1',
-                'enabled': True,
-                'host': f"{socket.host}:{socket.port}"
+                "type": socket.protocol.name,
+                "id": "socket-1",
+                "enabled": True,
+                "host": f"{socket.host}:{socket.port}",
             }
             config["filebeat.inputs"].append(self._apply_import_controls(socket_input, import_controls))
 
         if export_fields:
-            config.setdefault("processors", []).append({'include_fields': {'fields': export_fields}})
+            config.setdefault("processors", []).append({"include_fields": {"fields": export_fields}})
 
         if output:
             config["output"] = {
@@ -215,7 +218,7 @@ class FilebeatActuator(LogCollectionMonitor):
                     "path": os.path.join(self.log_dir, output[0]),
                     "filename": output[1],
                     "rotate_every_kb": 3000,
-                    "number_of_files": 5
+                    "number_of_files": 5,
                 }
             }
 
@@ -290,4 +293,4 @@ class FilebeatActuator(LogCollectionMonitor):
         seconds = int(seconds)
         h, seconds = divmod(seconds, 3600)
         m, s = divmod(seconds, 60)
-        return ''.join(f"{v}{u}" for v, u in ((h, 'h'), (m, 'm'), (s, 's')) if v) or "0s"
+        return "".join(f"{v}{u}" for v, u in ((h, "h"), (m, "m"), (s, "s")) if v) or "0s"

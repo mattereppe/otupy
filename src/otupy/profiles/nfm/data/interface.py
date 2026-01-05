@@ -1,10 +1,11 @@
-from openc2lib.types.base import Record, ArrayOf, Array
-from openc2lib.types.targets.ipv4_net import IPv4Net
-from openc2lib.types.targets.ipv6_net import IPv6Net
-from openc2lib.types.targets import MACAddr  
-from openc2lib.profiles.nfm.data.iface_type import IfaceType 
+from otupy.types.base import Record, ArrayOf, Array
+from otupy.types.targets.ipv4_net import IPv4Net
+from otupy.types.targets.ipv6_net import IPv6Net
+from otupy.types.targets import MACAddr
+from otupy.profiles.nfm.data.iface_type import IfaceType
 
 # str, int, str are used directly
+
 
 class Interface(Record):
     """
@@ -28,7 +29,7 @@ class Interface(Record):
     ipv6_net: ArrayOf(IPv6Net) = None  # type: ignore
     """ List of assigned IPv6 addresses (with prefix) """
 
-    mac_addr: MACAddr = None # type: ignore
+    mac_addr: MACAddr = None  # type: ignore
     """ MAC address of the interface """
 
     iface_type: IfaceType = None
@@ -44,11 +45,11 @@ class Interface(Record):
         if_id: int = None,
         ipv4_net: ArrayOf = None,  # type: ignore
         ipv6_net: ArrayOf = None,  # type: ignore
-        mac_addr: MACAddr = None, # type: ignore
+        mac_addr: MACAddr = None,  # type: ignore
         iface_type: IfaceType = None,
-        active: str = None
+        active: str = None,
     ):
-        if name is None or if_id and if_id <0:
+        if name is None or if_id and if_id < 0:
             raise ValueError("Interface must be provided")
         elif isinstance(name, Interface):
             self._init_from_interface(name)
@@ -66,9 +67,7 @@ class Interface(Record):
         self.iface_type = interface.iface_type
         self.active = interface.active
 
-    def _init_from_params(
-        self, name, description, if_id, ipv4_net, ipv6_net, mac_addr, iface_type, active
-    ):
+    def _init_from_params(self, name, description, if_id, ipv4_net, ipv6_net, mac_addr, iface_type, active):
         self.name = name
         self.description = description
         self.if_id = if_id
@@ -89,11 +88,18 @@ class Interface(Record):
         return self.__repr__()
 
     def validate_fields(self):
-        if not any([
-            self.name, self.description, self.if_id,
-            self.ipv4_net, self.ipv6_net,
-            self.mac_addr, self.iface_type, self.active is not None
-        ]):
+        if not any(
+            [
+                self.name,
+                self.description,
+                self.if_id,
+                self.ipv4_net,
+                self.ipv6_net,
+                self.mac_addr,
+                self.iface_type,
+                self.active is not None,
+            ]
+        ):
             raise ValueError("At least one field must be set in Interface (Map{1..*})")
 
         if self.name is not None and not isinstance(self.name, str):

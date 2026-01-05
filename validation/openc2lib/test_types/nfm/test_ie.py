@@ -1,6 +1,6 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.nfm.data.ie import IE  # Update this import to the correct path
+from otupy.profiles.nfm.data.ie import IE  # Update this import to the correct path
 
 @parametrize_from_file("parameters/test_ie.yml")
 def test_good_ie(good_ie):
