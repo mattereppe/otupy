@@ -1,10 +1,10 @@
 class EF(str):
-    """ 
+    """
     EF Class
 
     Represents an export field.
-    
-    This class extends `str`, meaning it behaves like a string while 
+
+    This class extends `str`, meaning it behaves like a string while
     semantically representing an EF.
     """
 

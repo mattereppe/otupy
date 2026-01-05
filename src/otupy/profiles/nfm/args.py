@@ -4,7 +4,7 @@ This module extends the Args defined by the Language Specification
 (see Sec. 'Command Arguments Unique to NFM').
 """
 
-import otupy as oc2
+import openc2lib as oc2
 
 from otupy.profiles.nfm.profile import Profile
 from otupy.profiles.nfm.data.exporter import Exporter

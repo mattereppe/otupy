@@ -3,6 +3,7 @@ from openc2lib.types.data import Port
 from openc2lib.types.targets import IPv4Net
 from openc2lib.profiles.fclm.data.file_format import FileFormat
 
+
 class Collector(Record):
     """
     Collector Class
@@ -22,12 +23,7 @@ class Collector(Record):
     format: FileFormat = None
     """ Flow export file format (e.g., JSON, YAML, etc.) """
 
-    def __init__(
-        self,
-        address: IPv4Net = None,
-        port: Port = None,
-        format: FileFormat = None
-    ):
+    def __init__(self, address: IPv4Net = None, port: Port = None, format: FileFormat = None):
         super().__init__()
         self.address = address
         self.port = port

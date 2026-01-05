@@ -11,6 +11,7 @@ from openc2lib import Payload, Binary
 from openc2lib.actuators.rcli.database.SQLDB import db
 from openc2lib.actuators.rcli.user.config import PRODUCER_ID
 
+
 def get_payload(target):
     """
     Extracts payload data from the target.
@@ -32,6 +33,7 @@ def get_payload(target):
             return file.get(), True
     return None, False
 
+
 def get_file_path(arguments):
     """
     Determines the file path where an artifact should be saved.
@@ -45,7 +47,7 @@ def get_file_path(arguments):
             - directory_path: The directory where the file is located.
             - file_name: The name of the file.
     """
-    storage = arguments.get('storage')
+    storage = arguments.get("storage")
     file_name = str(uuid.uuid4())  # Generate a unique filename if not provided
 
     if storage and isinstance(storage, File):
@@ -56,6 +58,7 @@ def get_file_path(arguments):
 
     file_path = os.path.join("/opt", str(PRODUCER_ID))
     return os.path.join(file_path, file_name), file_path, file_name
+
 
 def download_or_save_file(is_uri, payload, file_path):
     """
@@ -81,7 +84,7 @@ def download_or_save_file(is_uri, payload, file_path):
         file_content = payload
     # Calculate MD5 hash of the file content
     file_hash = hashlib.md5(file_content).digest()
-    
+
     # Return the hash wrapped in an oc2.Binaryx object
     return oc2.Binaryx(file_hash)
 
@@ -98,12 +101,12 @@ def is_file_authorized(file_path, file_name):
         bool: True if the file is authorized, False otherwise.
     """
     user_files = db.get_files(PRODUCER_ID)
-    
+
     # Check if the (file_path, file_name) pair exists in the database
     for stored_file_path, stored_file_name, _ in user_files:
         if stored_file_path == file_path and stored_file_name == file_name:
             return True
-    
+
     return False
 
 

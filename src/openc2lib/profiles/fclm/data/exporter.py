@@ -2,6 +2,7 @@ from openc2lib.types.base import Record, ArrayOf, Array
 from openc2lib.types.targets.file import File
 from openc2lib.profiles.fclm.data.collector import Collector  # Assuming this path
 
+
 class Exporter(Record):
     """
     Exporter
@@ -44,6 +45,7 @@ class Exporter(Record):
             raise TypeError(f"'storage' must be File, got {type(self.storage)}")
         if self.collectors is not None and not isinstance(self.collectors, Array):
             raise TypeError(f"'collectors' must be ArrayOf(Collector), got {type(self.collectors)}")
+
     def get(self, key, default=None):
-        """ Mimics dictionary get method """
+        """Mimics dictionary get method"""
         return getattr(self, key, default)

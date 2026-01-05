@@ -1,7 +1,7 @@
-import otupy as oc2
+import openc2lib as oc2
 from otupy.profiles.nfm.profile import Profile  # Assuming this exists
-from otupy.types.base import ArrayOf, Array
-from otupy.types.targets import IPv4Connection, IPv6Connection
+from openc2lib.types.base import ArrayOf, Array
+from openc2lib.types.targets import IPv4Connection, IPv6Connection
 from otupy.profiles.nfm.data.interface import Interface  # Assuming the path exists
 from otupy.profiles.nfm.data.ie import IE  # Assuming the path exists
 

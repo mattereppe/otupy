@@ -8,7 +8,7 @@ from openc2lib.types.data.feature import Feature
 from openc2lib.encoders.json import JSONEncoder
 from openc2lib.transfers.http import HTTPTransfer
 
-import openc2lib.profiles.nfm as nfm
+import otupy.profiles.nfm as nfm
 
 # logging.basicConfig(filename='openc2.log',level=logging.DEBUG)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
