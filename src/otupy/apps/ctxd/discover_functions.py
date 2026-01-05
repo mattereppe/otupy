@@ -18,6 +18,7 @@ from otupy.profiles.ctxd.data.name import Name
 #from otupy.transfers.http.message import Message
 
 from otupy.apps.ctxd.publishers import *
+from otupy.apps.ctxd.defaults import set_defaults
 
 logger = logging.getLogger()
 
