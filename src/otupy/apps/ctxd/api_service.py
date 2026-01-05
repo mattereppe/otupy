@@ -22,7 +22,7 @@ from datetime import datetime
 from flask import Flask, request, make_response
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
 
-from discover_functions import start_discovery
+from otupy.apps.ctxd.discover_functions import start_discovery
 
 logger = logging.getLogger()
 
