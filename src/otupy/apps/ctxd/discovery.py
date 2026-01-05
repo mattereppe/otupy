@@ -22,8 +22,8 @@ import logging.config
 import os
 import sys
 
-from api_service import api_listen
-from discover_functions import start_discovery
+from otupy.apps.ctxd.api_service import api_listen
+from otupy.apps.ctxd.discover_functions import start_discovery
 
 logger = logging.getLogger()
 
@@ -123,8 +123,6 @@ def parse_and_default(config):
 		if c not in config:
 			config[c]=defaults[c]
 
-	print("config: ", config)
-
 	# Service section (ctxd actuators)
 	if 'services' in config and config['services'] is not None:
 		for service in config["services"]:
@@ -141,7 +139,6 @@ def parse_and_default(config):
 
 	# Database section:
 	if 'publishers' in config:
-		print("cazzo e`????")
 		for name in config['publishers'].keys():
 			if config['publishers'][name] is None:
 				config['publishers'][name]={}

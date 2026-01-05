@@ -132,7 +132,6 @@ def start_discovery(config: dict, event: Event = None):
 
 		Repeats the discovery process according to the configuration
 	"""
-	print('************** discovery started!')
 	# Set loop and frequency of the discovery process
 	repeat_discovery = loop(config['loop'],config['frequency'],event)(discovery)
 	repeat_discovery(config)
