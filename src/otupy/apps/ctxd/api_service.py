@@ -23,6 +23,7 @@ from flask import Flask, request, make_response
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
 
 from otupy.apps.ctxd.discover_functions import start_discovery
+from otupy.apps.ctxd.defaults import parse_and_default, set_defaults
 
 logger = logging.getLogger()
 
@@ -61,6 +62,7 @@ def api_listen(config: dict) -> None:
 		logger.debug("Sanitized input data: %s", req_conf)
 		# Generate a configuration by merging the default values with requested config
 		myconf = config | req_conf
+		myconf = parse_and_default(myconf)
 
 		# Start periodic discovery task, according to the configuration
 		try:
