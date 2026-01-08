@@ -22,6 +22,11 @@ Type: Args (Map)
      - ``bool``
      - 0
      - The response includes either only the name or all the details about the services and the links.
+   * - 3
+     - cached
+     - ``bool``
+     - 0
+     - If set, this flag asks to return cached info, without updating it from the authoritative source (faster to run, but may return outdated data). To be used for testing purposes. 
 
 Command Arguments are optional, and a new one called “name_only” has
 been defined, which is not present in the Language Specification.
