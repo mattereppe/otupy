@@ -295,6 +295,7 @@ class HTTPTransfer(oc2.Transfer):
 		app.run(debug=True, host=self.host, port=self.port, ssl_context=self.ssl_context)
 
 
+@oc2.transfer("https")
 class HTTPSTransfer(HTTPTransfer):
 	""" HTTP Transfer Protocol with SSL
 
