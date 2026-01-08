@@ -30,7 +30,7 @@ from otupy import Consumer, LogFormatter
 logger = logging.getLogger()
 default_consumer = {
 	'host': '127.0.0.1',
-	'port': 80,
+	'port': 443,
 	'encoding': 'json',
 	'transfer': 'https'
 }
