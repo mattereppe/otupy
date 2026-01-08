@@ -28,6 +28,13 @@ from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
 logger = logging.getLogger()
+default_consumer = {
+	'host': '127.0.0.1',
+	'port': 80,
+	'encoding': 'json',
+	'transfer': 'https'
+}
+
 default_logging = {
    'version': 1, 
    'formatters': {
@@ -50,6 +57,17 @@ default_logging = {
 		'level': 'INFO'
 	}
 }
+
+def parse_and_default(config):
+	""" Parse consumer dictionary and assign default values to mising items
+	"""
+
+	# Logging framework and base service parameters
+	for c in ['host', 'port', 'encoding', 'transfer']:
+		if c not in config:
+			config[c]=default_consumer[c]
+
+	return config
 
 def main() -> None:
     """
@@ -75,6 +93,9 @@ def main() -> None:
         except:
             logger.error("Missing configuration item: %s", e)
             exit
+
+        consumer = parse_and_default(consumer)
+        print("config: ", config)
 
         try:
            logging.config.dictConfig(config["logger"]) 
@@ -117,7 +138,10 @@ def main() -> None:
         # Load the transferer (beautiful name, eh?).
         if consumer['transfer'] not in Transfers:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
-        transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
+        if 'endpoint' in consumer:
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
+        else:
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'])
 
         consumer = Consumer(connector, actuators, encoder, transferer)
         consumer.run()
