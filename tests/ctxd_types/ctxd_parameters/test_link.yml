@@ -1,0 +1,75 @@
+test_good_parameters:
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: "api"
+  peers:
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: 2
+  peers:
+    - service_name: "kubernetes"
+      role: "client"
+      consumer: Null
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: 2
+  peers:
+    - service_name: "kubernetes"
+      role: "client"
+      consumer: 
+        host: "www.abc.com"
+        port: 8080
+        protocol: "tcp"
+        endpoint: "/.well-known/openc2"
+        transfer: "http"
+        encoding: "json"
+        profile: "x-ctxd"
+        actuator:
+          asset_id: "firewall1"
+          domain: "nodomain"
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: 2
+  peers:
+    - service_name: "kubernetes"
+      role: "client"
+      consumer: 
+        host: "www.abc.com"
+        port: 8080
+        profile: "x-ctxd"
+        actuator:
+          asset_id: "firewall1"
+          domain: "nodomain"
+
+
+test_bad_parameters:
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: 1
+  peers: "aaaaaaaa"
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: "publisher"
+  peers:
+- name: "name_link"
+  description: "description_link" 
+  versions:
+  link_type: 2
+  peers:
+    - service_name: "kubernetes"
+      role: "client"
+      consumer: 
+        host: "www.abc.com"
+        port: "eightyeighty"
+        profile: "x-ctxd"
+        actuator:
+          asset_id: "firewall1"
+          domain: "nodomain"
+
+

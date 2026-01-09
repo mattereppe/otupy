@@ -1,0 +1,7 @@
+test_good_parameters:
+- peer_role: 1
+
+test_bad_parameters:
+- peer_role: "client"
+- peer_role: 12314553466
+

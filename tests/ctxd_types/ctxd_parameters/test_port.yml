@@ -1,0 +1,47 @@
+test_good_parameters:
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses: Null
+  gateway: Null
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses: Null
+  gateway: "172.17.0.1"
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses:
+    - "127.0.0.1"
+  gateway: "172.17.0.1"
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses:
+    - "127.0.0.1"
+    - "172.17.0.1"
+  gateway: "172.17.0.1"
+
+test_bad_parameters:
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "ens0"
+  addresses: "www.google.it"
+  gateway: Null
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses: Null
+  gateway: "router.acme.com"
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses:
+    - "www.mipiaci.tu"
+  gateway: "172.17.0.1"
+- description: "port1"
+  port_id: "4314r4-4524-4444-"
+  iface: "eth0"
+  addresses: "127.0.0.1"
+  gateway: "172.17.0.1"

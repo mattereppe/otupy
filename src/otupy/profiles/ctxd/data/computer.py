@@ -29,10 +29,15 @@ class Computer(Record):
 			self.os = description.os
 		else:
 			self.description = description if description is not None else None
-			self.apps = apps if apps is not None else None
 			self.id = id if id is not None else None
-			self.hostname = hostname if hostname is not None else None
-			self.os = os if os is not None else None
+			self.hostname = Hostname(hostname) if hostname is not None else None
+			self.os = OS(os) if os is not None else None
+			if apps is not None:
+				self.apps = ArrayOf(Application)()
+				for app in apps:
+					self.apps.append(Application(**app))
+			else:
+				self.apps = None
 		self.validate_fields()
 
 	def __repr__(self):
@@ -47,10 +52,13 @@ class Computer(Record):
 	            f"os={self.os})"
 
 	def validate_fields(self):
-		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, Computer)):
+		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, Application)):
 			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
-		if self.apps is not None and not isinstance(self.id, ArrayOf(Application)):
-			raise TypeError(f"Expected 'id' to be of type str, but got {type(self.id)}")
+		if self.id is not None and not isinstance(self.id, str):
+			raise TypeError(f"Expected 'apps' to be of type 'str', but got {type(self.id)}")
+		# TODO: Understand why this does not work with ArrayOf(Application)
+		if self.apps is not None and not issubclass(type(self.apps), list):
+			raise TypeError(f"Expected 'apps' to be of type 'ArrayOf(Application)', but got {type(self.apps)}")
 		if self.hostname is not None and not isinstance(self.hostname, Hostname):
 			raise TypeError(f"Expected 'hostname' to be of type Hostname, but got {type(self.hostname)}")
 		if self.os is not None and not isinstance(self.os, OS):

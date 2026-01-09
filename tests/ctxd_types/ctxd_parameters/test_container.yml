@@ -1,0 +1,28 @@
+test_good_parameters:
+- description: "container"
+  container_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  status: "running"
+  image: "ubuntu:latest"
+- description: "container"
+  container_id: "43144-4524-4444-"
+  name: "mongodb"
+  namespace: "default"
+  status: "running"
+  image: "ubuntu:latest"
+- description: "container"
+  container_id: "43144-4524-4444-"
+  name: "mongodb"
+  namespace: Null
+  status: Null
+  image: "ubuntu:latest"
+
+test_bad_parameters:
+- description: "container"
+  container_id: "43144-4524-4444-"
+  name: "mongodb"
+  namespace: Null
+  status: "running"
+  image: 45
+ 

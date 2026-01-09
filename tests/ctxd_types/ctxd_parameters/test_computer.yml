@@ -1,0 +1,49 @@
+test_good_parameters:
+- description: "ubuntu"
+  computer_id: "123456"
+  hostname: "debian"
+  os: Null
+  apps: Null
+- description: "ubuntu"
+  computer_id: "123456"
+  hostname: "debian"
+  os: "Debian GNU/Linux"
+  apps: Null
+- description: "ubuntu"
+  computer_id: "123456"
+  hostname: "debian"
+  os: 
+    name: "Debian/GNU Linux"
+    version: "Buster"
+    family: "Linux"
+    type: "xxx"
+  apps: Null
+- description: "ubuntu"
+  computer_id: "123456"
+  hostname: "debian"
+  os: Null
+  apps: 
+    - name: "mongodb"
+      description: "MondoDB database"
+      app_type: "database"
+    - name: "apache"
+      description: "Apache Web server"
+      app_type: "web server"
+
+test_bad_parameters:
+- description: 143
+  computer_id: "123456"
+  hostname: "debian"
+  os: Null
+  apps: Null
+- description: "ubuntu"
+  computer_id: "123456"
+  hostname: "debian"
+  os: Null
+  apps: "mongodb"
+- description: "ubuntu"
+  computer_id: "123456"
+  hostname: "debian"
+  os: Null
+  apps: 
+    - "mongodb"

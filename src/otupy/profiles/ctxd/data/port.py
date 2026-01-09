@@ -32,7 +32,9 @@ class Port(Record):
 				self.addresses = ArrayOf(IPv4Addr)()
 				for address in addresses:
 					self.addresses.append(IPv4Addr(address))
-			self.gateway = gateway if gateway is not None else None
+			else:
+				self.addresses = None
+			self.gateway = IPv4Addr(gateway) if gateway is not None else None
 		self.validate_fields()
 
 	def __repr__(self):
@@ -55,8 +57,7 @@ class Port(Record):
 		if self.iface is not None and not isinstance(self.iface, str):
 			raise TypeError(f"Expected 'hostname' to be of type {str}, but got {type(self.hostname)}")
 		if self.addresses is not None and not issubclass(type(self.addresses), list):
-			print("Addresses: ", type(self.addresses[0]))
 			raise TypeError(f"Expected 'addresses' to be of type {ArrayOf(IPv4Addr)}, but got {type(self.addresses)}")	
-		if self.gateway is not None and not isinstance(self.gateway, ArrayOf(IPv4Addr)):
-			raise TypeError(f"Expected 'os' to be of type {gateway}, but got {type(self.gateway)}")
+		if self.gateway is not None and not isinstance(self.gateway, IPv4Addr):
+			raise TypeError(f"Expected 'gateway' to be of type {IPv4Addr}, but got {type(self.gateway)}")
 

@@ -1,0 +1,6 @@
+test_good_parameters:
+- name: "www.name.com"
+
+test_bad_parameters:
+- name: 123
+- name: 1

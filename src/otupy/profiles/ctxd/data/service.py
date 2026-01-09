@@ -44,7 +44,7 @@ class Service(otupy.types.base.Record):
 	def _init_from_params(self, name:Name = None, type:ServiceType = None, # links:ArrayOf(Name) = None, # type: ignore
 					    subservices:ArrayOf(Name) = None, owner:str = None, release:str = None): # type: ignore
 		self.name = name
-		self.type = type
+		self.type = ServiceType(type)
 #self.links = links
 		self.subservices = subservices
 		self.owner = owner

@@ -1,0 +1,50 @@
+test_good_parameters:
+- name: "prova"
+  service_type: "iot"
+  subservices:
+  owner: 
+  release: "release"
+- name: "prova"
+  service_type: "cloud"
+  subservices:
+    - name: "nova"
+  owner: 
+  release: "release"
+- name: "prova"
+  service_type: "cloud"
+  subservices:
+    - name: "nova"
+    - name: "neutron"
+  owner: 
+  release: "release"
+- name: "prova"
+  service_type: "cloud"
+  subservices:
+    - name: "nova"
+    - name: "neutron"
+  owner: "miranda"
+  release: "release"
+
+
+test_bad_parameters:
+- name: "prova"
+  service_type:
+  subservices:
+  owner: 
+  release: "release"
+- name: "prova"
+  service_type: "cloud"
+  subservices: 'nova'
+  owner: 
+  release: "release"
+- name: "prova"
+  service_type: "cloud"
+  subservices:
+    - "nova"
+  owner: 
+  release: "release"
+- name: "prova"
+  service_type:
+  subservices:
+  owner: 
+  release: "release"

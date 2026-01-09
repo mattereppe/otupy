@@ -1,0 +1,6 @@
+test_good_parameters:
+- name: "ubuntu"
+  version: "123456"
+  family: "debian"
+  os_type: "linux"
+
