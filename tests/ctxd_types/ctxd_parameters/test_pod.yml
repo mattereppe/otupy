@@ -1,0 +1,75 @@
+test_good_parameters:
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: Null
+- description: "container"
+  pod_id: "43144-4524-4444-"
+  name: "mongodb"
+  namespace: "default"
+  ports: Null
+- description: "container"
+  pod_id: "43144-4524-4444-"
+  name: "mongodb"
+  namespace: Null
+  ports: Null
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: 
+    - description: "port1"
+      id: "4314r4-4524-4444-"
+      iface: "eth0"
+      addresses:
+        - "127.0.0.1"
+        - "172.17.0.1"
+      gateway: "172.17.0.1"
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: 
+    - description: "port1"
+      gateway: "172.17.0.1"
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: 
+    - description: "port1"
+      addresses: Null
+      gateway: "172.17.0.1"
+
+test_bad_parameters:
+- description: "container"
+  pod_id: "43144-4524-4444-"
+  name: "mongodb"
+  namespace: Null
+  ports: 45
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: 
+    - description: "port1"
+      gateway: "www.mipiaci.tu"
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: 
+    - description: "port1"
+      addresses: "127.0.0.1"
+      gateway: "172.17.0.1"
+- description: "container"
+  pod_id: "4314r4-4524-4444-"
+  name: "123456"
+  namespace: "container_name"
+  ports: 
+    - description: "port1"
+      addresses: 
+        - "router.gw.com"
+      gateway: "172.17.0.1"
+ 

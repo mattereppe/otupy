@@ -141,7 +141,7 @@ def api_listen(config: dict) -> None:
 
 		return httpresp, httpcode
 	
-	@app.route("/clean", methods=['GET'])
+	@app.route("/clean", methods=['POST'])
 	def _clean():
 		""" Remove all running threads """
 

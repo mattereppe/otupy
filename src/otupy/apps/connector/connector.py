@@ -95,7 +95,6 @@ def main() -> None:
             exit
 
         consumer = parse_and_default(consumer)
-        print("config: ", config)
 
         try:
            logging.config.dictConfig(config["logger"]) 

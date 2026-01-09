@@ -1,0 +1,10 @@
+test_good_parameters:
+- description: "IoT"
+  name: "Azure IoT"
+  iot_type: "sensor"
+
+test_bad_parameters:
+- description: 123
+  name: "Azure IoT"
+  iot_type: "sensor"
+

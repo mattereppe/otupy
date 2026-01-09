@@ -18,3 +18,11 @@ class Server(Choice):
 
 	register = Register({'hostname': Hostname, 'ipv4_addr': IPv4Addr})
 
+	def __init__(self, name):
+		# The following code infers if the input name is an IPv4Addr,
+		# otherwise defaults to build an hostname
+		try:
+			super().__init__(IPv4Addr(name))
+		except:
+			super().__init__(Hostname(name))
+

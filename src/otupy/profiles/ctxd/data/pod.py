@@ -32,6 +32,15 @@ class Pod(Record):
 			self.name = str(name) if name is not None else None
 			self.namespace = str(namespace) if namespace is not None else None
 			self.ports = ArrayOf(Port)(ports) if ports is not None else None
+			if ports is not None:
+				self.ports = ArrayOf(Port)()
+				for port in ports:
+					if isinstance(port, dict):
+						self.ports.append(Port(**port))
+					else:
+						self.ports.append(Port(port))
+			else:
+				self.ports = None
 		self.validate_fields()
 
 	def __repr__(self):

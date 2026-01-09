@@ -1,0 +1,8 @@
+test_good_parameters:
+- transfer: 1
+
+test_bad_parameters:
+- transfer: "http"
+- transfer: 12314553466
+- transfer:
+

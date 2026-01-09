@@ -41,11 +41,22 @@ class Link(otupy.types.base.Record):
 		self.peers = link.peers if link.peers is not None else None
 
 	def _init_from_params(self, name = None, description = None, versions = None, link_type = None, peers = None):
-		self.name = name if name is not None else None
+		self.name = Name(name) if name is not None else None
 		self.description = description if description is not None else None
 		self.versions = versions if versions is not None else None
-		self.link_type = link_type if link_type is not None else None
-		self.peers = peers if peers is not None else None
+		try:
+			self.link_type = LinkType[link_type] if link_type is not None else None
+		except:
+			self.link_type = LinkType(link_type) if link_type is not None else None
+		if peers is not None: 
+			self.peers = ArrayOf(Peer)() 
+			for p in peers:
+				if isinstance(p, dict):
+					self.peers.append(Peer(**p))
+				else:
+					self.peers.append(Peer(p))
+		else: 
+			self.peers = None
 
 	def __repr__(self):
 		return (f"Link(name={self.name}, "

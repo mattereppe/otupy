@@ -1,0 +1,7 @@
+test_good_parameters:
+- encoding: 1
+
+test_bad_parameters:
+- encoding: "json"
+- encoding: 12314553466
+
