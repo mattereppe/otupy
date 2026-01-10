@@ -1,0 +1,22 @@
+{
+	"action": "query", 
+	"target": {
+		"x-ctxd:context": {
+			"dependencies": {
+				"service1": "service2"
+			}
+		}
+	}, 
+	"args": {
+		"x-ctxd": {
+			"name_only": false, 
+			"cached": false
+		}
+	}, 
+	"actuator": {
+		"x-ctxd": {
+			"asset_id": "ctxd-openstack-example",
+			"domain": "mirandaproject.eu"
+		}
+	}
+}
