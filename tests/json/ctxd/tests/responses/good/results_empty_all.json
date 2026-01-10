@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "status_text": "OK",
+  "results": {
+    "x-ctxd": {
+      "services": [
+      ],
+      "links": [
+      ]
+    }
+  }
+}

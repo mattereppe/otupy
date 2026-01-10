@@ -1,0 +1,101 @@
+{
+  "status": 200,
+  "status_text": "OK",
+  "results": {
+    "x-ctxd": {
+      "links": [
+        {
+          "name": {
+            "local": "nova"
+          },
+          "description": "Openstack controls kube2",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube2"
+              },
+              "role": "controlled"
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "nova"
+          },
+          "description": "Openstack controls kube1",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube1"
+              },
+              "role": "controlled"
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "nova"
+          },
+          "description": "Openstack controls kube0",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube0"
+              },
+              "role": "controlled"
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "neutron"
+          },
+          "description": "OpenStack Security Groups",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "openstack-securitygroups"
+              },
+              "role": "controlled",
+              "consumer": {
+                "host": "127.0.0.1",
+                "port": 8080,
+                "profile": "slpf",
+                "actuator": {
+                  "asset_id": "sg"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "kube0"
+          },
+          "description": "System and application software installed on kube0",
+          "link_type": "hosting",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube0"
+              },
+              "role": "host",
+              "consumer": {
+                "host": "kube0",
+                "port": 8080,
+                "profile": "x-ctxd",
+                "actuator": {
+                  "asset_id": "ctxd-kube0"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

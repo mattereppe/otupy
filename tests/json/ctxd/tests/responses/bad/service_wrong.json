@@ -1,0 +1,305 @@
+{
+  "status": 200,
+  "status_text": "OK",
+  "results": {
+    "x-ctxd": {
+      "services": [
+        {
+          "name": {
+            "local": "openstack"
+          },
+          "type": {
+            "myservice": {
+              "description": "cloud",
+              "name": "openstack",
+              "type": "IaaS"
+            }
+          },
+          "subservices": [
+            {
+              "local": "cinderv3"
+            },
+            {
+              "local": "cinderv2"
+            },
+            {
+              "local": "placement"
+            },
+            {
+              "local": "nova"
+            },
+            {
+              "local": "neutron"
+            },
+            {
+              "local": "keystone"
+            },
+            {
+              "local": "glance"
+            }
+          ],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "cinderv3"
+          },
+          "type": {
+            "application": {
+              "description": "OpenStack Block Storage",
+              "id": "279efc021fa342b3aae7963c6bafe0bd",
+              "name": "cinderv3",
+              "owner": "tnt-lab",
+              "app_type": "volumev3"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "cinderv2"
+          },
+          "type": {
+            "application": {
+              "description": "OpenStack Block Storage",
+              "id": "35c670986143498fadeae8a19dfbf4ca",
+              "name": "cinderv2",
+              "owner": "tnt-lab",
+              "app_type": "volumev2"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "placement"
+          },
+          "type": {
+            "application": {
+              "description": "Placement API",
+              "id": "46e174111649479f80b1509062f4258d",
+              "name": "placement",
+              "owner": "tnt-lab",
+              "app_type": "placement"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "nova"
+          },
+          "type": {
+            "application": {
+              "description": "OpenStack Compute",
+              "id": "a3e147af47fd4ff5be7b628d06fb8de1",
+              "name": "nova",
+              "owner": "tnt-lab",
+              "app_type": "compute"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "neutron"
+          },
+          "type": {
+            "application": {
+              "description": "OpenStack Networking",
+              "id": "c84c57e978c44c7aac4111c67fb9e8f3",
+              "name": "neutron",
+              "owner": "tnt-lab",
+              "app_type": "network"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "keystone"
+          },
+          "type": {
+            "application": {
+              "id": "de088a0914c94e4a97dfe7032b09fc05",
+              "name": "keystone",
+              "owner": "tnt-lab",
+              "app_type": "identity"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "glance"
+          },
+          "type": {
+            "application": {
+              "description": "OpenStack Image",
+              "id": "ec61920628f349c1967c9221ad428ef8",
+              "name": "glance",
+              "owner": "tnt-lab",
+              "app_type": "image"
+            }
+          },
+          "subservices": [],
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "kube2"
+          },
+          "type": {
+            "vm": {
+              "description": "kube2",
+              "id": "4fe838fc-3962-42c3-9d85-8f92dc41d131",
+              "name": "kube2",
+              "image": "baa89d5d-8166-4c43-8ee0-1ea72e7f3117"
+            }
+          },
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "kube1"
+          },
+          "type": {
+            "vm": {
+              "description": "kube1",
+              "id": "8eef1e99-bac8-4a17-be4e-ab04534ce581",
+              "name": "kube1",
+              "image": "baa89d5d-8166-4c43-8ee0-1ea72e7f3117"
+            }
+          },
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "kube0"
+          },
+          "type": {
+            "vm": {
+              "description": "kube0",
+              "id": "8c6fd9a0-4840-416c-9d42-e31b34924dd6",
+              "name": "kube0",
+              "image": "baa89d5d-8166-4c43-8ee0-1ea72e7f3117"
+            }
+          },
+          "owner": "tnt-lab"
+        },
+        {
+          "name": {
+            "local": "compute04.cloud.tnt-lab.local"
+          },
+          "type": {
+            "computer": {
+              "description": "OpenStack hypervisor",
+              "id": "b18d394d-5db1-436e-949a-b513641289ec",
+              "hostname": "compute04.cloud.tnt-lab.local"
+            }
+          },
+          "owner": "tnt-lab"
+        }
+      ],
+      "links": [
+        {
+          "name": {
+            "local": "nova"
+          },
+          "description": "Openstack controls kube2",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube2"
+              },
+              "role": "controlled"
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "nova"
+          },
+          "description": "Openstack controls kube1",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube1"
+              },
+              "role": "controlled"
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "nova"
+          },
+          "description": "Openstack controls kube0",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube0"
+              },
+              "role": "controlled"
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "neutron"
+          },
+          "description": "OpenStack Security Groups",
+          "link_type": "control",
+          "peers": [
+            {
+              "service_name": {
+                "local": "openstack-securitygroups"
+              },
+              "role": "controlled",
+              "consumer": {
+                "host": "127.0.0.1",
+                "port": 8080,
+                "profile": "slpf",
+                "actuator": {
+                  "asset_id": "sg"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": {
+            "local": "kube0"
+          },
+          "description": "System and application software installed on kube0",
+          "link_type": "hosting",
+          "peers": [
+            {
+              "service_name": {
+                "local": "kube0"
+              },
+              "role": "host",
+              "consumer": {
+                "host": "kube0",
+                "port": 8080,
+                "profile": "x-ctxd",
+                "actuator": {
+                  "asset_id": "ctxd-kube0"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
