@@ -24,6 +24,7 @@
 import logging
 import openstack
 
+
 import otupy.profiles
 from otupy import Extensions
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
@@ -41,8 +42,6 @@ from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
-
-
 
 from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 import otupy.profiles.ctxd as ctxd
@@ -280,7 +279,7 @@ class CTXDActuator_openstack(CTXDActuator):
         # Verify successful authentication by checking token
 			if token:
 				logger.info("Authentication successful!")
-				logger.debug(f"Token: {token}")
+				logger.debug("Token: %s", token)
 			else:
 				logger.error("Authentication failed.")
     
@@ -307,8 +306,8 @@ class CTXDActuator_openstack(CTXDActuator):
 		    # List services available in OpenStack
 			services = self.conn.identity.services()
 		except Exception as e:
-			logger.warning("Failed to retrieve service list: %s",e)
-			return Exception("Failed to retrieve service list")
+			logger.warning("Failed to retrieve service list: %s", e)
+			return []
 		
 		# Format the response as a JSON-like structure for pretty printing
 		return self._format_os_data(services)
@@ -323,7 +322,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			servers = self.conn.compute.servers(details=True, status="ACTIVE")
 		except Exception as e:
 			logger.warning("Failed to retrieve server list: %s", e)
-			return Exception("Failed to retrieve server list")
+			return []
 
       # Return the formatted server list as a pretty-printed JSON string
 		return self._format_os_data(servers)
@@ -338,7 +337,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			# Note: this API is not documented
 		except Exception as e:
 			logger.warning("Failed to retrieve hypervisors list: %s", e)
-			return Exception("Failed to retrieve hypervisors list")
+			return []
 
      	# Return the formatted server list as a pretty-printed JSON string
 		return self._format_os_data(hypervisors)
