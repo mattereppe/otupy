@@ -20,7 +20,7 @@ from otupy.profiles.ctxd.data.name import Name
 from otupy.apps.ctxd.publishers import *
 from otupy.apps.ctxd.defaults import set_defaults
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 def _log_context(ctx):
 	""" Debug-only function to check what was reported """

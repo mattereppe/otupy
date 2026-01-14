@@ -27,7 +27,10 @@ import otupy.transfers  # Do not remove! It is necessary to find the registered 
 from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
-logger = logging.getLogger()
+from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
+
+logger = logging.getLogger(__name__)
+
 default_consumer = {
 	'host': '127.0.0.1',
 	'port': 443,
@@ -37,6 +40,11 @@ default_consumer = {
 
 default_logging = {
    'version': 1, 
+	# The following setting is strictly necessary, because the default value is set to "True" 
+	# and disabled all modules (already imported only?). If this is not set to False, all 
+	# modules not explicitly listed in the "loggers" section will be disables, and they will
+	# not inherit from the root
+#  'disable_existing_loggers': False,
    'formatters': {
 		'otupy': {
 			'()': 'otupy.LogFormatter', 
@@ -48,13 +56,19 @@ default_logging = {
 		'console': {
 			'class': 'logging.StreamHandler', 
 			'formatter': 'otupy', 
-			'level': 'INFO', 
+			'level': 'DEBUG', 
 			'filters': None
 		}
 	},
-	'root': {
-		'handlers': ['console'], 
-		'level': 'INFO'
+	'loggers': {
+		'': {
+			'handlers': ['console'], 
+			'level': 'INFO'
+		}
+		'otupy': {
+			'handlers': ['console'], 
+			'level': 'INFO'
+		}
 	}
 }
 
@@ -128,7 +142,7 @@ def main() -> None:
 
                     profile = values["profile"]
                     actuators[(profile, values["specifiers"]["asset_id"])] = clazz(**parameters)
-
+						  
         # Load the encoder.
         if consumer['encoding'] not in Encoders.__members__:
             raise RuntimeError(f"{consumer['encoding']} is not a registered encoding schema")

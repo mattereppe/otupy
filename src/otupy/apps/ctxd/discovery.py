@@ -26,7 +26,7 @@ from otupy.apps.ctxd.api_service import api_listen
 from otupy.apps.ctxd.discover_functions import start_discovery
 from otupy.apps.ctxd.defaults import parse_and_default
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:

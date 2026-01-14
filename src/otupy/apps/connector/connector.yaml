@@ -9,6 +9,8 @@ configs: "configs"
 
 logger:
    version: 1
+   disable_existing_loggers: false
+   propagate: true
    formatters:
       otupy:
          (): otupy.LogFormatter
@@ -23,7 +25,7 @@ logger:
       console:
          class: logging.StreamHandler
          formatter: otupy
-         level: INFO
+         level: DEBUG
          filters: Null
       file:
          class: logging.FileHandler
@@ -32,5 +34,9 @@ logger:
          filters: Null
          filename: "connector.log"
    root:
-      handlers: [console, file]
+      handlers: [console]
       level: INFO
+   loggers:
+      otupy:
+         handlers: [console]
+         level: DEBUG

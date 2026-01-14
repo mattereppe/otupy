@@ -5,7 +5,7 @@
 
 import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 defaults = { # Default values for context discovery operation
 				'name': "Discovery",
