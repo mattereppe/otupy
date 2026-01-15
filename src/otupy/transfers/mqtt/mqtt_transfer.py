@@ -577,7 +577,7 @@ class MQTTTransfer(oc2.Transfer):
 			for each received message, which must be provided by a `Consumer` to properly dispatch 
 			:py:class:`~otupy.core.command.Command`s to the relevant server(s). 
 			It also takes an :py:class:`~otupy.core.encoder.Encoder` that is used to create
-			responses to `Command`\s encoded with unknown encoders.
+			responses to `Command`s encoded with unknown encoders.
 
 			This implemnetation sends the response to the device-specific topic, if available from
 			the command (it SHOULD be available according to the Specification requirements, but
