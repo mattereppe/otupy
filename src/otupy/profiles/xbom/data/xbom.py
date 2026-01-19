@@ -6,6 +6,7 @@ from cyclonedx.model.service import Service
 from cyclonedx.model.dependency import Dependency
 from cyclonedx.output.json import JsonV1Dot7
 from cyclonedx.validation.json import JsonStrictValidator
+from cyclonedx.schema import SchemaVersion
 
 
 from otupy.profiles.xbom.data.sbom_format import SbomFormat
@@ -14,6 +15,8 @@ from otupy.types.base import Record
 from typing import Any
 import json
 
+_cyclonedx_schema_version = SchemaVersion.V1_7
+
 class Xbom(Record):
 	"""XBOM
 	eXtended Bill of Materials
@@ -21,7 +24,7 @@ class Xbom(Record):
 	format: SbomFormat = None # type: ignore
 	""" Format of the XBOM """
     
-	bom: Bom | None = None
+	bom: Bom = None
 	""" CycloneDX Bill of Materials """
 
 	def __init__(self, format: SbomFormat | None = None, bom: Bom = None):
@@ -69,16 +72,42 @@ class Xbom(Record):
 			raise ValueError(f"Cannot merge XBOMs with different formats: {self.format} != {other.format}")
 
 		# Merge components
-		for component in other.bom.components:
-			self.bom.components.add(component)
+		if other.bom:
+			for component in other.bom.components:
+				self.bom.components.add(component)
 
-		# Merge services
-		for service in other.bom.services:
-			self.bom.services.add(service)
+			# Merge services
+			for service in other.bom.services:
+				self.bom.services.add(service)
 
-		# Merge dependencies
-		for dependency in other.bom.dependencies:
-			self.bom.dependencies.add(dependency)
+			# Merge dependencies
+			for dependency in other.bom.dependencies:
+				self.bom.dependencies.add(dependency)
+
+	def todict(self, e):
+		""" Convert XBOM to dictionary for serialization """
+		return {
+			'format': e.todict(self.format) if self.format else None,
+			'bom': self.serialize() if self.bom else None
+		}
+
+	@classmethod
+	def fromdict(cls, dic, e):
+		""" Create Xbom from dictionary """
+		if not isinstance(dic, dict):
+			raise TypeError("Expected dictionary")
+		
+		fmt = dic.get('format')
+		if fmt:
+			fmt = e.fromdict(SbomFormat, fmt)
+		
+		instance = cls(format=fmt)
+		
+		bom_data = dic.get('bom')
+		if bom_data:
+			instance.deserialize(bom_data)
+			
+		return instance
 
 	def serialize(self) -> dict:
 		""" Serialize the XBOM to a dictionary
@@ -103,7 +132,7 @@ class Xbom(Record):
 		"""
 		match self.format:
 			case SbomFormat.cyclonedx:
-				validator = JsonStrictValidator()
+				validator = JsonStrictValidator(schema_version=_cyclonedx_schema_version)
 				data = data if isinstance(data, str) else json.dumps(data)
 				if validator.validate_str(data):
 					raise ValueError("Invalid CycloneDX JSON data")
@@ -112,9 +141,9 @@ class Xbom(Record):
 				raise NotImplementedError(f"Deserialization for format {self.format} is not implemented.")
 
 	def __repr__(self):
-		return (f"XBOM(format={self.format}, "
-				f"bom={self.bom})")
-	
+		# return the serialized form for easier debugging
+		return f"Xbom(format={self.format}, bom={self.serialize()})"
+
 	def __str__(self):
 		if self.bom is None:
 			return (f"XBOM(format={self.format}, bom=None)")
