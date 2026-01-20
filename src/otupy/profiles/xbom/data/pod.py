@@ -1,5 +1,5 @@
 from otupy.types.base import Record, ArrayOf
-from otupy.profiles.ctxd.data.port import Port
+from otupy.profiles.xbom.data.port import Port
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
 

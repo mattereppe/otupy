@@ -1,9 +1,9 @@
 import dataclasses
 
 import otupy.types.base
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.link import Link
+from otupy.profiles.xbom.data.name import Name
+from otupy.profiles.xbom.data.service_type import ServiceType
+from otupy.profiles.xbom.data.link import Link
 from otupy.types.base.array import Array
 from otupy.types.base.array_of import ArrayOf
 from cyclonedx.model import Property

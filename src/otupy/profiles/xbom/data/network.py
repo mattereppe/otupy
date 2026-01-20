@@ -1,5 +1,5 @@
 import otupy.types.base
-from otupy.profiles.ctxd.data.network_type import NetworkType
+from otupy.profiles.xbom.data.network_type import NetworkType
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
 

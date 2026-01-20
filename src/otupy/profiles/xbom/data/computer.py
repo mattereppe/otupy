@@ -1,6 +1,6 @@
 from otupy import Record, ArrayOf
-from otupy.profiles.ctxd.data.os import OS
-from otupy.profiles.ctxd.data.application import Application
+from otupy.profiles.xbom.data.os import OS
+from otupy.profiles.xbom.data.application import Application
 from otupy.types.data.hostname import Hostname
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType

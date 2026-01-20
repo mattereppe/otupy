@@ -7,7 +7,7 @@ import otupy.encoders
 from otupy import Transfer, Transfers, Encoder, Encoders, Map, Extensions
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
-from otupy.profiles.ctxd.profile import nsid
+from otupy.profiles.xbom.profile import nsid
 from cyclonedx.model import Property
 
 logger = logging.getLogger(__name__)

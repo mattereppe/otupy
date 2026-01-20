@@ -1,5 +1,5 @@
 import otupy.types.base
-#from otupy.profiles.ctxd.data.os import OS
+#from otupy.profiles.xbom.data.os import OS
 #from otupy.types.data.hostname import Hostname
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType

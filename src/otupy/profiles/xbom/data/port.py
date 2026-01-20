@@ -2,7 +2,7 @@ from typing import List
 
 from otupy.types.base import Record, ArrayOf
 from otupy.types.data import IPv4Addr
-from otupy.profiles.ctxd.data.os import OS
+from otupy.profiles.xbom.data.os import OS
 from cyclonedx.model import Property
 
 class Port(Record):

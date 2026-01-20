@@ -59,6 +59,62 @@ class Xbom(Record):
 		else:
 			raise TypeError(f"Cannot add item of type {type(item)} to XBOM. Expected Component, Service, or object with as_cyclonedx() method.")
 
+	def add_dependency(self, ref: Any, depends_on: Component | Service | Any | str) -> None:
+		""" Add a dependency to the BOM 
+
+            :param ref: Reference ID of the item that has the dependency. It must be present in the BOM.
+            :param depends_on: Item that is depended upon (Component, Service, or object with as_cyclonedx() method, or str for reference ID)
+				If a component or a service is provided, it must be already present in the BOM.
+            :return: None
+        """
+		match self.format:
+			case SbomFormat.cyclonedx:
+				if self.bom is None:
+					self.bom = Bom()
+
+				# get the bom_ref of ref
+				if isinstance(ref, (Component, Service)):
+					ref = ref.bom_ref
+				elif hasattr(ref, "as_cyclonedx"):
+					converted_ref = ref.as_cyclonedx()
+					self.add(converted_ref)
+					ref = converted_ref.get_bom_ref()
+				elif isinstance(ref, str):
+					# assume it's already a reference ID
+					pass
+				else:
+					raise TypeError(f"Cannot add dependency for item of type {type(ref)} to XBOM. Expected Component, Service, object with as_cyclonedx() method, or str for reference ID.")
+
+				if isinstance(depends_on, (Component, Service)):
+					if depends_on not in self.bom.components and depends_on not in self.bom.services:
+						raise ValueError("The item that is depended upon must be already present in the BOM.")
+					depends_on_id = depends_on.bom_ref.value
+				elif hasattr(depends_on, "as_cyclonedx"):
+					converted_item = depends_on.as_cyclonedx()
+					self.add(converted_item)
+					depends_on_id = converted_item.get_bom_ref()
+				elif isinstance(depends_on, Xbom):
+					if depends_on.bom is None:
+						raise ValueError("The XBOM provided as dependency has no BOM.")
+					# Assuming the XBOM has a single component/service for dependency
+					if len(depends_on.bom.components) == 1:
+						dep_item = next(iter(depends_on.bom.components))
+					elif len(depends_on.bom.services) == 1:
+						dep_item = next(iter(depends_on.bom.services))
+					else:
+						raise ValueError("The XBOM provided as dependency must contain exactly one Component or Service.")
+					self.add(dep_item)
+					depends_on_id = dep_item.bom_ref.value
+				elif isinstance(depends_on, str):
+					depends_on_id = depends_on
+				else:
+					raise TypeError(f"Cannot add dependency on item of type {type(depends_on)} to XBOM. Expected Component, Service, object with as_cyclonedx() method, or str for reference ID.")
+				dependency = Dependency(ref=ref, depends_on=[depends_on_id])
+				self.bom.dependencies.add(dependency)
+			case _:
+				raise NotImplementedError(f"Adding dependencies for format {self.format} is not implemented.")
+
+
 	def merge(self, other: 'Xbom') -> None:
 		""" Merge another XBOM into this one
 
