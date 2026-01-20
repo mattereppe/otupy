@@ -1,9 +1,9 @@
 from typing import List
 
 import otupy.types.base
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.consumer import Consumer
-from otupy.profiles.ctxd.data.peer_role import PeerRole
+from otupy.profiles.xbom.data.name import Name
+from otupy.profiles.xbom.data.consumer import Consumer
+from otupy.profiles.xbom.data.peer_role import PeerRole
 from cyclonedx.model import Property
 
 class Peer(otupy.types.base.Record):

@@ -1,5 +1,5 @@
 import otupy.types.base
-from otupy.profiles.ctxd.data.server import Server
+from otupy.profiles.xbom.data.server import Server
 from cyclonedx.model import Property, XsUri
 from cyclonedx.model.service import Service
 

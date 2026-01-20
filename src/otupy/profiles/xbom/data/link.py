@@ -1,9 +1,9 @@
 from typing import List
 
 import otupy.types.base
-from otupy.profiles.ctxd.data.peer import Peer
-from otupy.profiles.ctxd.data.link_type import LinkType
-from otupy.profiles.ctxd.data.name import Name
+from otupy.profiles.xbom.data.peer import Peer
+from otupy.profiles.xbom.data.link_type import LinkType
+from otupy.profiles.xbom.data.name import Name
 from otupy.types.base.array import Array
 from otupy.types.base.array_of import ArrayOf
 from otupy.core.version import Version
