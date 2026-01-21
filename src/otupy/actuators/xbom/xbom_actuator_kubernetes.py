@@ -170,6 +170,8 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		k8s_xbom = Xbom()
 		k8s_xbom.add(k8s)
 		self.boms.append(k8s_xbom)
+		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), #links=ArrayOf(Name)(),
+				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
 		# Services of kubernetes
 		# ---------------------------------
@@ -183,6 +185,8 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			# TODO: Add software release (maybe with its SBOM)
 			name=Name(app.name)
 			self.boms.append(xbom)
+			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
+									subservices=ArrayOf(Service)(), owner=self.owner, release=None))
 			# Paranoid check nobody modified the order of the instraction
 			assert  str(self.boms[0].bom.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
 			# xbom.add_dependency(xbom.bom.services[0].bom_ref.value, app)
@@ -209,6 +213,20 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			# Just one item will be present because the pod name is unique in the same namespace
 			return n.spec.node_name
 			
+	def _add_link_to_bom(self, link: Link) -> None:
+		""" Add a link to the appropriate BOM based on the services/components involved in the link """
+		for bom in self.boms:
+			if len(bom.bom.services) > 0:
+				for service in bom.bom.services:
+					if service.name == link.name.getObj():
+						bom.add(link)
+						return
+			elif len(bom.bom.components) > 0:
+				for component in bom.bom.components:
+					if component.name == link.name.getObj():
+						bom.add(link)
+						return
+		logger.warning("Could not find BOM to add link %s", link.name)
 
 	def _discover_pod_links_nodes(self):
 		""" Add links between pods and nodes where they are hosted 
@@ -224,8 +242,9 @@ class XBOMActuator_kubernetes(XBOMActuator):
 						role=PeerRole.host, # Node hosts pods
 						consumer=consumer)
 			description="Pod "+p.name.getObj()+" hosted on "+node
-			self.links.append(Link(name=p.name, description=description,
-						link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+			link = Link(name=p.name, description=description,
+						link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
+			self._add_link_to_bom(link)
 
 	def _discover_k8s_links_nodes(self):
 		""" Discover K8S links to nodes
@@ -239,21 +258,18 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
 
 		master = self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane")
-		k8s_nodes = self.get_services(name=Name(master[0].metadata.name), filter=Computer)
+		k8s_nodes = self.get_services(name=Name(master[0].metadata.name), filter="computer")
 
 		for k in k8s_service:
 			for n in k8s_nodes:
-					consumer=self.get_consumer(n.name)
-					peer = Peer(service_name=n.name,
+					consumer=self.get_consumer(n.bom.services[0].name)
+					peer = Peer(service_name=n.bom.services[0].name,
 								role=PeerRole.host, # K8S is hosted on master node
 								consumer=consumer)
-					description="Kubernetes hosted on "+n.name.getObj()
-					self.links.append(Link(name=k.name, description=description,
-								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
-
-
-			
-
+					description="Kubernetes hosted on "+n.bom.services[0].name
+					link = Link(name=k.bom.services[0].name, description=description,
+								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
+					self._add_link_to_bom(link)
 
 	def _discover_k8s_links_pods(self):
 		""" Discover K8S links to pods
@@ -271,10 +287,9 @@ class XBOMActuator_kubernetes(XBOMActuator):
 							role=PeerRole.controlled, # Kubernetes controls its pods
 							consumer=None)
 				description="Kubernetes controls pod "+p.name.getObj()
-				self.links.append(Link(name=s.name, description=description,
-							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
-
-
+				link = Link(name=s.name, description=description,
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
+				self._add_link_to_bom(link)
 
 	def _discover_k8s_nodes(self):
 		""" Discover kubernetes working nodes
@@ -294,6 +309,8 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			xbom = Xbom()
 			xbom.add(node)
 			self.boms.append(xbom)
+			self.services.append(Service(name=Name(str(n.metadata.name)), type=ServiceType(node), #links=ArrayOf(Name)(),
+						subservices=None, owner=self.owner, release=n.metadata.resource_version))
 
 	def _k8s_node_list(self, field_selector=None, label_selector=None):
 		return self.api_client.list_node(field_selector=field_selector, label_selector=label_selector).items
@@ -312,8 +329,9 @@ class XBOMActuator_kubernetes(XBOMActuator):
 							role=PeerRole.controlled, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
 							consumer=consumer)
 			description="Kubernetes Network Policies"
-			self.links.append(Link(name=s.name, description=description,
-							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+			link = Link(name=s.name, description=description,
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
+			self._add_link_to_bom(link)
 	
 	def _discover_k8s_pods(self):
 		""" Discovers pods
@@ -367,15 +385,23 @@ class XBOMActuator_kubernetes(XBOMActuator):
 
 			# Create services for each container
 			# for each of those containers and pod, create an xbom and add it to the list
+			container_name_list = ArrayOf(Name)()
 			for c in container_list:
 				xbom = Xbom()
 				xbom.add(c)
-				# logger.debug("Found container: %s", str(c.name))
 				self.boms.append(xbom)
+				self.services.append(Service(name=Name(c.name), type=ServiceType(c), 
+                  subservices=None, owner=self.owner, release=None))
+				container_name_list.append(Name(c.name))
 
 			xbom = Xbom()
 			xbom.add(pod_type)
 			self.boms.append(xbom)
+			self.services.append(Service(name= Name(pod.metadata.name), 
+						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
+                  subservices=container_name_list, owner=self.owner, release=pod.metadata.resource_version))
+
+			# TODO: add subservices
 
 	def _k8s_pod_list(self):
 		""" Retrieve the list of pods from the K8S API. """

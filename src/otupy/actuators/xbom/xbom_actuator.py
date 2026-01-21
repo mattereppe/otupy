@@ -19,6 +19,7 @@ import otupy.profiles.xbom as xbom
 from otupy.profiles.xbom.data.name import Name
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.consumer import Consumer
+from otupy.profiles.xbom.data.service import Service
 from otupy.profiles.xbom.data.xbom import Xbom
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,7 @@ class XBOMActuator:
 		self.owner = kwargs['owner'] if 'owner' in kwargs else None
 		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
 		self.boms = ArrayOf(Xbom)()
+		self.services = ArrayOf(Service)()
 
 
 	def run(self, cmd):
@@ -156,8 +158,8 @@ class XBOMActuator:
 
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
-	def get_services(self, name: Name = None, filter: ServiceType = None) -> [] :
-		""" Returns the list of current services
+	def get_services(self, name: Name | None = None, filter: ServiceType | None = None) -> list:
+		""" Returns the list of current services in servuceformat
 
 			Returns the list of discovered services. Filter by name and type.
 
@@ -228,9 +230,9 @@ class XBOMActuator:
 			:return: None
 		"""
 		self.boms = ArrayOf(Xbom)()
+		self.services = ArrayOf(Service)()
 		self.discover_services()
-		# self.links = ArrayOf(Link)()
-		# self.discover_links()
+		self.discover_links()
 		
 	def __notimplemented(self, cmd):
 		""" Default response
