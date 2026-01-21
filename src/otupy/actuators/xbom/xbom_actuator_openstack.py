@@ -26,7 +26,7 @@ import openstack
 
 import otupy.profiles
 from otupy import Extensions
-from otupy.actuators.xbom.ctxd_actuator import CTXDActuator
+from otupy.actuators.xbom.xbom_actuator import XBOMActuator
 from otupy.profiles.xbom.actuator import Specifiers
 from otupy.profiles.xbom.data.cloud import Cloud
 from otupy.profiles.xbom.data.application import Application
@@ -39,6 +39,7 @@ from otupy.profiles.xbom.data.peer import Peer
 from otupy.profiles.xbom.data.peer_role import PeerRole
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.vm import VM
+from otupy.profiles.xbom.data.xbom import Xbom
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
@@ -54,7 +55,7 @@ from otupy.profiles.xbom.data.link import Link
 logger = logging.getLogger(__name__)
 
 @actuator_implementation("xbom-openstack")
-class XBOMActuator_openstack(CTXDActuator):
+class XBOMActuator_openstack(XBOMActuator):
 	""" Openstack Actuator Manager
 
 		Extend the base `XBOMActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
@@ -116,6 +117,9 @@ class XBOMActuator_openstack(CTXDActuator):
 		# --------------------------------------------------
 		os = Cloud(description='cloud', id=None, name='openstack', type='IaaS')
 		# TODO: Fill in with Openstack version/release
+		os_xbom = Xbom()
+		os_xbom.add(os)
+		self.boms.append(os_xbom)
 		self.services.append(Service(name=Name(os.name),type=ServiceType(os), #links=ArrayOf(Name)(),
 				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
@@ -126,11 +130,14 @@ class XBOMActuator_openstack(CTXDActuator):
 						id=service['id'], owner=self.owner, app_type=service['type']))
 			logger.debug("Found application: %s", str(app.name))
 			# TODO: Add software release (maybe with its SBOM)
+			xbom = Xbom()
+			xbom.add(app)
+			self.boms.append(xbom)
 			name=Name(app.name)
 			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
 						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
 			# Paranoid check nobody modified the order of the instraction
-			assert  str(self.services[0].name) == os.name , "Wrong position of parent openstack service in array!"
+			assert  str(self.boms[0].bom.services[0].name) == os.name , "Wrong position of parent openstack service in array!"
 			self.services[0].subservices.append(name)
 		
 	def _discover_os_servers(self):
@@ -150,6 +157,9 @@ class XBOMActuator_openstack(CTXDActuator):
 
 			logger.debug("Found server: %s", str(server))
 
+			xbom = Xbom()
+			xbom.add(server)
+			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(server.name)), type=ServiceType(server), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=None))
 
@@ -171,8 +181,26 @@ class XBOMActuator_openstack(CTXDActuator):
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
+			xbom = Xbom()
+			xbom.add(hyper)
+			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=None))
+
+	def _add_link_to_bom(self, link: Link) -> None:
+		""" Add a link to the appropriate BOM based on the services/components involved in the link """
+		for bom in self.boms:
+			if len(bom.bom.services) > 0:
+				for service in bom.bom.services:
+					if service.name == link.name.getObj():
+						bom.add(link)
+						return
+			elif len(bom.bom.components) > 0:
+				for component in bom.bom.components:
+					if component.name == link.name.getObj():
+						bom.add(link)
+						return
+		logger.warning("Could not find BOM to add link %s", link.name)
 
 
 	def _discover_os_link_vms(self):
@@ -191,8 +219,10 @@ class XBOMActuator_openstack(CTXDActuator):
 				peer = Peer(service_name= v.name,
 							role= PeerRole.controlled)  #VM is controlled by Openstack
 				description="Openstack controls "+v.name.getObj()
-				self.links.append(Link(name = s.name, description=description, 
-							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+				link = Link(name = s.name, description=description, 
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
+				self._add_link_to_bom(link)
+
 #s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
 				
@@ -211,8 +241,9 @@ class XBOMActuator_openstack(CTXDActuator):
 				peer = Peer(service_name=Name("openstack-securitygroups"),
 						role=PeerRole.controlled, consumer=consumer)
 				description="OpenStack Security Groups"
-				self.links.append(Link(name = s.name, description=description, 
-							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+				link = Link(name = s.name, description=description, 
+							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
+				self._add_link_to_bom(link)
 
 
 	def _discover_vms_link_hypervisors(self):
@@ -237,8 +268,9 @@ class XBOMActuator_openstack(CTXDActuator):
 							role= PeerRole.host,  #VM is controlled by Openstack
 							consumer=consumer) # This is the consumer running on that service.
 				description="System and application software installed on "+v.name.getObj()
-				self.links.append(Link(name = v.name, description=description, 
-							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+				link = Link(name = v.name, description=description, 
+							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
+				self._add_link_to_bom(link)
 # I don't like to replicate the link as standalone structure and embedded in Service
 #s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
