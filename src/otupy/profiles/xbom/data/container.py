@@ -1,6 +1,7 @@
 import otupy.types.base
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class Container(otupy.types.base.Record):
 	""" Container
@@ -88,7 +89,7 @@ class Container(otupy.types.base.Record):
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.CONTAINER,
-			bom_ref=f"container-{self.id}" if self.id else None,
+			bom_ref=generate_bom_ref("container"),
 			description=self.description,
 			properties=properties
 		)

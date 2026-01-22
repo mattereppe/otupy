@@ -1,6 +1,7 @@
 import otupy.types.base
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
 class IOT(otupy.types.base.Record):
@@ -56,9 +57,12 @@ class IOT(otupy.types.base.Record):
 		if self.type is not None:
 			properties.append(Property(name="otupy:iot:type", value=self.type))
 		
+		
+		
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.DEVICE,
+			bom_ref=generate_bom_ref("iot"),
 			description=self.description,
 			properties=properties
 		)

@@ -2,6 +2,7 @@ from otupy.types.base import Record, ArrayOf
 from otupy.profiles.xbom.data.port import Port
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class Pod(Record):
 	""" Kubernetes pod
@@ -80,8 +81,12 @@ class Pod(Record):
 				port_props = port.as_cyclonedx()
 				properties.extend(port_props)
 		
+		# Generate a unique bom_ref using centralized generator
+		bom_ref = generate_bom_ref("pod")
+		
 		return Service(
 			name=self.name or "unknown",
+			bom_ref=bom_ref,
 			description=self.description,
 			properties=properties
 		)	

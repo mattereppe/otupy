@@ -1,6 +1,7 @@
 import otupy.types.base
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
 class OS(otupy.types.base.Record):
@@ -51,6 +52,7 @@ class OS(otupy.types.base.Record):
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.OPERATING_SYSTEM,
+			bom_ref=generate_bom_ref("os"),
 			version=self.version,
 			properties=properties
 		)

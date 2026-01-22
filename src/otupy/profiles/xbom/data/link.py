@@ -1,7 +1,7 @@
 from typing import List
-import uuid
 
 import otupy.types.base
+from otupy.profiles.xbom.data.bom_ref import generate_uuid
 from otupy.profiles.xbom.data.peer import Peer
 from otupy.profiles.xbom.data.link_type import LinkType
 from otupy.profiles.xbom.data.name import Name
@@ -75,15 +75,18 @@ class Link(otupy.types.base.Record):
 		if self.peers is not None and not isinstance(self.peers, Array):
 			raise TypeError(f"Expected 'peers' to be of type {Array}, but got {type(self.peers)}")
 
-	def as_cyclonedx(self, link_id: str = str(uuid.uuid4())) -> List[Property]:
+	def as_cyclonedx(self, link_id: str = None) -> List[Property]:
 		"""Convert Link to CycloneDX properties format.
 		
 		Args:
-			link_id: The unique identifier for this link.
+			link_id: The unique identifier for this link. If None, a UUID will be generated.
 		
 		Returns:
 			List[Property]: List of CycloneDX Property objects.
 		"""
+		if link_id is None:
+			link_id = generate_uuid()
+		
 		properties = [
 			Property(name="otupy:link:id", value=link_id)
 		]

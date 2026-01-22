@@ -3,6 +3,7 @@ import otupy.types.base
 #from otupy.types.data.hostname import Hostname
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class VM(otupy.types.base.Record):
 	"""VM
@@ -68,7 +69,7 @@ class VM(otupy.types.base.Record):
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.PLATFORM,
-			bom_ref=f"vm-{self.id}" if self.id else None,
+			bom_ref=generate_bom_ref("vm"),
 			description=self.description,
 			properties=properties
 		)

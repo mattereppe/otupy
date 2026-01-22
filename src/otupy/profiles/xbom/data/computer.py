@@ -4,6 +4,7 @@ from otupy.profiles.xbom.data.application import Application
 from otupy.types.data.hostname import Hostname
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class Computer(Record):
 	""" Computer
@@ -80,9 +81,13 @@ class Computer(Record):
 			for app in self.apps:
 				nested_components.append(app.as_cyclonedx())
 		
+		# Generate a unique bom_ref using centralized generator
+		bom_ref = generate_bom_ref("computer")
+		
 		return Component(
 			name=str(self.hostname) if self.hostname else "unknown",
 			type=ComponentType.PLATFORM,
+			bom_ref=bom_ref,
 			description=self.description,
 			properties=properties,
 			components=nested_components if nested_components else None

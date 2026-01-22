@@ -2,6 +2,7 @@ import otupy.types.base
 from otupy.profiles.xbom.data.network_type import NetworkType
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
 class Network(otupy.types.base.Record):
@@ -51,6 +52,7 @@ class Network(otupy.types.base.Record):
 		
 		return Service(
 			name=self.name or "unknown",
+			bom_ref=generate_bom_ref("network"),
 			description=self.description,
 			properties=properties
 		)

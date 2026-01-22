@@ -8,6 +8,7 @@ from otupy.types.base.array import Array
 from otupy.types.base.array_of import ArrayOf
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service as CycloneDXService
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class Service(otupy.types.base.Record):
 
@@ -111,8 +112,12 @@ class Service(otupy.types.base.Record):
 		
 		service_name = self.name.getObj() if self.name is not None else "unknown"
 		
+		# Generate a unique bom_ref using centralized generator
+		bom_ref = generate_bom_ref("service")
+
 		return CycloneDXService(
 			name=service_name,
+			bom_ref=bom_ref,
 			properties=properties,
 			services=nested_services if nested_services else None
 		)

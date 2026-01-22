@@ -1,6 +1,7 @@
 import otupy.types.base
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class Application(otupy.types.base.Record):
 	"""Application
@@ -80,9 +81,13 @@ class Application(otupy.types.base.Record):
 		if self.app_type is not None:
 			properties.append(Property(name="otupy:application:type", value=self.app_type))
 		
+		# Generate a unique bom_ref using centralized generator
+		bom_ref = generate_bom_ref("application")
+		
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.APPLICATION,
+			bom_ref=bom_ref,
 			version=self.version,
 			description=self.description,
 			properties=properties

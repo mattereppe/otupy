@@ -2,6 +2,7 @@ import otupy.types.base
 from cyclonedx.model import Property
 from cyclonedx.model.contact import OrganizationalEntity
 from cyclonedx.model.service import Service
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
 class Cloud(otupy.types.base.Record):
@@ -68,8 +69,12 @@ class Cloud(otupy.types.base.Record):
 		
 		provider = OrganizationalEntity(name=self.name) if self.name else None
 		
+		# Generate a unique bom_ref using centralized generator
+		bom_ref = generate_bom_ref("cloud")
+		
 		return Service(
 			name=self.name or "unknown",
+			bom_ref=bom_ref,
 			description=self.description,
 			provider=provider,
 			properties=properties

@@ -2,6 +2,7 @@ import otupy.types.base
 from otupy.profiles.xbom.data.server import Server
 from cyclonedx.model import Property, XsUri
 from cyclonedx.model.service import Service
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 class WebService(otupy.types.base.Record):
 	
@@ -71,6 +72,7 @@ class WebService(otupy.types.base.Record):
 		
 		return Service(
 			name="web-service",
+			bom_ref=generate_bom_ref("webservice"),
 			description=self.description,
 			endpoints=endpoints,
 			properties=properties

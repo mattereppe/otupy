@@ -4,6 +4,7 @@ from otupy.types.data.ipv4_addr import IPv4Addr
 from otupy.core.register import Register
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
+from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
 class Server(Choice):
@@ -43,6 +44,7 @@ class Server(Choice):
 		return Component(
 			name=name,
 			type=ComponentType.PLATFORM,
+			bom_ref=generate_bom_ref("server"),
 			properties=properties
 		)
 
