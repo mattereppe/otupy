@@ -129,7 +129,6 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		self._discover_pod_links_nodes()
 		self._discover_k8s_links_np()
 		self._discover_np_links_pods()
-		pass
 
 
 	def _discover_k8s_namespaces(self):
@@ -189,8 +188,8 @@ class XBOMActuator_kubernetes(XBOMActuator):
 									subservices=ArrayOf(Service)(), owner=self.owner, release=None))
 			# Paranoid check nobody modified the order of the instraction
 			assert  str(self.boms[0].bom.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
-			# xbom.add_dependency(xbom.bom.services[0].bom_ref.value, app)
-			# self.services[0].subservices.append(name) # TODO: add subservices properly
+			# Add subservice with dependency relationship
+			self.add_subservice(0, name, xbom)
 
 	def _k8s_service_list(self, namespaces=None) -> list[dict]:
 		""" Discover k8s services in the given namespace
@@ -383,25 +382,32 @@ class XBOMActuator_kubernetes(XBOMActuator):
 
 			container_list = _get_container_list(pod.status.container_statuses, "Kubernetes container") + _get_container_list(pod.status.init_container_statuses, "Kubernetes init container")
 
-			# Create services for each container
+			# Create the pod BOM first so we can add dependencies
+			pod_xbom = Xbom()
+			pod_xbom.add(pod_type)
+			self.boms.append(pod_xbom)
+
+			# Create services for each container and add dependencies to the pod
 			# for each of those containers and pod, create an xbom and add it to the list
 			container_name_list = ArrayOf(Name)()
+			container_boms = []
 			for c in container_list:
-				xbom = Xbom()
-				xbom.add(c)
-				self.boms.append(xbom)
+				container_xbom = Xbom()
+				container_xbom.add(c)
+				self.boms.append(container_xbom)
 				self.services.append(Service(name=Name(c.name), type=ServiceType(c), 
                   subservices=None, owner=self.owner, release=None))
 				container_name_list.append(Name(c.name))
+				container_boms.append(container_xbom)
+				# Add dependency: container belongs to this pod
+				self.add_dependency_between_boms(
+					container_xbom, pod_xbom,
+					comment=f"Container {c.name} belongs to pod {pod.metadata.name}"
+				)
 
-			xbom = Xbom()
-			xbom.add(pod_type)
-			self.boms.append(xbom)
 			self.services.append(Service(name= Name(pod.metadata.name), 
 						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
                   subservices=container_name_list, owner=self.owner, release=pod.metadata.resource_version))
-
-			# TODO: add subservices
 
 	def _k8s_pod_list(self):
 		""" Retrieve the list of pods from the K8S API. """

@@ -4,16 +4,18 @@ from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component
 from cyclonedx.model.service import Service
 from cyclonedx.model.dependency import Dependency
+from cyclonedx.model import ExternalReference, ExternalReferenceType
 from cyclonedx.output.json import JsonV1Dot7
 from cyclonedx.validation.json import JsonStrictValidator
 from cyclonedx.schema import SchemaVersion
 from cyclonedx.model import Property
-
+from cyclonedx.model.bom_ref import BomRef
 
 from otupy.profiles.xbom.data.sbom_format import SbomFormat
 from otupy.types.base import Record
+from otupy.profiles.xbom.data.bom_ref import generate_uuid
 
-from typing import Any
+from typing import Any, List
 import json
 
 _cyclonedx_schema_version = SchemaVersion.V1_7
@@ -80,60 +82,209 @@ class Xbom(Record):
 		else:
 			raise TypeError(f"Cannot add item of type {type(item)} to XBOM. Expected Component, Service, or object with as_cyclonedx() method.")
 
-	# def add_dependency(self, ref: Any, depends_on: Component | Service | Any | str) -> None:
-	# 	""" Add a dependency to the BOM 
+	def get_bom_serial_number(self) -> str:
+		""" Get or create the BOM's serial number (UUID)
+		
+			CycloneDX BOMs have a serial number that uniquely identifies the BOM.
+			If not set, a new UUID will be generated and assigned.
+		
+			:return: The serial number as a UUID string (without 'urn:uuid:' prefix)
+		"""
+		if self.bom is None:
+			self.bom = Bom()
+		
+		if self.bom.serial_number is None:
+			if self.bom.serial_number is None: # just in case
+				self.bom.serial_number = f"urn:uuid:{generate_uuid()}"
+		
+		return str(self.bom.serial_number)
 
-            # :param ref: Reference ID of the item that has the dependency. It must be present in the BOM.
-            # :param depends_on: Item that is depended upon (Component, Service, or object with as_cyclonedx() method, or str for reference ID)
-	# 			If a component or a service is provided, it must be already present in the BOM.
-            # :return: None
-        # """
-	# 	match self.format:
-	# 		case SbomFormat.cyclonedx:
-	# 			if self.bom is None:
-	# 				self.bom = Bom()
+	def get_bom_version(self) -> int:
+		""" Get the BOM's version number
+		
+			:return: The version number (defaults to 1 if not set)
+		"""
+		if self.bom is None:
+			return 1
+		return self.bom.version if self.bom.version else 1
 
-	# 			# get the bom_ref of ref
-	# 			if isinstance(ref, (Component, Service)):
-	# 				ref = ref.bom_ref
-	# 			elif hasattr(ref, "as_cyclonedx"):
-	# 				converted_ref = ref.as_cyclonedx()
-	# 				self.add(converted_ref)
-	# 				ref = converted_ref.get_bom_ref()
-	# 			elif isinstance(ref, str):
-	# 				# assume it's already a reference ID
-	# 				pass
-	# 			else:
-	# 				raise TypeError(f"Cannot add dependency for item of type {type(ref)} to XBOM. Expected Component, Service, object with as_cyclonedx() method, or str for reference ID.")
+	def get_bom_link(self, element_bom_ref: str | None = None) -> str:
+		""" Generate a CycloneDX bom-link URI for an element in this BOM
+		
+			Bom-link format: urn:cdx:{serial-number}/{version}#{bom-ref}
+			See: https://cyclonedx.org/capabilities/bomlink/
+		
+			:param element_bom_ref: The bom-ref of the element. If None, uses the main item's bom_ref.
+			:return: A properly formatted bom-link URI
+		"""
+		serial_number = self.get_bom_serial_number()
+		version = self.get_bom_version()
+		
+		if element_bom_ref is None:
+			element_bom_ref = self.get_bom_ref()
+		
+		if element_bom_ref is None:
+			raise ValueError("Cannot create bom-link without a bom_ref")
+		
+		return f"urn:cdx:{serial_number}/{version}#{element_bom_ref}"
 
-	# 			if isinstance(depends_on, (Component, Service)):
-	# 				if depends_on not in self.bom.components and depends_on not in self.bom.services:
-	# 					raise ValueError("The item that is depended upon must be already present in the BOM.")
-	# 				depends_on_id = depends_on.bom_ref.value
-	# 			elif hasattr(depends_on, "as_cyclonedx"):
-	# 				converted_item = depends_on.as_cyclonedx()
-	# 				self.add(converted_item)
-	# 				depends_on_id = converted_item.get_bom_ref()
-	# 			elif isinstance(depends_on, Xbom):
-	# 				if depends_on.bom is None:
-	# 					raise ValueError("The XBOM provided as dependency has no BOM.")
-	# 				# Assuming the XBOM has a single component/service for dependency
-	# 				if len(depends_on.bom.components) == 1:
-	# 					dep_item = next(iter(depends_on.bom.components))
-	# 				elif len(depends_on.bom.services) == 1:
-	# 					dep_item = next(iter(depends_on.bom.services))
-	# 				else:
-	# 					raise ValueError("The XBOM provided as dependency must contain exactly one Component or Service.")
-	# 				self.add(dep_item)
-	# 				depends_on_id = dep_item.bom_ref.value
-	# 			elif isinstance(depends_on, str):
-	# 				depends_on_id = depends_on
-	# 			else:
-	# 				raise TypeError(f"Cannot add dependency on item of type {type(depends_on)} to XBOM. Expected Component, Service, object with as_cyclonedx() method, or str for reference ID.")
-	# 			dependency = Dependency(ref=ref, depends_on=[depends_on_id])
-	# 			self.bom.dependencies.add(dependency)
-	# 		case _:
-	# 			raise NotImplementedError(f"Adding dependencies for format {self.format} is not implemented.")
+	def get_bom_ref(self) -> str | None:
+		""" Get the bom_ref of the main component or service in this XBOM
+		
+			:return: The bom_ref value if available, None otherwise
+		"""
+		if self.bom is None:
+			return None
+		
+		if self.get_main_item() is not None:
+			main_item = self.get_main_item()
+			if main_item is not None and main_item.bom_ref is not None:
+				return main_item.bom_ref.value
+		return None
+
+	def get_main_item(self) -> Component | Service | None:
+		""" Get the main component or service in this XBOM
+		
+			Ignores stub components/services that have external references (used to represent
+			external dependencies).
+		
+			:return: The main Component or Service if there is exactly one, None otherwise
+		"""
+		if self.bom is None:
+			return None
+		
+		# Filter out stub components (those with external references pointing to BOMs)
+		def is_stub(item: Component | Service) -> bool:
+			if item.external_references:
+				for ref in item.external_references:
+					if ref.type == ExternalReferenceType.BOM:
+						return True
+			return False
+		
+		main_components = [c for c in self.bom.components if not is_stub(c)]
+		main_services = [s for s in self.bom.services if not is_stub(s)]
+		
+		if len(main_components) == 1 and len(main_services) == 0:
+			return main_components[0]
+		elif len(main_services) == 1 and len(main_components) == 0:
+			return main_services[0]
+		return None
+
+	def add_external_reference(self, url: str, ref_type: ExternalReferenceType = ExternalReferenceType.BOM, 
+							   comment: str | None = None) -> None:
+		""" Add an external reference to the main component or service in this XBOM
+		
+			External references are used to link to other BOMs that contain related components.
+			This is useful when each component is in a dedicated BOM and we want to reference it.
+		
+			:param url: URL or URI of the external reference (can be a bom_ref of another XBOM)
+			:param ref_type: Type of external reference (default: BOM)
+			:param comment: Optional comment describing the external reference
+			:return: None
+		"""
+		if self.bom is None:
+			raise ValueError("Cannot add external reference to an empty BOM")
+		
+		main_item = self.get_main_item()
+		if main_item is None:
+			raise ValueError("XBOM must contain exactly one Component or Service to add an external reference")
+		
+		ext_ref = ExternalReference(
+			type=ref_type,
+			url=url,
+			comment=comment
+		)
+		
+		# Add external reference to the component/service
+		if main_item.external_references is None:
+			main_item.external_references = []
+		main_item.external_references.add(ext_ref)
+
+	def add_dependency(self, depends_on_ref: 'str | Xbom') -> None:
+		""" Add a dependency from the main item in this XBOM to another component/service
+		
+			This creates a CycloneDX dependency relationship where the main item in this XBOM
+			depends on the specified component/service (identified by its bom_ref).
+		
+			:param depends_on_ref: The bom_ref of the item this XBOM depends on, or an Xbom object
+			:return: None
+		"""
+		if self.bom is None:
+			raise ValueError("Cannot add dependency to an empty BOM")
+		
+		main_item = self.get_main_item()
+		if main_item is None:
+			raise ValueError("XBOM must contain exactly one Component or Service to add a dependency")
+		
+		if main_item.bom_ref is None:
+			raise ValueError("Main item must have a bom_ref to add a dependency")
+		
+		# Get the dependency ref
+		if isinstance(depends_on_ref, Xbom):
+			dep_ref = depends_on_ref.get_bom_ref()
+			if dep_ref is None:
+				raise ValueError("The XBOM provided as dependency must have a bom_ref")
+		else:
+			dep_ref = depends_on_ref
+
+		
+		# Create the dependency
+		dependency = Dependency(ref=main_item.bom_ref, dependencies=[Dependency(ref=BomRef(dep_ref))])
+		self.bom.dependencies.add(dependency)
+
+	def add_dependency_with_external_ref(self, depends_on_xbom: 'Xbom', comment: str | None = None) -> None:
+		""" Add both an external reference and a dependency to another XBOM
+		
+			This is a convenience method that adds the dependency XBOM as an external reference
+			and creates a dependency relationship. Use this when each component is in a dedicated 
+			BOM and you want to express that this XBOM depends on another XBOM.
+			
+			A stub component is created in this BOM to represent the external dependency,
+			with an external reference using the CycloneDX bom-link format:
+			urn:cdx:{serial-number}/{version}#{bom-ref}
+			See: https://cyclonedx.org/capabilities/bomlink/
+		
+			:param depends_on_xbom: The XBOM that this XBOM depends on
+			:param comment: Optional comment describing the dependency
+			:return: None
+		"""
+		dep_ref = depends_on_xbom.get_bom_ref()
+		if dep_ref is None:
+			raise ValueError("The dependency XBOM must have a bom_ref")
+		
+		# Generate a proper CycloneDX bom-link URL
+		bom_link = depends_on_xbom.get_bom_link(dep_ref)
+		
+		# Get info from the dependency's main item to create a stub
+		dep_main_item = depends_on_xbom.get_main_item()
+		if dep_main_item is None:
+			raise ValueError("The dependency XBOM must have a main component or service")
+		
+		# Create a stub component or service with an external reference to the dependency BOM
+		ext_ref = ExternalReference(
+			type=ExternalReferenceType.BOM,
+			url=bom_link,
+			comment=comment
+		)
+		
+		if isinstance(dep_main_item, Component):
+			stub = Component(
+				name=dep_main_item.name,
+				type=dep_main_item.type,
+				bom_ref=dep_ref,
+				external_references=[ext_ref]
+			)
+			self.bom.components.add(stub)
+		elif isinstance(dep_main_item, Service):
+			stub = Service(
+				name=dep_main_item.name,
+				bom_ref=dep_ref,
+				external_references=[ext_ref]
+			)
+			self.bom.services.add(stub)
+		
+		# Add the dependency relationship
+		self.add_dependency(dep_ref)
 
 
 	def merge(self, other: 'Xbom') -> None:

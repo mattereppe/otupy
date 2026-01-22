@@ -58,6 +58,125 @@ class XBOMActuator:
 		self.boms = ArrayOf(Xbom)()
 		self.services = ArrayOf(Service)()
 
+	def get_bom_by_name(self, name: str) -> Xbom | None:
+		""" Find a BOM by the name of its main component or service
+		
+			:param name: The name of the component or service to find
+			:return: The Xbom containing the component/service, or None if not found
+		"""
+		for bom in self.boms:
+			if bom.bom is None:
+				continue
+			# Check services
+			for service in bom.bom.services:
+				if service.name == name:
+					return bom
+			# Check components
+			for component in bom.bom.components:
+				if component.name == name:
+					return bom
+		return None
+
+	def get_bom_by_type(self, item_type: type) -> list[Xbom]:
+		""" Find all BOMs containing components/services of a specific type
+		
+			This looks at the otupy:type property to determine the type.
+		
+			:param item_type: The type class (e.g., Pod, Container, VM)
+			:return: List of Xbom objects containing items of the specified type
+		"""
+		type_name = item_type.__name__.lower()
+		matching_boms = []
+		
+		for bom in self.boms:
+			if bom.bom is None:
+				continue
+			# Check services
+			for service in bom.bom.services:
+				if service.properties:
+					for prop in service.properties:
+						if prop.name == "otupy:type" and prop.value == type_name:
+							matching_boms.append(bom)
+							break
+			# Check components
+			for component in bom.bom.components:
+				if component.properties:
+					for prop in component.properties:
+						if prop.name == "otupy:type" and prop.value == type_name:
+							matching_boms.append(bom)
+							break
+		return matching_boms
+
+	def add_dependency_between_boms(self, from_bom: Xbom, to_bom: Xbom, comment: str | None = None) -> None:
+		""" Add a dependency relationship between two BOMs
+		
+			This creates an external reference and dependency from one BOM to another.
+		
+			:param from_bom: The BOM that depends on another
+			:param to_bom: The BOM that is depended upon
+			:param comment: Optional comment describing the dependency
+		"""
+		try:
+			from_bom.add_dependency_with_external_ref(to_bom, comment=comment)
+		except Exception as e:
+			logger.warning(f"Failed to add dependency from {from_bom} to {to_bom}: {e}")
+
+	def add_subservice(self, parent_service_index: int, child_name: Name, child_bom: Xbom | None = None) -> None:
+		""" Add a subservice to a parent service and create dependency relationship
+		
+			This method adds the child service as a subservice of the parent and also
+			creates the BOM dependency relationship (with external reference) between them.
+		
+			:param parent_service_index: Index of the parent service in self.services
+			:param child_name: Name of the child service to add as subservice
+			:param child_bom: The BOM of the child service (if None, will be looked up by name)
+		"""
+		# Add to subservices list
+		if self.services[parent_service_index].subservices is None:
+			from otupy import ArrayOf
+			self.services[parent_service_index].subservices = ArrayOf(Name)()
+		self.services[parent_service_index].subservices.append(child_name)
+		
+		# Get parent BOM
+		parent_name = str(self.services[parent_service_index].name)
+		parent_bom = self.get_bom_by_name(parent_name)
+		
+		# Get child BOM if not provided
+		if child_bom is None:
+			child_bom = self.get_bom_by_name(str(child_name))
+		
+		# Add dependency: child depends on parent (child runs on/is controlled by parent)
+		if parent_bom and child_bom:
+			self.add_dependency_between_boms(
+				child_bom, parent_bom,
+				comment=f"{child_name} is a subservice of {parent_name}"
+			)
+
+	def add_subservices_with_dependencies(self, parent_bom: Xbom, child_boms: list[Xbom], 
+										   child_names: list[Name]) -> list[Name]:
+		""" Add multiple subservices and create dependency relationships
+		
+			This is useful when creating a parent (like a Pod) with multiple children (containers).
+			Each child will have a dependency on the parent.
+		
+			:param parent_bom: The BOM of the parent service
+			:param child_boms: List of child BOMs
+			:param child_names: List of child names (corresponding to child_boms)
+			:return: The list of child names (for use as subservices list)
+		"""
+		from otupy import ArrayOf
+		subservice_names = ArrayOf(Name)()
+		
+		for child_bom, child_name in zip(child_boms, child_names):
+			subservice_names.append(child_name)
+			# Child depends on parent
+			self.add_dependency_between_boms(
+				child_bom, parent_bom,
+				comment=f"{child_name} belongs to parent"
+			)
+		
+		return subservice_names
+
 
 	def run(self, cmd):
 		""" Entry point for running commands

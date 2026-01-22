@@ -108,7 +108,6 @@ class XBOMActuator_openstack(XBOMActuator):
 		self._discover_vms_link_computers()
 		self._discover_sg_link_vms()
 
-
 	def _discover_os_services(self):
 		""" Discover Openstack as a composite service made of multiple applications """
 		cloud_services = self._openstack_service_list()
@@ -138,7 +137,8 @@ class XBOMActuator_openstack(XBOMActuator):
 						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
 			# Paranoid check nobody modified the order of the instraction
 			assert  str(self.boms[0].bom.services[0].name) == os.name , "Wrong position of parent openstack service in array!"
-			self.services[0].subservices.append(name)
+			# Add subservice with dependency relationship
+			self.add_subservice(0, name, xbom)
 		
 	def _discover_os_servers(self):
 		""" Discover VMs created and controlled by this OpenStack instance.
@@ -327,7 +327,7 @@ class XBOMActuator_openstack(XBOMActuator):
 	def _format_os_data(self, data):
 			data_list = []
 			for d in data:
-				 data_list.append( {key: value for key, value in d.to_dict().items()} )
+				data_list.append( {key: value for key, value in d.to_dict().items()} )
 			return data_list
 
 
