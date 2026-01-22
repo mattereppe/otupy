@@ -219,7 +219,7 @@ class Xbom(Record):
 
 	def __repr__(self):
 		# return the serialized form for easier debugging
-		return f"Xbom(format={self.format}, bom={self.serialize()})"
+		return f"Xbom(format={self.format}, bom=({len(self.bom.services)} services, {len(self.bom.components)} components))"
 
 	def __str__(self):
 		if self.bom is None:
