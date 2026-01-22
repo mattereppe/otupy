@@ -212,6 +212,12 @@ class XBOMActuator:
 					res['boms'].append(Name(b.name))
 			else:
 				res['boms'] = self.boms
+		
+		# Always return the list of bom names
+		res['bom_names'] = ArrayOf(Name)()
+		for s in self.services:
+			res['bom_names'].append(Name(s.name))
+
 
 
 		if len(res) > 0:
