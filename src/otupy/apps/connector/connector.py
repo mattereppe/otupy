@@ -61,10 +61,10 @@ default_logging = {
 		}
 	},
 	'loggers': {
-		'': {
-			'handlers': ['console'], 
-			'level': 'INFO'
-		}
+		'root': {
+      	'handlers': ['console', 'file'],
+      	'level': 'INFO'
+		},
 		'otupy': {
 			'handlers': ['console'], 
 			'level': 'INFO'
