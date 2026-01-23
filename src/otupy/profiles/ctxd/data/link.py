@@ -59,12 +59,12 @@ class Link(otupy.types.base.Record):
 			self.peers = None
 
 	def __repr__(self):
-		return (f"Link(name={self.name}, "
+		return (f"Link(name={self.name.getObj()}, "
                  f"description={self.description}, versions={self.versions}, link_type={self.link_type}, peers={self.peers}")
 	
 	def __str__(self):
 		return f"Link(" \
-	            f"name={self.name}, " \
+	            f"name={self.name.getObj()}, " \
 	            f"description={self.description}, " \
 				f"versions={self.versions}, " \
 				f"link_type={self.link_type}, " \

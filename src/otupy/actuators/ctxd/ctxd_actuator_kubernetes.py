@@ -28,9 +28,12 @@ import sys
 from otupy.profiles import slpf
 from otupy.profiles.ctxd.data.application import Application
 from otupy.types.data.ipv4_addr import IPv4Addr
+from otupy.types.data.uri  import URI
 
 from kubernetes import config, client
 from kubernetes.client.rest import ApiException
+
+from urllib.parse import urlparse
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.data.cloud import Cloud
@@ -48,6 +51,8 @@ from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
+from otupy.profiles.ctxd.data.endpoint import Endpoint
+from otupy.profiles.ctxd.data.network_service import NetworkService
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
@@ -85,6 +90,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			- auth: Authentication information to connect to a Kubernetes cluster
 			Optional parameters:
 			- namespaces: List of namespaces which resources are to be discovered. If not provided, resources from all namespaces will be discovered.
+			- dns: DNS name for the kubernets cloud
 		"""
 		kwargs['auth']=auth
 		super().__init__(**kwargs)
@@ -93,6 +99,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			self.namespaces = kwargs['config']['namespaces']
 		except:
 			self.namespaces = None
+
+		try:
+			self.dns = kwargs['config']['dns']
+		except:
+			self.dns = None
 
 		self._connect_to_kubernetes()
 
@@ -126,9 +137,9 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		self._discover_k8s_links_nodes()
 		self._discover_k8s_links_pods()
 		self._discover_pod_links_nodes()
+		self._discover_pod_links_containers()
 		self._discover_k8s_links_np()
 		self._discover_np_links_pods()
-		pass
 
 
 	def _discover_k8s_namespaces(self):
@@ -143,7 +154,12 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 	def _k8s_namespaces_list(self):
 		namespace_list = []
-		namespace_list = self.api_client.list_namespace(field_selector="status.phase=Active").items
+		try:
+			namespace_list = self.api_client.list_namespace(field_selector="status.phase=Active").items
+		except ApiException as e: # Fails without cluster-wide scope
+			logger.warn("Unable to retrieve namespace list (do you have cluster-wide access?)")
+			logger.debug("Reason: %s", e)
+			return []
 
 		if self.namespaces is None: # Retrieve all namespaces
 			return namespace_list
@@ -155,73 +171,170 @@ class CTXDActuator_kubernetes(CTXDActuator):
 	def _discover_k8s_services(self):
 		""" Discover Kubernetes services 
 
-			Currently a single service is returned, but additional subservices can be returned in the future for network
-			and other components
+			Loops through provided namespaces and returns the services found.
 		"""
-		cloud_services = self._k8s_service_list(namespaces=['kube-system'])
 
-		# The root service: K8S system
+		# Kubernetes services
+		# ---------------------------------
+		cloud_services = self._k8s_service_list(namespaces=self.namespaces)
+		kube_api_found = False
+
+		k8s_services = ArrayOf(Name)()
+		for service in cloud_services:
+			endpoints = ArrayOf(Endpoint)()
+			for ip in ( [] if service.spec.cluster_i_ps is None else service.spec.cluster_i_ps ) +  ( [] if service.spec.external_i_ps is None else service.spec.external_i_ps):
+				for port in service.spec.ports:
+					endpoints.append(Endpoint(description=port.name, endpoint_type=port.app_protocol, 
+							transport=port.protocol, transfer=None, encoding=None, uri=str(ip)+":"+str(port.port)))
+
+			if service.spec.type == "NodePort" or service.spec.type == "LoadBalancer":
+				# TODO: Retrieve the IP address of the nodes hosting the pod implementing the service
+				logger.warn("Unable to retrieve endpoints for Node IP (service: %s)",service.metadata.name)
+
+			try:
+				# Try to detect the kubeapi service (if cluster-wide visibility is available)
+				if ( service.metadata.labels['component'] == "apiserver" and
+						service.metadata.labels['provider'] == "kubernetes" ):
+					# This is the apiserver for Kubernetes; subservices are kubelets
+					description="Kubernetes API Service"
+					kube_api_found=True
+			except:
+					description="Kubernetes service " + service.spec.type
+			
+			# Retrieve the list of pods served by this namespace
+			ep = self._k8s_endpoint_list(namespace=service.metadata.namespace, service=service.metadata.name)
+			subservices = ArrayOf(Name)()
+			for e in ep.items:
+				for s in e.subsets:
+					try:
+						for a in s.addresses:
+							subservices.append(self._k8s_dns_name(name=a.target_ref.name, 
+									namespace=service.metadata.namespace,
+									resource_type="pod"))
+					except:
+						pass
+
+			app = (NetworkService(description=description,
+						name=service.metadata.name,
+						endpoints=endpoints,
+						id=service.metadata.uid, owner=self.owner ))
+			logger.debug("Found k8s service: %s", str(app.name))
+			# TODO: Add software release (maybe with its SBOM)
+			# TODO: What are subservices of a Service? Pods? 
+			name=Name(URI(self._k8s_dns_name(app.name, service.metadata.namespace, "svc")))
+			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
+						namespace=service.metadata.namespace,
+						subservices=subservices, owner=self.owner, release=None))
+
+		# Kube API service
+		# -----------------
+		# Add the API service if not found automatically
+		u = urlparse(self.auth['host'])
+		app = (NetworkService(description="Kubernetes API Service",
+					name=self._k8s_dns_name(name="kubernetes",namespace="default",resource_type="svc"),
+					endpoints=ArrayOf(Endpoint)([Endpoint(description=u.scheme, endpoint_type="kubeapi", 
+						  									transport="TCP", transfer=u.scheme, encoding=None,
+															uri=self.auth['host'])]),
+					id=None, owner=self.owner ))
+		logger.debug("Found k8s service: %s", str(app.name))
+		# TODO: Add software release (maybe with its SBOM)
+		# TODO: What are subservices of a Service? Pods? 
+		name=Name(URI(self._k8s_dns_name(app.name, service.metadata.namespace, "svc")))
+		self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
+					namespace=service.metadata.namespace,
+					subservices=subservices, owner=self.owner, release=None))
+	
+		# The root service: K8S cluster
 		# --------------------------------------------------
 		# K8S is considered PaaS when managed by an external service provider
-		k8s = Cloud(description='Kubernetes cloud', id=None, name='kubernetes', type='IaaS')
+		name=self.dns if self.dns is not None  else "kubernetes"
+		k8s = Cloud(description='Kubernetes cloud', id=None, name=name, type='IaaS')
 		# TODO: Fill in with k8s version/release
-		# Subservices should be kube-adm and kubelets
-		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), #links=ArrayOf(Name)(),
-				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+		# Subservices are the nodes
+		try:
+			nodes = self._k8s_node_list()
+			for n in nodes:
+				k8s_services.append(self._k8s_dns_name(name=n.metadata.name, resource_type="node"))	
+		except:
+			pass
+		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), 
+				subservices=k8s_services, owner=self.owner, release=None))
 
-		# Services of openstack
-		# ---------------------------------
-		for service in cloud_services:
-			# I couldn't find a "description" field in the service data
-			app = (Application(description=service.spec.type, name=service.metadata.name,
-						id=service.metadata.uid, owner=self.owner, app_type='service'))
-			logger.debug("Found application: %s", str(app.name))
-			# TODO: Add software release (maybe with its SBOM)
-			name=Name(app.name)
-			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
-						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
-			# Paranoid check nobody modified the order of the instraction
-			assert  str(self.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
-			self.services[0].subservices.append(name)
 
 	def _k8s_service_list(self, namespaces=None):
 		""" Discover k8s services in the given namespace
 
 			:param namespace: the namespace name
 		"""
-		service_list=[]
-		if namespaces is None:
-			service_list+= self.api_client.list_service_for_all_namespaces().items 
-		else:
+		try:
+			if namespaces is None:
+				return self.api_client.list_service_for_all_namespaces().items 
+		except ApiException as e:
+			logger.warn("Unable to retrieve service list for all namespaces")
+			logger.debug("Reason: %s",e)
+			return []
+
+		try:
+			service_list=[]
 			for n in namespaces:
-				service_list+= self.api_client.list_service_for_all_namespaces(field_selector='metadata.namespace='+n).items 
+				# This works even without cluster scope
+				service_list+=self.api_client.list_namespaced_service(namespace=n).items
+		except ApiException as e:
+			logger.warn("Unable to retrieve service list for namespace %s: %s",n, e)
 		
 		return service_list	
+
+	def _k8s_endpoint_list(self, namespace, service=None):
+		if service is not None:
+			fs = "metadata.name=="+service
+		else:
+			fs = None
+
+		try:
+			return self.api_client.list_namespaced_endpoints(namespace=namespace, field_selector=fs)
+		except:
+			logger.warn("Unable to retrieve endpoints for namespace: %s", namespace)
+			return []
+
 	
 	def _k8s_pod_node(self, pod):
-		nodes = self.api_client.list_pod_for_all_namespaces(field_selector="metadata.name="+pod.name+",metadata.namespace="+pod.namespace)
-#nodes = self.api_client.list_pod_for_all_namespaces(field_selector="metadata.name="+pod+", metadata.namespace=default")
-		for n in nodes.items:
+		pods = self.api_client.list_namespaced_pod(namespace=pod.namespace, field_selector="metadata.name="+str(pod.name))
+		for p in pods.items:
 			# Just one item will be present because the pod name is unique in the same namespace
-			return n.spec.node_name
+			return p.spec.node_name
 			
 
 	def _discover_pod_links_nodes(self):
 		""" Add links between pods and nodes where they are hosted 
 		"""
-
 		k8s_pods = self.get_services(filter=Pod)
-		k8s_nodes = self.get_services(filter=Computer)
 
+		# If nodes were discovered, I can safely assume to have cluster-wide visibility
 		for p in k8s_pods:
 			node = self._k8s_pod_node(p.type.getObj())
 			consumer=self.get_consumer(Name(node))
-			peer = Peer(service_name=Name(node),
+			peer = Peer(service_name=Name(URI(self._k8s_dns_name(name=node,
+																					namespace=None,
+																					resource_type="node"))),
 						role=PeerRole.host, # Node hosts pods
 						consumer=consumer)
-			description="Pod "+p.name.getObj()+" hosted on "+node
+			description="Pod "+str(p.name)+" hosted on "+str(peer.service_name)
 			self.links.append(Link(name=p.name, description=description,
 						link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+
+	def _discover_pod_links_containers(self):
+		""" Add links between pods and containers they contain
+		"""
+		k8s_pods = self.get_services(filter=Pod)
+
+		for p in k8s_pods:
+			for c in p.subservices:
+				peer = Peer(service_name=c, role=PeerRole.contained, consumer=None)
+				description="Container "+str(c)+" in pod "+str(p.name)
+				self.links.append(Link(name=p.name, description=description,
+							link_type=LinkType.containing, peers=ArrayOf(Peer)([peer])))
+				
+
 
 	def _discover_k8s_links_nodes(self):
 		""" Discover K8S links to nodes
@@ -232,22 +345,33 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			For now, a simplification is used and only Kubernetes hosted on master is reported
 		"""
 
-		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_service = self.get_services(name=Name(URI(self._k8s_dns_name(name='kubernetes',
+																								namespace="default",
+																								resource_type="svc"))),
+													filter=NetworkService)
 
-		master = self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane")
-		k8s_nodes = self.get_services(name=Name(master[0].metadata.name), filter=Computer)
+		try:
+			# Try to get the master node from kubernets
+			master = (self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane"))[0].metadata.name
 
-		for k in k8s_service:
-			for n in k8s_nodes:
+			k8s_nodes = self.get_services(name=Name(URI(self._k8s_dns_name(name=master,
+																						namespace=None,
+																						resource_type="node"))), 
+														filter=Computer)
+	
+			for k in k8s_service:
+				for n in k8s_nodes:
 					consumer=self.get_consumer(n.name)
 					peer = Peer(service_name=n.name,
 								role=PeerRole.host, # K8S is hosted on master node
 								consumer=consumer)
-					description="Kubernetes hosted on "+n.name.getObj()
+					description="Kubernetes API Server hosted on "+str(n.name)
 					self.links.append(Link(name=k.name, description=description,
 								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
-
+		except Exception as e:
+			# Otherwise assign the 
+			pass
 			
 
 
@@ -258,7 +382,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			and kubelets controls pods. The first relationship should be build by _discover_k8s_links_nodes().
 		"""
 
-		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_service = self.get_services(name=Name(URI(self._k8s_dns_name(name='kubernetes',
+																								namespace="default",
+																								resource_type="svc"))),
+													filter=NetworkService)
+
 		k8s_pods = self.get_services(filter=Pod)
 
 		for s in k8s_service:
@@ -266,7 +394,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 				peer = Peer(service_name=p.name,
 							role=PeerRole.controlled, # Kubernetes controls its pods
 							consumer=None)
-				description="Kubernetes controls pod "+p.name.getObj()
+				description="Kubernetes controls pod "+str(p.name.getObj())
 				self.links.append(Link(name=s.name, description=description,
 							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
@@ -282,16 +410,30 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		nodes = self._k8s_node_list()
 
 		for n in nodes:
-			node = Computer(hostname=Hostname(n.metadata.name), id=n.metadata.uid,
-						description="Kubernetes node",
+			# A Kubernetes node is an execution environment and hosts a kubelet
+			node = Computer(hostname=Hostname(self._k8s_dns_name(n.metadata.name,resource_type="node")), id=n.metadata.uid,
+						description="Kubernetes node"+n.status.node_info.container_runtime_version,
                   os= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
 			logger.debug("Found node: %s", str(node))
 
-			self.services.append(Service(name=Name(str(n.metadata.name)), type=ServiceType(node), #links=ArrayOf(Name)(),
+			self.services.append(Service(name=Name(URI(self._k8s_dns_name(name=n.metadata.name, resource_type="node"))), 
+						type=ServiceType(node), 
 						subservices=None, owner=self.owner, release=n.metadata.resource_version))
 
+			kubelet = Application(name="kubelet", description="Kubernetes worker node",
+					version=n.status.node_info.kubelet_version , owner=self.owner, app_type="kubelet")
+
+			self.services.append(Service(name=Name(URI(kubelet.name+"@"+str(node.hostname))),
+						type=ServiceType(kubelet), 
+						subservices=None, owner=self.owner ))
+
 	def _k8s_node_list(self, field_selector=None, label_selector=None):
-		return self.api_client.list_node(field_selector=field_selector, label_selector=label_selector).items
+		try:
+			return self.api_client.list_node(field_selector=field_selector, label_selector=label_selector).items
+		except ApiException as e:
+			logger.warn("Unable to retrieve node list (do you have cluster-wide access?)")
+			logger.debug("Reaseon: %s", e)
+			return []
 	
 	def _discover_k8s_links_np(self):
 		""" Add link between Kubernetes and Network Policies
@@ -299,7 +441,10 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			Network Policies implement sort of a slpf firewall, hence they are a security function. However, they are not
 			standalone software, and they are implemented by kubernetes..
 		"""
-		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
+		k8s_service = self.get_services(name=Name(URI(self._k8s_dns_name(name='kubernetes',
+																								namespace="default",
+																								resource_type="svc"))),
+													filter=NetworkService)
 
 		for s in k8s_service:
 			consumer = self.get_consumer(Name("kubernetes-networkpolicies"))
@@ -365,12 +510,17 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			# Create services for each container
 			container_name_list = ArrayOf(Name)()
 			for c in container_list:
-				self.services.append(Service(name=Name(c.name), type=ServiceType(c), 
+				self.services.append(Service(name=Name(URI(self._k8s_dns_name(c.name, pod.metadata.namespace, 
+																		pod.metadata.name+".container"))), 
+						namespace=pod.metadata.namespace,
+						type=ServiceType(c), 
                   subservices=None, owner=self.owner, release=None))
-				container_name_list.append(Name(c.name))
+				container_name_list.append(Name(URI(self._k8s_dns_name(c.name, pod.metadata.namespace, 
+															pod.metadata.name+".container"))))
 
 			# Create the pod service with containers as subservices 
-			self.services.append(Service(name= Name(pod.metadata.name), 
+			self.services.append(Service(name= Name(URI(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "pod"))), 
+						namespace=pod.metadata.namespace,
 						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
                   subservices=container_name_list, owner=self.owner, release=pod.metadata.resource_version))
 
@@ -379,15 +529,23 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		""" Retrieve the list of pods from the K8S API. """
 		array_container = ArrayOf(Service)()
 
-		if self.namespaces is None:
-			return self.api_client.list_pod_for_all_namespaces().items
-	
-		pods = []
-		for ns in self.namespaces:
-			pods += self.api_client.list_pod_for_all_namespaces(field_selector="metadata.namespace="+ns).items 
+		try:
+			if self.namespaces is None:
+				return self.api_client.list_pod_for_all_namespaces().items
+		except ApiException as e:
+			logger.warn("Unable to retrieve pod list for all namespaces")
+			logger.debug("Reason: %s", e)
+			return []
+		
+		try:
+			pods = []
+			for ns in self.namespaces:
+				pods += self.api_client.list_namespaced_pod(namespace=ns).items 
+		except ApiException as e:
+			logger.warn("Unable to retrieve pod list for namespace %s", ns)
+			logger.warn("Reason: %s", ns , e)
 
 		return pods
-
 
 
 	def _discover_np_links_pods(self):
@@ -397,31 +555,18 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			Network policies are modelled as a security function implemented by an external actuator.
 			They protect all pods hosted in Kubernetes..
 		"""
-		# TODO
-		pass
+		k8s_service = self.get_services(filter=Pod)
 
-# Old implementation, kept only as reference.
-#	def get_namespace_service(self, namespace_name):
-#		#process = subprocess.Popen('kubectl get namespace '  + namespace_name + ' -o json', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#		#stdout, stderr = process.communicate()
-#		namespace = self.api_client.read_namespace(name=str(namespace_name))
-#        
-#		namespace_network = Network(description='network',
-#                                      name=Name(namespace.metadata.name),
-#                                      type=NetworkType('wan'))
-#        
-#		namespace_service = Service(name=Name(namespace.metadata.name),
-#                                      type=ServiceType(namespace_network),
-#                                      links= ArrayOf(Name)(),
-#                                      subservices=None,
-#                                      owner=None,
-#                                      release=None,
-#                                      security_functions=None,
-#                                      actuator=None)
-#        
-#	
-#		return ArrayOf(Service)([namespace_service])
-	
+		for s in k8s_service:
+			consumer = self.get_consumer(Name("kubernetes-networkpolicies"))
+			peer = Peer(service_name=Name("kubernetes-networkpolicies"),
+							role=PeerRole.protect, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
+							consumer=consumer)
+			description="Kubernetes Network Policies protect "+str(s.name)
+			self.links.append(Link(name=s.name, description=description,
+							link_type=LinkType.protect, peers=ArrayOf(Peer)([peer])))
+
+
 	def _connect_to_kubernetes(self):
 		""" Connects to Kubernetes
 
@@ -453,3 +598,17 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			logger.error("Failed to connect to kubernetes: ", e)
 			return Exception("Failed to connect to kubernetes")
 		
+	def _k8s_dns_name(self, name: str, namespace: str = None, resource_type: str = None):
+		""" Create dns name to identify kubernetes resources
+
+			The name will be the same as the dns name
+		"""
+		dnsname=name
+		if( namespace is not None ):
+			dnsname=name+"."+namespace
+		if resource_type is not None:
+			dnsname+="."+resource_type
+		if self.dns is not None:
+			dnsname+="."+self.dns
+
+		return dnsname

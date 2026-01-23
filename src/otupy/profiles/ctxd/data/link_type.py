@@ -11,3 +11,4 @@ class LinkType(Enumerated):
     packet_flow = 3
     control = 4
     protect = 5
+    containing = 6

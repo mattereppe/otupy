@@ -20,6 +20,7 @@ import otupy.profiles.ctxd as ctxd
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service import Service
 from otupy.profiles.ctxd.data.service_type import ServiceType
+from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.consumer import Consumer
 
@@ -177,6 +178,23 @@ class CTXDActuator:
 					service_list.append(s)
 
 		return service_list
+
+	def get_links(self, name: Name = None, filter: LinkType = None) -> []:
+		""" Returns the list of current links
+
+			REturns the list of discovered links. Filters by name and type.
+
+			:param name: The anme of the link to retrieve (all if not set).
+			:param filter: The type of link (given by `LinkType`).
+			:return: A list of links that match the searching criteria.
+		"""
+		link_list=[]
+		for l in self.links:
+			if filter == None or ( filter == l.link_type ):
+				if name == None or (l.name == name):
+					link_list.append(l)
+
+		return link_list
 		
 	def get_consumer(self, service_name: Name) -> Consumer:
 		""" Returns consumer data

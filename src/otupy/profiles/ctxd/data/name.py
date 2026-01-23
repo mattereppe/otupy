@@ -75,7 +75,14 @@ class Name(Choice):
 
 			  This method assumes the conversion to string is managed by the object type.
         """
-        return self.getObj()
+        return str(self.getObj())
+
+    def __repr__(self):
+        """ Return the internal object
+
+			  This method assumes the conversion to string is managed by the object type.
+        """
+        return str(self.getObj())
 
     def __eq__(self, other):
         """ Compare two Names
