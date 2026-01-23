@@ -60,9 +60,15 @@ defaults = { # Default values for context discovery operation
 							'filters': None
 						}
 					},
-					'root': {
-						'handlers': ['console'], 
-						'level': 'INFO'
+					'loggers': {
+						'root': {
+							'handlers': ['console'], 
+							'level': 'INFO'
+						},
+						'otupy': {
+							'handlers': ['console'], 
+							'level': 'INFO'
+						}
 					}
 				}
 }
