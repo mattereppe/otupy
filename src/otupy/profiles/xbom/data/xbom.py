@@ -1,10 +1,8 @@
-import otupy.types.base
-
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component
 from cyclonedx.model.service import Service
 from cyclonedx.model.dependency import Dependency
-from cyclonedx.model import ExternalReference, ExternalReferenceType
+from cyclonedx.model import ExternalReference, ExternalReferenceType, XsUri
 from cyclonedx.output.json import JsonV1Dot7
 from cyclonedx.validation.json import JsonStrictValidator
 from cyclonedx.schema import SchemaVersion
@@ -15,7 +13,8 @@ from otupy.profiles.xbom.data.sbom_format import SbomFormat
 from otupy.types.base import Record
 from otupy.profiles.xbom.data.bom_ref import generate_uuid
 
-from typing import Any, List
+from typing import Any, cast
+from uuid import UUID
 import json
 
 _cyclonedx_schema_version = SchemaVersion.V1_7
@@ -27,10 +26,10 @@ class Xbom(Record):
 	format: SbomFormat = None # type: ignore
 	""" Format of the XBOM """
     
-	bom: Bom = None
+	bom: Bom | None = None
 	""" CycloneDX Bill of Materials """
 
-	def __init__(self, format: SbomFormat | None = None, bom: Bom = None):
+	def __init__(self, format: SbomFormat | None = None, bom: Bom | None = None):
 		if format is not None and isinstance(format, Xbom):
 			self.format = format.format
 			self.bom = format.bom
@@ -38,28 +37,39 @@ class Xbom(Record):
 			self.format = format if format is not None else SbomFormat.cyclonedx
 			self.bom = bom if bom is not None else Bom()
 
+	def _ensure_bom(self) -> Any:
+		""" Ensure bom is initialized and return it with proper type.
+		
+			Note: Returns Any to work around cyclonedx library type union issues.
+			The actual return value is always a Bom instance.
+		
+			:return: The Bom instance
+		"""
+		if self.bom is None:
+			self.bom = Bom()
+		return self.bom
+
 	def add(self, item: Component | Service | Dependency | Any ) -> None:
 		""" Add item to the BOM
 
 			:param item: Item to add (Component, Service, or object with as_cyclonedx() method)
 			:return: None
 		"""
-		if self.bom is None:
-			self.bom = Bom()
+		bom = self._ensure_bom()
 
 		if isinstance(item, Component):
-			self.bom.components.add(item)
+			bom.components.add(item)
 			return
 		
 		if isinstance(item, Service):
-			self.bom.services.add(item)
+			bom.services.add(item)
 			return
 
 		if isinstance(item, Property) or isinstance(item, list) and all(isinstance(p, Property) for p in item):
-			if len(self.bom.components) == 1:
-				target_props = next(iter(self.bom.components)).properties
-			elif len(self.bom.services) == 1:
-				target_props = next(iter(self.bom.services)).properties
+			if len(bom.components) == 1:
+				target_props = next(iter(bom.components)).properties
+			elif len(bom.services) == 1:
+				target_props = next(iter(bom.services)).properties
 			else:
 				raise ValueError("XBOM must contain exactly one Component or Service to add a Property.")
 
@@ -76,7 +86,7 @@ class Xbom(Record):
 			return
 
 		if hasattr(item, "as_cyclonedx"):
-			converted_item = item.as_cyclonedx()
+			converted_item = cast(Any, item).as_cyclonedx()
 			self.add(converted_item) # Ricorsione per aggiungerlo come Component o Service
 			return
 		else:
@@ -90,14 +100,12 @@ class Xbom(Record):
 		
 			:return: The serial number as a UUID string (without 'urn:uuid:' prefix)
 		"""
-		if self.bom is None:
-			self.bom = Bom()
+		bom = self._ensure_bom()
 		
-		if self.bom.serial_number is None:
-			if self.bom.serial_number is None: # just in case
-				self.bom.serial_number = f"urn:uuid:{generate_uuid()}"
+		if bom.serial_number is None:
+			bom.serial_number = UUID(generate_uuid())
 		
-		return str(self.bom.serial_number)
+		return str(bom.serial_number)
 
 	def get_bom_version(self) -> int:
 		""" Get the BOM's version number
@@ -106,7 +114,8 @@ class Xbom(Record):
 		"""
 		if self.bom is None:
 			return 1
-		return self.bom.version if self.bom.version else 1
+		bom = self._ensure_bom()
+		return bom.version if bom.version else 1
 
 	def get_bom_link(self, element_bom_ref: str | None = None) -> str:
 		""" Generate a CycloneDX bom-link URI for an element in this BOM
@@ -136,10 +145,11 @@ class Xbom(Record):
 		if self.bom is None:
 			return None
 		
-		if self.get_main_item() is not None:
-			main_item = self.get_main_item()
-			if main_item is not None and main_item.bom_ref is not None:
-				return main_item.bom_ref.value
+		main_item = self.get_main_item()
+		if main_item is not None:
+			main = cast(Any, main_item)
+			if main.bom_ref is not None:
+				return main.bom_ref.value
 		return None
 
 	def get_main_item(self) -> Component | Service | None:
@@ -152,17 +162,18 @@ class Xbom(Record):
 		"""
 		if self.bom is None:
 			return None
+		bom = self._ensure_bom()
 		
 		# Filter out stub components (those with external references pointing to BOMs)
-		def is_stub(item: Component | Service) -> bool:
+		def is_stub(item: Any) -> bool:
 			if item.external_references:
 				for ref in item.external_references:
 					if ref.type == ExternalReferenceType.BOM:
 						return True
 			return False
 		
-		main_components = [c for c in self.bom.components if not is_stub(c)]
-		main_services = [s for s in self.bom.services if not is_stub(s)]
+		main_components = [c for c in bom.components if not is_stub(c)]
+		main_services = [s for s in bom.services if not is_stub(s)]
 		
 		if len(main_components) == 1 and len(main_services) == 0:
 			return main_components[0]
@@ -190,15 +201,16 @@ class Xbom(Record):
 			raise ValueError("XBOM must contain exactly one Component or Service to add an external reference")
 		
 		ext_ref = ExternalReference(
-			type=ref_type,
-			url=url,
-			comment=comment
+			type=ref_type,  # type: ignore[call-arg]
+			url=XsUri(url),  # type: ignore[call-arg]
+			comment=comment  # type: ignore[call-arg]
 		)
 		
 		# Add external reference to the component/service
-		if main_item.external_references is None:
-			main_item.external_references = []
-		main_item.external_references.add(ext_ref)
+		main = cast(Any, main_item)
+		if main.external_references is None:
+			main.external_references = []
+		main.external_references.add(ext_ref)  # type: ignore[union-attr]
 
 	def add_dependency(self, depends_on_ref: 'str | Xbom') -> None:
 		""" Add a dependency from the main item in this XBOM to another component/service
@@ -211,12 +223,14 @@ class Xbom(Record):
 		"""
 		if self.bom is None:
 			raise ValueError("Cannot add dependency to an empty BOM")
+		bom = self._ensure_bom()
 		
 		main_item = self.get_main_item()
 		if main_item is None:
 			raise ValueError("XBOM must contain exactly one Component or Service to add a dependency")
 		
-		if main_item.bom_ref is None:
+		main = cast(Any, main_item)
+		if main.bom_ref is None:
 			raise ValueError("Main item must have a bom_ref to add a dependency")
 		
 		# Get the dependency ref
@@ -229,8 +243,8 @@ class Xbom(Record):
 
 		
 		# Create the dependency
-		dependency = Dependency(ref=main_item.bom_ref, dependencies=[Dependency(ref=BomRef(dep_ref))])
-		self.bom.dependencies.add(dependency)
+		dependency = Dependency(ref=main.bom_ref, dependencies=[Dependency(ref=BomRef(dep_ref))])  # type: ignore[call-arg]
+		bom.dependencies.add(dependency)
 
 	def add_dependency_with_external_ref(self, depends_on_xbom: 'Xbom', comment: str | None = None) -> None:
 		""" Add both an external reference and a dependency to another XBOM
@@ -262,26 +276,27 @@ class Xbom(Record):
 		
 		# Create a stub component or service with an external reference to the dependency BOM
 		ext_ref = ExternalReference(
-			type=ExternalReferenceType.BOM,
-			url=bom_link,
-			comment=comment
+			type=ExternalReferenceType.BOM,  # type: ignore[call-arg]
+			url=XsUri(bom_link),  # type: ignore[call-arg]
+			comment=comment  # type: ignore[call-arg]
 		)
 		
+		dep_main = cast(Any, dep_main_item)
 		if isinstance(dep_main_item, Component):
 			stub = Component(
-				name=dep_main_item.name,
-				type=dep_main_item.type,
-				bom_ref=dep_ref,
-				external_references=[ext_ref]
+				name=dep_main.name,  # type: ignore[call-arg]
+				type=dep_main.type,  # type: ignore[call-arg]
+				bom_ref=dep_ref,  # type: ignore[call-arg]
+				external_references=[ext_ref]  # type: ignore[call-arg]
 			)
-			self.bom.components.add(stub)
+			self._ensure_bom().components.add(stub)
 		elif isinstance(dep_main_item, Service):
 			stub = Service(
-				name=dep_main_item.name,
-				bom_ref=dep_ref,
-				external_references=[ext_ref]
+				name=dep_main.name,  # type: ignore[call-arg]
+				bom_ref=dep_ref,  # type: ignore[call-arg]
+				external_references=[ext_ref]  # type: ignore[call-arg]
 			)
-			self.bom.services.add(stub)
+			self._ensure_bom().services.add(stub)
 		
 		# Add the dependency relationship
 		self.add_dependency(dep_ref)
@@ -295,22 +310,23 @@ class Xbom(Record):
 		"""
 		if other.bom is None or self.bom is None:
 			return
+		bom = self._ensure_bom()
+		other_bom = other._ensure_bom()
 
 		if self.format != other.format:
 			raise ValueError(f"Cannot merge XBOMs with different formats: {self.format} != {other.format}")
 
 		# Merge components
-		if other.bom:
-			for component in other.bom.components:
-				self.bom.components.add(component)
+		for component in other_bom.components:
+			bom.components.add(component)
 
-			# Merge services
-			for service in other.bom.services:
-				self.bom.services.add(service)
+		# Merge services
+		for service in other_bom.services:
+			bom.services.add(service)
 
-			# Merge dependencies
-			for dependency in other.bom.dependencies:
-				self.bom.dependencies.add(dependency)
+		# Merge dependencies
+		for dependency in other_bom.dependencies:
+			bom.dependencies.add(dependency)
 
 	def todict(self, e):
 		""" Convert XBOM to dictionary for serialization """
@@ -344,10 +360,11 @@ class Xbom(Record):
 		"""
 		if self.bom is None:
 			return {}
+		bom = self._ensure_bom()
 
 		match self.format:
 			case SbomFormat.cyclonedx:
-				serializer = JsonV1Dot7(self.bom)
+				serializer = JsonV1Dot7(bom)
 				return json.loads(serializer.output_as_string())
 			case _:
 				raise NotImplementedError(f"Serialization for format {self.format} is not implemented.")
@@ -364,24 +381,27 @@ class Xbom(Record):
 				data = data if isinstance(data, str) else json.dumps(data)
 				if validator.validate_str(data):
 					raise ValueError("Invalid CycloneDX JSON data")
-				self.bom = Bom.from_json(json.loads(data))
+				self.bom = Bom.from_json(json.loads(data))  # type: ignore[attr-defined]
 			case _:
 				raise NotImplementedError(f"Deserialization for format {self.format} is not implemented.")
 
 	def __repr__(self):
-		# return the serialized form for easier debugging
-		return f"Xbom(format={self.format}, bom=({len(self.bom.services)} services, {len(self.bom.components)} components))"
+		if self.bom is None:
+			return f"Xbom(format={self.format}, bom=None)"
+		bom = self._ensure_bom()
+		return f"Xbom(format={self.format}, bom=({len(bom.services)} services, {len(bom.components)} components))"
 
 	def __str__(self):
 		if self.bom is None:
 			return (f"XBOM(format={self.format}, bom=None)")
+		bom = self._ensure_bom()
 
 		match self.format:
 			case SbomFormat.cyclonedx:
 				return (f"XBOM("
 						f"format={self.format}, "
-						f"bom_metadata={self.bom.metadata}, "
-						f"components_count={len(self.bom.components)}, "
-						f"services_count={len(self.bom.services)})")
+						f"bom_metadata={bom.metadata}, "
+						f"components_count={len(bom.components)}, "
+						f"services_count={len(bom.services)})")
 			case _:
 				return (f"XBOM(format={self.format}, bom=Unknown format)")
