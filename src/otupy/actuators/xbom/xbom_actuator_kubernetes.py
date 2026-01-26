@@ -166,7 +166,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		k8s = Cloud(description='Kubernetes cloud', id=None, name='kubernetes', type='IaaS')
 		# TODO: Fill in with k8s version/release
 		# Subservices should be kube-adm and kubelets
-		k8s_xbom = Xbom()
+		k8s_xbom = self.create_bom()
 		k8s_xbom.add(k8s)
 		self.boms.append(k8s_xbom)
 		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), #links=ArrayOf(Name)(),
@@ -176,7 +176,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		# ---------------------------------
 		logger.debug("Discovering Kubernetes services...")
 		for service in cloud_services:
-			xbom = Xbom()
+			xbom = self.create_bom()
 			app = (Application(description=service.spec.type, name=service.metadata.name,
 						id=service.metadata.uid, owner=self.owner, app_type='service'))
 			xbom.add(app)
@@ -220,7 +220,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 					if service.name == link.name.getObj():
 						bom.add(link)
 						return
-			elif len(bom.bom.components) > 0:
+			if len(bom.bom.components) > 0:
 				for component in bom.bom.components:
 					if component.name == link.name.getObj():
 						bom.add(link)
@@ -302,10 +302,10 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		for n in nodes:
 			node = Computer(hostname=Hostname(n.metadata.name), id=n.metadata.uid,
 						description="Kubernetes node",
-                  os= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
+            os= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
 			logger.debug("Found node: %s", str(node))
 
-			xbom = Xbom()
+			xbom = self.create_bom()
 			xbom.add(node)
 			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(n.metadata.name)), type=ServiceType(node), #links=ArrayOf(Name)(),
@@ -383,7 +383,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			container_list = _get_container_list(pod.status.container_statuses, "Kubernetes container") + _get_container_list(pod.status.init_container_statuses, "Kubernetes init container")
 
 			# Create the pod BOM first so we can add dependencies
-			pod_xbom = Xbom()
+			pod_xbom = self.create_bom()
 			pod_xbom.add(pod_type)
 			self.boms.append(pod_xbom)
 
@@ -392,7 +392,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			container_name_list = ArrayOf(Name)()
 			container_boms = []
 			for c in container_list:
-				container_xbom = Xbom()
+				container_xbom = self.create_bom()
 				container_xbom.add(c)
 				self.boms.append(container_xbom)
 				self.services.append(Service(name=Name(c.name), type=ServiceType(c), 

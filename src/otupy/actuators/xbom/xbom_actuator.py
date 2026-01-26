@@ -20,7 +20,9 @@ from otupy.profiles.xbom.data.name import Name
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.consumer import Consumer
 from otupy.profiles.xbom.data.service import Service
-from otupy.profiles.xbom.data.xbom import Xbom
+from otupy.profiles.xbom.data.xbom import CyclonedxXbom
+from otupy.profiles.xbom.data.abstract_xbom import Xbom
+from otupy.profiles.xbom.data.sbom_format import SbomFormat
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,12 @@ OPENC2VERS=Version(1,0)
 """ Supported OpenC2 Version """
 
 # An implementation of the ctxd profile. 
+# Registry of BOM implementations by format
+_BOM_REGISTRY: dict[SbomFormat, type[Xbom]] = {
+	SbomFormat.cyclonedx: CyclonedxXbom,
+}
+
+
 class XBOMActuator:
 	""" XBOM Actuator base class
 
@@ -36,6 +44,9 @@ class XBOMActuator:
 
 	boms: ArrayOf(Xbom) = None # type: ignore
 	""" List of discovered BOMs """
+	
+	sbom_format: SbomFormat = SbomFormat.cyclonedx
+	""" The SBOM format to use for creating BOMs (set from target) """
 	
 	def __init__(self, **kwargs):
 		""" Initialization
@@ -55,8 +66,23 @@ class XBOMActuator:
 		self.peers = kwargs['peers'] if 'peers' in kwargs else None
 		self.owner = kwargs['owner'] if 'owner' in kwargs else None
 		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
+		self.sbom_format = SbomFormat.cyclonedx
 		self.boms = ArrayOf(Xbom)()
 		self.services = ArrayOf(Service)()
+
+	def create_bom(self) -> Xbom:
+		""" Factory method to create a BOM instance based on the current sbom_format
+		
+			This method should be used by actuators instead of directly instantiating Xbom().
+			It creates the appropriate BOM type based on the format requested in the target.
+		
+			:return: A new BOM instance of the appropriate type
+			:raises NotImplementedError: If the requested format is not supported
+		"""
+		bom_class = _BOM_REGISTRY.get(self.sbom_format)
+		if bom_class is None:
+			raise NotImplementedError(f"SBOM format {self.sbom_format} is not supported")
+		return bom_class()
 
 	def get_bom_by_name(self, name: str) -> Xbom | None:
 		""" Find a BOM by the name of its main component or service

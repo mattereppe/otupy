@@ -5,5 +5,7 @@
 
 from otupy.profiles.xbom.data import *
 from otupy.profiles.xbom.data.sbom_format import SbomFormat
+from otupy.profiles.xbom.data.abstract_xbom import Xbom
+from otupy.profiles.xbom.data.xbom import CyclonedxXbom
 
 

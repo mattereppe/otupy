@@ -10,7 +10,7 @@ from cyclonedx.model import Property
 from cyclonedx.model.bom_ref import BomRef
 
 from otupy.profiles.xbom.data.sbom_format import SbomFormat
-from otupy.types.base import Record
+from otupy.profiles.xbom.data.abstract_xbom import Xbom, _XBOM_FORMAT_REGISTRY
 from otupy.profiles.xbom.data.bom_ref import generate_uuid
 
 from typing import Any, cast
@@ -19,18 +19,19 @@ import json
 
 _cyclonedx_schema_version = SchemaVersion.V1_7
 
-class Xbom(Record):
-	"""XBOM
-	eXtended Bill of Materials
+
+class CyclonedxXbom(Xbom):
+	"""CycloneDX implementation of XBOM
+	
+	eXtended Bill of Materials using CycloneDX format.
+	This is the concrete implementation that uses the CycloneDX library.
 	"""
-	format: SbomFormat = None # type: ignore
-	""" Format of the XBOM """
     
 	bom: Bom | None = None
 	""" CycloneDX Bill of Materials """
 
 	def __init__(self, format: SbomFormat | None = None, bom: Bom | None = None):
-		if format is not None and isinstance(format, Xbom):
+		if format is not None and isinstance(format, CyclonedxXbom):
 			self.format = format.format
 			self.bom = format.bom
 		else:
@@ -212,7 +213,7 @@ class Xbom(Record):
 			main.external_references = []
 		main.external_references.add(ext_ref)  # type: ignore[union-attr]
 
-	def add_dependency(self, depends_on_ref: 'str | Xbom') -> None:
+	def add_dependency(self, depends_on_ref: 'str | CyclonedxXbom') -> None:
 		""" Add a dependency from the main item in this XBOM to another component/service
 		
 			This creates a CycloneDX dependency relationship where the main item in this XBOM
@@ -234,7 +235,7 @@ class Xbom(Record):
 			raise ValueError("Main item must have a bom_ref to add a dependency")
 		
 		# Get the dependency ref
-		if isinstance(depends_on_ref, Xbom):
+		if isinstance(depends_on_ref, CyclonedxXbom):
 			dep_ref = depends_on_ref.get_bom_ref()
 			if dep_ref is None:
 				raise ValueError("The XBOM provided as dependency must have a bom_ref")
@@ -262,6 +263,9 @@ class Xbom(Record):
 			:param comment: Optional comment describing the dependency
 			:return: None
 		"""
+		if not isinstance(depends_on_xbom, CyclonedxXbom):
+			raise TypeError(f"Expected CyclonedxXbom, got {type(depends_on_xbom)}")
+		
 		dep_ref = depends_on_xbom.get_bom_ref()
 		if dep_ref is None:
 			raise ValueError("The dependency XBOM must have a bom_ref")
@@ -308,6 +312,9 @@ class Xbom(Record):
 			:param other: Other XBOM to merge
 			:return: None
 		"""
+		if not isinstance(other, CyclonedxXbom):
+			raise TypeError(f"Can only merge CyclonedxXbom instances, got {type(other)}")
+		
 		if other.bom is None or self.bom is None:
 			return
 		bom = self._ensure_bom()
@@ -387,21 +394,25 @@ class Xbom(Record):
 
 	def __repr__(self):
 		if self.bom is None:
-			return f"Xbom(format={self.format}, bom=None)"
+			return f"CyclonedxXbom(format={self.format}, bom=None)"
 		bom = self._ensure_bom()
-		return f"Xbom(format={self.format}, bom=({len(bom.services)} services, {len(bom.components)} components))"
+		return f"CyclonedxXbom(format={self.format}, bom=({len(bom.services)} services, {len(bom.components)} components))"
 
 	def __str__(self):
 		if self.bom is None:
-			return (f"XBOM(format={self.format}, bom=None)")
+			return (f"CyclonedxXbom(format={self.format}, bom=None)")
 		bom = self._ensure_bom()
 
 		match self.format:
 			case SbomFormat.cyclonedx:
-				return (f"XBOM("
+				return (f"CyclonedxXbom("
 						f"format={self.format}, "
 						f"bom_metadata={bom.metadata}, "
 						f"components_count={len(bom.components)}, "
 						f"services_count={len(bom.services)})")
 			case _:
-				return (f"XBOM(format={self.format}, bom=Unknown format)")
+				return (f"CyclonedxXbom(format={self.format}, bom=Unknown format)")
+
+
+# Register CyclonedxXbom in the format registry for polymorphic deserialization
+_XBOM_FORMAT_REGISTRY[SbomFormat.cyclonedx] = CyclonedxXbom

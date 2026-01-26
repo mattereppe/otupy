@@ -116,7 +116,7 @@ class XBOMActuator_openstack(XBOMActuator):
 		# --------------------------------------------------
 		os = Cloud(description='cloud', id=None, name='openstack', type='IaaS')
 		# TODO: Fill in with Openstack version/release
-		os_xbom = Xbom()
+		os_xbom = self.create_bom()
 		os_xbom.add(os)
 		self.boms.append(os_xbom)
 		self.services.append(Service(name=Name(os.name),type=ServiceType(os), #links=ArrayOf(Name)(),
@@ -129,7 +129,7 @@ class XBOMActuator_openstack(XBOMActuator):
 						id=service['id'], owner=self.owner, app_type=service['type']))
 			logger.debug("Found application: %s", str(app.name))
 			# TODO: Add software release (maybe with its SBOM)
-			xbom = Xbom()
+			xbom = self.create_bom()
 			xbom.add(app)
 			self.boms.append(xbom)
 			name=Name(app.name)
@@ -157,7 +157,7 @@ class XBOMActuator_openstack(XBOMActuator):
 
 			logger.debug("Found server: %s", str(server))
 
-			xbom = Xbom()
+			xbom = self.create_bom()
 			xbom.add(server)
 			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(server.name)), type=ServiceType(server), #links=ArrayOf(Name)(),
@@ -181,7 +181,7 @@ class XBOMActuator_openstack(XBOMActuator):
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
-			xbom = Xbom()
+			xbom = self.create_bom()
 			xbom.add(hyper)
 			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), #links=ArrayOf(Name)(),
@@ -195,7 +195,7 @@ class XBOMActuator_openstack(XBOMActuator):
 					if service.name == link.name.getObj():
 						bom.add(link)
 						return
-			elif len(bom.bom.components) > 0:
+			if len(bom.bom.components) > 0:
 				for component in bom.bom.components:
 					if component.name == link.name.getObj():
 						bom.add(link)
