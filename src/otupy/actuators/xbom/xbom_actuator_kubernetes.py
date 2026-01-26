@@ -257,16 +257,16 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		k8s_service = self.get_services(name=Name('kubernetes'),filter=Cloud)
 
 		master = self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane")
-		k8s_nodes = self.get_services(name=Name(master[0].metadata.name), filter="computer")
+		k8s_nodes = self.get_services(name=Name(master[0].metadata.name), filter=Computer)
 
 		for k in k8s_service:
 			for n in k8s_nodes:
-					consumer=self.get_consumer(n.bom.services[0].name)
-					peer = Peer(service_name=n.bom.services[0].name,
+					consumer=self.get_consumer(n.name)
+					peer = Peer(service_name=n.name,
 								role=PeerRole.host, # K8S is hosted on master node
 								consumer=consumer)
-					description="Kubernetes hosted on "+n.bom.services[0].name
-					link = Link(name=k.bom.services[0].name, description=description,
+					description="Kubernetes hosted on "+n.name.getObj()
+					link = Link(name=k.name, description=description,
 								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
 					self._add_link_to_bom(link)
 
