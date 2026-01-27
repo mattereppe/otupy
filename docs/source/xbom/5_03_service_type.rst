@@ -1,0 +1,64 @@
+5.3 Service-Type
+================
+
+It represents the type of service, where each service type is further
+defined with additional information that provides a more detailed
+description of the service’s characteristics.
+
+Type: :py:class:`~otupy.profiles.xbom.data.service_type.ServiceType` (:py:class:`~otupy.types.base.choice.Choice`)
+
+.. list-table::
+   :widths: 3 4 4 3 40
+   :header-rows: 1
+
+   * - ID
+     - Name
+     - Type
+     - #
+     - Description
+   * - 1
+     - application
+     - :py:class:`~otupy.profiles.xbom.data.application.Application`
+     - 1
+     - Software application.
+   * - 2
+     - computer
+     - :py:class:`~otupy.profiles.xbom.data.computer.Computer`
+     - 1
+     - Operating and application software.
+   * - 3
+     - vm
+     - :py:class:`~otupy.profiles.xbom.data.vm.VM`
+     - 1
+     - Virtual Machine.
+   * - 4
+     - pod
+     - :py:class:`~otupy.profiles.xbom.data.pod.Pod`
+     - 1
+     - Kubernetes pod.
+   * - 5
+     - container
+     - :py:class:`~otupy.profiles.xbom.data.container.Container`
+     - 1
+     - Container.
+   * - 6
+     - web_service
+     - :py:class:`~otupy.profiles.xbom.data.web_service.WebService`
+     - 1
+     - Web service.
+   * - 7
+     - cloud
+     - :py:class:`~otupy.profiles.xbom.data.cloud.Cloud`
+     - 1
+     - Cloud.
+   * - 8
+     - network
+     - :py:class:`~otupy.profiles.xbom.data.network.Network`
+     - 1
+     - Connectivity service.
+   * - 9
+     - iot
+     - :py:class:`~otupy.profiles.xbom.data.iot.IOT`
+     - 1
+     - IOT device.
+
