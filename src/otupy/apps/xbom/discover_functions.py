@@ -122,7 +122,7 @@ def discover(service: dict) -> tuple[Xbom, None] | None:
                                                              
 	actuator = xbom.Specifiers({'asset_id': service['actuator']['asset_id']})
 	arg = xbom.Args({'name_only': False, 'cached': False})
-	target = xbom.Context(boms=otupy.ArrayOf(Name)()) 
+	target = xbom.SbomCtx() 
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
 	context = producer.sendcmd(cmd)
 	logger.info("Got context from: %s", context.from_)

@@ -1,24 +1,20 @@
 import otupy as oc2
 
 from otupy.profiles.xbom.profile import Profile
-from otupy.types.base.array_of import ArrayOf
-from otupy.profiles.xbom.data.name import Name
-from otupy.core.target import target
+from otupy.profiles.xbom.targets.sbom_ctx import SbomCtx
 
-@oc2.target(name='context', nsid=Profile.nsid)
-class Context(oc2.types.base.Record):
-	""" Context
 
-		It describes the service environment, its connections and security capabilities.
+# Context is deprecated - use SbomCtx with 'sbom' target instead
+# Keeping this as an alias for backward compatibility but not registering as a target
+class Context(SbomCtx):
+	""" Context (DEPRECATED)
+
+		DEPRECATED: Use SbomCtx with the 'sbom' target name instead.
+		
+		This class is kept for backward compatibility but is no longer registered
+		as a target. The 'sbom' target (SbomCtx) should be used for XBOM discovery.
+		
+		:param format: Specifies the format of the SBOM (e.g. CycloneDX). Defaults to CycloneDX if not specified.
+		:param names: A list of specific names used to identify components or services to filter.
 	"""
-	boms: ArrayOf(Name) = None  # type: ignore
-	""" List the bom names that the command refers to """
-
-	def __init__(self, boms: list[Name] | None = None):
-		self.boms = ArrayOf(Name)(boms) if boms is not None else None
-
-	def __repr__(self):
-		return f"Context(services={self.services}, links={self.links})"
-
-	def __str__(self):
-		return f"Context(services={self.services}, links={self.links})"
+	pass

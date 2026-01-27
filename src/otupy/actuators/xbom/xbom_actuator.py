@@ -264,8 +264,9 @@ class XBOMActuator:
 		"""
 		if ( type(cmd.target.getObj()) == Features): 
 			r = self._query_feature(cmd)
-		elif (type(cmd.target.getObj()) == xbom.Context): #Discovery Context can accept also "context" as a target
-			r = self._query_context(cmd)
+		elif (isinstance(cmd.target.getObj(), xbom.SbomCtx)):
+			# SBOM target with format and names fields
+			r = self._query_sbom(cmd)
 		else:
 			return Response(status=StatusCode.BADREQUEST, status_text="Querying " + cmd.target.getName() + " not supported")
 
@@ -337,40 +338,83 @@ class XBOMActuator:
 
 		return consumer
 
+	def _query_sbom(self, cmd):
+		""" Query SBOM with specific format and names filter
 
-	def _query_context(self, cmd):
-		""" Returns the current context defined as the list of the boms
+			Handles the SbomCtx target which allows specifying both the SBOM format
+			and a list of component/service names to filter by.
 
-			Updates the list of boms (if necessary) and returns them. The main task is to build the expected response
-			(names only or full description), while the concrete discovery is managed by the `_udpdate()` method.
+			:param cmd: The `Command` including `Target` and optional `Args`.
+			:return: A `Response` including filtered BOMs.
 		"""
-		boms = cmd.target.getObj().boms
+		sbom_target = cmd.target.getObj()
 		res = {}
 
 		if not (cmd.args.get('cached') == True):
 			self._update()
 
-		if(boms is not None):
-			if(cmd.args.get('name_only') == True):
-				res['boms'] = ArrayOf(Name)()
-				for b in self.boms:
-					res['boms'].append(Name(b.name))
-			else:
-				res['boms'] = self.boms
+		# Get format if specified and set it for BOM creation
+		if sbom_target.get('format') is not None:
+			self.sbom_format = sbom_target.get('format')
+
+		# Get names filter if specified
+		names_filter = sbom_target.get('names')
 		
-		# Always return the list of bom names
-		res['bom_names'] = ArrayOf(Name)()
-		for s in self.services:
-			res['bom_names'].append(Name(s.name))
+		# Filter BOMs by names if specified
+		filtered_boms = self.boms
+		if names_filter is not None and len(names_filter) > 0:
+			filtered_boms = ArrayOf(Xbom)()
+			for bom in self.boms:
+				if bom.bom is None:
+					continue
+				# Check if any component or service in this BOM matches the filter names
+				for name_filter in names_filter:
+					# Check services
+					if hasattr(bom.bom, 'services') and bom.bom.services:
+						for service in bom.bom.services:
+							if str(service.name) == name_filter:
+								filtered_boms.append(bom)
+								break
+					# Check components
+					if hasattr(bom.bom, 'components') and bom.bom.components:
+						for component in bom.bom.components:
+							if component.name == name_filter:
+								filtered_boms.append(bom)
+								break
+					if bom in filtered_boms:
+						break
 
-
+		# Return results based on name_only argument
+		if cmd.args.get('name_only') == True:
+			res['bom_names'] = ArrayOf(Name)()
+			# Collect all service/component names from filtered BOMs
+			for b in filtered_boms:
+				if b.bom:
+					if hasattr(b.bom, 'services') and b.bom.services:
+						for service in b.bom.services:
+							res['bom_names'].append(Name(service.name))
+					if hasattr(b.bom, 'components') and b.bom.components:
+						for component in b.bom.components:
+							res['bom_names'].append(Name(component.name))
+		else:
+			res['boms'] = filtered_boms
+			# Also include names for convenience
+			res['bom_names'] = ArrayOf(Name)()
+			for b in filtered_boms:
+				if b.bom:
+					if hasattr(b.bom, 'services') and b.bom.services:
+						for service in b.bom.services:
+							res['bom_names'].append(Name(service.name))
+					if hasattr(b.bom, 'components') and b.bom.components:
+						for component in b.bom.components:
+							res['bom_names'].append(Name(component.name))
 
 		if len(res) > 0:
-			logger.debug("Returning context %s", res)
-			return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= xbom.Results(**res))
+			logger.debug("Returning filtered SBOMs: %s", res)
+			return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=xbom.Results(**res))
 		else:
-			return Response(status=StatusCode.OK, status_text="Command received: heartbeat")
-			
+			return Response(status=StatusCode.OK, status_text="No matching BOMs found")
+
 	def _update(self):
 		""" Update boms
 
