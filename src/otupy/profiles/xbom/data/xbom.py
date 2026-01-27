@@ -165,7 +165,6 @@ class CyclonedxXbom(Xbom):
 			return None
 		bom = self._ensure_bom()
 		
-		# Filter out stub components (those with external references pointing to BOMs)
 		def is_stub(item: Any) -> bool:
 			if item.external_references:
 				for ref in item.external_references:
@@ -308,6 +307,11 @@ class CyclonedxXbom(Xbom):
 
 	def merge(self, other: 'Xbom') -> None:
 		""" Merge another XBOM into this one
+		
+			Handles stub components/services specially to avoid duplicates.
+			Stubs are identified by having an external reference of type BOM.
+			When merging, stubs with the same bom_ref or same external BOM URL
+			are deduplicated.
 
 			:param other: Other XBOM to merge
 			:return: None
@@ -323,16 +327,110 @@ class CyclonedxXbom(Xbom):
 		if self.format != other.format:
 			raise ValueError(f"Cannot merge XBOMs with different formats: {self.format} != {other.format}")
 
-		# Merge components
+		# Local helper functions
+		def is_stub(item: Any) -> bool:
+			if item.external_references:
+				for ref in item.external_references:
+					if ref.type == ExternalReferenceType.BOM:
+						return True
+			return False
+
+		def get_ref_value(item: Any) -> str | None:
+			# Handle Dependency objects (use 'ref') and Component/Service (use 'bom_ref')
+			for attr in ('ref', 'bom_ref'):
+				if hasattr(item, attr) and getattr(item, attr) is not None:
+					val = getattr(item, attr)
+					return val.value if hasattr(val, 'value') else str(val)
+			return None
+
+		def get_bom_urls(item: Any) -> set[str]:
+			urls: set[str] = set()
+			if item.external_references:
+				for ref in item.external_references:
+					if ref.type == ExternalReferenceType.BOM:
+						urls.add(str(ref.url))
+			return urls
+
+		# Build sets of existing bom_refs and external BOM URLs for deduplication
+		existing_component_refs: set[str] = set()
+		existing_component_bom_urls: set[str] = set()
+		for comp in bom.components:
+			ref = get_ref_value(comp)
+			if ref:
+				existing_component_refs.add(ref)
+			if is_stub(comp):
+				existing_component_bom_urls.update(get_bom_urls(comp))
+
+		existing_service_refs: set[str] = set()
+		existing_service_bom_urls: set[str] = set()
+		for svc in bom.services:
+			ref = get_ref_value(svc)
+			if ref:
+				existing_service_refs.add(ref)
+			if is_stub(svc):
+				existing_service_bom_urls.update(get_bom_urls(svc))
+
+		# Merge components, handling stubs specially
 		for component in other_bom.components:
+			comp_ref = get_ref_value(component)
+			
+			if is_stub(component):
+				# For stubs, check both bom_ref and external BOM URLs
+				if comp_ref and comp_ref in existing_component_refs:
+					continue  # Skip duplicate stub by bom_ref
+				comp_urls = get_bom_urls(component)
+				if comp_urls & existing_component_bom_urls:
+					continue  # Skip duplicate stub by external URL
+				# Add new stub and track it
+				if comp_ref:
+					existing_component_refs.add(comp_ref)
+				existing_component_bom_urls.update(comp_urls)
+			else:
+				# For non-stubs, just check bom_ref
+				if comp_ref and comp_ref in existing_component_refs:
+					continue  # Skip duplicate component
+				if comp_ref:
+					existing_component_refs.add(comp_ref)
+			
 			bom.components.add(component)
 
-		# Merge services
+		# Merge services, handling stubs specially
 		for service in other_bom.services:
+			svc_ref = get_ref_value(service)
+			
+			if is_stub(service):
+				# For stubs, check both bom_ref and external BOM URLs
+				if svc_ref and svc_ref in existing_service_refs:
+					continue  # Skip duplicate stub by bom_ref
+				svc_urls = get_bom_urls(service)
+				if svc_urls & existing_service_bom_urls:
+					continue  # Skip duplicate stub by external URL
+				# Add new stub and track it
+				if svc_ref:
+					existing_service_refs.add(svc_ref)
+				existing_service_bom_urls.update(svc_urls)
+			else:
+				# For non-stubs, just check bom_ref
+				if svc_ref and svc_ref in existing_service_refs:
+					continue  # Skip duplicate service
+				if svc_ref:
+					existing_service_refs.add(svc_ref)
+			
 			bom.services.add(service)
 
-		# Merge dependencies
+		# Merge dependencies, deduplicating by ref
+		existing_dep_refs: set[str] = set()
+		for dep in bom.dependencies:
+			ref = get_ref_value(dep)
+			if ref:
+				existing_dep_refs.add(ref)
+
 		for dependency in other_bom.dependencies:
+			dep_ref = get_ref_value(dependency)
+			if dep_ref and dep_ref in existing_dep_refs:
+				continue  # Skip duplicate dependency
+			if dep_ref:
+				existing_dep_refs.add(dep_ref)
 			bom.dependencies.add(dependency)
 
 	def todict(self, e):
