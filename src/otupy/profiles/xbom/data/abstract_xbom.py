@@ -26,6 +26,9 @@ class Xbom(Record, ABC):
 	
 	format: SbomFormat = None  # type: ignore
 	""" Format of the XBOM """
+	
+	bom: Any = None
+	""" Bill of Materials object (format-specific) """
 
 	@classmethod
 	def fromdict(clstype, dic, e):
