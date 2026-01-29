@@ -15,6 +15,8 @@ class PeerRole(Enumerated):
 	protected = 11 #the service is protected by another service
 	contain = 12 #the service protect another service
 	contained = 13 #the service is protected by another service
+	forwarding = 14 #the service is a network transporting packets
+	endpoint = 15 #the service is a network endpoint generating/receiving traffic
 
 	
 

@@ -29,7 +29,6 @@ from otupy.profiles.ctxd.data.network_type import NetworkType
 from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
@@ -53,6 +52,13 @@ MY_IDS = {
 	'domain': None,
 	'asset_id': None
 }
+
+# -------------------------------------------------------------------------------
+# This will be removed when this class will be updated to the newest definitions 
+# -------------------------------------------------------------------------------
+class Server:
+	pass
+# -------------------------------------------------------------------------------
 
 # An implementation of the ctxd profile (it implements my5gtestbed). 
 @actuator_implementation("ctxd-docker")

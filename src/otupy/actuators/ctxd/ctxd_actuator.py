@@ -6,8 +6,8 @@
 	`Services` or `Links`.
 
 	Concrete implementation of this interface should implement the following methods:
-	- discover_services(): Must fill in the internal `services` member with `Service` instances.
-	- discover_links(): Must fill in the internal `links` member with `Link` instances.
+	- discover_context(): Must fill in the internal `services` member with `Service` instances and
+  			the internal `links` member with `Link` instances.
 """
 
 import logging
@@ -162,7 +162,7 @@ class CTXDActuator:
 
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
-	def get_services(self, name: Name = None, filter: ServiceType = None) -> [] :
+	def get_services(self, name: Name = None, filter: ServiceType = None, namespace: str = None, domain: str = None) -> [] :
 		""" Returns the list of current services
 
 			Returns the list of discovered services. Filter by name and type.
@@ -175,7 +175,9 @@ class CTXDActuator:
 		for s in self.services:
 			if filter == None or ( type(s.type.getObj()) == filter ):
 				if name == None or ( s.name == name ):
-					service_list.append(s)
+					if namespace == None or namespace == s.namespace:
+						if domain == None or domain == s.domain:
+							service_list.append(s)
 
 		return service_list
 
@@ -206,7 +208,7 @@ class CTXDActuator:
 		"""
 		consumer=None
 		for p in self.peers:
-			if Name(p['service_name']) == service_name:
+			if Name(p['service_name']) == Name(service_name):
 				consumer = Consumer(**p['consumer'])
 				logger.debug("Found consumer %s for %s", consumer, service_name)
 				break
@@ -224,8 +226,13 @@ class CTXDActuator:
 		links = cmd.target.obj.links
 		res = {}
 
-		if not (cmd.args.get('cached') == True):
-			self._update()
+		try:
+			if not (cmd.args.get('cached') == True):
+				self._update()
+		except Exception as e:
+			return Response (status=StatusCode.INTERNALERROR, 
+					status_text=StatusCodeDescription[StatusCode.INTERNALERROR], 
+					results="")
 
 		if(services is not None):
 			if(cmd.args.get('name_only') == True):
@@ -261,15 +268,16 @@ class CTXDActuator:
 		""" Update services and links
 
 			This method should be run before getting links and services
-			Every concrete implementation of actuators must implement the `discover_services()` and `discover_links()` methods.
+			Every concrete implementation of actuators must implement the `discover_context()` method.
 			Does not return anything, just update the internal members `services` and `links`.
 
 			:return: None
 		"""
 		self.services = ArrayOf(Service)()
-		self.discover_services()
 		self.links = ArrayOf(Link)()
-		self.discover_links()
+		# Reset everything at the beginning, because links might be updated during the
+		# discovery of services for optimization purposes
+		self.discover_context()
 		
 	def __notimplemented(self, cmd):
 		""" Default response

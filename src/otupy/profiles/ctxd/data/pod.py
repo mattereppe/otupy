@@ -53,7 +53,7 @@ class Pod(Record):
 	            f"id={self.id}, " \
 	            f"name={self.name}, " \
 	            f"namespace={self.namespace}, " \
-				f"ports={self.ports}" 
+				f"ports={self.ports})" 
 	
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):

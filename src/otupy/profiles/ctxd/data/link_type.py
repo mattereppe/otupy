@@ -9,6 +9,6 @@ class LinkType(Enumerated):
     api = 1
     hosting = 2
     packet_flow = 3
-    control = 4
-    protect = 5
+    controlling = 4
+    protecting = 5
     containing = 6
