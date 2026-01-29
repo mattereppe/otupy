@@ -27,9 +27,24 @@ def _log_context(ctx):
 	try:
 		for type_ in ctx.keys():
 			for item in ctx[type_]:
-				logger.info("Found %s: %s", type_, item)
+#				logger.info("Found %s: %s", type_, item)
+				if 'service' in item:
+					sub=""
+					if item['service'].subservices is not None:
+						for s in item['service'].subservices:
+							sub+=str(s)+","
+					logger.info("Service: %s/%s/%s [%s] {%s}",
+							item['service'].domain, item['service'].namespace, item['service'].name, 
+							item['service'].type, sub)
+				if 'link' in item:
+					if item['link'].peers is not None:
+						peers=""
+						for p in item['link'].peers:
+							peers+=str(p.service_name)+" ["+str(p.role)+"], "
+					logger.info("Link: %s [%s] -- (%s) --> {%s}", item['link'].name, item['link'].role, item['link'].link_type, peers)
 	except:
 		logger.info("No service/link found!")
+
 
 # The loop "decorator", which cannot be used as decorator
 # because the two arguments are only known at run-time

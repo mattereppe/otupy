@@ -13,6 +13,7 @@
 
 		- ``config``:
 		
+			- ``dns``: DNS suffix for this cluster (needed to create unique names for resources)
 			- ``cacert``: Location of the CA certificate used to sign the endpoint HTTPS certificate (if not installed in the local host).
  			- ``namespaces``: list of namespace names to query (all namespace if not given).
 
@@ -48,7 +49,6 @@ from otupy.profiles.ctxd.data.network_type import NetworkType
 from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.profiles.ctxd.data.endpoint import Endpoint
@@ -396,7 +396,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 							consumer=None)
 				description="Kubernetes controls pod "+str(p.name.getObj())
 				self.links.append(Link(name=s.name, description=description,
-							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+							link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
 
 
 
@@ -453,7 +453,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 							consumer=consumer)
 			description="Kubernetes Network Policies"
 			self.links.append(Link(name=s.name, description=description,
-							link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
+							link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
 
  
 	
@@ -564,7 +564,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 							consumer=consumer)
 			description="Kubernetes Network Policies protect "+str(s.name)
 			self.links.append(Link(name=s.name, description=description,
-							link_type=LinkType.protect, peers=ArrayOf(Peer)([peer])))
+							link_type=LinkType.protecting, peers=ArrayOf(Peer)([peer])))
 
 
 	def _connect_to_kubernetes(self):
