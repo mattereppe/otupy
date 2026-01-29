@@ -537,9 +537,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			Currently only one region is supported by this implementation
 		"""
-		print("Checking connections")
 		self._check_connection()
-		print("Why didn't trigger?")
 
 		try:
 			regions = self.conn.identity.regions()
@@ -704,14 +702,9 @@ class CTXDActuator_openstack(CTXDActuator):
 	def _get_openstack_server(self, server_id):
 		""" Retrieve the server from a list """
 		for v in self.cloud_vms:
-			print("******* ", v['id'], " -> ", server_id)
-			try:
-				if v['id'] == server_id:
-					return v
-			except Exception as e:
-			 	print("katia zoccola: ", e)
+			if v['id'] == server_id:
+				return v
 
-		print("not found")
 		return None
 		
 	def _get_openstack_subnet(self, subnet_id):
