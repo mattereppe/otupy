@@ -230,6 +230,7 @@ class CTXDActuator:
 			if not (cmd.args.get('cached') == True):
 				self._update()
 		except Exception as e:
+			logger.error("Unable to update context: %s", str(e))
 			return Response (status=StatusCode.INTERNALERROR, 
 					status_text=StatusCodeDescription[StatusCode.INTERNALERROR], 
 					results="")

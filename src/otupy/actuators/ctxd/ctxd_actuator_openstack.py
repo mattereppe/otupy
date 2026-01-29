@@ -54,9 +54,13 @@ from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.api import API
 from otupy.profiles.ctxd.data.network import Network
+from otupy.profiles.ctxd.data.network_node import NetworkNode
 from otupy.profiles.ctxd.data.network_type import NetworkType
+from otupy.profiles.ctxd.data.network_function_type import NetworkFunctionType
 from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
+from otupy.profiles.ctxd.data.network_function import NetworkFunction
+from otupy.profiles.ctxd.data.network_router import Router
 from otupy.profiles.ctxd.data.endpoint import Endpoint
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
@@ -104,8 +108,11 @@ class CTXDActuator_openstack(CTXDActuator):
 		self.sg = kwargs['config']['securitygroups_name'] if 'config' in kwargs and 'securitygropus_name' in kwargs['config'] else  "openstack-securitygroups"
 		self.cloud = kwargs['config']['cloud_name'] if 'config' in kwargs and 'cloud_name' in kwargs['config'] else  "openstack"
 
-
-		self._connect_to_openstack()
+		self.conn = None
+		try:
+			self._connect_to_openstack()
+		except Exception as e:
+			logger.error(f"Connection to OpenStack failed: {e}")
 
 	def discover_context(self):
 		""" Discover services and links
@@ -116,6 +123,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		# (OpenStack APIs take time
 		self.cloud_region = self._openstack_region_list()['id']
 		self.cloud_projects = self._openstack_project_list()
+		self.cloud_domains = self._openstack_domain_list()
 
 		self.cloud_services = self._openstack_service_list()
 		self.cloud_endpoints = self._openstack_endpoint_list()
@@ -124,6 +132,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		self.cloud_ports = self._openstack_port_list()
 		self.cloud_subnets = self._openstack_subnet_list()
 		self.cloud_nets = self._openstack_network_list()
+		self.cloud_routers = self._openstack_router_list()
 
 		self.discover_services()
 		self.discover_links()
@@ -138,6 +147,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		self._discover_os_servers()
 		self._discover_os_hypervisors()		
 		self._discover_os_networks()
+		self._discover_os_routers()
 		# TODO: Discover:
 		# - images
 		
@@ -156,6 +166,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		self._discover_vms_link_hypervisors()
 		self._discover_vms_link_computers()
 		self._discover_vms_link_networks()
+		self._discover_routers_link_nodes_and_networks()
 		self._discover_sg_link_vms()
 
 
@@ -217,13 +228,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			for p in vm_ports:
 				ips = ArrayOf(IPInfo)()
 				for a in p['fixed_ips']:
-					try:
-						subnet=self._get_openstack_subnet(a['subnet_id'])
-						prefix=ipaddress.ip_network(subnet['cidr']).prefixlen if 'cidr' in subnet else 32
-						gw=subnet['gateway_ip'] if 'gateway_ip' in subnet else None
-					except:
-						prefix=None
-						gw=None
+					prefix, gw = self._parse_openstack_fixed_ips(a)
 					try:
 						ips.append( IPInfo(ip=a['ip_address'], prefix=prefix, gw=gw))
 					except Exception as e:
@@ -232,18 +237,15 @@ class CTXDActuator_openstack(CTXDActuator):
 
 				ifaces.append(Port(description=p['description'], id=p['id'], iface=None, ips=ips))
 
-			server = VM(vm['description'],
+			server = VM(name= Hostname(vm['name']),
 							id= vm['id'], 
-							name= vm['name'],
+							description=vm['description'],
 							image = vm['image']['id'],
 							ports = ifaces)
 
 			logger.debug("Found server: %s", str(server))
 
-			for p in self.cloud_projects:
-				if vm['project_id'] == p['id']:
-					project = p['name']
-					domain = p['domain_id']
+			project, domain = self._get_openstack_project_and_domain(vm['project_id'])
 			if self.use_suffix:
 				name=Name(server.name+"@"+self.cloud_region+self.dns)
 			else:
@@ -281,10 +283,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		for n in self.cloud_nets:
 			ip4nets = ArrayOf(IPv4Net)()
 			ip6nets = ArrayOf(IPv6Net)()
-			try: 
-				project=self._get_openstack_project(n['project_id'])['name']
-			except:
-				project=None
+			project, domain = self._get_openstack_project_and_domain(n['project_id'])
 			for sub in n['subnet_ids']:
 				try:
 					subnet=self._get_openstack_subnet(sub)
@@ -317,10 +316,56 @@ class CTXDActuator_openstack(CTXDActuator):
 			else:
 				name=Name(n['name'])
 			self.services.append(Service(name=name, type=ServiceType(net),
-					domain=self.domain, namespace=project,
+					domain=domain, namespace=project,
 					subservices=ArrayOf(Name)(), owner=self.owner, release=n['updated_at']))
 
+	def _discover_os_routers(self):
+		""" Add a network service for each router
+		"""
+		for r in self.cloud_routers:
+		
+			# The "gateway" is a default router not explicitely listed
+			ips = ArrayOf(IPInfo)()
+			routes = []
+			for a in r['external_gateway_info']['external_fixed_ips']:
+				prefix, gw = self._parse_openstack_fixed_ips(a)
+				routes.append("Default via "+gw+" src "+a['ip_address'])
+			routes.append(r['routes'])
+			
+			# First, create network function for the router
+			router = NetworkFunction(name=r['name'], id=r['id'], description=r['description'],
+				type=NetworkFunctionType(Router({'routes': routes})), version=r['revision_number'] )
+			project, domain = self._get_openstack_project_and_domain(r['project_id'])
 
+			if self.use_suffix:
+				name=Name(r['name']+"@"+self.cloud_region+self.dns)
+			else:
+				name=Name(r['name'])
+			self.services.append(Service(name=name, type=ServiceType(router),
+					domain=domain, namespace=project,
+					subservices=ArrayOf(Name)(), owner=self.owner, release=r['updated_at']))
+
+			# Second, create a network node that hosts the network function
+			ifaces = ArrayOf(Port)()
+			router_ports = self._get_openstack_ports( r['id'])
+			for p in router_ports:
+				ips = ArrayOf(IPInfo)()
+				for a in p['fixed_ips']:
+					prefix, gw = self._parse_openstack_fixed_ips(a)
+					try:
+						ips.append( IPInfo(ip=a['ip_address'], prefix=prefix, gw=gw))
+					except Exception as e:
+						logger.error("Unable to add ip address for router: ", e)
+				ifaces.append(Port(description=p['description'], id=p['id'], iface=None, ips=ips))
+
+			node = NetworkNode(name=Hostname(str(name)),
+							id=None, 
+							description="Execution environment of "+str(name)+" (linux namespace)",
+							ports = ifaces)
+
+			self.services.append(Service(name=name, type=ServiceType(node),
+					domain=domain, namespace=project,
+					subservices=None, owner=self.owner, release=r['updated_at']))
 
 
 	def _discover_os_link_vms(self):
@@ -433,6 +478,46 @@ class CTXDActuator_openstack(CTXDActuator):
 					self.links.append(Link(name = v.name, description=description, role=PeerRole.endpoint,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 
+	def _discover_routers_link_nodes_and_networks(self):
+		""" Add links from routers to hosting network nodes """
+		netfuns = self.get_services(filter=NetworkFunction)
+		nodes = self.get_services(filter=NetworkNode)
+
+		for r in netfuns:
+			if type(r.type.getObj().type.getObj()) == Router:
+				for n in nodes:
+					consumer=self.get_consumer(n.name)
+					peer = Peer(service_name=n.name,
+									role=PeerRole.host,
+									consumer=consumer)
+					if r.name == n.name:
+						description="Router " + str(r.name) + " hosted on node " + str(n.name)
+						self.links.append(Link(name=r.name, description=description, role=PeerRole.guest,
+									link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+					
+						# Add link to networks
+						for p in n.type.getObj().ports:
+							net_id = self._get_openstack_port(p.id)['network_id']
+							try:
+								net = self._get_openstack_net(net_id)
+								project = self._get_openstack_project(net['project_id'])['name']
+								nets = self.get_services(name=Name(net['name']), namespace=project, filter=Network)
+								
+								for w in nets:
+									peer = Peer(service_name= w.name,
+												role= PeerRole.forwarding,
+												consumer=None) 
+									description="Router " + str(r.name) + " attached to network "+str(w.name)
+									self.links.append(Link(name = r.name, description=description, role=PeerRole.forwarding,
+												link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
+									# Add a link for the underlying network node too
+									description="Node " + str(n.name) + " attached to network "+str(w.name)
+									self.links.append(Link(name = r.name, description=description, role=PeerRole.endpoint,
+												link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
+
+							except:
+								logger.warn("Unable to find net: %s", net_id)
+			
 
 	def _discover_sg_link_vms(self):
 		""" Add links from Security Groups to VMs's ports
@@ -460,43 +545,52 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	
 	def _connect_to_openstack(self):
+		""" Connect to OpenStack
 
-		try:
-			# Get access to OpenStack (the following mechanism is largely undocumented.
-			# See: https://github.com/openstack/openstacksdk/blob/3d45cecb3a897bf9bb10613bfc6ec82a395c153f/doc/source/user/transition_from_profile.rst#L154
-			config_dict=openstack.config.defaults.get_defaults()
+			Get an authentication token from the Identity server that will be used to authenticate requests to OpenStack
+			endpoints. 
+
+			This method is designed to be called multiple times (e.g., before invoking any API), so it can recover from
+			temporary connection errors. If a connection is already established, it does not waste time to create a new connection.
+		"""
+
+		if self.conn is None:
+			error = None
+			try:
+				# Get access to OpenStack (the following mechanism is largely undocumented.
+				# See: https://github.com/openstack/openstacksdk/blob/3d45cecb3a897bf9bb10613bfc6ec82a395c153f/doc/source/user/transition_from_profile.rst#L154
+				config_dict=openstack.config.defaults.get_defaults()
+		
+				loader = openstack.config.OpenStackConfig(
+		  		  load_yaml_config=False,
+		    		app_name='unused',
+		    		app_version='1.0')
+				cloud_region = loader.get_one_cloud(
+		    		region_name='',
+		    		auth_type='password',
+					auth=self.auth,
+					cacert=self.config['cacert'],
+		    		)
+				self.conn = openstack.connection.from_config(cloud_config=cloud_region)
+		
 	
-			loader = openstack.config.OpenStackConfig(
-	  		  load_yaml_config=False,
-	    		app_name='unused',
-	    		app_version='1.0')
-			cloud_region = loader.get_one_cloud(
-	    		region_name='',
-	    		auth_type='password',
-				auth=self.auth,
-				cacert=self.config['cacert'],
-	    		)
-			self.conn = openstack.connection.from_config(cloud_config=cloud_region)
+	        # Get the token from the connection object (it will automatically handle authentication)
+				token = self.conn.authorize()
 	
+	        # Verify successful authentication by checking token
+				if token:
+					logger.info("Authentication successful!")
+					logger.debug("Token: %s", token)
+				else:
+					logger.error("Authentication failed.")
+	    
+			except Exception as e:
+				error = e
+				self.conn = None
 
-        # Get the token from the connection object (it will automatically handle authentication)
-			token = self.conn.authorize()
-
-        # Verify successful authentication by checking token
-			if token:
-				logger.info("Authentication successful!")
-				logger.debug("Token: %s", token)
-			else:
-				logger.error("Authentication failed.")
-    
-		except Exception as e:
-			logger.error(f"Connection error: {e}")
-			self.conn = None
-
-	def _check_connection(self):
 		if not self.conn:
-			logger.error("Connection to OpenStack is not established.")
-			raise ConnectionError
+			# The rest of the code should be ready to deal with connection errors
+			raise ConnectionError(f"Connection to OpenStack failed: {error}")
 	
 	def _format_os_data(self, data):
 			data_list = []
@@ -507,7 +601,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	def _openstack_service_list(self):
 		""" Retrieve list of OpenStack services """
-		self._check_connection()
+		self._connect_to_openstack()
 		
 		try:
 		    # List services available in OpenStack
@@ -521,7 +615,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		
 	def _openstack_endpoint_list(self):
 		""" Retrieve list of OpenStack service endpoints """
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			# List endpoints available in OpenStack
@@ -537,7 +631,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			Currently only one region is supported by this implementation
 		"""
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			regions = self.conn.identity.regions()
@@ -552,10 +646,10 @@ class CTXDActuator_openstack(CTXDActuator):
 	def _openstack_project_list(self):
 		""" Retrieve project list
 
-			This is highly inefficient. Future implementations should cache the 
-			result for the whole duration of the discovery functions
+			We need to keep a hidden list of all projects, to get the project name for 
+			shared resources that do not belong to the projects selected by configuration
 		"""
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			all_projects = self._format_os_data(self.conn.identity.projects())
@@ -567,6 +661,8 @@ class CTXDActuator_openstack(CTXDActuator):
 				projects = [x for x in all_projects if x['name'] == self.project]
 			else: # If neither of the two is given, keep the whole project list (it will be slower to retrieve the server list)
 				projects = all_projects
+			# Keep track of hidden projects
+			self.cloud_hidden_projects = [x for x in all_projects if x not in projects]
 
 		except Exception as e:
 			logger.warn("Failed to retrieve project list: %s", e)
@@ -574,10 +670,14 @@ class CTXDActuator_openstack(CTXDActuator):
 
 		return projects
 		
+	def _openstack_domain_list(self):
+		self._connect_to_openstack()
+
+		return self._format_os_data(self.conn.identity.domains())
 
 	def _openstack_server_list(self):
 		""" Retrieve list of servers (VMs) from OpenStack APIs """
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			# Use the OpenStack client to list active servers
@@ -604,7 +704,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		
 	def _openstack_hypervisor_list(self):
 		""" Retrieve list of hypervisors (servers) from OpenStack APIs """
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			# Use the OpenStack client to list hypervisors
@@ -619,14 +719,15 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	def _openstack_network_list(self):
 		""" Retrieve list of hypervisors (servers) from OpenStack APIs """
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			networks = []
 			nets = self.conn.network.networks() 
 			for n in self._format_os_data(nets):
 				for p in self.cloud_projects:
-					if n['project_id'] == p['id']:
+					# Must include shared networks!!!
+					if n['project_id'] == p['id'] or n['is_shared']:
 						networks.append(n)
 
 		except Exception as e:
@@ -639,7 +740,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	def _openstack_subnet_list(self):
 		""" Retrieve list of subnets from OpenStack APIs """
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			# Use the OpenStack client to list hypervisors
@@ -653,7 +754,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	def _openstack_port_list(self):
 		""" Retrieve list of subnets from OpenStack APIs """
-		self._check_connection()
+		self._connect_to_openstack()
 
 		try:
 			# Use the OpenStack client to list hypervisors
@@ -665,6 +766,23 @@ class CTXDActuator_openstack(CTXDActuator):
      	# Return the formatted server list as a pretty-printed JSON string
 		return self._format_os_data(ports)
 
+	def _openstack_router_list(self):
+		""" Retrieve list of routers from OpenStack APIs """
+		self._connect_to_openstack()
+
+		try:
+			routers = []
+			rs = self._format_os_data(self.conn.network.routers()) # No filters set
+			for r in rs:
+				for p in self.cloud_projects:
+					if r['project_id'] == p['id']:
+						routers.append(r)
+		except Exception as e:
+			logger.warning("Failed to retrieve router list: %s", e)
+			return []
+
+     	# Return the formatted server list as a pretty-printed JSON string
+		return routers
 
 
 	def _openstack_server_os(self, image_id):
@@ -696,9 +814,20 @@ class CTXDActuator_openstack(CTXDActuator):
 		for p in self.cloud_projects:
 			if p['id'] == project_id:
 				return p
+		for p in self.cloud_hidden_projects:
+			if p['id'] == project_id:
+				return p
 
 		return None
 		
+	def _get_openstack_domain(self, domain_id):
+		""" Retrieve the domain from a list """
+		for d in self.cloud_domains:
+			if d['id'] == domain_id:
+				return d
+
+		return None
+
 	def _get_openstack_server(self, server_id):
 		""" Retrieve the server from a list """
 		for v in self.cloud_vms:
@@ -735,4 +864,27 @@ class CTXDActuator_openstack(CTXDActuator):
 		for p in self.cloud_ports:
 			if p['id'] == port_id:
 				return p
+
+	def _parse_openstack_fixed_ips(self, fips):
+		""" Parse the fixed_ips structure and returns prefix and gateway """
+		try:
+			subnet=self._get_openstack_subnet(fips['subnet_id'])
+			prefix=ipaddress.ip_network(subnet['cidr']).prefixlen if 'cidr' in subnet else 32
+			gw=subnet['gateway_ip'] if 'gateway_ip' in subnet else None
+
+			return prefix, gw
+		except:
+			return None, None
+	
+	def _get_openstack_project_and_domain(self, project_id):
+		""" Get project and domain name from project_id """
+		try: 
+			project_data=self._get_openstack_project(project_id)
+			project=project_data['name']
+			domain=self._get_openstack_domain(project_data['domain_id'])['name']
+			return project, domain
+		except:
+			logger.warning("Unable to find project: %s", r['project_id'])
+			return None, None
+		
 

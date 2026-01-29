@@ -1,64 +1,64 @@
-from otupy.types.base import Record, ArrayOf
-from otupy.profiles.ctxd.data.port import Port
+from otupy.types.base import  ArrayOf
+from otupy.profiles.ctxd.data.host import Host
+from otupy.types.base import Enumerated
 
-class VM(Record):
-	"""VM
-    it is the description of the service - Virtual Machine
+class HyperVisorType(Enumerated):
+	""" Type of hypervisor 
+
+		Type1 (bare-metal) o Type2 (hosted)
 	"""
-	description: str = None
-	""" Generic description of the VM """
-	id: str = None
-	""" ID of the VM """
-	name: str = None
-	""" Name of the VM"""
-	ports: ArrayOf(Port) = None
-	""" Network interfaces of the VM"""
+	native = 1
+	hosted = 2
+
+class VM(Host):
+	""" Virtual Machine
+
+		A Virtual Machine is a virtualization environment that emulates a full computer hardware.
+		It provides virtualized hardware as network interfaces, virtual CPUs, virtual RAM, and storage.
+		Since this model shares most of the components with any other network host, it will inherit from
+		the `Host` abstraction and will extend with additional information for virtualization.
+	"""
+	hypervisor: str = None
+	""" Hypervisor name (e.g., QEMU, XEN, ...) """
+	hypervisor_type: HyperVisorType = None
+	""" Type of the hypervisor: native (bare-metal) or hosted """
 	image: str = None
 	""" Software image loaded in the VM """
 
-	def __init__(self, description:str = None, id:str = None, name:str = None, image:str = None, ports:ArrayOf(Port) = None):
-		if(isinstance(description, VM)):
-			self.description = description.description
-			self.id = description.id
-			self.name = description.name
-			self.image = description.image
-			self.ports = description.ports
+
+	def __init__(self, 
+			hypervisor: str = None,
+			hypervisor_type: HyperVisorType=None, 
+			image:str = None, 
+			**kwargs):
+		if(isinstance(hypervisor, VM)):
+			super().__init__(hypervisor)
+			self.hypervisor = hypervisor.hypervisor
+			self.hypervisor_type = hypervisor.hypervisor_type
+			self.image = hypervisor.image
 		else:
-			self.description = description if description is not None else None
-			self.id = id if id is not None else None
-			self.name = name if name is not None else None
-			self.image = image if image is not None else None
-			if ports is not None:
-				self.ports = ArrayOf(Port)()
-				for port in ports:
-					if isinstance(port, dict):
-						self.ports.append(Port(**port))
-					else:
-						self.ports.append(Port(port))
-			else:
-				self.ports = None
+			super().__init__(**kwargs)
+			self.hypervisor = hypervisor 
+			self.hypervisor_type = hypervisor_type 
+			self.image = image 
+
 		self.validate_fields()
 
 	def __repr__(self):
-		return (f"VM(description='{self.description}', id={self.id}, "
-	             f"name='{self.name}', image={self.image}, ports={self.ports})")
+		return (f"VM("
+					 f"{super().__repr__()},"
+					 f"hypervisor={self.hypervisor},"
+					 f"hypervisor_type={self.hypervisor_type}," 
+	             f"image={self.image}")
 	
 	def __str__(self):
-		return f"VM(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"name={self.name}, " \
-	            f"image={self.image}, " \
-					f"ports={self.ports})" 
+		return self.__repr__()
 
 	def validate_fields(self):
-		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, VM)):
-			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'id' to be of type str, but got {type(self.id)}")
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type str, but got {type(self.name)}")
+		super().validate_fields()
+		if self.hypervisor is not None and not isinstance(self.hypervisor, str):
+			raise TypeError(f"Expected 'hypervisor' to be of type {str}, but got {type(self.hypervisor)}")
+		if self.hypervisor_type is not None and not isinstance(self.hypervisor_type, str):
+			raise TypeError(f"Expected 'hypervisor_type' to be of type {HyperVisorType}, but got {type(self.hypervisor_type)}")
 		if self.image is not None and not isinstance(self.image, str):
 			raise TypeError(f"Expected 'image' to be of type {str}, but got {type(self.image)}")
-		if self.ports is not None and not issubclass(type(self.ports), list):
-			raise TypeError(f"Expected 'ports' to be of type {ArrayOf(Port)}, but got {type(self.ports)}")	
