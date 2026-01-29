@@ -52,7 +52,7 @@ from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.profiles.ctxd.data.endpoint import Endpoint
-from otupy.profiles.ctxd.data.network_service import NetworkService
+from otupy.profiles.ctxd.data.api import API
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
@@ -185,7 +185,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			for ip in ( [] if service.spec.cluster_i_ps is None else service.spec.cluster_i_ps ) +  ( [] if service.spec.external_i_ps is None else service.spec.external_i_ps):
 				for port in service.spec.ports:
 					endpoints.append(Endpoint(description=port.name, endpoint_type=port.app_protocol, 
-							transport=port.protocol, transfer=None, encoding=None, uri=str(ip)+":"+str(port.port)))
+							transport=port.protocol, transfer=None, encoding=None, uri=str(ip)+":"+str(port.port),
+							provider=service.metadata.name))
 
 			if service.spec.type == "NodePort" or service.spec.type == "LoadBalancer":
 				# TODO: Retrieve the IP address of the nodes hosting the pod implementing the service
@@ -214,10 +215,10 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					except:
 						pass
 
-			app = (NetworkService(description=description,
+			app = (API(description=description,
 						name=service.metadata.name,
 						endpoints=endpoints,
-						id=service.metadata.uid, owner=self.owner ))
+						id=service.metadata.uid, provider=self.owner ))
 			logger.debug("Found k8s service: %s", str(app.name))
 			# TODO: Add software release (maybe with its SBOM)
 			# TODO: What are subservices of a Service? Pods? 
@@ -230,12 +231,12 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		# -----------------
 		# Add the API service if not found automatically
 		u = urlparse(self.auth['host'])
-		app = (NetworkService(description="Kubernetes API Service",
+		app = (API(description="Kubernetes API Service",
 					name=self._k8s_dns_name(name="kubernetes",namespace="default",resource_type="svc"),
 					endpoints=ArrayOf(Endpoint)([Endpoint(description=u.scheme, endpoint_type="kubeapi", 
 						  									transport="TCP", transfer=u.scheme, encoding=None,
 															uri=self.auth['host'])]),
-					id=None, owner=self.owner ))
+					id=None, provider=self.owner ))
 		logger.debug("Found k8s service: %s", str(app.name))
 		# TODO: Add software release (maybe with its SBOM)
 		# TODO: What are subservices of a Service? Pods? 
@@ -348,7 +349,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		k8s_service = self.get_services(name=Name(URI(self._k8s_dns_name(name='kubernetes',
 																								namespace="default",
 																								resource_type="svc"))),
-													filter=NetworkService)
+													filter=API)
 
 		try:
 			# Try to get the master node from kubernets
@@ -385,7 +386,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		k8s_service = self.get_services(name=Name(URI(self._k8s_dns_name(name='kubernetes',
 																								namespace="default",
 																								resource_type="svc"))),
-													filter=NetworkService)
+													filter=API)
 
 		k8s_pods = self.get_services(filter=Pod)
 
@@ -444,7 +445,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		k8s_service = self.get_services(name=Name(URI(self._k8s_dns_name(name='kubernetes',
 																								namespace="default",
 																								resource_type="svc"))),
-													filter=NetworkService)
+													filter=API)
 
 		for s in k8s_service:
 			consumer = self.get_consumer(Name("kubernetes-networkpolicies"))

@@ -52,7 +52,7 @@ from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.port import Port, IPInfo, IPAddress
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.network_service import NetworkService
+from otupy.profiles.ctxd.data.api import API
 from otupy.profiles.ctxd.data.network import Network
 from otupy.profiles.ctxd.data.network_type import NetworkType
 from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
@@ -171,9 +171,9 @@ class CTXDActuator_openstack(CTXDActuator):
 			endpoints=ArrayOf(Endpoint)()
 			for e in eps:
 				endpoints.append( Endpoint(description=service['type'], endpoint_type=e['interface'],transfer="HTTP", 
-					uri=e['url'], owner=service['name']) )
+					uri=e['url'], provider=service['name']) )
 
-			srv = NetworkService(name=service['name'], description=service['description'], id=service['id'],
+			srv = API(name=service['name'], description=service['description'], id=service['id'],
 					type=service['type'], endpoints=endpoints)
 
 			logger.debug("Found openstack service: %s", str(srv.name))
@@ -330,7 +330,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			manage VMs. Vulnerabilities applies to nova and other services rather than OpenStack as a whole.	
 		"""
 
-		os_services = self.get_services(filter=NetworkService)
+		os_services = self.get_services(filter=API)
 		os_vms = self.get_services(filter=VM)
 
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
@@ -350,7 +350,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			Security Groups implement a slpf firewall, hence they are a security function. However, they are not
 			standalone software, and they are implemented by neutron.
 		"""
-		os_services = self.get_services(filter=NetworkService)
+		os_services = self.get_services(filter=API)
 
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
 		for s in os_services:
