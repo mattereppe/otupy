@@ -26,23 +26,23 @@ class Endpoint(Record):
 	# discovery mechanism.
 	uri: str = None
 	""" The base URI used to contact the endpoint (it should include at least the IP address/hostname """
-	owner: str = None
+	provider: str = None
 	""" Owner of the web service"""
 
 	def __init__(self, description = None, endpoint_type = None, transport = None, 
-						transfer = None, encoding = None, uri = None, owner = None):
+						transfer = None, encoding = None, uri = None, provider = None):
 		self.description = description if description is not None else None
 		self.endpoint_type = endpoint_type if endpoint_type is not None else None
 		self.transport = transport if transport is not None else None
 		self.transfer = transfer if transfer is not None else None
 		self.encoding = encoding if encoding is not None else None
 		self.uri = uri if uri is not None else None
-		self.owner = owner if owner is not None else None
+		self.provider = provider if provider is not None else None
 
 	def __repr__(self):
 		return (f"Endpoint(description={self.description}, endpoint_type={self.endpoint_type}, "
-	             f"transport={self.transport}, transfer={self.transfer}, encoding={self.owner}, "
-	             f"uri={self.uri},owner={self.owner})")
+	             f"transport={self.transport}, transfer={self.transfer}, encoding={self.provider}, "
+	             f"uri={self.uri},provider={self.provider})")
 	
 	def __str__(self):
 		return f"Endpoint(" \
@@ -52,7 +52,7 @@ class Endpoint(Record):
 	            f"transfer={self.transfer}, " \
 					f"encoding={self.encoding}, " \
 				f"uri={self.uri}, " \
-	            f"owner={self.owner})"
+	            f"provider={self.provider})"
 
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):
@@ -67,5 +67,5 @@ class Endpoint(Record):
 			raise TypeError(f"Expected 'encoding' to be of type {str}, but got {type(self.encoding)}")
 		if self.uri is not None and not isinstance(self.uri, str):
 			raise TypeError(f"Expected 'uri' to be of type {str}, but got {type(self.uri)}")
-		if self.owner is not None and not isinstance(self.owner, str):
-			raise TypeError(f"Expected 'owner' to be of type {str}, but got {type(self.owner)}")
+		if self.provider is not None and not isinstance(self.provider, str):
+			raise TypeError(f"Expected 'provider' to be of type {str}, but got {type(self.provider)}")
