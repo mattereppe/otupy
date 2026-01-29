@@ -1,7 +1,8 @@
 import ipaddress
 
-from otupy.types.base import Record, ArrayOf, Choice
+from otupy.types.base import Record, ArrayOf, Choice 
 from otupy.types.data import IPv4Addr, IPv6Addr
+from otupy import MACAddr
 from otupy.core.extensions import Register
 from otupy.profiles.ctxd.data.os import OS
 
@@ -75,6 +76,8 @@ class Port(Record):
 	""" ID of the Port """
 	iface: str = None
 	""" Name of the network interface (OS dependent)"""
+	mac: MACAddr = None
+	""" MAC or similar L2 addresses associated to this port (not implemented) """
 	ips: ArrayOf(IPInfo) = None
 	""" List of IP addresses/gateways associated to the interface """
 
