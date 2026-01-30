@@ -163,6 +163,8 @@ class CTXDActuator_openstack(CTXDActuator):
 		"""
 		self._discover_os_link_vms()
 		self._discover_os_link_sg()
+		self._discover_os_link_networks()
+		self._discover_os_link_networkfunctions()
 		self._discover_vms_link_hypervisors()
 		self._discover_vms_link_computers()
 		self._discover_vms_link_networks()
@@ -190,7 +192,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			logger.debug("Found openstack service: %s", str(srv.name))
 			# TODO: Add software release (maybe with its SBOM)
 			if self.use_suffix:
-				name=Name(srv.name+"@"+self.cloud_region+self.dns)
+				name=Name(str(srv.name)+"@"+self.cloud_region+self.dns)
 			else:
 				name=Name(srv.name)
 			# TODO: Add applications running on the controller/compute nodes as subservices
@@ -247,7 +249,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			project, domain = self._get_openstack_project_and_domain(vm['project_id'])
 			if self.use_suffix:
-				name=Name(server.name+"@"+self.cloud_region+self.dns)
+				name=Name(str(server.name)+"@"+self.cloud_region+self.dns)
 			else:
 				name=Name(str(server.name))
 			self.services.append(Service(name=name, type=ServiceType(server), #links=ArrayOf(Name)(),
@@ -348,6 +350,10 @@ class CTXDActuator_openstack(CTXDActuator):
 			# Second, create a network node that hosts the network function
 			ifaces = ArrayOf(Port)()
 			router_ports = self._get_openstack_ports( r['id'])
+			if self.use_suffix:
+				name=Name(r['name']+"."+self.cloud_region+self.dns)
+			else:
+				name=Name(r['name'])
 			for p in router_ports:
 				ips = ArrayOf(IPInfo)()
 				for a in p['fixed_ips']:
@@ -388,7 +394,45 @@ class CTXDActuator_openstack(CTXDActuator):
 					self.links.append(Link(name = s.name, description=description, 
 								link_type=LinkType.controlling, role=PeerRole.control, peers=ArrayOf(Peer)([peer])))
 
-				
+	def _discover_os_link_networks(self):
+		""" Add links between neutron and networks
+
+			We create explicit links from neutron because it controls network configuration.
+		"""
+		os_services = self.get_services(filter=API)
+		os_networks = self.get_services(filter=Network)
+
+		# There will be only 1 nova instance, since we are connected to a single openstack cloud
+		for s in os_services:
+			if s.type.getObj().type == "network":
+				for n in os_networks:
+					peer = Peer(service_name= n.name,
+								role= PeerRole.controlled)  #VM is controlled by Openstack
+					description="Openstack controls "+n.name.getObj()
+					self.links.append(Link(name = s.name, description=description, 
+								link_type=LinkType.controlling, role=PeerRole.control, peers=ArrayOf(Peer)([peer])))
+
+	def _discover_os_link_networkfunctions(self):
+		""" Add links between neutron and network functions
+
+			We create explicit links from neutron because it controls network functions.
+		"""
+		os_services = self.get_services(filter=API)
+		os_networkfunctions = self.get_services(filter=NetworkFunction)
+
+		# There will be only 1 nova instance, since we are connected to a single openstack cloud
+		for s in os_services:
+			if s.type.getObj().type == "network":
+				for n in os_networkfunctions:
+					peer = Peer(service_name= n.name,
+								role= PeerRole.controlled)  #VM is controlled by Openstack
+					description="Openstack controls "+n.name.getObj()
+					self.links.append(Link(name = s.name, description=description, 
+								link_type=LinkType.controlling, role=PeerRole.control, peers=ArrayOf(Peer)([peer])))
+
+
+
+
 	def _discover_os_link_sg(self):
 		""" Add link between OpenStack (neutron) and Security Groups
 
@@ -700,7 +744,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			servers = []
 
       # Return the formatted server list as a pretty-printed JSON string
-		return servers
+		return [x for x in servers if self.active_only == False or x['status'] == 'ACTIVE']
 		
 	def _openstack_hypervisor_list(self):
 		""" Retrieve list of hypervisors (servers) from OpenStack APIs """
@@ -728,7 +772,7 @@ class CTXDActuator_openstack(CTXDActuator):
 				for p in self.cloud_projects:
 					# Must include shared networks!!!
 					if n['project_id'] == p['id'] or n['is_shared']:
-						networks.append(n)
+						networks.append(n) if n not in networks else networks
 
 		except Exception as e:
 			logger.warning("Failed to retrieve network list: %s", e)
@@ -774,6 +818,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			routers = []
 			rs = self._format_os_data(self.conn.network.routers()) # No filters set
 			for r in rs:
+				print("router: ", r['name'])
 				for p in self.cloud_projects:
 					if r['project_id'] == p['id']:
 						routers.append(r)
