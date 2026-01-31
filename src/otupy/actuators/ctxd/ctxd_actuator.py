@@ -162,7 +162,8 @@ class CTXDActuator:
 
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
-	def get_services(self, name: Name = None, filter: ServiceType = None, namespace: str = None, domain: str = None) -> [] :
+	def get_services(self, name: Name = None, filter: ServiceType = None, 
+			namespace: str = None, domain: str = None) -> [] :
 		""" Returns the list of current services
 
 			Returns the list of discovered services. Filter by name and type.

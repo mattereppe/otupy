@@ -38,7 +38,7 @@ class NetworkFunction(Record):
 			self.name = str(name) if name is not None else None
 			self.id = str(id) if id is not None else None
 			self.description = str(description) if description is not None else None
-			self.version = str(id) if id is not None else None
+			self.version = str(version) if version is not None else None
 			self.type = type if type is not None else None
 
 	def __repr__(self):

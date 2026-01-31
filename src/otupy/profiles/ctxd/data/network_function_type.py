@@ -1,5 +1,6 @@
 from otupy import Choice, Register
 from otupy.profiles.ctxd.data.network_router import Router
+from otupy.profiles.ctxd.data.network_nat import NAT
 
 #ATTENTION!! THIS IS ONLY PARTIALLY DEFINED!!!
 class NetworkFunctionType(Choice):
@@ -11,7 +12,7 @@ class NetworkFunctionType(Choice):
 		WARNING: This definition is currently partially, since it does not include all possible functions.
 	"""
 
-	register = Register({'router': Router, 'vpn': str, 'nat': str})
+	register = Register({'router': Router, 'vpn': str, 'nat': NAT})
 
 	def __init__(self, type):
 		if(isinstance(type, NetworkFunctionType)):

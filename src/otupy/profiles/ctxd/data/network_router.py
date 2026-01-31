@@ -22,5 +22,5 @@ class Router(Map):
 		return self.__repr__()
 
 	def __repr__(self):
-		return f"Router({self['routes']})"
+		return f"Router({self['routes'] if 'routes' in self else None})"
 

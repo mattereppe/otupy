@@ -3,11 +3,12 @@ from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.application import Application
 from otupy.types.data.hostname import Hostname
 
-class Computer(Record):
-	""" Computer
+class ExecutionEnvironment(Record):
+	""" Execution Environment
    	
-	  The Computer model abstract the bundle of an operating system and application software. It may be hosted on a physical 
-		server or virtual machine.	  
+	  The ExecutionEnvironment  model abstract the bundle of an operating system 
+	  and application software. It may be hosted on a physical 
+	  server or virtual machine, or even an IoT device.	  
 	"""
 	description: str = None
 	""" Generic description of the Computing environment """
@@ -21,7 +22,7 @@ class Computer(Record):
 	""" List of applications installed on this computer """
 
 	def __init__(self, description:str = None, id:str = None, hostname:Hostname = None, os:OS = None, apps: ArrayOf(Application)=None):
-		if(isinstance(description, Computer)):
+		if(isinstance(description, ExecutionEnvironment)):
 			self.description = description.description
 			self.id = description.id
 			self.apps = description.apps
@@ -35,21 +36,17 @@ class Computer(Record):
 			if apps is not None:
 				self.apps = ArrayOf(Application)()
 				for app in apps:
-					self.apps.append(Application(**app))
+					self.apps.append(Application(app))
 			else:
 				self.apps = None
 		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Computer(description='{self.description}', id={self.id}, "
+		return (f"ExecutionEnvironment(description='{self.description}', id={self.id}, "
 	             f"hostname='{self.hostname}', os={self.os})")
 	
 	def __str__(self):
-		return f"Computer(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"hostname={self.hostname}, " \
-	            f"os={self.os})"
+		return self.__repr__()
 
 	def validate_fields(self):
 		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, Application)):
