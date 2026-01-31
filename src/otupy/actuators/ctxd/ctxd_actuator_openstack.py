@@ -39,30 +39,11 @@ from urllib.parse import urlparse
 
 import otupy.profiles
 from otupy import Extensions
+
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd.actuator import Specifiers
-from otupy.profiles.ctxd.data.cloud import Cloud
-from otupy.profiles.ctxd.data.application import Application
-from otupy.profiles.ctxd.data.consumer import Consumer
-from otupy.profiles.ctxd.data.container import Container
-from otupy.profiles.ctxd.data.link_type import LinkType
-from otupy.profiles.ctxd.data.os import OS
-from otupy.profiles.ctxd.data.computer import Computer
-from otupy.profiles.ctxd.data.peer import Peer
-from otupy.profiles.ctxd.data.port import Port, IPInfo, IPAddress
-from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.api import API
-from otupy.profiles.ctxd.data.network import Network
-from otupy.profiles.ctxd.data.network_node import NetworkNode
-from otupy.profiles.ctxd.data.network_type import NetworkType
-from otupy.profiles.ctxd.data.network_function_type import NetworkFunctionType
-from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
-from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
-from otupy.profiles.ctxd.data.network_function import NetworkFunction
-from otupy.profiles.ctxd.data.network_router import Router
-from otupy.profiles.ctxd.data.endpoint import Endpoint
-from otupy.profiles.ctxd.data.vm import VM
+
+from otupy.profiles.ctxd import *
+
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
@@ -70,9 +51,6 @@ from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCo
 from otupy.types.data import IPv4Addr, IPv6Addr
 import otupy.profiles.ctxd as ctxd
 
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service
-from otupy.profiles.ctxd.data.link import Link
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +71,6 @@ class CTXDActuator_openstack(CTXDActuator):
 			:param config: (optional) Include additional info for configuration the OpenStack 
 				connection (e.g., "cacert" certificate of a custom CA).
 			:param specifiers: (optional) The identification of this Actuator.
-			:param owner: (optional) Onwer of this service.
-			:param peers: (optional) A list of peer services, including their consumer endpoints.
 		"""
 		kwargs['auth']=auth
 		super().__init__(**kwargs)
@@ -159,14 +135,14 @@ class CTXDActuator_openstack(CTXDActuator):
 			- OpenStack services (nove) and VMs (servers)
 			- VMs (servers) and physical servers (hypervisors)
 			- SLPF firewall (iptables) and VMs (servers)
-			- VMs (servers) and computers (System and application software), only from a configuration file
+			- VMs (servers) and ExecutionEnvironment (System and application software), only from a configuration file
 		"""
 		self._discover_os_link_vms()
 		self._discover_os_link_sg()
 		self._discover_os_link_networks()
 		self._discover_os_link_networkfunctions()
 		self._discover_vms_link_hypervisors()
-		self._discover_vms_link_computers()
+		self._discover_vms_link_executionenvironments()
 		self._discover_vms_link_networks()
 		self._discover_routers_link_nodes_and_networks()
 		self._discover_sg_link_vms()
@@ -262,13 +238,13 @@ class CTXDActuator_openstack(CTXDActuator):
 		""" Discover OpenStack hypervisors
 
 			Hypervisors are the physical servers that host VMs. It is questionable if such service 
-			should be reported, since the Computer subsystem should have its own actuator describing 
+			should be reported, since the ExecutionEnvironment subsystem should have its own actuator describing 
 			the full stack of services/software hosted.
 		"""
 		# Hypervisors running VMs in the cloud infrastructure
 		# ---------------------------------------------------
 		for h in self.cloud_hypervisors:
-			hyper = Computer(hostname=Hostname(h['name']), id=h['service_details']['id'],
+			hyper = ExecutionEnvironment(hostname=Hostname(h['name']), id=h['service_details']['id'],
 					description="OpenStack hypervisor")
 
 			logger.debug("Found hypervisor: %s", str(hyper))
@@ -479,7 +455,7 @@ class CTXDActuator_openstack(CTXDActuator):
 							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
 
-	def _discover_vms_link_computers(self):
+	def _discover_vms_link_executionenvironments(self):
 		""" Add links between VMs and the software they host
 
 			This is something outside the OpenStack scope, which is delegated to a remote peer

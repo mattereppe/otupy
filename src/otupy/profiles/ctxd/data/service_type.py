@@ -7,16 +7,17 @@ from otupy.profiles.ctxd.data.network import Network
 from otupy.profiles.ctxd.data.network_function import NetworkFunction
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.profiles.ctxd.data.network_node import NetworkNode
-from otupy.profiles.ctxd.data.computer import Computer
+from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
 from otupy.profiles.ctxd.data.host import Host
 from otupy.profiles.ctxd.data.api import API
 from otupy.types.base import Choice
 from otupy.core.extensions import Register
 
 
+# TODO: Add auto-registration of the classes with a decorator to avoid missing them in the list below
 class ServiceType(Choice):
     
-    register = Register({'application': Application, 'computer': Computer, 'vm': VM, 
+    register = Register({'application': Application, 'execution_environment': ExecutionEnvironment, 'vm': VM, 
 			 'pod': Pod, 'container': Container, 'host': Host, 'network_node': NetworkNode,
          'api': API, 'cloud': Cloud, 'network': Network, 'network_function': NetworkFunction, 'iot': IOT})
     #Il tipo Hostname è utilizzabile per reverse-dns
