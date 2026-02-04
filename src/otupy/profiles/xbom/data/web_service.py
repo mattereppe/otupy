@@ -61,7 +61,7 @@ class WebService(otupy.types.base.Record):
 			Property(name="otupy:type", value="web_service")
 		]
 		if self.server is not None:
-			server_value = str(self.server.getObj()[1]) if hasattr(self.server, 'getObj') else str(self.server)
+			server_value = str(self.server.getObj()) if hasattr(self.server, 'getObj') else str(self.server)
 			properties.append(Property(name="otupy:webservice:server", value=server_value))
 		if self.port is not None:
 			properties.append(Property(name="otupy:webservice:port", value=str(self.port)))

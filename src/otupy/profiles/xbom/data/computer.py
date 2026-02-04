@@ -52,8 +52,10 @@ class Computer(Record):
 	def validate_fields(self):
 		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, Computer)):
 			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
-		if self.apps is not None and not isinstance(self.id, ArrayOf(Application)):
+		if self.id is not None and not isinstance(self.id, str):
 			raise TypeError(f"Expected 'id' to be of type str, but got {type(self.id)}")
+		if self.apps is not None and not isinstance(self.apps, ArrayOf(Application)):
+			raise TypeError(f"Expected 'apps' to be of type ArrayOf(Application), but got {type(self.apps)}")
 		if self.hostname is not None and not isinstance(self.hostname, Hostname):
 			raise TypeError(f"Expected 'hostname' to be of type Hostname, but got {type(self.hostname)}")
 		if self.os is not None and not isinstance(self.os, OS):

@@ -32,9 +32,9 @@ class IOT(otupy.types.base.Record):
 	             f"name={self.name}, type={self.type})")
 	
 	def __str__(self):
-		return f"Cloud(" \
+		return f"IOT(" \
 	            f"description={self.description}, " \
-	            f"name={self.hostname}, " \
+	            f"name={self.name}, " \
 	            f"type={self.type})"
 	
 	def validate_fields(self):

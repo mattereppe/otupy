@@ -32,7 +32,8 @@ class Server(Choice):
 		]
 		
 		# Get the current choice value
-		choice_key, choice_value = self.getObj()
+		choice_key = self.getName()
+		choice_value = self.getObj()
 		name = "unknown"
 		
 		if choice_key == 'hostname':
