@@ -460,7 +460,6 @@ class CTXDActuator_kubernetes(CTXDActuator):
 				print("found: ", pod_name)
 				if pod_name in self.nats:
 					nat = self.nats[pod_name]
-					print("Chiara pompinara: ", nat)
 					# Add NAT between pod and cluster network
 					peer = Peer(service_name=nat, role=PeerRole.forwarding, consumer=None)
 					description="Container "+str(c.name)+" attached to NAT " + str(nat)
@@ -584,9 +583,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		k8s_containers = self.get_services(filter=Container)
 
 		for s in k8s_service:
-			print("Chiara pompinara")
 			for c in k8s_containers:
-				print("container: ", c.name)
 				peer = Peer(service_name=c.name,
 							role=PeerRole.controlled, # Kubernetes controls its containers
 							consumer=None)
