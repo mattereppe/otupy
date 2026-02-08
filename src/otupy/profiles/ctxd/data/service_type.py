@@ -1,6 +1,7 @@
 from otupy.profiles.ctxd.data.application import Application
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.container import Container
+from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.pod import Pod
 from otupy.profiles.ctxd.data.iot import IOT
 from otupy.profiles.ctxd.data.network import Network
@@ -18,7 +19,7 @@ from otupy.core.extensions import Register
 class ServiceType(Choice):
     
     register = Register({'application': Application, 'execution_environment': ExecutionEnvironment, 'vm': VM, 
-			 'pod': Pod, 'container': Container, 'host': Host, 'network_node': NetworkNode,
+			 'os': OS, 'pod': Pod, 'container': Container, 'host': Host, 'network_node': NetworkNode,
          'api': API, 'cloud': Cloud, 'network': Network, 'network_function': NetworkFunction, 'iot': IOT})
     #Il tipo Hostname è utilizzabile per reverse-dns
 

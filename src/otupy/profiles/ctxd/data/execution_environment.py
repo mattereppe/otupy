@@ -1,62 +1,60 @@
-from otupy import Record, ArrayOf
-from otupy.profiles.ctxd.data.os import OS
+from otupy import ArrayOf
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.application import Application
+from otupy.profiles.ctxd.data.library import Library
+from otupy.profiles.ctxd.data.package import Package
 from otupy.types.data.hostname import Hostname
 
-class ExecutionEnvironment(Record):
+class ExecutionEnvironment(CTXDObject):
 	""" Execution Environment
    	
-	  The ExecutionEnvironment  model abstract the bundle of an operating system 
-	  and application software. It may be hosted on a physical 
-	  server or virtual machine, or even an IoT device.	  
-	"""
-	description: str = None
-	""" Generic description of the Computing environment """
-	id: str = None
-	""" ID of the computer """
-	hostname: Hostname = None
-	""" Hostname of the computer"""
-	os: OS = None
-	""" Operating System of the computer """
-	apps: ArrayOf(Application) = None
-	""" List of applications installed on this computer """
+	  The ExecutionEnvironment  model abstracts a set of software resources
+	  that allow to run an application. This typically includes a pid space,
+	 	a filesystem, a network slice, etc. There will be multiple child classes
+		of an execution environment, which will define typical cases, like a full 
+		Operating System, a container, a Python venv, a chroot, etc.
 
-	def __init__(self, description:str = None, id:str = None, hostname:Hostname = None, os:OS = None, apps: ArrayOf(Application)=None):
-		if(isinstance(description, ExecutionEnvironment)):
-			self.description = description.description
-			self.id = description.id
-			self.apps = description.apps
-			self.hostname = description.hostname
-			self.os = description.os
+		An Execution Environment could be hosted on real or physical hardware
+		(Host, Virtual Machine, IoT device), or
+		inside another ExecutionEnvironment, which typically happens for containers
+		and other software environments.
+
+		In general, we expect applications or libraries to be present to support the execution
+		of other software.
+	"""
+	libs: ArrayOf(Library) = None
+	""" List of libraries installed in this ExecutionEnvironment """
+	pkgs: ArrayOf(Package) = None
+	""" List of packages instsalled (for package-based systems) """
+	apps: ArrayOf(Application) = None
+	""" List of applications installed on this ExecutionEnvironment """
+
+	def __init__(self, execenv: object = None, 
+			description:str = None, 
+			id:str = None, 
+			name:Hostname = None, 
+			libs: ArrayOf(Library)=None,
+			apps: ArrayOf(Application)=None):
+
+		if execenv is not None:
+			super().__init__(name=execenv.name, id=execenv.id, description=execenv.description)
+			self.apps = execenv.apps
+			self.libs = execenv.libs
 		else:
-			self.description = description if description is not None else None
-			self.id = id if id is not None else None
-			self.hostname = Hostname(hostname) if hostname is not None else None
-			self.os = OS(os) if os is not None else None
+			super().__init__(name=name, id=id, description=description)
 			if apps is not None:
 				self.apps = ArrayOf(Application)()
 				for app in apps:
 					self.apps.append(Application(app))
-			else:
-				self.apps = None
-		self.validate_fields()
+			if libs is not None:
+				self.libs = ArrayOf(Library)()
+				for lib in libs:
+					self.libs.append(Library(lib))
 
 	def __repr__(self):
-		return (f"ExecutionEnvironment(description='{self.description}', id={self.id}, "
-	             f"hostname='{self.hostname}', os={self.os})")
+		return (f"ExecutionEnvironment("
+					f"{super().__repr__()},")
 	
 	def __str__(self):
 		return self.__repr__()
 
-	def validate_fields(self):
-		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, Application)):
-			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'apps' to be of type 'str', but got {type(self.id)}")
-		# TODO: Understand why this does not work with ArrayOf(Application)
-		if self.apps is not None and not issubclass(type(self.apps), list):
-			raise TypeError(f"Expected 'apps' to be of type 'ArrayOf(Application)', but got {type(self.apps)}")
-		if self.hostname is not None and not isinstance(self.hostname, Hostname):
-			raise TypeError(f"Expected 'hostname' to be of type Hostname, but got {type(self.hostname)}")
-		if self.os is not None and not isinstance(self.os, OS):
-			raise TypeError(f"Expected 'os' to be of type {OS}, but got {type(self.os)}")

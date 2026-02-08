@@ -207,6 +207,9 @@ class CTXDActuator:
 			:param service_name: name of the service which consumer is searched.
 			:return: The consumer serving the given service, if any, None otherwise.
 		"""
+		if service_name is None:
+			return None
+
 		consumer=None
 		for p in self.peers:
 			if Name(p['service_name']) == Name(service_name):
