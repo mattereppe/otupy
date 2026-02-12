@@ -1,7 +1,7 @@
 from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 
 from otupy.types.base import Record, ArrayOf
-from otupy.profiles.ctxd.data.port import Port
+from otupy.profiles.ctxd.data.network_interface import NetworkInterface
 
 class NetworkNode(CTXDObject):
 	""" Network node
@@ -10,19 +10,16 @@ class NetworkNode(CTXDObject):
 		represented by network namespaces. Within a router or switch, there may be other practical implementation
 		of network slides.
 		
-		
-		ny kind of entity attached to the network. The scope includes both network
-		equipment (routers, switches, access points) and hosts (computers attached to a network). .
-		A `NetworkNode` has one or more network ports, which one with network identifiers specific to the
+		A `NetworkNode` has one or more network interfaces, which one with network identifiers specific to the
 		implemented protocols (e.g., MAC addresses for Ethernet, IP addresses for IP).
 
-		The `NetworkNode` represents a base class to derive more specific classes for network equipment and
-		hosts, hosting the common network-related characteristics (namely, network ports). It can be used alone
-		when it is a subsystem inside a bigger system, for instance a Linux network namespace, or when the 
-		underlying implementation is not known (for instance, a router which concrete implementation is not know).
+		The `NetworkNode` is a subsystem for both ``Host``s and ``ExecutionEnvironment``s. In the first case, 
+		it is usually setup by infrastructure managers (e.g., CMS) and typically represents ``physical'' ports 
+		available on the hardware. In the second case, it is the collection of network interfaces available in
+		the network slice. 
 
 	"""
-	ports: ArrayOf(Port) = None
+	ifaces: ArrayOf(NetworkInterface) = None
 	""" Network interfaces with addresses"""
 
 
@@ -31,27 +28,27 @@ class NetworkNode(CTXDObject):
 			name:str = None, 
 			id:str = None, 
 			description:str = None, 
-			ports:ArrayOf(Port) = None):
+			ifaces:ArrayOf(NetworkInterface) = None):
 	
 		if node is not None:
 			super().__init__(name=node.name, id=node.id, description=node.description)
-			self.ports = name.ports
+			self.ifaces = node.ifaces
 		else:
 			super().__init__(name=name, id=id, description=description)
-			if ports is not None:
-				self.ports = ArrayOf(Port)()
-				for port in ports:
-					if isinstance(port, dict):
-						self.ports.append(Port(**port))
+			if ifaces is not None:
+				self.ifaces = ArrayOf(NetworkInterface)()
+				for iface in ifaces:
+					if isinstance(iface, dict):
+						self.ifaces.append(NetworkInterface(**iface))
 					else:
-						self.ports.append(Port(port))
+						self.ifaces.append(NetworkInterface(iface))
 			else:
-				self.ports = None
+				self.ifaces = None
 
 	def __repr__(self):
 		return (f"NetworkNode("
 					f"{super().__repr__()},"
-					f"ports={self.ports})")
+					f"ifaces={self.ifaces})")
 	
 	def __str__(self):
 		return self.__repr__()

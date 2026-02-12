@@ -55,7 +55,6 @@ class VM(Host):
 		return self.__repr__()
 
 	def validate_fields(self):
-		super().validate_fields()
 		if self.hypervisor is not None and not isinstance(self.hypervisor, str):
 			raise TypeError(f"Expected 'hypervisor' to be of type {str}, but got {type(self.hypervisor)}")
 		if self.hypervisor_type is not None and not isinstance(self.hypervisor_type, str):
