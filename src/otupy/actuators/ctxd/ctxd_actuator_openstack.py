@@ -41,6 +41,11 @@ import otupy.profiles
 from otupy import Extensions
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
+from otupy.profiles.ctxd.data.name import Name
+from otupy.profiles.ctxd.data.service import Service
+from otupy.profiles.ctxd.data.link import Link
+from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
+from otupy.profiles.ctxd.data.network_node import NetworkNode
 
 from otupy.profiles.ctxd import *
 
@@ -121,6 +126,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		"""
 		self._discover_os_services()
 		self._discover_os_servers()
+		print("Chiara pompinara")
 		self._discover_os_hypervisors()		
 		self._discover_os_networks()
 		self._discover_os_routers()
@@ -215,11 +221,11 @@ class CTXDActuator_openstack(CTXDActuator):
 
 				ifaces.append(Port(description=p['description'], id=p['id'], iface=None, ips=ips))
 
-			server = VM(name= Hostname(vm['name']),
+			server = VM(name= Name(vm['name']),
 							id= vm['id'], 
 							description=vm['description'],
-							image = vm['image']['id'],
-							ports = ifaces)
+							image = vm['image']['id'])
+#ports = ifaces)
 
 			logger.debug("Found server: %s", str(server))
 
@@ -244,7 +250,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		# Hypervisors running VMs in the cloud infrastructure
 		# ---------------------------------------------------
 		for h in self.cloud_hypervisors:
-			hyper = ExecutionEnvironment(hostname=Hostname(h['name']), id=h['service_details']['id'],
+			hyper = ExecutionEnvironment(name=Hostname(h['name']), id=h['service_details']['id'],
 					description="OpenStack hypervisor")
 
 			logger.debug("Found hypervisor: %s", str(hyper))

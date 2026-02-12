@@ -3,6 +3,7 @@ from otupy.core.register import Register
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
 from otupy.profiles.ctxd.data.mobile_network import MobileNetwork
 from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
+from otupy.profiles.ctxd.data.ip_network import IPNetwork
 
 #ATTENTION!! THIS IS ONLY PARTIALLY DEFINED!!!
 class NetworkType(Choice):
@@ -15,7 +16,7 @@ class NetworkType(Choice):
 		most of network types. When the network is defined as str, it returns something like: "ethernet": "ethernet".
 	"""
 
-	register = Register({'ethernet': EthernetNetwork, '802.11': str, '802.15': str, 'zigbee': str, 
+	register = Register({'ip': IPNetwork, 'ethernet': EthernetNetwork, '802.11': str, '802.15': str, 'zigbee': str, 
 			'vlan': VLANNetwork, 'vpn': str, 'lorawan': str, 'wan': str, '5G': MobileNetwork})
 
 	def __init__(self, type):

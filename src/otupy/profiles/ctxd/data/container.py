@@ -4,7 +4,7 @@ class Container(ExecutionEnvironment):
 	""" Container
 
 		A container is a software image run in with linux namespace sandbox or similar technology.
-		A container is an execution environment made of its own subsystems (network slice, file 
+		A container is an execution environment made of its own subsystems (network interfaces, file 
 		systems, etc.). There are not part of the container model, but will be included as part
 		of the container service.
 	"""
