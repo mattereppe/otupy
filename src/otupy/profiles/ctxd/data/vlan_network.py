@@ -5,6 +5,9 @@
 
 from otupy import Map, ArrayOf, IPv4Net, IPv6Net
 
+from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress
+
+
 class VLANNetwork(Map):
 	""" Virtual Local Area Network 
 
@@ -12,7 +15,7 @@ class VLANNetwork(Map):
 		Currently expects the network address/prefix as mandatory field.
 	"""
 	fieldtypes = dict(name = str, vlan_id = str, type = str,
-			netv4nets = ArrayOf(IPv4Net), netv6nets = ArrayOf(IPv6Net))
+			nets = ArrayOf(IPNetAddress))
 	""" Field types
 	
 		This is the definition of the fields beard by the `Mobile` network.

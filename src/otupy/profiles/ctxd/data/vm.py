@@ -27,15 +27,16 @@ class VM(Host):
 
 
 	def __init__(self, 
+			vm: object = None,
 			hypervisor: str = None,
 			hypervisor_type: HyperVisorType=None, 
 			image:str = None, 
 			**kwargs):
-		if(isinstance(hypervisor, VM)):
-			super().__init__(hypervisor)
-			self.hypervisor = hypervisor.hypervisor
-			self.hypervisor_type = hypervisor.hypervisor_type
-			self.image = hypervisor.image
+		if(isinstance(vm, VM)):
+			super().__init__(vm)
+			self.hypervisor = vm.hypervisor
+			self.hypervisor_type = vm.hypervisor_type
+			self.image = vm.image
 		else:
 			super().__init__(**kwargs)
 			self.hypervisor = hypervisor 

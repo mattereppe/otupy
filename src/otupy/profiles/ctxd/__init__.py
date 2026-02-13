@@ -40,6 +40,7 @@ from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
+from otupy.profiles.ctxd.data.vm import HyperVisorType
 from otupy.profiles.ctxd.data.endpoint import Endpoint
 from otupy.profiles.ctxd.data.api import API
 from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress

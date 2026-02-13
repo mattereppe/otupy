@@ -83,7 +83,7 @@ class NetworkInterface(Record):
 	""" List of IP addresses/gateways associated to the interface """
 
 	def __init__(self, interface = None, description = None, id = None, iface = None, ips = None):
-		if isinstance(description, NetworkInterface):
+		if isinstance(interface, NetworkInterface):
 			self.description = interface.description
 			self.id = interface.id
 			self.iface = interface.iface
