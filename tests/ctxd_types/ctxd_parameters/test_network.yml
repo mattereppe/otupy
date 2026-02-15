@@ -1,0 +1,6 @@
+test_good_parameters:
+- description: "network"
+  name: "The Thiungs Network"
+  network_type: "LoRaWAN"
+
+

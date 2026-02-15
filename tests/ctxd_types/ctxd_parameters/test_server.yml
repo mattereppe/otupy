@@ -1,0 +1,7 @@
+test_good_parameters:
+- server: "www.name.com"
+- server: "130.251.17.2"
+- server: "127.0.0.1"
+
+test_bad_parameters:
+- server: "www.example_name.com"

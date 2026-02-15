@@ -1,0 +1,16 @@
+test_good_parameters:
+- description: "cloud"
+  cloud_id: "123456"
+  name: "aws"
+  cloud_type: "lambda"
+- description: "cloud"
+  cloud_id: "123456"
+  name: "aws"
+  cloud_type: "lambda"
+
+test_bad_parameters:
+- description: "cloud"
+  cloud_id: 123456
+  name: "aws"
+  cloud_type: "lambda"
+

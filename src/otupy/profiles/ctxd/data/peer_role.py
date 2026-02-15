@@ -11,6 +11,12 @@ class PeerRole(Enumerated):
 	both = 7 #Both ingress and egress communication
 	control = 8 #the service controls another service
 	controlled = 9 #the service is controlled by another service
+	protect = 10 #the service protect another service
+	protected = 11 #the service is protected by another service
+	contain = 12 #the service protect another service
+	contained = 13 #the service is protected by another service
+	forwarding = 14 #the service is a network transporting packets
+	endpoint = 15 #the service is a network endpoint generating/receiving traffic
 
 	
 

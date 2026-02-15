@@ -27,9 +27,24 @@ import otupy.transfers  # Do not remove! It is necessary to find the registered 
 from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
-logger = logging.getLogger()
+from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
+
+logger = logging.getLogger(__name__)
+
+default_consumer = {
+	'host': '127.0.0.1',
+	'port': 443,
+	'encoding': 'json',
+	'transfer': 'https'
+}
+
 default_logging = {
    'version': 1, 
+	# The following setting is strictly necessary, because the default value is set to "True" 
+	# and disabled all modules (already imported only?). If this is not set to False, all 
+	# modules not explicitly listed in the "loggers" section will be disables, and they will
+	# not inherit from the root
+#  'disable_existing_loggers': False,
    'formatters': {
 		'otupy': {
 			'()': 'otupy.LogFormatter', 
@@ -41,15 +56,32 @@ default_logging = {
 		'console': {
 			'class': 'logging.StreamHandler', 
 			'formatter': 'otupy', 
-			'level': 'INFO', 
+			'level': 'DEBUG', 
 			'filters': None
 		}
 	},
-	'root': {
-		'handlers': ['console'], 
-		'level': 'INFO'
+	'loggers': {
+		'root': {
+      	'handlers': ['console', 'file'],
+      	'level': 'INFO'
+		},
+		'otupy': {
+			'handlers': ['console'], 
+			'level': 'INFO'
+		}
 	}
 }
+
+def parse_and_default(config):
+	""" Parse consumer dictionary and assign default values to mising items
+	"""
+
+	# Logging framework and base service parameters
+	for c in ['host', 'port', 'encoding', 'transfer']:
+		if c not in config:
+			config[c]=default_consumer[c]
+
+	return config
 
 def main() -> None:
     """
@@ -75,6 +107,8 @@ def main() -> None:
         except:
             logger.error("Missing configuration item: %s", e)
             exit
+
+        consumer = parse_and_default(consumer)
 
         try:
            logging.config.dictConfig(config["logger"]) 
@@ -109,7 +143,7 @@ def main() -> None:
                     profile = values["profile"]
                     logger.info(" - Profile: %s", profile)
                     actuators[(profile, values["specifiers"]["asset_id"])] = clazz(**parameters)
-
+						  
         # Load the encoder.
         if consumer['encoding'] not in Encoders.__members__:
             raise RuntimeError(f"{consumer['encoding']} is not a registered encoding schema")
@@ -118,7 +152,10 @@ def main() -> None:
         # Load the transferer (beautiful name, eh?).
         if consumer['transfer'] not in Transfers:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
-        transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
+        if 'endpoint' in consumer:
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
+        else:
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'])
 
         consumer = Consumer(connector, actuators, encoder, transferer)
         consumer.run()

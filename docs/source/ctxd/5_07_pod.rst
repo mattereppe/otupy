@@ -36,6 +36,6 @@ Type: :py:class:`~otupy.profiles.ctxd.data.pod.Pod` (:py:class:`~otupy.types.bas
      - Namespace of the Pod.
    * - 5
      - ports
-     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:pu:class:`~otupy.profiles.ctxd.data.port.Port`)
+     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.port.Port`)
      - 1
      - Network ports of the Pod.

@@ -214,7 +214,7 @@ class HTTPTransfer(oc2.Transfer):
 			The internal implementation uses `Flask` as HTTP server. The method invokes the `callback`
 			for each received message, which must be provided by a `Producer` to properly dispatch 
 			`Command`s to the relevant server(s). It also takes an `Encoder` that is used to create
-			responses to :py:class:`~otupy.core.command.Command`\s encoded with unknown encoders.
+			responses to :py:class:`~otupy.core.command.Command`s encoded with unknown encoders.
 
 			:param callback: The function that is invoked to process OpenC2 messages.
 			:param encoder: Default `Encoder` instance to respond to unknown or wrong messages.
@@ -295,6 +295,7 @@ class HTTPTransfer(oc2.Transfer):
 		app.run(debug=True, host=self.host, port=self.port, ssl_context=self.ssl_context)
 
 
+@oc2.transfer("https")
 class HTTPSTransfer(HTTPTransfer):
 	""" HTTP Transfer Protocol with SSL
 

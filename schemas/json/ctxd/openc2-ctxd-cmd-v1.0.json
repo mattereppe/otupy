@@ -1,0 +1,171 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mirandaproject.eu/openc2/v1.0/command-ctxd.json",
+  "title": "MIRANDA Context Discovery json schena",
+  "type": "object",
+  "comment": "This is the validation of the x-ctxd profile, so the actuator is necessary to understand the profile",
+
+  "required": [
+    "action",
+    "target",
+	 "actuator"
+  ],
+
+  "properties": {
+    "action": { "$ref": "#/definitions/action" },
+    "target": { "$ref": "#/definitions/target" },
+    "args": { "$ref": "#/definitions/args" },
+    "actuator": { "$ref": "#/definitions/actuator" },
+    "command_id": { "$ref": "#/definitions/command_id" }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+
+    "action": {
+      "title": "OpenC2 Action",
+      "$comment": "Could use oneOf with const instead of enum to have titles on each item, but enum here is more concise",
+      "type": "string",
+      "enum": [
+        "query"
+      ]
+    },
+
+    "actuator": {
+      "title": "OpenC2 CTXD Actuator",
+      "$comment": "We allow an empty actuator specified here using minProperties setting; Also, spec wants only a single actuator key",
+      "type": "object",
+      "properties": {
+        "x-ctxd": {
+          "title": "Actuator Specifiers defined in the Stateless Packet Filter profile",
+          "$ref": "#/definitions/ctxd_actuator"
+        }
+      },
+		"required": [
+			"x-ctxd"
+		],
+      "additionalProperties": false
+    },
+
+    "args": {
+      "title": "OpenC2 Args",
+      "type": "object",
+      "properties": {
+        "response_requested": {
+          "title": "The type of Response required for the Action",
+          "$comment": "Could use oneOf with const instead of enum to have titles on each item (see example)",
+          "type": "string",
+          "enum": [
+            "none",
+            "ack",
+            "status",
+            "complete"
+          ]
+        },
+        "x-ctxd": {
+          "title": "Command Arguments defined in the Context Discovery profile",
+          "$ref": "#/definitions/ctxd_args"
+        }
+      },
+      "minProperties": 0,
+      "additionalProperties": false
+    },
+
+    "features": {
+      "title": "An array of zero to ten names used to query an Actuator for its supported capabilities.",
+      "$comment": "Upgraded to not allow repeating enums in the array (unique items only). Could use oneOf with const instead of enum to have titles on each item (see example)",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "title": "OpenC2 Features items",
+        "type": "string",
+        "enum": [
+          "versions",
+          "profiles",
+          "pairs",
+          "rate_limit"
+        ]
+      }
+    },
+
+	 "ctxd_target": {
+		 "title": "Required type of context",
+		 "type": "object",
+		 "properties": {
+			 "services": {
+				 "title": "List of service names to be retrieved",
+				 "type": "array",
+				 "uniqueItems": true,
+		    	 "items": {
+		       	"title": "Service name",
+		       	"type": "string"
+				 }
+			 },
+			 "links": {
+				 "title": "List of link names to be retrieved",
+				 "type": "array",
+				 "uniqueItems": true,
+		    	 "items": {
+		       	"title": "Link name",
+		       	"type": "string"
+				 }
+			 }
+		 },
+		 "additionalProperties": false
+	 },
+
+    "ctxd_actuator": {
+      "title": "The Actuator Specifiers defined for the slpf profile.",
+      "type": "object",
+      "properties": {
+        "domain": {
+          "title": "Domain served by this actuator",
+          "type": "string"
+        },
+        "asset_id": {
+          "title": "Unique identifier for a particular SLPF",
+          "type": "string"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+
+    "ctxd_args": {
+      "title": "The Command Arguments defined for the x-ctxd profile.",
+      "type": "object",
+		"properties": {
+			"name_only": {
+				"title": "Retrieve names only",
+				"type": "boolean"
+			},
+			"cached": {
+				"title": "Retrieve cached data",
+				"type": "boolean"
+			}
+		},
+		"minProperties": 1
+    },
+
+
+    "target": {
+      "title": "OpenC2 Target",
+      "type": "object",
+		"properties": {
+        "features": {
+          "title": "A set of items used with the query Action to determine an Actuator's capabilities.",
+          "$ref": "#/definitions/features"
+        },
+			"x-ctxd:context": {
+				"title": "Main x-ctxd target",
+				"$ref": "#/definitions/ctxd_target"
+			}
+		},
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": false
+      }
+
+  }
+
+}

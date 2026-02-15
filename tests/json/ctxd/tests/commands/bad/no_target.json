@@ -1,0 +1,13 @@
+{
+	"action": "query", 
+	"args": {
+		"x-ctxd": {
+			"name_only": false, 
+			"cached": false
+		}
+	}, 
+	"actuator": {
+		"x-ctxd": {
+			"asset_id": "ctxd-openstack-example"}
+	}
+}

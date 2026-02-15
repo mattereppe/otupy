@@ -1,6 +1,70 @@
-from otupy.types.base import Record, ArrayOf
-from otupy.types.data import IPv4Addr
+import ipaddress
+
+from otupy.types.base import Record, ArrayOf, Choice 
+from otupy.types.data import IPv4Addr, IPv6Addr
+from otupy import MACAddr
+from otupy.core.extensions import Register
 from otupy.profiles.ctxd.data.os import OS
+
+class IPAddress(Choice):
+	""" Define generic IP address
+
+		`IPAddress` can contain both an `IPv4Addr` or an `IPv6Addr`. It adds a higher
+		level of abstraction to avoid keeping track of two kinds of addresses.
+	"""
+	register= Register({'ipv4': IPv4Addr, 'ipv6': IPv6Addr})
+
+	def __init__(self, address):
+		""" Initialize an IP address
+
+			It automatically detects the type of Address and raise an exception if an
+			invalid address is provided.
+
+			:param address: The IP address provided as str, IPv4Addr, or IPv6Addr
+		"""
+		vers =  ipaddress.ip_address(address).version
+		if vers == 4:
+			super().__init__(IPv4Addr(address))
+		else:
+			super().__init__(IPv6Addr(address))
+		
+	def __str__(self):
+		return str(self.getObj())
+
+	def __repr__(self):
+		return str(self.getObj())
+
+class IPInfo(Record):
+	""" IP address and gateway information
+
+		Packs together IP addressing informatin, including netmask and gateway
+	"""
+	ip: IPAddress = None
+	""" IP address """
+	prefix: int = None
+	""" Prefix to identify the netmask """
+	gw: IPAddress = None
+	""" Default gateway """
+
+	def __init__(self, ip: IPAddress, prefix: int = None, gw: IPAddress = None):
+		self.ip = IPAddress(ip)
+		if prefix is None:
+			prefix = 32 if type(self.ip.getObj()) == IPv4Addr else 64
+
+		if (int(prefix) < 0) or (type(self.ip.getObj()) == IPv4Addr and  int(prefix) > 32) or \
+			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 64):
+			raise ipaddress.NetmaskValueError("Wrong prefix length: "+str(prefix))
+		self.prefix = int(prefix)
+		self.gw = IPAddress(gw) if gw is not None else None
+
+		if self.gw is not None:
+			assert type(self.ip) == type(self.gw)
+
+	def __str__(self):
+		return f"IPInfo(addr: {self.ip}/{self.prefix}, gw: {self.gw}"
+
+	def __repr__(self):
+		return f"IPInfo(addr: {self.ip}/{self.prefix}, gw: {self.gw}"
 
 class Port(Record):
 	"""Port
@@ -12,40 +76,33 @@ class Port(Record):
 	""" ID of the Port """
 	iface: str = None
 	""" Name of the network interface (OS dependent)"""
-	addresses: ArrayOf(IPv4Addr) = None
-	""" Hostname managing the Container"""
-	gateway: IPv4Addr = None
-	""" Operating System of the Container """
+	mac: MACAddr = None
+	""" MAC or similar L2 addresses associated to this port (not implemented) """
+	ips: ArrayOf(IPInfo) = None
+	""" List of IP addresses/gateways associated to the interface """
 
-	def __init__(self, description = None, id = None, iface = None, addresses = None, gateway = None):
+	def __init__(self, description = None, id = None, iface = None, ips = None):
 		if isinstance(description, Port):
 			self.description = description.description
 			self.id = description.id
 			self.iface = description.iface
-			self.addresses = description.addresses
-			self.gateway = description.gateway
+			self.ips = description.ips
 		else:
 			self.description = str(description) if description is not None else None
 			self.id = str(id) if id is not None else None
 			self.iface = str(iface) if iface is not None else None
-			if addresses is not None:
-				self.addresses = ArrayOf(IPv4Addr)()
-				for address in addresses:
-					self.addresses.append(IPv4Addr(address))
-			self.gateway = gateway if gateway is not None else None
+			self.ips = ips if ips is not None else None
 		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Port(description={self.description}, id={self.id}, "
-	             f"iface={self.iface}, addresses={self.addresses},gateway={self.gateway})")
+		return (f"Port(description={self.description}, id={self.id}, iface={self.iface}, ips={self.ips})") 
 	
 	def __str__(self):
 		return f"Port(" \
 	            f"description={self.description}, " \
 	            f"id={self.id}, " \
 	            f"iface={self.iface}, " \
-				f"addresses={self.addresses}, " \
-	            f"gateway={self.gateway})"
+					f"ips={self.ips}" 
 	
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):
@@ -54,9 +111,6 @@ class Port(Record):
 			raise TypeError(f"Expected 'id' to be of type {str}, but got {type(self.id)}")		
 		if self.iface is not None and not isinstance(self.iface, str):
 			raise TypeError(f"Expected 'hostname' to be of type {str}, but got {type(self.hostname)}")
-		if self.addresses is not None and not issubclass(type(self.addresses), list):
-			print("Addresses: ", type(self.addresses[0]))
-			raise TypeError(f"Expected 'addresses' to be of type {ArrayOf(IPv4Addr)}, but got {type(self.addresses)}")	
-		if self.gateway is not None and not isinstance(self.gateway, ArrayOf(IPv4Addr)):
-			raise TypeError(f"Expected 'os' to be of type {gateway}, but got {type(self.gateway)}")
+		if self.ips is not None and not issubclass(type(self.ips), list):
+			raise TypeError(f"Expected 'ips' to be of type {ArrayOf(IPInfo)}, but got {type(self.ips)}")	
 

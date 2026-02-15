@@ -1,0 +1,7 @@
+test_good_parameters:
+- link_type: 1
+
+test_bad_parameters:
+- link_type: "api"
+- link_type: 12314553466
+

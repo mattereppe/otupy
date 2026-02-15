@@ -1,0 +1,123 @@
+test_good_parameters:
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: "json"
+  profile: "x-ctxd"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "udp"
+  endpoint: Null
+  transfer: "http"
+  encoding: "json"
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    hostname: "firewall.cnr.it"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: Null
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    named_group: "group1"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: "json"
+  profile: Null
+  actuator: Null
+- host: "www.abc.com"
+  port: 8080
+  protocol: Null
+  endpoint: Null
+  transfer: Null
+  encoding: Null
+  profile: Null
+  actuator: Null
+
+
+
+
+
+test_bad_parameters:
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: "json"
+  profile: "acme"
+  actuator:
+    - asset_id: "firewall1"
+      domain: "nodomain"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: "acme"
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "dns"
+  encoding: "json"
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"
+- host: "www.abc.com"
+  port: "eithyeight"
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: "json"
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: 30
+  transfer: "http"
+  encoding: "json"
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: "protobuf"
+  profile: "x-slpf"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"
+- host: "www.abc.com"
+  port: 8080
+  protocol: "tcp"
+  endpoint: "/.well-known/openc2"
+  transfer: "http"
+  encoding: 1
+  profile: "slpf"
+  actuator:
+    asset_id: "firewall1"
+    domain: "nodomain"

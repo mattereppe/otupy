@@ -10,7 +10,7 @@ class Name(Choice):
     	The Name class is designed to contain multiple alternative identifiers for a Service. The current options include:
 
     	- uri: A valid URI. It is normally expected that the URI corresponds to a reachable service, but this is not strictly required by this implementation, as the URI is only used as identifier (not as a locator).
-    	- reverse-dns: This field has the same syntax as a DNS name, but in reverse order (e.g., com.apple.service.xyz). It is commonly used by software frameworks that needs unique names for entities, but does not require to locate them with a DNS.
+    	- hostname: A valid hostname, with an optional trailing DNS domain name. 
     	- uuid: A UUID of 128 bits following usual formats and structure.
     	- local: A format-free string that might not be unique and has local meaning only (e.g., "host0").
     
@@ -20,7 +20,7 @@ class Name(Choice):
     
     """
     
-    register = Register({'uri': URI, 'reverse-dns': Hostname, 'uuid': uuid.UUID, 'local': str})
+    register = Register({'uri': URI, 'hostname': Hostname, 'uuid': uuid.UUID, 'local': str})
 
     def __init__(self, name):
         """ Create a Name object
@@ -75,7 +75,14 @@ class Name(Choice):
 
 			  This method assumes the conversion to string is managed by the object type.
         """
-        return self.getObj()
+        return str(self.getObj())
+
+    def __repr__(self):
+        """ Return the internal object
+
+			  This method assumes the conversion to string is managed by the object type.
+        """
+        return str(self.getObj())
 
     def __eq__(self, other):
         """ Compare two Names

@@ -1,0 +1,58 @@
+test_good_parameters:
+- description: "application"
+  testid: "my-app"
+  name: "iptables"
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+- description: "123"
+  testid: "x-app-123"
+  name: "ciao"
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+- description: 
+  testid: "pippo"
+  name: "ciao"
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+  
+test_bad_parameters:
+- description: "application"
+  testid: 444
+  name: "iptabls"
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+- description: 123
+  testid: "my-app"
+  name: "iptabls"
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+- description: "myapp"
+  testid: "443"
+  name: 443
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+- description: "myapp-with-wrong-version"
+  testid: "443"
+  name: "iptables"
+  version: 18
+  owner: "Netfilter"
+  app_type: "Packet Filtering"
+- description: "myapp"
+  testid: "443"
+  name: "iptables"
+  version: "1.8.10"
+  owner: 44
+  app_type: "Packet Filtering"
+- description: "myapp"
+  testid: "443"
+  name: "ipables"
+  version: "1.8.10"
+  owner: "Netfilter"
+  app_type: 44
+

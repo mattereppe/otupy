@@ -9,6 +9,7 @@ configs: "configs"							# Config folder with actuator-specific configuration fi
 
 logger:											# Logging framework configuration. See the documentation
    version: 1
+   disable_existing_loggers: false     # (Default: true) This is necessary to enable logging for all imported module
    formatters:
       otupy:
          (): otupy.LogFormatter
@@ -34,3 +35,7 @@ logger:											# Logging framework configuration. See the documentation
    root:
       handlers: [console, file]
       level: INFO
+   loggers:
+      otupy:                      # This is a better configuration (does not required disabled_existing_loggers: true)
+         handlers: [console]      # because it only enables logging for the otupy modele (DEBUG level in this case)
+         level: DEBUG             # and does not overwhelm the output with useless logs from other modules.

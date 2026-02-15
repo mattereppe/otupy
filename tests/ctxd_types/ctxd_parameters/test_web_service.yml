@@ -1,0 +1,19 @@
+test_good_parameters:
+- description: "web service"
+  server: "example.com"
+  port: 443
+  endpoint: "/path/"
+  owner: "owner"
+
+test_bad_parameters:
+- description: "web service"
+  server: "my_example.com"
+  port: 443
+  endpoint: "/path/"
+  owner: "owner"
+- description: "web service"
+  server: "my_example.com"
+  port: "443"
+  endpoint: "/path/"
+  owner: "owner"
+

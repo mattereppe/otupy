@@ -1,0 +1,69 @@
+test_good_parameters:
+- service_name: "example"
+  role: 1
+  consumer: 
+    host: "consumer.com"
+- service_name: "example"
+  role: 1
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+- service_name: "example"
+  role: 1
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+    profile: "slpf"
+- service_name: "example"
+  role: 1
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+    profile: "slpf"
+    actuator:
+      asset_id: "xexe09"
+      named_group: "mygroup"
+- service_name: "example"
+  role: "guest"
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+    profile: "slpf"
+    actuator:
+      asset_id: "xexe09"
+      named_group: "mygroup"
+- service_name: "example"
+  role: "host"
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+
+test_bad_parameters:
+- service_name: "example"
+  role: 123342545
+  consumer: "consumer"
+- service_name: "example"
+  role: 1
+  consumer: "example_consumer.com"
+- service_name: "example"
+  role: "client"
+  consumer: "consumer.com"
+- service_name: "example"
+  role: "guest"
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+    profile: "x-slpf"
+    actuator:
+      asset_id: "xexe09"
+      named_group: "mygroup"
+- service_name: "example"
+  role: "guest"
+  consumer: 
+    host: "consumer.com"
+    port: 8080
+    profile: "x-ctxd"
+    actuator:
+      asset_id: "xexe09"
+      named_group: "mygroup"
+

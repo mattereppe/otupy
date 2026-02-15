@@ -6,8 +6,8 @@
 	`Services` or `Links`.
 
 	Concrete implementation of this interface should implement the following methods:
-	- discover_services(): Must fill in the internal `services` member with `Service` instances.
-	- discover_links(): Must fill in the internal `links` member with `Link` instances.
+	- discover_context(): Must fill in the internal `services` member with `Service` instances and
+  			the internal `links` member with `Link` instances.
 """
 
 import logging
@@ -20,6 +20,7 @@ import otupy.profiles.ctxd as ctxd
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service import Service
 from otupy.profiles.ctxd.data.service_type import ServiceType
+from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.consumer import Consumer
 
@@ -161,7 +162,8 @@ class CTXDActuator:
 
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
-	def get_services(self, name: Name = None, filter: ServiceType = None) -> [] :
+	def get_services(self, name: Name = None, filter: ServiceType = None, 
+			namespace: str = None, domain: str = None) -> [] :
 		""" Returns the list of current services
 
 			Returns the list of discovered services. Filter by name and type.
@@ -174,9 +176,28 @@ class CTXDActuator:
 		for s in self.services:
 			if filter == None or ( type(s.type.getObj()) == filter ):
 				if name == None or ( s.name == name ):
-					service_list.append(s)
+					if namespace == None or namespace == s.namespace:
+						if domain == None or domain == s.domain:
+							service_list.append(s)
 
 		return service_list
+
+	def get_links(self, name: Name = None, filter: LinkType = None) -> []:
+		""" Returns the list of current links
+
+			REturns the list of discovered links. Filters by name and type.
+
+			:param name: The anme of the link to retrieve (all if not set).
+			:param filter: The type of link (given by `LinkType`).
+			:return: A list of links that match the searching criteria.
+		"""
+		link_list=[]
+		for l in self.links:
+			if filter == None or ( filter == l.link_type ):
+				if name == None or (l.name == name):
+					link_list.append(l)
+
+		return link_list
 		
 	def get_consumer(self, service_name: Name) -> Consumer:
 		""" Returns consumer data
@@ -186,9 +207,12 @@ class CTXDActuator:
 			:param service_name: name of the service which consumer is searched.
 			:return: The consumer serving the given service, if any, None otherwise.
 		"""
+		if service_name is None:
+			return None
+
 		consumer=None
 		for p in self.peers:
-			if Name(p['service_name']) == service_name:
+			if Name(p['service_name']) == Name(service_name):
 				consumer = Consumer(**p['consumer'])
 				logger.debug("Found consumer %s for %s", consumer, service_name)
 				break
@@ -206,8 +230,14 @@ class CTXDActuator:
 		links = cmd.target.obj.links
 		res = {}
 
-		if not (cmd.args.get('cached') == True):
-			self._update()
+		try:
+			if not (cmd.args.get('cached') == True):
+				self._update()
+		except Exception as e:
+			logger.error("Unable to update context: %s", str(e))
+			return Response (status=StatusCode.INTERNALERROR, 
+					status_text=StatusCodeDescription[StatusCode.INTERNALERROR], 
+					results="")
 
 		if(services is not None):
 			if(cmd.args.get('name_only') == True):
@@ -243,15 +273,16 @@ class CTXDActuator:
 		""" Update services and links
 
 			This method should be run before getting links and services
-			Every concrete implementation of actuators must implement the `discover_services()` and `discover_links()` methods.
+			Every concrete implementation of actuators must implement the `discover_context()` method.
 			Does not return anything, just update the internal members `services` and `links`.
 
 			:return: None
 		"""
 		self.services = ArrayOf(Service)()
-		self.discover_services()
 		self.links = ArrayOf(Link)()
-		self.discover_links()
+		# Reset everything at the beginning, because links might be updated during the
+		# discovery of services for optimization purposes
+		self.discover_context()
 		
 	def __notimplemented(self, cmd):
 		""" Default response

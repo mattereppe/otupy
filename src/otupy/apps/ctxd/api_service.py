@@ -25,7 +25,7 @@ from werkzeug.exceptions import HTTPException, UnsupportedMediaType
 from otupy.apps.ctxd.discover_functions import start_discovery
 from otupy.apps.ctxd.defaults import parse_and_default, set_defaults
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 SAFE_CONFIG_KEYS=['name', 'loop', 'frequency', 'publishers', 'services' ]
 
@@ -141,7 +141,7 @@ def api_listen(config: dict) -> None:
 
 		return httpresp, httpcode
 	
-	@app.route("/clean", methods=['GET'])
+	@app.route("/clean", methods=['POST'])
 	def _clean():
 		""" Remove all running threads """
 

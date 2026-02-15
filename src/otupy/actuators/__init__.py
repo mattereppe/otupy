@@ -1,5 +1,10 @@
 """
-	A collection of OpenC2 Actuators built with the otupy framework.
+	Otupy actuators for security functions
+
+	A collection of OpenC2 Actuators built with the otupy framework. Actuators are grouped by the specific profile they implement.
+	It is not recommended to buid actuators for multiple profiles; if a security function falls under the scope of multiple profiles,
+	a different actuator should be created for each profile.
+
 """
 #from otupy.actuators.slpf.mockup_slpf_actuator import MockupSlpfActuator
 #from otupy.actuators.slpf.dump_actuator import DumbActuator
