@@ -147,61 +147,62 @@ class XBOMActuator:
 		except Exception as e:
 			logger.warning(f"Failed to add dependency from {from_bom} to {to_bom}: {e}")
 
-	def add_subservice(self, parent_service_index: int, child_name: Name, child_bom: Xbom | None = None) -> None:
-		""" Add a subservice to a parent service and create dependency relationship
-		
-			This method adds the child service as a subservice of the parent and also
-			creates the BOM dependency relationship (with external reference) between them.
-		
-			:param parent_service_index: Index of the parent service in self.services
-			:param child_name: Name of the child service to add as subservice
-			:param child_bom: The BOM of the child service (if None, will be looked up by name)
-		"""
-		# Add to subservices list
-		if self.services[parent_service_index].subservices is None:
-			from otupy import ArrayOf
-			self.services[parent_service_index].subservices = ArrayOf(Name)()
-		self.services[parent_service_index].subservices.append(child_name)
-		
-		# Get parent BOM
-		parent_name = str(self.services[parent_service_index].name)
-		parent_bom = self.get_bom_by_name(parent_name)
-		
-		# Get child BOM if not provided
-		if child_bom is None:
-			child_bom = self.get_bom_by_name(str(child_name))
-		
-		# Add dependency: child depends on parent (child runs on/is controlled by parent)
-		if parent_bom and child_bom:
-			self.add_dependency_between_boms(
-				child_bom, parent_bom,
-				comment=f"{child_name} is a subservice of {parent_name}"
-			)
+	def _services_to_boms(self) -> None:
+		""" Convert all services to BOMs and create dependency relationships
 
-	def add_subservices_with_dependencies(self, parent_bom: Xbom, child_boms: list[Xbom], 
-										   child_names: list[Name]) -> list[Name]:
-		""" Add multiple subservices and create dependency relationships
-		
-			This is useful when creating a parent (like a Pod) with multiple children (containers).
-			Each child will have a dependency on the parent.
-		
-			:param parent_bom: The BOM of the parent service
-			:param child_boms: List of child BOMs
-			:param child_names: List of child names (corresponding to child_boms)
-			:return: The list of child names (for use as subservices list)
+			This method creates a BOM for each service in self.services based on
+			the service type, then establishes dependency relationships between
+			BOMs based on the subservice structure.
+
+			This centralizes BOM creation so that concrete actuators only need
+			to populate self.services.
 		"""
-		from otupy import ArrayOf
-		subservice_names = ArrayOf(Name)()
-		
-		for child_bom, child_name in zip(child_boms, child_names):
-			subservice_names.append(child_name)
-			# Child depends on parent
-			self.add_dependency_between_boms(
-				child_bom, parent_bom,
-				comment=f"{child_name} belongs to parent"
-			)
-		
-		return subservice_names
+		# Create a BOM for each service
+		for service in self.services:
+			if service.type is None:
+				logger.warning("Service %s has no type, skipping BOM creation", service.name)
+				continue
+			bom = self.create_bom()
+			bom.add(service.type.getObj())
+			self.boms.append(bom)
+
+		# Create dependency relationships based on subservices
+		for service in self.services:
+			if service.subservices is not None and len(service.subservices) > 0:
+				parent_bom = self.get_bom_by_name(str(service.name))
+				if parent_bom is None:
+					logger.warning("Could not find parent BOM for service %s", service.name)
+					continue
+				for child_name in service.subservices:
+					child_bom = self.get_bom_by_name(str(child_name))
+					if child_bom is not None:
+						self.add_dependency_between_boms(
+							child_bom, parent_bom,
+							comment=f"{child_name} is a subservice of {service.name}"
+						)
+
+	def _add_link_to_bom(self, link) -> None:
+		""" Add a link to the appropriate BOM based on the services/components involved in the link
+
+			Searches through existing BOMs to find one whose service or component name matches
+			the link name, then adds the link to that BOM.
+
+			:param link: The Link object to add.
+		"""
+		for bom in self.boms:
+			if bom.bom is None:
+				continue
+			if len(bom.bom.services) > 0:
+				for service in bom.bom.services:
+					if service.name == link.name.getObj():
+						bom.add(link)
+						return
+			if len(bom.bom.components) > 0:
+				for component in bom.bom.components:
+					if component.name == link.name.getObj():
+						bom.add(link)
+						return
+		logger.warning("Could not find BOM to add link %s", link.name)
 
 
 	def run(self, cmd):
@@ -427,6 +428,7 @@ class XBOMActuator:
 		self.boms = ArrayOf(Xbom)()
 		self.services = ArrayOf(Service)()
 		self.discover_services()
+		self._services_to_boms()
 		self.discover_links()
 		
 	def __notimplemented(self, cmd):

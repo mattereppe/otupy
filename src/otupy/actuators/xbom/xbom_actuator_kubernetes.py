@@ -48,7 +48,6 @@ from otupy.profiles.xbom.data.peer_role import PeerRole
 from otupy.profiles.xbom.data.server import Server
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.vm import VM
-from otupy.profiles.xbom.data.xbom import Xbom
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
@@ -166,9 +165,6 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		k8s = Cloud(description='Kubernetes cloud', id=None, name='kubernetes', type='IaaS')
 		# TODO: Fill in with k8s version/release
 		# Subservices should be kube-adm and kubelets
-		k8s_xbom = self.create_bom()
-		k8s_xbom.add(k8s)
-		self.boms.append(k8s_xbom)
 		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), #links=ArrayOf(Name)(),
 				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
@@ -176,20 +172,15 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		# ---------------------------------
 		logger.debug("Discovering Kubernetes services...")
 		for service in cloud_services:
-			xbom = self.create_bom()
 			app = (Application(description=service.spec.type, name=service.metadata.name,
 						id=service.metadata.uid, owner=self.owner, app_type='service'))
-			xbom.add(app)
 			logger.debug("Found application: %s", str(app.name))
 			# TODO: Add software release (maybe with its SBOM)
 			name=Name(app.name)
-			self.boms.append(xbom)
 			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
-									subservices=ArrayOf(Service)(), owner=self.owner, release=None))
-			# Paranoid check nobody modified the order of the instraction
-			assert  str(self.boms[0].bom.services[0].name) == k8s.name , "Wrong position of parent openstack service in array!"
-			# Add subservice with dependency relationship
-			self.add_subservice(0, name, xbom)
+								subservices=ArrayOf(Service)(), owner=self.owner, release=None))
+			# Add as subservice of root kubernetes service
+			self.services[0].subservices.append(name)
 
 	def _k8s_service_list(self, namespaces=None) -> list[dict]:
 		""" Discover k8s services in the given namespace
@@ -212,21 +203,6 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			# Just one item will be present because the pod name is unique in the same namespace
 			return n.spec.node_name
 			
-	def _add_link_to_bom(self, link: Link) -> None:
-		""" Add a link to the appropriate BOM based on the services/components involved in the link """
-		for bom in self.boms:
-			if len(bom.bom.services) > 0:
-				for service in bom.bom.services:
-					if service.name == link.name.getObj():
-						bom.add(link)
-						return
-			if len(bom.bom.components) > 0:
-				for component in bom.bom.components:
-					if component.name == link.name.getObj():
-						bom.add(link)
-						return
-		logger.warning("Could not find BOM to add link %s", link.name)
-
 	def _discover_pod_links_nodes(self):
 		""" Add links between pods and nodes where they are hosted 
 		"""
@@ -305,9 +281,6 @@ class XBOMActuator_kubernetes(XBOMActuator):
             os= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
 			logger.debug("Found node: %s", str(node))
 
-			xbom = self.create_bom()
-			xbom.add(node)
-			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(n.metadata.name)), type=ServiceType(node), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=n.metadata.resource_version))
 
@@ -382,28 +355,12 @@ class XBOMActuator_kubernetes(XBOMActuator):
 
 			container_list = _get_container_list(pod.status.container_statuses, "Kubernetes container") + _get_container_list(pod.status.init_container_statuses, "Kubernetes init container")
 
-			# Create the pod BOM first so we can add dependencies
-			pod_xbom = self.create_bom()
-			pod_xbom.add(pod_type)
-			self.boms.append(pod_xbom)
-
-			# Create services for each container and add dependencies to the pod
-			# for each of those containers and pod, create an xbom and add it to the list
+			# Create services for each container
 			container_name_list = ArrayOf(Name)()
-			container_boms = []
 			for c in container_list:
-				container_xbom = self.create_bom()
-				container_xbom.add(c)
-				self.boms.append(container_xbom)
 				self.services.append(Service(name=Name(c.name), type=ServiceType(c), 
                   subservices=None, owner=self.owner, release=None))
 				container_name_list.append(Name(c.name))
-				container_boms.append(container_xbom)
-				# Add dependency: container belongs to this pod
-				self.add_dependency_between_boms(
-					container_xbom, pod_xbom,
-					comment=f"Container {c.name} belongs to pod {pod.metadata.name}"
-				)
 
 			self.services.append(Service(name= Name(pod.metadata.name), 
 						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),

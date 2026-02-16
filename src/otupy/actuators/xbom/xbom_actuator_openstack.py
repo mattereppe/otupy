@@ -39,7 +39,6 @@ from otupy.profiles.xbom.data.peer import Peer
 from otupy.profiles.xbom.data.peer_role import PeerRole
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.vm import VM
-from otupy.profiles.xbom.data.xbom import Xbom
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
@@ -116,9 +115,6 @@ class XBOMActuator_openstack(XBOMActuator):
 		# --------------------------------------------------
 		os = Cloud(description='cloud', id=None, name='openstack', type='IaaS')
 		# TODO: Fill in with Openstack version/release
-		os_xbom = self.create_bom()
-		os_xbom.add(os)
-		self.boms.append(os_xbom)
 		self.services.append(Service(name=Name(os.name),type=ServiceType(os), #links=ArrayOf(Name)(),
 				subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
@@ -129,16 +125,11 @@ class XBOMActuator_openstack(XBOMActuator):
 						id=service['id'], owner=self.owner, app_type=service['type']))
 			logger.debug("Found application: %s", str(app.name))
 			# TODO: Add software release (maybe with its SBOM)
-			xbom = self.create_bom()
-			xbom.add(app)
-			self.boms.append(xbom)
 			name=Name(app.name)
 			self.services.append(Service(name=name, type=ServiceType(app), #links=ArrayOf(Link)(),
 						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
-			# Paranoid check nobody modified the order of the instraction
-			assert  str(self.boms[0].bom.services[0].name) == os.name , "Wrong position of parent openstack service in array!"
-			# Add subservice with dependency relationship
-			self.add_subservice(0, name, xbom)
+			# Add as subservice of root openstack service
+			self.services[0].subservices.append(name)
 		
 	def _discover_os_servers(self):
 		""" Discover VMs created and controlled by this OpenStack instance.
@@ -157,9 +148,6 @@ class XBOMActuator_openstack(XBOMActuator):
 
 			logger.debug("Found server: %s", str(server))
 
-			xbom = self.create_bom()
-			xbom.add(server)
-			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(server.name)), type=ServiceType(server), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=None))
 
@@ -181,27 +169,8 @@ class XBOMActuator_openstack(XBOMActuator):
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
-			xbom = self.create_bom()
-			xbom.add(hyper)
-			self.boms.append(xbom)
 			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), #links=ArrayOf(Name)(),
 						subservices=None, owner=self.owner, release=None))
-
-	def _add_link_to_bom(self, link: Link) -> None:
-		""" Add a link to the appropriate BOM based on the services/components involved in the link """
-		for bom in self.boms:
-			if len(bom.bom.services) > 0:
-				for service in bom.bom.services:
-					if service.name == link.name.getObj():
-						bom.add(link)
-						return
-			if len(bom.bom.components) > 0:
-				for component in bom.bom.components:
-					if component.name == link.name.getObj():
-						bom.add(link)
-						return
-		logger.warning("Could not find BOM to add link %s", link.name)
-
 
 	def _discover_os_link_vms(self):
 		""" Add links between nova and VMs 
