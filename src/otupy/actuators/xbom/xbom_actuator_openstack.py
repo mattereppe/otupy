@@ -190,7 +190,7 @@ class XBOMActuator_openstack(XBOMActuator):
 				description="Openstack controls "+v.name.getObj()
 				link = Link(name = s.name, description=description, 
 							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
-				self._add_link_to_bom(link)
+				self.links.append(link)
 
 #s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 
@@ -212,7 +212,7 @@ class XBOMActuator_openstack(XBOMActuator):
 				description="OpenStack Security Groups"
 				link = Link(name = s.name, description=description, 
 							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
-				self._add_link_to_bom(link)
+				self.links.append(link)
 
 
 	def _discover_vms_link_hypervisors(self):
@@ -239,7 +239,7 @@ class XBOMActuator_openstack(XBOMActuator):
 				description="System and application software installed on "+v.name.getObj()
 				link = Link(name = v.name, description=description, 
 							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
-				self._add_link_to_bom(link)
+				self.links.append(link)
 # I don't like to replicate the link as standalone structure and embedded in Service
 #s.links.append(Link(name = link_name, link_type=LinkType.control, peers=ArrayOf(Peer)([peer])))
 

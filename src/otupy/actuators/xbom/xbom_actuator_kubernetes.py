@@ -219,7 +219,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			description="Pod "+p.name.getObj()+" hosted on "+node
 			link = Link(name=p.name, description=description,
 						link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
-			self._add_link_to_bom(link)
+			self.links.append(link)
 
 	def _discover_k8s_links_nodes(self):
 		""" Discover K8S links to nodes
@@ -244,7 +244,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 					description="Kubernetes hosted on "+n.name.getObj()
 					link = Link(name=k.name, description=description,
 								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer]))
-					self._add_link_to_bom(link)
+					self.links.append(link)
 
 	def _discover_k8s_links_pods(self):
 		""" Discover K8S links to pods
@@ -264,7 +264,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 				description="Kubernetes controls pod "+p.name.getObj()
 				link = Link(name=s.name, description=description,
 							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
-				self._add_link_to_bom(link)
+				self.links.append(link)
 
 	def _discover_k8s_nodes(self):
 		""" Discover kubernetes working nodes
@@ -303,7 +303,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			description="Kubernetes Network Policies"
 			link = Link(name=s.name, description=description,
 							link_type=LinkType.control, peers=ArrayOf(Peer)([peer]))
-			self._add_link_to_bom(link)
+			self.links.append(link)
 	
 	def _discover_k8s_pods(self):
 		""" Discovers pods

@@ -20,6 +20,7 @@ from otupy.profiles.xbom.data.name import Name
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.consumer import Consumer
 from otupy.profiles.xbom.data.service import Service
+from otupy.profiles.xbom.data.link import Link
 from otupy.profiles.xbom.data.xbom import CyclonedxXbom
 from otupy.profiles.xbom.data.abstract_xbom import Xbom
 from otupy.profiles.xbom.data.sbom_format import SbomFormat
@@ -69,6 +70,7 @@ class XBOMActuator:
 		self.sbom_format = SbomFormat.cyclonedx
 		self.boms = ArrayOf(Xbom)()
 		self.services = ArrayOf(Service)()
+		self.links = ArrayOf(Link)()
 
 	def create_bom(self) -> Xbom:
 		""" Factory method to create a BOM instance based on the current sbom_format
@@ -147,15 +149,16 @@ class XBOMActuator:
 		except Exception as e:
 			logger.warning(f"Failed to add dependency from {from_bom} to {to_bom}: {e}")
 
-	def _services_to_boms(self) -> None:
-		""" Convert all services to BOMs and create dependency relationships
+	def _build_boms(self) -> None:
+		""" Convert all services and links to BOMs
 
-			This method creates a BOM for each service in self.services based on
-			the service type, then establishes dependency relationships between
-			BOMs based on the subservice structure.
+			This method:
+			1. Creates a BOM for each service based on its type
+			2. Establishes dependency relationships between BOMs from the subservice structure
+			3. Adds links to the appropriate BOMs by matching link names to services/components
 
-			This centralizes BOM creation so that concrete actuators only need
-			to populate self.services.
+			This centralizes all BOM creation so that concrete actuators only need
+			to populate self.services and self.links.
 		"""
 		# Create a BOM for each service
 		for service in self.services:
@@ -181,7 +184,11 @@ class XBOMActuator:
 							comment=f"{child_name} is a subservice of {service.name}"
 						)
 
-	def _add_link_to_bom(self, link) -> None:
+		# Add links to the appropriate BOMs
+		for link in self.links:
+			self._add_link_to_bom(link)
+
+	def _add_link_to_bom(self, link: Link) -> None:
 		""" Add a link to the appropriate BOM based on the services/components involved in the link
 
 			Searches through existing BOMs to find one whose service or component name matches
@@ -427,9 +434,10 @@ class XBOMActuator:
 		"""
 		self.boms = ArrayOf(Xbom)()
 		self.services = ArrayOf(Service)()
+		self.links = ArrayOf(Link)()
 		self.discover_services()
-		self._services_to_boms()
 		self.discover_links()
+		self._build_boms()
 		
 	def __notimplemented(self, cmd):
 		""" Default response
