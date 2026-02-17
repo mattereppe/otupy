@@ -78,9 +78,9 @@ def discovery(config) -> None:
 		resources = discover(root)
 		logger.info("Discovered resources from %s: %s", root, resources)
 		try:
-			ctx['boms'] = add_resource(ctx.get('boms'), root, 'bom', resources['boms'])
+			ctx['boms'] = add_resource(ctx.get('boms'), root, 'bom', [resources['bom']])
 		except:
-			logger.warning("No boms returned for %s", root)
+			logger.warning("No bom returned for %s", root)
 		try:
 			ctx['bom_names'] = add_resource(ctx.get('bom_names'), root, 'bom_name', resources['bom_names'])
 		except:

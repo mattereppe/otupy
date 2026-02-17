@@ -82,10 +82,32 @@ class Xbom(Record, ABC):
 		pass
 
 	@abstractmethod
-	def add_dependency_with_external_ref(self, depends_on_xbom: 'Xbom', comment: str | None = None) -> None:
+	def find_ref_by_name(self, name: str) -> str | None:
+		"""Find the bom_ref of a component or service by name
+
+		:param name: The name of the component or service to find
+		:return: The bom_ref string if found, None otherwise
+		"""
+		pass
+
+	@abstractmethod
+	def add_dependency(self, parent_ref: str, child_ref: str) -> None:
+		"""Add a dependency relationship
+
+		Creates a dependency where child_ref depends on parent_ref.
+
+		:param parent_ref: The bom_ref of the item that is depended upon
+		:param child_ref: The bom_ref of the dependent item
+		:return: None
+		"""
+		pass
+
+	@abstractmethod
+	def add_dependency_with_external_ref(self, depends_on_xbom: 'Xbom', from_ref: str, comment: str | None = None) -> None:
 		"""Add both an external reference and a dependency to another XBOM
 		
 		:param depends_on_xbom: The XBOM that this XBOM depends on
+		:param from_ref: The bom_ref of the item in this BOM that depends on the other
 		:param comment: Optional comment describing the dependency
 		:return: None
 		"""

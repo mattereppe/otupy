@@ -20,5 +20,4 @@ class Results(oc2.Results):
 		[Developing extensions](https://github.com/mattereppe/otupy/blob/main/docs/developingextensions.md#developing-extensions) Section of the main documentation.
 
 	"""
-	# fieldtypes = {'services': ArrayOf(Service), 'links': ArrayOf(Link), 'service_names': ArrayOf(Name), 'link_names': ArrayOf(Name)}
-	fieldtypes = {'boms': ArrayOf(Xbom), 'bom_names': ArrayOf(Name)}
+	fieldtypes = {'bom': Xbom, 'bom_names': ArrayOf(Name)}

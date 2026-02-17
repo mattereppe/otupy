@@ -43,11 +43,11 @@ class XBOMActuator:
 		This class provides the common implementation of the XBOM `Actuator`.
 	"""
 
-	boms: ArrayOf(Xbom) = None # type: ignore
-	""" List of discovered BOMs """
+	bom: Xbom | None = None
+	""" Discovered BOM for this actuator """
 	
 	sbom_format: SbomFormat = SbomFormat.cyclonedx
-	""" The SBOM format to use for creating BOMs (set from target) """
+	""" The SBOM format to use for BOM creation (set from target) """
 	
 	def __init__(self, **kwargs):
 		""" Initialization
@@ -68,7 +68,7 @@ class XBOMActuator:
 		self.owner = kwargs['owner'] if 'owner' in kwargs else None
 		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
 		self.sbom_format = SbomFormat.cyclonedx
-		self.boms = ArrayOf(Xbom)()
+		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
 
@@ -86,130 +86,56 @@ class XBOMActuator:
 			raise NotImplementedError(f"SBOM format {self.sbom_format} is not supported")
 		return bom_class()
 
-	def get_bom_by_name(self, name: str) -> Xbom | None:
-		""" Find a BOM by the name of its main component or service
-		
-			:param name: The name of the component or service to find
-			:return: The Xbom containing the component/service, or None if not found
-		"""
-		for bom in self.boms:
-			if bom.bom is None:
-				continue
-			# Check services
-			for service in bom.bom.services:
-				if service.name == name:
-					return bom
-			# Check components
-			for component in bom.bom.components:
-				if component.name == name:
-					return bom
-		return None
-
-	def get_bom_by_type(self, item_type: type) -> list[Xbom]:
-		""" Find all BOMs containing components/services of a specific type
-		
-			This looks at the otupy:type property to determine the type.
-		
-			:param item_type: The type class (e.g., Pod, Container, VM)
-			:return: List of Xbom objects containing items of the specified type
-		"""
-		type_name = item_type.__name__.lower()
-		matching_boms = []
-		
-		for bom in self.boms:
-			if bom.bom is None:
-				continue
-			# Check services
-			for service in bom.bom.services:
-				if service.properties:
-					for prop in service.properties:
-						if prop.name == "otupy:type" and prop.value == type_name:
-							matching_boms.append(bom)
-							break
-			# Check components
-			for component in bom.bom.components:
-				if component.properties:
-					for prop in component.properties:
-						if prop.name == "otupy:type" and prop.value == type_name:
-							matching_boms.append(bom)
-							break
-		return matching_boms
-
-	def add_dependency_between_boms(self, from_bom: Xbom, to_bom: Xbom, comment: str | None = None) -> None:
-		""" Add a dependency relationship between two BOMs
-		
-			This creates an external reference and dependency from one BOM to another.
-		
-			:param from_bom: The BOM that depends on another
-			:param to_bom: The BOM that is depended upon
-			:param comment: Optional comment describing the dependency
-		"""
-		try:
-			from_bom.add_dependency_with_external_ref(to_bom, comment=comment)
-		except Exception as e:
-			logger.warning(f"Failed to add dependency from {from_bom} to {to_bom}: {e}")
-
-	def _build_boms(self) -> None:
-		""" Convert all services and links to BOMs
+	def _build_bom(self) -> None:
+		""" Convert all services and links into a single BOM for this actuator
 
 			This method:
-			1. Creates a BOM for each service based on its type
-			2. Establishes dependency relationships between BOMs from the subservice structure
-			3. Adds links to the appropriate BOMs by matching link names to services/components
+			1. Creates a single BOM and adds all discovered services/components to it
+			2. Establishes dependency relationships from the subservice structure
+			3. Adds link properties to the matching services/components
 
 			This centralizes all BOM creation so that concrete actuators only need
 			to populate self.services and self.links.
 		"""
-		# Create a BOM for each service
+		self.bom = self.create_bom()
+
+		# Add all services to the single BOM
 		for service in self.services:
 			if service.type is None:
-				logger.warning("Service %s has no type, skipping BOM creation", service.name)
+				logger.warning("Service %s has no type, skipping", service.name)
 				continue
-			bom = self.create_bom()
-			bom.add(service.type.getObj())
-			self.boms.append(bom)
+			self.bom.add(service.type.getObj())
 
 		# Create dependency relationships based on subservices
 		for service in self.services:
 			if service.subservices is not None and len(service.subservices) > 0:
-				parent_bom = self.get_bom_by_name(str(service.name))
-				if parent_bom is None:
-					logger.warning("Could not find parent BOM for service %s", service.name)
-					continue
 				for child_name in service.subservices:
-					child_bom = self.get_bom_by_name(str(child_name))
-					if child_bom is not None:
-						self.add_dependency_between_boms(
-							child_bom, parent_bom,
-							comment=f"{child_name} is a subservice of {service.name}"
-						)
+					self.bom.add_dependency(parent_ref=self.bom.find_ref_by_name(str(service.name)), child_ref=self.bom.find_ref_by_name(str(child_name)))
 
-		# Add links to the appropriate BOMs
+		# Add links as properties to the matching services/components
 		for link in self.links:
 			self._add_link_to_bom(link)
 
 	def _add_link_to_bom(self, link: Link) -> None:
-		""" Add a link to the appropriate BOM based on the services/components involved in the link
-
-			Searches through existing BOMs to find one whose service or component name matches
-			the link name, then adds the link to that BOM.
+		""" Add a link as properties to the matching service/component in the BOM
 
 			:param link: The Link object to add.
 		"""
-		for bom in self.boms:
-			if bom.bom is None:
-				continue
-			if len(bom.bom.services) > 0:
-				for service in bom.bom.services:
-					if service.name == link.name.getObj():
-						bom.add(link)
-						return
-			if len(bom.bom.components) > 0:
-				for component in bom.bom.components:
-					if component.name == link.name.getObj():
-						bom.add(link)
-						return
-		logger.warning("Could not find BOM to add link %s", link.name)
+		if self.bom is None or self.bom.bom is None:
+			logger.warning("No BOM available to add link %s", link.name)
+			return
+		name = link.name.getObj()
+		props = link.as_cyclonedx()
+		# Find matching service or component and add properties
+		for service in self.bom.bom.services:
+			if service.name == name:
+				service.properties.update(props)
+				return
+		for component in self.bom.bom.components:
+			if component.name == name:
+				component.properties.update(props)
+				return
+		logger.warning("Could not find service/component '%s' to add link", name)
 
 
 	def run(self, cmd):
@@ -347,81 +273,53 @@ class XBOMActuator:
 		return consumer
 
 	def _query_sbom(self, cmd):
-		""" Query SBOM with specific format and names filter
+		""" Query SBOM - returns the single BOM for this actuator
 
-			Handles the SbomCtx target which allows specifying both the SBOM format
-			and a list of component/service names to filter by.
+			Handles the SbomCtx target which allows specifying the SBOM format
+			and a list of component/service names to filter the returned names.
 
 			:param cmd: The `Command` including `Target` and optional `Args`.
-			:return: A `Response` including filtered BOMs.
+			:return: A `Response` including the actuator's BOM.
 		"""
 		sbom_target = cmd.target.getObj()
 		res = {}
-
-		if not (cmd.args.get('cached') == True):
-			self._update()
 
 		# Get format if specified and set it for BOM creation
 		if sbom_target.get('format') is not None:
 			self.sbom_format = sbom_target.get('format')
 
-		# Get names filter if specified
-		names_filter = sbom_target.get('names')
-		
-		# Filter BOMs by names if specified
-		filtered_boms = self.boms
-		if names_filter is not None and len(names_filter) > 0:
-			filtered_boms = ArrayOf(Xbom)()
-			for bom in self.boms:
-				if bom.bom is None:
-					continue
-				# Check if any component or service in this BOM matches the filter names
-				for name_filter in names_filter:
-					# Check services
-					if hasattr(bom.bom, 'services') and bom.bom.services:
-						for service in bom.bom.services:
-							if str(service.name) == name_filter:
-								filtered_boms.append(bom)
-								break
-					# Check components
-					if hasattr(bom.bom, 'components') and bom.bom.components:
-						for component in bom.bom.components:
-							if component.name == name_filter:
-								filtered_boms.append(bom)
-								break
-					if bom in filtered_boms:
-						break
+		if not (cmd.args.get('cached') == True):
+			self._update()
 
-		# Return results based on name_only argument
+		if self.bom is None:
+			return Response(status=StatusCode.OK, status_text="No BOM available")
+
+		# Get names filter if specified (used to filter bom_names, not the BOM itself)
+		names_filter = sbom_target.get('names')
+
 		if cmd.args.get('name_only') == True:
-			res['bom_names'] = ArrayOf(Name)()
-			# Collect all service/component names from filtered BOMs
-			for b in filtered_boms:
-				if b.bom:
-					if hasattr(b.bom, 'services') and b.bom.services:
-						for service in b.bom.services:
-							res['bom_names'].append(Name(service.name))
-					if hasattr(b.bom, 'components') and b.bom.components:
-						for component in b.bom.components:
-							res['bom_names'].append(Name(component.name))
+			res['bom_names'] = self._collect_names(names_filter)
 		else:
-			res['boms'] = filtered_boms
-			# Also include names for convenience
-			res['bom_names'] = ArrayOf(Name)()
-			for b in filtered_boms:
-				if b.bom:
-					if hasattr(b.bom, 'services') and b.bom.services:
-						for service in b.bom.services:
-							res['bom_names'].append(Name(service.name))
-					if hasattr(b.bom, 'components') and b.bom.components:
-						for component in b.bom.components:
-							res['bom_names'].append(Name(component.name))
+			res['bom'] = self.bom
+			res['bom_names'] = self._collect_names(names_filter)
 
 		if len(res) > 0:
-			logger.debug("Returning filtered SBOMs: %s", res)
+			logger.debug("Returning SBOM: %s", res)
 			return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=xbom.Results(**res))
 		else:
 			return Response(status=StatusCode.OK, status_text="No matching BOMs found")
+
+	def _collect_names(self, names_filter=None):
+		""" Collect service/component names from discovered services, optionally filtered
+
+			:param names_filter: A list of name strings to filter by, or None for all names.
+			:return: An ArrayOf(Name) with the matching names.
+		"""
+		names = ArrayOf(Name)()
+		for s in self.services:
+			if names_filter is None or str(s.name) in names_filter:
+				names.append(s.name)
+		return names
 
 	def _update(self):
 		""" Update boms
@@ -432,12 +330,12 @@ class XBOMActuator:
 
 			:return: None
 		"""
-		self.boms = ArrayOf(Xbom)()
+		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
 		self.discover_services()
 		self.discover_links()
-		self._build_boms()
+		self._build_bom()
 		
 	def __notimplemented(self, cmd):
 		""" Default response
