@@ -9,15 +9,18 @@ class ExecutionEnvironment(CTXDObject):
 	""" Execution Environment
    	
 	  The ExecutionEnvironment  model abstracts a set of software resources
-	  that allow to run an application. This typically includes a pid space,
+	  that allow to run an application. The latter typically include a pid space,
 	 	a filesystem, a network slice, etc. There will be multiple child classes
 		of an execution environment, which will define typical cases, like a full 
 		Operating System, a container, a Python venv, a chroot, etc.
 
-		An Execution Environment could be hosted on real or physical hardware
-		(Host, Virtual Machine, IoT device), or
-		inside another ExecutionEnvironment, which typically happens for containers
-		and other software environments.
+		An Execution Environment is hosted on a Host, which could any physical or virtual hardware,
+		including physical servers, virtual machines, IoT devices, Kubernetes pods, etc. 
+
+		An ``ExecutionEnvironment`` will typically be made of several subsystems for file systems,
+		network slices, etc. This approach enables to provide a hierarchical view of components
+		and subcomponents, including links at different layers.
+	
 
 		In general, we expect applications or libraries to be present to support the execution
 		of other software.

@@ -62,9 +62,15 @@ import otupy.profiles.ctxd as ctxd
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service import Service
 from otupy.profiles.ctxd.data.link import Link
+from otupy.profiles.ctxd.data.network_node import NetworkNode
+from otupy.profiles.ctxd.data.network_interface import NetworkInterface
+from otupy.profiles.ctxd.data.ip_network import IPNetwork
 
 logger = logging.getLogger(__name__)
 
+# TODO: Add to configuration items (or read from file
+K8S_CLUSTER_NETWORK="k8s-pod-network"
+K8S_ADVERTISE_ADDRESS='advertise-address'
 
 @actuator_implementation("ctxd-kubernetes")
 class CTXDActuator_kubernetes(CTXDActuator):
@@ -102,6 +108,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		self.routers = {} # Keep a map of routers for each pod
 		self.networks = {} # Keep a map of networks for each pod
 		self.pods = {} # Keep a map of pods associated to each container
+		self.net_on_node = {} # Keep a map of where networks are expected to be implemented
 
 		self._setup_cni()
 		self._connect_to_kubernetes()
@@ -145,8 +152,9 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		self._discover_k8s_links_pods()
 		self._discover_networkfunctions_links_nodes()
 		self._discover_pod_links_nodes()
+		self._discover_network_links_nodes()
 		self._discover_pod_links_containers()
-		self._discover_container_links_networks()
+		self._discover_pod_links_networks()
 		self._discover_k8s_links_np()
 		self._discover_np_links_pods()
 
@@ -205,6 +213,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					# Assume only 1 field selector is present
 					label_selector= k + "=" + v
 				pods = self._k8s_pod_list(label_selector=label_selector)
+			elif service.metadata.labels is not None:
+				# Workaround: the internal NAT to translate between service CIDR and public API IP has not selector. It uses the label: "component=kube-apiserver"
+				if "component" in service.metadata.labels and service.metadata.labels['component'] == 'apiserver':
+					label_selector= "component=kube-apiserver"
+					pods = self._k8s_pod_list(label_selector=label_selector)
 			else:
 				pods = None
 			match service.spec.type:
@@ -272,8 +285,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			self.services.append(nat_service)
 			if pods is not None:
 				for p in pods:
-#					pod_ref=str(Name(Hostname(self._k8s_dns_name(p.metadata.name, p.metadata.namespace, "pod"))))
-					pod_ref=str(Name(uuid.UUID(p.metadata.uid)))
+					pod_ref=str(Name(Hostname(self._k8s_dns_name(p.metadata.name, p.metadata.namespace, "pod"))))
+#					pod_ref=str(Name(uuid.UUID(p.metadata.uid)))
 					self.nats[pod_ref]=nat_service
 
 
@@ -306,8 +319,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 		# Cluster network
 		ipnets = ArrayOf(IPNetAddress)([IPNetAddress(self.cni_cluster_cidr), IPNetAddress(self.cni_service_cidr)])
-		eth = EthernetNetwork({'nets': ipnets})
-		net = Network(name='k8s-pod-network', description="Kubernetes cluster network",
+		eth = IPNetwork({'nets': ipnets})
+		net = Network(name=K8S_CLUSTER_NETWORK, description="Kubernetes cluster network",
 				id=None, type=NetworkType(eth))
 	
 		# The cluster network is implemented by routers hosted at each node. 
@@ -321,20 +334,35 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					type=ServiceType(net),
 				subservices=subservices, owner=self.owner, release=None))
 
+	def _add_network_node(self, netname, node_name):
+#			if str(netname) in self.net_on_node:
+#				if node_name not in self.net_on_node[str(netname)]:
+#					self.net_on_node[str(netname)].append(node_name)
+#			else:
+#				self.net_on_node[str(netname)]=[node_name]
+		if str(node_name) in self.net_on_node:
+			if str(netname) not in self.net_on_node[str(node_name)]:
+				self.net_on_node[str(node_name)].append(str(netname))
+		else:
+			self.net_on_node[str(node_name)]=[str(netname)]
+
+
 	def _discover_pod_networks(self):
 		# Look for additional multus networks.
 		# I could not understand whether there is function in the kubernetes library
 		# to use the k8s.cni.cncf.io/v1 for retrieving network-attachment-definition 
 		# In any case, since in such configuration there is no network address, I parse
 		# pod annotations
+
 		self.networks = {}
+		self.net_on_node = {}
 		for pod in self._k8s_pod_list():
 			podname=str(Name(Hostname(self._k8s_dns_name(name=pod.metadata.name, namespace=pod.metadata.namespace,
 								resource_type="pod"))))
 			self.networks[podname] = []
-			if 'k8s.v1.cni.cncf.io/networks' in pod.metadata.annotations:
+			if pod.metadata.annotations is not None and 'k8s.v1.cni.cncf.io/networks' in pod.metadata.annotations:
 				for net in json.loads(pod.metadata.annotations['k8s.v1.cni.cncf.io/networks']):
-					if 'name' in net and net['name'] != "k8s-pod-network":
+					if 'name' in net and net['name'] != K8S_CLUSTER_NETWORK:
 						netname=Name(Hostname(self._k8s_dns_name(name=net['name'], 
 																			namespace=pod.metadata.namespace, 
 																			resource_type="network")))
@@ -345,7 +373,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 								for ip in net['ips']:
 									ipnets.append(ipaddress.ip_network(ip, strict=False))	
 							# TODO: This is an over-simplifcation, since multiple types of network can be present
-							eth = EthernetNetwork({'nets': ipnets})
+							eth = IPNetwork({'nets': ipnets})
 							net = Network(name=net['name'], description="Kubernetes network " + str(netname),
 								id=None, type=NetworkType(eth))
 	
@@ -364,11 +392,33 @@ class CTXDActuator_kubernetes(CTXDActuator):
 											found = False
 											if str(ip1) == str(ipaddress.ip_network(ip2,strict=False)):
 												found=True
-											print('found: ', found)
 											if not found:
 												 mynet.type.getObj().type.getObj()['nets'].append(ip2)
 						self.networks[podname].append(netname)
+						self._add_network_node(netname, pod.spec.node_name)
 									
+			if pod.metadata.labels is not None and 'component' in pod.metadata.labels and  pod.metadata.labels['component']=="kube-apiserver":
+				# Workaround: kubeapiserver listen on public network
+				if pod.status.host_ip is not None:
+					ipnets=ArrayOf(IPNetAddress)()
+#					for ip in pod.status.host_i_ps:
+#						ipnets.append(ipaddress.ip_network(ip, strict=False))
+					ipnets.append(ipaddress.ip_network(pod.status.host_ip, strict=False))
+					eth = IPNetwork({'nets': ipnets})
+					netname=Name(Hostname(self._k8s_dns_name(name=K8S_ADVERTISE_ADDRESS, namespace=None, resource_type="network")))
+					net = Network(name=netname,
+							description="Kube API server public address",
+							id=None, type=NetworkType(eth))
+					self.services.append(Service(
+								name=Name(netname),
+								namespace=None,
+								type=ServiceType(net),
+								subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+					self.networks[podname].append(netname)
+					self._add_network_node(netname, pod.spec.node_name)
+
+			self._add_network_node(K8S_CLUSTER_NETWORK, pod.spec.node_name)
+
 
 
 	def _k8s_service_list(self, namespaces=None):
@@ -431,11 +481,32 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			self.links.append(Link(name=p.name, description=description, role=PeerRole.guest,
 						link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
+	def _discover_network_links_nodes(self):
+		""" Add links between virtual networks and the nodes that implement them
+		"""
+
+		k8s_nets = self.get_services(filter=Network)
+
+		for node in self.net_on_node:
+			print("nodes: ", node)
+			consumer=self.get_consumer(Name(node))
+			peer = Peer(service_name=Name(Hostname(node)),
+					role=PeerRole.host, # Node hodes network implementation
+					consumer=consumer)
+			for net in self.net_on_node[node]:
+				print("net: ", net)
+				# TODO: Check if some networks are present only on specific nodes (where the pod is running
+				description="Network "+str(net)+" implemented in " + str(peer.service_name)
+				self.links.append(Link(name=Name(Hostname(net)), description=description,
+							role=PeerRole.guest, link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+
+
 	def _discover_pod_links_containers(self):
 		""" Add links between pods and containers they contain
 		"""
 		k8s_pods = self.get_services(filter=Pod)
 
+		# This link might be removed, if we keep containers as subservices of pods
 		for p in k8s_pods:
 			for c in p.subservices:
 				peer = Peer(service_name=c, role=PeerRole.contained, consumer=None)
@@ -443,7 +514,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 				self.links.append(Link(name=p.name, description=description, role=PeerRole.guest,
 							link_type=LinkType.containing, peers=ArrayOf(Peer)([peer])))
 				
-	def _discover_container_links_networks(self):
+	def _discover_pod_links_networks(self):
 		""" Add links between pods and the cluster network
 
 			If a service for the pod is present, we also add a NAT function in between.
@@ -451,20 +522,18 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 			(Container) --- (NAT) --- (k8s-pod-network )
 		"""
-		k8s_containers = self.get_services(filter=Container)
-		nets = self.get_services(name=Name(Hostname(self._k8s_dns_name("k8s-pod-network", resource_type="network"))), filter=Network)
+		k8s_pods = self.get_services(filter=Pod)
+		nets = self.get_services(name=Name(Hostname(self._k8s_dns_name(K8S_CLUSTER_NETWORK, resource_type="network"))), filter=Network)
 
-		for c in k8s_containers:
+		for p in k8s_pods:
 			for net in nets:
-				pod_name = str(self.pods[str(c.name)]) 
-				print("found: ", pod_name)
+				pod_name = str(p.name) 
 				if pod_name in self.nats:
 					nat = self.nats[pod_name]
-					print("Chiara pompinara: ", nat)
 					# Add NAT between pod and cluster network
 					peer = Peer(service_name=nat, role=PeerRole.forwarding, consumer=None)
-					description="Container "+str(c.name)+" attached to NAT " + str(nat)
-					self.links.append(Link(name=c.name, description=description, role=PeerRole.endpoint,
+					description="Pod "+str(p.name)+" attached to NAT " + str(nat)
+					self.links.append(Link(name=p.name, description=description, role=PeerRole.endpoint,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 					peer = Peer(service_name=net.name, role=PeerRole.forwarding, consumer=None)
 					description="NAT "+str(nat)+" attached to cluster network"
@@ -478,8 +547,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 #									link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 				else: # No NAT: pod attached directly to cluster network
 					peer = Peer(service_name=net.name, role=PeerRole.forwarding, consumer=None)
-					description="Container "+str(c.name)+" attached to cluster network"
-					self.links.append(Link(name=c.name, description=description, role=PeerRole.endpoint,
+					description="Pod "+str(p.name)+" attached to cluster network"
+					self.links.append(Link(name=p.name, description=description, role=PeerRole.endpoint,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 #					if str(p.name) in self.routers:
 #						router=self.routers[str(p.name)]
@@ -488,15 +557,13 @@ class CTXDActuator_kubernetes(CTXDActuator):
 #						self.links.append(Link(name=p.name, description=description, role=PeerRole.endpoint,
 #									link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 			# Other networks:
-			pod_name=str(self.pods[str(c.name)])
+			pod_name=str(p.name)
 			if pod_name in self.networks:
 				for netname in self.networks[str(pod_name)]:
 					peer = Peer(service_name=netname, role=PeerRole.forwarding, consumer=None)
-					description="Container "+str(c.name)+" attached to network " + str(netname)
-					self.links.append(Link(name=c.name, description=description, role=PeerRole.endpoint,
+					description="Pod "+str(p.name)+" attached to network " + str(netname)
+					self.links.append(Link(name=p.name, description=description, role=PeerRole.endpoint,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
-
-
 
 
 
@@ -584,9 +651,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		k8s_containers = self.get_services(filter=Container)
 
 		for s in k8s_service:
-			print("Chiara pompinara")
 			for c in k8s_containers:
-				print("container: ", c.name)
 				peer = Peer(service_name=c.name,
 							role=PeerRole.controlled, # Kubernetes controls its containers
 							consumer=None)
@@ -681,12 +746,36 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		pods = self._k8s_pod_list()
 		k8s_subservices = ArrayOf(Name)()
 
+		# Get the Containers (init and main) used by this pod
+		def _get_container_status(c):
+			state='unknown'
+			if c.state.running is not None:
+				state='running'
+			if c.state.waiting is not None:
+				state='waiting'
+			if c.state.terminated is not None:
+				state='terminated'
+			return state
+
+		def _get_container_list(containers, description=None):
+			container_list = []
+			try:
+				for c in containers:
+					state=_get_container_status(c)
+					# TODO: parse command and create Application service with link to container 
+					container_list.append( Container(name=c.name, id=c.container_id, 
+							description=description, namespace=pod.metadata.namespace, image=c.image, status=state))
+			except:	# no containers
+				pass
+			return container_list
+
 		for pod in pods:
+			pod_subservices_list = ArrayOf(Name)()
 			# pod.status.pod_ip and pod.status.pod_i_ps return wrong values (host ip) and
 			# do not include multus networks
 			if pod.metadata.annotations is not None and 'k8s.v1.cni.cncf.io/network-status' in pod.metadata.annotations:
 				ports = json.loads(pod.metadata.annotations['k8s.v1.cni.cncf.io/network-status'])
-				port_list = []
+				port_list = ArrayOf(NetworkInterface)()
 				for p in ports:
 					name = p['name'] if 'name' in p else None
 					iface = p['iface'] if 'iface' in p else None
@@ -695,8 +784,17 @@ class CTXDActuator_kubernetes(CTXDActuator):
 						for ip in p['ips']:
 							ips.append(IPInfo(ip=IPAddress(ip)))
 					port_list.append( Port(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
+			
+			node_type = NetworkNode(description="Pod network ports", id=pod.metadata.uid,
+					name="Ports", ifaces=port_list)
+			nodename=Name(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "ports"))
+			self.services.append(Service(name=nodename, type=ServiceType(node_type), 
+					subservices=ArrayOf(Name)(), release=None, owner=None))
+			pod_subservices_list.append(nodename)
+			
+
 			pod_type = Pod(description="Kubernetes pod", id=pod.metadata.uid,
-				  name=pod.metadata.name, namespace=pod.metadata.namespace, ports=port_list)	
+				  name=pod.metadata.name, namespace=pod.metadata.namespace)
 
 			# Since there is not a clear understanding of the different types of controllers,
 			# we create the objects here and update them if we found more pods
@@ -720,51 +818,26 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					if pod.metadata.namespace == "kube-system" and controllername not in k8s_subservices:
 						k8s_subservices.append(controllername)
 
-			# Get the Containers (init and main) used by this pod
-			def _get_container_status(c):
-				state='unknown'
-				if c.state.running is not None:
-					state='running'
-				if c.state.waiting is not None:
-					state='waiting'
-				if c.state.terminated is not None:
-					state='terminated'
-				return state
-
-			def _get_container_list(containers, description=None):
-				container_list = []
-				try:
-					for c in containers:
-						state=_get_container_status(c)
-						# TODO: parse command and create Application service with link to container 
-						container_list.append( Container(name=c.name, id=c.container_id, 
-								description=description, namespace=pod.metadata.namespace, image=c.image, status=state))
-				except:	# no containers
-					pass
-				return container_list
-
 
 			container_list = _get_container_list(pod.status.container_statuses, "Kubernetes container") + _get_container_list(pod.status.init_container_statuses, "Kubernetes init container")
 
 			# Create services for each container
-			# A container is an execution environment. In Kubernetes, a pod controls one or more container, but in containerd a pod
-			# is a network namespace, hence it is part of the container virtual environment. Because of this, we consider the 
-			# container as the main object (ExecutionEnvironment), and the network namespace as a part of it. 
-			# Containers in the same pod shares the same network namespace
-#container_name_list = ArrayOf(Name)()
-			podname=Name(uuid.UUID(pod.metadata.uid))
+			# A container is an execution environment, which we model as hosted in a Pod. Indeed,
+		   # in Kubernetes a pod is a control unit for one or more container, but the concrete sandbox is partially defined
+			# by the pod and partially by the container. However, in containerd the pod is a network namespace, and a network
+			# namespaces host pids. hence it is part of the container virtual environment. Because of this, we consider the 
+			# container as the main object (ExecutionEnvironment), and the network namespace as the hosting hardware (Host).
+			# Containers in the same pod shares the same network namespace, hence they will be hosted in the same Host but
+			# remains separate execution environments.
+			podname=Name(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "pod"))
 			for c in container_list:
-				pod_id=ArrayOf(Name)()
-				pod_id.append(podname)
 				container_name=Name(Hostname(self._k8s_dns_name(c.name, pod.metadata.namespace,pod.metadata.name+".container")))
 				self.pods[str(container_name)]=podname
 				self.services.append(Service(name=container_name,
 						namespace=pod.metadata.namespace,
 						type=ServiceType(c), 
-                  subservices=pod_id, owner=self.owner, release=None))
-				# This is not convincing! A container is not part of the Pod service, it is hosted!
-#				container_name_list.append(Name(Hostname(self._k8s_dns_name(c.name, pod.metadata.namespace, 
-#															pod.metadata.name+".container"))))
+                  subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+				pod_subservices_list.append(container_name)
 
 				if pod.spec.node_name != "" and pod.spec.node_name is not None:
 					self.nodes[str(c.id)]=Name(Hostname(pod.spec.node_name))
@@ -781,13 +854,14 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			# The pod has a double role in Kubernets. It is the network namespace for its containers and
 			# it controls the lifecycle of its containers. I don't see the need to identify a link for the second role,
 			# since the concrete software that controls the container is something else (kubelet? containerd?)
-			# In our abstraction, the Pod is the networking part of an Execution Environment, and we describe it here
-			# because we have visibility over it.
+			# In our abstraction, the Pod is the Host of an Execution Environment, and Execution Environments are subservices
+			# of them.
 #			podname=Name(Hostname(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "pod"))) 
 			self.services.append(Service(name= podname,
 						namespace=pod.metadata.namespace,
 						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
-                  subservices=ArrayOf(Name)(), owner=self.owner, release=pod.metadata.resource_version))
+						subservices=pod_subservices_list,
+						owner=self.owner, release=pod.metadata.resource_version))
 
 						
 

@@ -27,15 +27,16 @@ class VM(Host):
 
 
 	def __init__(self, 
+			vm: object = None,
 			hypervisor: str = None,
 			hypervisor_type: HyperVisorType=None, 
 			image:str = None, 
 			**kwargs):
-		if(isinstance(hypervisor, VM)):
-			super().__init__(hypervisor)
-			self.hypervisor = hypervisor.hypervisor
-			self.hypervisor_type = hypervisor.hypervisor_type
-			self.image = hypervisor.image
+		if(isinstance(vm, VM)):
+			super().__init__(vm)
+			self.hypervisor = vm.hypervisor
+			self.hypervisor_type = vm.hypervisor_type
+			self.image = vm.image
 		else:
 			super().__init__(**kwargs)
 			self.hypervisor = hypervisor 
@@ -55,7 +56,6 @@ class VM(Host):
 		return self.__repr__()
 
 	def validate_fields(self):
-		super().validate_fields()
 		if self.hypervisor is not None and not isinstance(self.hypervisor, str):
 			raise TypeError(f"Expected 'hypervisor' to be of type {str}, but got {type(self.hypervisor)}")
 		if self.hypervisor_type is not None and not isinstance(self.hypervisor_type, str):

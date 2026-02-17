@@ -4,13 +4,19 @@ from otupy import Hostname
 class Host(CTXDObject):
 	""" Generic Host
 
-		A Host is an electronic device designed to run a general-purpose operating system and application software.
+		A Host is an environment that provides resources to an ``ExecutionEnvironment``. The more common way to 
+	  	understand a host is an electronic device designed to run a general-purpose operating system 
+		and application software.
 
-		A Host will contain hardware peripherals like disks, network cards, CPUs, memory, GPUs, etc. The current 
-		implementation only describe the overall host and does not consider its subsystems. 
+		A Host will contain hardware peripherals like disks, network cards, CPUs, memory, GPUs, etc. However,
+		these resources may be both physical and virtualised, providing a broad range different ``Hosts``. 
+		A ``Host`` could be a server, an IoT device, a Virtual Machine, a Kubernetes Pod... everything is designed
+		to host an ExecutionEnvironment. However, the current 
+		implementation only describes the overall host and does not consider its subsystems. 
 
-		A Host will typically contain an execution environment (`ExecutionEnvironment`); 
-		it could also be virtualized, giving rise	to the `VM` model.
+		The combination of ``Host``s and ``ExecutionEnvironment`` will create a recursive hierarchy of dependencies,
+		where ``ExecutionEnvironment``s are contained in ``Host``s, and ``Host``s may be implemented in 
+		``ExecutionEnvironments``. 
 
 	"""
 
