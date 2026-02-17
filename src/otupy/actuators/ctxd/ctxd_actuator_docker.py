@@ -11,6 +11,7 @@ import os
 import logging
 import sys
 
+from otupy.core.transfer import Transfer
 from otupy.profiles import slpf
 from otupy.profiles.ctxd.data.application import Application
 from otupy.types.data.ipv4_addr import IPv4Addr

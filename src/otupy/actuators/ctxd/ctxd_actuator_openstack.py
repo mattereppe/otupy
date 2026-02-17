@@ -43,7 +43,8 @@ from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode
+from otupy import StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
 import otupy.profiles.ctxd as ctxd
 
 from otupy.profiles.ctxd.data.name import Name
@@ -54,19 +55,13 @@ logger = logging.getLogger(__name__)
 
 @actuator_implementation("ctxd-openstack")
 class CTXDActuator_openstack(CTXDActuator):
-<<<<<<< HEAD
+	
 	""" Openstack Actuator Manager
 
+	
 		Extend the base `CTDXActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
 		hypervisors, and OpenStack sw components. It should be extended in future releases with additional resources (e.g., networks, ports).
-
-=======
-
-	def is_available(self):
-		return True
-	""" CTXD implementation
->>>>>>> b7e2739c (Proxmox ctxd created and added)
-
+		
 	"""
 
 	def __init__(self, auth, **kwargs):
@@ -299,10 +294,10 @@ class CTXDActuator_openstack(CTXDActuator):
 			raise 
 	
 	def _format_os_data(self, data):
-			data_list = []
-			for d in data:
-				 data_list.append( {key: value for key, value in d.to_dict().items()} )
-			return data_list
+		data_list = []
+		for d in data:
+				data_list.append( {key: value for key, value in d.to_dict().items()} )
+		return data_list
 
 
 	def _openstack_service_list(self):
