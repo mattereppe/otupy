@@ -22,13 +22,16 @@ from otupy.profiles.ctxd.validation import AllowedCommandTarget, AllowedCommandA
 
 # Make internal definitions available to external code
 from otupy.profiles.ctxd.data.cloud import Cloud
+from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.container import Container
 from otupy.profiles.ctxd.data.pod import Pod
 from otupy.profiles.ctxd.data.port import Port, IPAddress, IPInfo
 from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
+from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.network import Network
+from otupy.profiles.ctxd.data.network_node import NetworkNode
 from otupy.profiles.ctxd.data.network_router import Router
 from otupy.profiles.ctxd.data.network_nat import NAT
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
@@ -39,7 +42,9 @@ from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
+from otupy.profiles.ctxd.data.service import Service
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.profiles.ctxd.data.endpoint import Endpoint
 from otupy.profiles.ctxd.data.api import API
 from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress
+from otupy.profiles.ctxd.data.package import Package
