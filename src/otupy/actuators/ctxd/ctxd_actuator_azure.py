@@ -108,31 +108,41 @@ class CTXDActuatorAzure(CTXDActuator):
         return True
 
     def discover_services(self):
-        """ Discover all services in the AKS cluster
+        """ Discover all services in the AKS cluster """
 
-            Populates `self.services` with `Service` instances for Cloud, Nodes, Namespaces, and Pods.
-        """
+        asset_id = None
+        if self.specifiers and 'asset_id' in self.specifiers:
+            asset_id = self.specifiers['asset_id']
+        else:
+            asset_id = "azure-aks"
+
         # Root cloud service
-        cloud = Cloud(description="Azure Kubernetes Service", id=None, name=self.asset_id)
+        cloud = Cloud(
+            description="Azure Kubernetes Service",
+            id=None,
+            name="Azure",
+            type="IaaS"
+        )
+
         self.services.append(Service(
-            name=Name(self.asset_id),
+            name=Name(asset_id),
             type=ServiceType(cloud),
-            subservices=ArrayOf(Name)(),  # Will fill links later
+            subservices=ArrayOf(Name)(),
             owner=self.owner,
             release=None
         ))
 
-        # Nodes as services
+        # Nodes
         for node in self.nodes:
             self.services.append(Service(
                 name=Name(node),
-                type=ServiceType(cloud),  # treated as cloud-related service
+                type=ServiceType(cloud),
                 subservices=ArrayOf(Name)(),
                 owner=self.owner,
                 release=None
             ))
 
-        # Namespaces as services
+        # Namespaces
         for ns in self.namespaces:
             self.services.append(Service(
                 name=Name(ns),
@@ -142,7 +152,7 @@ class CTXDActuatorAzure(CTXDActuator):
                 release=None
             ))
 
-        # Pods as services
+        # Pods
         for pod in self.pods:
             self.services.append(Service(
                 name=Name(pod["name"]),
@@ -152,55 +162,56 @@ class CTXDActuatorAzure(CTXDActuator):
                 release=None
             ))
 
+
     def discover_links(self):
-        """ Discover links between AKS resources
+        """ Discover links between AKS resources """
 
-            Populates `self.links` with `Link` instances mapping Cloud -> Node -> Namespace -> Pod.
-        """
+        asset_id = None
+        if self.specifiers and 'asset_id' in self.specifiers:
+            asset_id = self.specifiers['asset_id']
+        else:
+            asset_id = "azure-aks"
+
         links = ArrayOf(Link)()
-
-        # Map nodes -> namespaces
-        namespace_to_node = {pod["namespace"]: pod["node"] for pod in self.pods}
-
-        # Node -> Namespace
-        for ns, node in namespace_to_node.items():
-            peer_ns = Peer(
-                service_name=Name(ns),
-                role=PeerRole.control,
-                consumer=self.get_consumer(Name(ns))
-            )
-            links.append(Link(
-                name=Name(node),
-                link_type=LinkType.hosting,
-                peers=ArrayOf(Peer)([peer_ns])
-            ))
-
-        # Namespace -> Pod
-        for pod in self.pods:
-            ns = pod["namespace"]
-            pod_name = pod["name"]
-            peer_pod = Peer(
-                service_name=Name(pod_name),
-                role=PeerRole.guest,
-                consumer=self.get_consumer(Name(pod_name))
-            )
-            links.append(Link(
-                name=Name(ns),
-                link_type=LinkType.control,
-                peers=ArrayOf(Peer)([peer_pod])
-            ))
 
         # Cloud -> Node
         for node in self.nodes:
             peer_node = Peer(
                 service_name=Name(node),
                 role=PeerRole.controlled,
-                consumer=self.get_consumer(Name(node))
+                consumer=None
             )
             links.append(Link(
-                name=Name(self.asset_id),
+                name=Name(asset_id),
                 link_type=LinkType.hosting,
                 peers=ArrayOf(Peer)([peer_node])
             ))
 
+        # Node -> Namespace
+        for pod in self.pods:
+            peer_ns = Peer(
+                service_name=Name(pod["namespace"]),
+                role=PeerRole.control,
+                consumer=None
+            )
+            links.append(Link(
+                name=Name(pod["node"]),
+                link_type=LinkType.hosting,
+                peers=ArrayOf(Peer)([peer_ns])
+            ))
+
+        # Namespace -> Pod
+        for pod in self.pods:
+            peer_pod = Peer(
+                service_name=Name(pod["name"]),
+                role=PeerRole.guest,
+                consumer=None
+            )
+            links.append(Link(
+                name=Name(pod["namespace"]),
+                link_type=LinkType.control,
+                peers=ArrayOf(Peer)([peer_pod])
+            ))
+
         self.links = links
+

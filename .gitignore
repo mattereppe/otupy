@@ -13,3 +13,7 @@ __pycache__/
 
 # OS-specific files
 .DS_Store
+
+
+# configs
+configs/ctxd-azure.yaml
