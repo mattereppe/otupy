@@ -60,8 +60,8 @@ class CTXDActuatorAzure(CTXDActuator):
         Extends the base `CTXDActuator` to retrieve services and links for an AKS cluster.
         Implements `discover_services()` and `discover_links()` required by the base class.
     """
-
-    def __init__(self, tenant_id, client_id, client_secret, resource_group, cluster_name, **kwargs):
+    
+    def __init__(self,  auth,**kwargs):
         """ Initialize the actuator
 
             :param tenant_id: Azure tenant ID
@@ -70,15 +70,16 @@ class CTXDActuatorAzure(CTXDActuator):
             :param resource_group: Azure resource group
             :param cluster_name: AKS cluster name
         """
-        kwargs['auth'] = {
-            'tenant_id': tenant_id,
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'resource_group': resource_group,
-            'cluster_name': cluster_name
-        }
+        
+        kwargs['auth']=auth
+        
         super().__init__(**kwargs)
-
+        
+        tenant_id = auth['tenant_id'] 
+        client_id = auth['client_id'] 
+        client_secret = auth['client_secret'] 
+        resource_group = auth['resource_group'] 
+        cluster_name = auth['cluster_name'] 
         self.nodes = set()
         self.namespaces = set()
         self.pods = []
