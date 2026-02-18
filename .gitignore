@@ -17,3 +17,4 @@ __pycache__/
 
 # configs
 configs/ctxd-azure.yaml
+configs/ctxd-proxmox.yaml
