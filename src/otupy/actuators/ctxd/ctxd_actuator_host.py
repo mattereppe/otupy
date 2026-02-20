@@ -28,6 +28,8 @@ import ipaddress
 import json
 import yaml
 import os
+import pybrctl
+import datetime
 
 from otupy import ArrayOf, actuator_implementation, Hostname, MACAddr
 
@@ -69,6 +71,7 @@ class CTXDHostActuator(CTXDActuator):
 		self.services = ArrayOf(Service)()
 		self._discover_platform()
 
+
 	def discover_context(self):
 		""" Discover services and links
 
@@ -79,6 +82,8 @@ class CTXDHostActuator(CTXDActuator):
 		# We discover again the platform at each run because packages might have changed
 		self._discover_platform()
 		self._discover_namespaces()
+		self._discover_networks()
+		self._discover_network_functions()
 
 	def _discover_platform(self):
 		name = platform.node()
@@ -245,12 +250,37 @@ class CTXDHostActuator(CTXDActuator):
 
 		return routes
 
+	def _get_namespace_ifaces(self, netns):
+		""" Get a dictionary of interface idx and names
+
+			@:param netns: name of the network namespace (None for main network stack
+			@:return: A map between interface index and names 
+		"""
+		ifaces = {}
+		with pyroute2.IPRoute(netns=netns) as ipr:
+			for iface in ipr.get_links():
+				ifaces[iface['index']]=iface.get_attr('IFLA_IFNAME')
+		return ifaces
+		
+	def _get_namespace_ifaces_no(self, netns):
+		""" Get a dictionary of interface names and idx
+
+			@:param netns: name of the network namespace (None for main network stack
+			@:return: A map between interface names and indexes 
+		"""
+		ifaces = {}
+		with pyroute2.IPRoute(netns=netns) as ipr:
+			for iface in ipr.get_links():
+				ifaces[iface.get_attr('IFLA_IFNAME')]=iface['index']
+		return ifaces
 		
 	def _discover_namespaces(self):
 
-		# Keep a list of veth links
+		# Keep a list of veth and tun links
 		veths=[]
+		tuns={}
 		# Loop through all workspaces
+		print("start: ", datetime.datetime.now())
 		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
 			ports = {}
 
@@ -322,7 +352,7 @@ class CTXDHostActuator(CTXDActuator):
 						netfun = NetworkFunction(name="Router", id=ns,
 								description="Linux software router@"+str(ns_service_name),
 								type=NetworkFunctionType( Router(routes=json.dumps(routes) ) ))
-						router=Service(name=Name(Hostname("router."+str(ns_service_name))),
+						router=Service(namespace=ns, name=Name(Hostname("router."+str(ns_service_name))),
 								type=ServiceType( netfun ), owner=str(ns_service_name))
 						self.services.append(router)
 						self.platform.subservices.append(router)
@@ -336,24 +366,31 @@ class CTXDHostActuator(CTXDActuator):
 			# netnode is a subservice of the execution environment (i.e., the container)
 
 
+					print("***** Processing: ", name)
 					peer=None
 					for attr in link.get_attrs('IFLA_LINKINFO'):
+						print("Looking for peers of ", name)
 						link_type=attr.get_attrs('IFLA_INFO_KIND')[0]
 						match link_type:
 							case 'veth':
 								peer1=str(link['index'])+"@"+str(ns)
-								ns2=nsmap[link.get_attrs('IFLA_LINK_NETNSID')[0]]
+								ns2_idx_list=link.get_attrs('IFLA_LINK_NETNSID')
+								if len(ns2_idx_list) > 0:
+									ns2=nsmap[link.get_attrs('IFLA_LINK_NETNSID')[0]]
+								else: # Same namespace
+									ns2=ns
 								peer2=str(link.get_attrs('IFLA_LINK')[0])+"@"+str(ns2)
 								veth_net = (peer1, peer2)
-								name=peer1+" <-> "+peer2
+								net_id=peer1+" <-> "+peer2
 								if (peer1, peer2) not in veths and (peer2, peer1) not in veths:
 									veths.append( (peer1, peer2) )
 									ns2_service_name = self._get_namespace_service_name(ns2)
 									description="Veth link between " + str(ns_service_name) + " and " + str(ns2_service_name)
-									network = Network(name=name, description=description, type=NetworkType(VEthNetwork({'peers': (peer1, peer2), 'nets': ipnetaddrs})))
+									net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
+									network = Network(name=net_name, id=net_id, description=description, type=NetworkType(VEthNetwork({'peers': (peer1, peer2), 'nets': ipnetaddrs})))
 								
 									# Create services for the virtual network (even if it is only a link)
-									net_service = Service(name=Name(name), type=ServiceType(network), 
+									net_service = Service(name=Name(net_id), type=ServiceType(network), 
 										subservices=None, owner=str(self.platform.name), release=None)
 									self.platform.subservices.append(net_service.name)
 									self.services.append(net_service)
@@ -368,32 +405,133 @@ class CTXDHostActuator(CTXDActuator):
 												role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
 								else:
 									try:
-										peer = self.get_services(Name(name))[0] # There must be such service!
+										peer = self.get_services(Name(net_id))[0] # There must be such service!
 									except:
 										peer = self.get_services(Name(peer2+" <-> "+peer1))[0]
 
 							case 'macvlan':
 								if attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] == 'bridge':
 									ns2=nsmap[link.get_attrs('IFLA_LINK_NETNSID')[0]]
-									peer2=str(link.get_attrs('IFLA_LINK')[0])+"@"+str(ns2)
-									print("********* bridge: ", peer2)
+									net_id=self._get_namespace_ifaces(ns2)[link.get_attrs('IFLA_LINK')[0]]+"@"+str(ns2)
+									try:
+										net_service=self.get_services(name=Name(net_id), filter=Network)[0]
+									except:
+										net_service=self._add_net_service(name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
+
+									for ip in ipnetaddrs:
+										net_service.type.getObj().type.getObj()['nets'].append(ip)
 								else:
-									logger.warn("Unsupported macvlan mode: ")
+									logger.warn("Unsupported macvlan mode: %s", attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] )
 		
+							case 'tun':
+								net_id=self._get_namespace_ifaces(ns)[idx]+"@"+str(ns)
+								net_service=None
+								if len(ipnetaddrs) > 0:
+									netaddr = ipnetaddrs[0]
+									# There should be only 1 IP address assigned to a tunnel interface...
+									ip = ipaddress.ip_network(netaddr.getObj())
+									for i, s in tuns.items():
+										if ip.subnet_of(ipaddress.ip_network(i)):
+											server=i
+											net_service=s
+										if ip.supernet_of(ipaddress.ip_network(i)):
+											server=ip
+											net_service=s
+								if net_service is None:
+									# Create a network service, we will change its name later on if this is a client
+									net_service=self._add_net_service(name=Name(net_id), description="Tunnel network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=TunnelNetwork) 
+								else:
+									if server == ip: # This is the server on the tunnel: change the service description
+										net_service.name=Name(net_id)
+										net_service.type.getObj().id=net_id
+										net_service.type.getObj().type.getObj()['server']=net_id
+									else: # Update the name and addresses of the network to the client data
+										net_service.type.getObj().name=str(ipnetaddrs[0])
+										net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
+								tuns[str(ip)]=net_service
+										
+								peer = Peer(service_name=net_service.name, role=PeerRole.forwarding, consumer=None)
+								self.links.append( Link(name=ns_service_name, description="Connection to tunnel link",
+												link_type=LinkType.packet_flow,
+												role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+
+									
+							case 'bridge':
+								print("Found: ", name)
+								brctl = pybrctl.BridgeController()
+								br = brctl.getbr(name)
+								netfun=NetworkFunction(name=name, id=br.getid(), description="Linux bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
+								ifacemap = self._get_namespace_ifaces_no(netns=ns)
+								for iface in br.getifs():
+									port = NetworkInterface(id=ifacemap[name], iface=iface, mac=mac, ips = None)
+									netfun.type.getObj()['ifaces'].append(port)
+
+								net_service = Service(namespace=ns, name=Name(name), type=ServiceType(netfun), owner=str(self.platform.name))
+								self.services.append(net_service)
+								self.platform.subservices.append(net_service.name)
+
+
 							case _:
-								logger.warn("Unable to manage interface of type: %s", link_type)
-								logger.warn("Add link to router for ethernet interface")
+								logger.warn("Unable to manage interface %s of type: %s", name, link_type)
+
+					if len(link.get_attrs('IFLA_LINKINFO')) == 0 and name != "lo":
+						# These interfaces provide direct access to an IP network
+						net_id=name+"@"+str(ns)
+						try:
+							net_service=self.get_services(name=Name(net_id), filter=Network)[0] # There might already be the network, if other interfaces created it (e.g., macvlan)
+							if net_service.type.getObj().name is None:
+								net_service.type.getObj().name=str(ipnetaddrs[0]) # We use the first IP address as network identifier
+						except:
+							net_service=self._add_net_service(name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
+
+						peer = Peer(service_name=net_service.name, role=PeerRole.forwarding, consumer=None)
+
+						for ip in ipnetaddrs:
+							net_service.type.getObj().type.getObj()['nets'].append(ip)
+
 
 					# Add links for the router
+					# if peer is not None: # Uncomment later, just to be sure to have the peer for all relevant interface types
 					if (link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET')['forwarding'] == 1 or \
 							link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET6').get_attr('IFLA_INET6_CONF')['forwarding'] == 1): 
 						self.links.append( Link(name=router.name, description="Routing veth link",
 									link_type=LinkType.packet_flow,
 									role=PeerRole.forwarding, peers=ArrayOf(Peer)([peer])))
 								
+		print("end: ", datetime.datetime.now())
 #		for service in self.services:
 #			print("services: ", service.type.getObj())
 
+	def _add_net_service(self, name:Name = None, namespace:str = None, id:str=None, description:str = "Network", ipnetaddrs:ArrayOf(IPNetAddress)=ArrayOf(IPNetAddress)(), nettype:object= IPNetwork):
+		""" Add a network service
+		"""
+		net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
+		ipnet = Network(name=net_name, id=id, description=description,
+				type=NetworkType( nettype({'nets': ipnetaddrs } )))
+		net_service= Service(name=name, namespace=namespace, type=ServiceType(ipnet), owner=str(self.platform.name))
+		self.services.append(net_service)
+		self.platform.subservices.append(net_service)
+		
+		return net_service
+
+	def _discover_networks(self):
+		""" Discover internal and external networks
+
+			This includes meta-networks like veth links.
+		"""
+		pass
+
+	def _discover_network_functions(self):
+		""" Discover network functions
+
+			This includes routers and bridges implemented by the Linux kernel
+			and external software (e.g., openvswitch).
+		"""
+		pass
+
+	def _discover_bridges(self):
+		""" Discover network connections to bridges """
+		logger.warn("_discover_bridges still to be implemented!!!")
 
 	def _get_service_role(self, service_name):
 		""" Get the network role of a service
