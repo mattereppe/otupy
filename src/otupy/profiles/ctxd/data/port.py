@@ -49,10 +49,10 @@ class IPInfo(Record):
 	def __init__(self, ip: IPAddress, prefix: int = None, gw: IPAddress = None):
 		self.ip = IPAddress(ip)
 		if prefix is None:
-			prefix = 32 if type(self.ip.getObj()) == IPv4Addr else 64
+			prefix = 32 if type(self.ip.getObj()) == IPv4Addr else 128
 
 		if (int(prefix) < 0) or (type(self.ip.getObj()) == IPv4Addr and  int(prefix) > 32) or \
-			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 64):
+			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 128):
 			raise ipaddress.NetmaskValueError("Wrong prefix length: "+str(prefix))
 		self.prefix = int(prefix)
 		self.gw = IPAddress(gw) if gw is not None else None
@@ -81,28 +81,26 @@ class Port(Record):
 	ips: ArrayOf(IPInfo) = None
 	""" List of IP addresses/gateways associated to the interface """
 
-	def __init__(self, description = None, id = None, iface = None, ips = None):
-		if isinstance(description, Port):
-			self.description = description.description
-			self.id = description.id
-			self.iface = description.iface
-			self.ips = description.ips
+	def __init__(self, port = None, description = None, id = None, iface = None, mac = None, ips = None):
+		if port is not None:
+			self.description = port.description
+			self.id = port.id
+			self.iface = port.iface
+			self.mac = port.mac
+			self.ips = port.ips
 		else:
-			self.description = str(description) if description is not None else None
-			self.id = str(id) if id is not None else None
-			self.iface = str(iface) if iface is not None else None
-			self.ips = ips if ips is not None else None
+			self.description = str(description) 
+			self.id = str(id) 
+			self.iface = str(iface) 
+			self.mac = MACAddr(mac) if mac is not None else None
+			self.ips = ips 
 		self.validate_fields()
 
 	def __repr__(self):
 		return (f"Port(description={self.description}, id={self.id}, iface={self.iface}, ips={self.ips})") 
 	
 	def __str__(self):
-		return f"Port(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"iface={self.iface}, " \
-					f"ips={self.ips}" 
+		return self.__repr__()
 	
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):

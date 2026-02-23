@@ -130,11 +130,11 @@ def main() -> None:
                     identifier = values["actuator"]
                     if identifier not in Actuators:
                         raise RuntimeError(f"{identifier} is not a registered actuator")
-    
+
                     # By default, we give the actuator this consumer, if the configuration file
-                    # does not provide one
+				    # does not provide one
                     if 'consumer' not in values:
-                        values['consumer'] = consumer
+                       values['consumer'] = consumer
                     clazz = Actuators[identifier]
                     parameters = dict(values)
                     del parameters["actuator"]
