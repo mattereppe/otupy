@@ -8,7 +8,8 @@ from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.transfers.http import HTTPTransfer
 from otupy.transfers.http.message import Message
 from otupy.profiles.ebpf.actuator import Specifiers
-from otupy.profiles.ebpf.targets.eBPF_load_program import eBPF_load_program
+from otupy.profiles.ebpf.targets.eBPF_load_TCprogram import eBPF_load_TCprogram
+from otupy.profiles.ebpf.targets.eBPF_load_XDPProgram import eBPF_load_XDPProgram
 from otupy.profiles.ebpf.targets.eBPF_query import eBPF_query
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
@@ -79,7 +80,7 @@ def load_program(producer: oc2.Producer, asset_id:str, program_path: str, iface:
     direction_obj = Direction(direction)
     attach_obj = AttachType(attach_type)
     actuator_spec = Specifiers({"asset_id": asset_id})
-    target_features = eBPF_load_program(
+    target_features = eBPF_load_TCprogram(
         file=prog,
         direction=direction_obj,
         attach_type=attach_obj
