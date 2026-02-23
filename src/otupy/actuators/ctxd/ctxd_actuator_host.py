@@ -115,8 +115,14 @@ class CTXDHostActuator(CTXDActuator):
 						ifaces:			# It contains the interface indexes of the interfaces being routed
 							- <idx>
 					bridge:				# List of bridges and network interfaces
-						<name>
-							- <idx>
+						<name>			# The internal name of the bridge and the interface bound to it
+							service_name: # The service name associated to the bridge
+								<name>
+							net:			# A bridge will be part of a network (subservice)
+								<netname>
+							ifaces:
+								- <idx>
+
 		"""
 		# Retrieve the association between pods and namespaces from scratch
 		self.kube_pods=None
@@ -178,7 +184,7 @@ class CTXDHostActuator(CTXDActuator):
 		if netfun is None:
 			netfun = self._get_namespace_execenv(netns)
 
-		net_service = Service(name=Name(netns),
+		net_service = Service(name=Name("netns:"+netns),
 				type=ServiceType(netfun), subservices=ArrayOf(Name)(),
 				owner=str(self.platform.name), release=None)
 		self.services.append(net_service)
@@ -269,7 +275,7 @@ class CTXDHostActuator(CTXDActuator):
 							link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET6').get_attr('IFLA_INET6_CONF')['forwarding'] == 1:
 						routes = self._get_namespace_routes(iprns)
 					if len(routes) > 0:
-						return NetworkFunction(name="router."+netns, description="Linux router", type=Router(routes=json.dumps(routes)))
+						return NetworkFunction(name="router:"+netns, description="Linux router", type=NetworkFunctionType(Router(routes=json.dumps(routes))))
 					# TODO: Check if the namespace performs other kind of network functions (NAT, DHCP?)
 				except:
 					return None
@@ -401,7 +407,7 @@ class CTXDHostActuator(CTXDActuator):
 		net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
 		ipnet = Network(name=net_name, id=id, description=description,
 				type=NetworkType( nettype({'nets': ipnetaddrs } )))
-		net_service= Service(name=name, namespace=namespace, type=ServiceType(ipnet), owner=str(self.platform.name))
+		net_service= Service(name=name, namespace=namespace, type=ServiceType(ipnet), subservices=ArrayOf(Name)(), owner=str(self.platform.name))
 		self.services.append(net_service)
 		self.platform.subservices.append(net_service)
 		
@@ -437,7 +443,7 @@ class CTXDHostActuator(CTXDActuator):
 								else: # Same namespace
 									ns2=ns
 								peer2=(link.get_attrs('IFLA_LINK')[0], self._namespaces[ns2]['name'])
-								net_id="if"+str(peer1[0])+'.'+str(peer1[1])+"@"+"if"+str(peer2[0])+"."+str(peer2[1])
+								net_id="veth:if"+str(peer1[0])+'.'+str(peer1[1])+"@"+"if"+str(peer2[0])+"."+str(peer2[1])
 								if [(peer1, peer2)] not in veths and [(peer2, peer1)] not in veths:
 									veths.append( [(peer1, peer2)] )
 									peer1_service_name = self._namespaces[ns]['service_name']
@@ -479,8 +485,8 @@ class CTXDHostActuator(CTXDActuator):
 							case 'macvlan':
 								if attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] == 'bridge':
 									ns2=self._namespaces[ns]['netnsmap'][link.get_attrs('IFLA_LINK_NETNSID')[0]]
-									net_id=self._get_namespace_ifaces(ns2)[link.get_attrs('IFLA_LINK')[0]]+"@"+str(ns2)
-									net_id=self._namespaces[ns2]['ifaces'][link.get_attrs('IFLA_LINK')[0]]+"@"+self._namespaces[ns2]['name']
+#									net_id=self._get_namespace_ifaces(ns2)[link.get_attrs('IFLA_LINK')[0]]+"@"+str(ns2)
+									net_id="ipnet:"+self._namespaces[ns2]['ifaces'][link.get_attrs('IFLA_LINK')[0]]+"@"+self._namespaces[ns2]['name']
 									try:
 										net_service=self.get_services(name=Name(net_id), filter=Network)[0]
 										for ip in ipnetaddrs:
@@ -506,18 +512,19 @@ class CTXDHostActuator(CTXDActuator):
 									for i, s in tuns.items():
 										if ip.subnet_of(ipaddress.ip_network(i)): # The new element is a client of an existing element
 											tuns_server[i]=copy.deepcopy(s)
-											net_service.name=Name(net_id+"@"+net_service.name.getObj())
 											net_service=s
+											net_service.name=Name("tun:"+net_id+"@"+net_service.name.getObj())
 											net_service.type.getObj().name=str(ipnetaddrs[0])
 											net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
 											# Is it possible to be client of multiple servers???
 										elif ip.supernet_of(ipaddress.ip_network(i)): # The new element is a server of the current element
 											net_service=s
 											old_net_name=net_service.name
-											net_service.name=Name(net_service.name.getObj()+"@"+net_id)
+											net_service.name=Name("tun:"+net_service.name.getObj()+"@"+net_id)
 											net_service.type.getObj().id=net_id
 											net_service.type.getObj().type.getObj()['server']=net_id
 											tuns_servers[str(ip)]=copy.deepcopy(s)
+											tuns_servers[str(ip)].name=Name(net_id)
 											# Do not break the loop, because it might be the server of many clients
 								if net_service is None:
 									# Create a network service, we will change its name later on when we discover its client/server
@@ -525,21 +532,32 @@ class CTXDHostActuator(CTXDActuator):
 									tuns[str(ip)]=net_service
 									for i, s in tuns_servers.items():
 										if ip.subnet_of(ipaddress.ip_network(i)): # Another client of a previously-seen server
-											net_service.name=s.name
+											net_service.name=Name("tun:"+net_id+"@"+s.name.getObj())
 											net_service.type.getObj().id=s.type.getObj().id
 											net_service.type.getObj().type.getObj()['server']=s.type.getObj().id
 								else:
 									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
 
 							case 'bridge':
-								pass
+								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
+								net_service=self._add_net_service(name=Name(net_id), description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
+								# This is a virtual ethernet network with one bridge as subservice with the same name of the interface
+								if link_name not in self._namespaces[ns]['bridges']:
+									self._namespaces[ns]['bridges'][link_name] = {}
+								self._namespaces[ns]['bridges'][link_name]['net']=net_service.name
+								# Do not add the bridge interface to the list of its interfaces, otherwise this will create a recursive link between the bridge network and the bridge
+#								self._namespaces[ns]['bridges'][link_name]['ifaces']=[link_idx]
+								self._namespaces[ns]['bridges'][link_name]['ifaces']=[]
+								self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+								
+
 							case _:
 								logger.warn("Unable to manage interface %s of type: %s", link_name, link_type)
 
 
 					if len(link.get_attrs('IFLA_LINKINFO')) == 0 and link_name != "lo":
 						# These interfaces provide direct access to an IP network
-						net_id=link_name+"."+self._namespaces[ns]['name']
+						net_id="ipnet:"+link_name+"."+self._namespaces[ns]['name']
 						try:
 							net_service=self.get_services(name=Name(net_id), filter=Network)[0] # There might already be the network, if other interfaces created it (e.g., macvlan)
 							if net_service.type.getObj().name is None:
@@ -589,108 +607,156 @@ class CTXDHostActuator(CTXDActuator):
 			This includes routers and bridges implemented by the Linux kernel
 			and external software (e.g., openvswitch).
 		"""
-		# Discover routers
 		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
-			ns_service_name=self._namespaces[ns]['service_name']
-			with pyroute2.IPRoute(netns=ns) as iprns:
-				# Discover router
-				router=None
-				# Loop for all network interfaces in the container
-				for link in iprns.get_links(): 
-					idx = link['index'] 
-					# Add a router, if not done yet
-					routes = []
-					if (link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET')['forwarding'] == 1 or \
-							link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET6').get_attr('IFLA_INET6_CONF')['forwarding'] == 1): 
-						if router is None:
-							self._namespaces[ns]['router']['ifaces'] = []
-							netfun = NetworkFunction(name="Router", id=ns,
-									description="Linux software router@"+str(ns_service_name),
-									type=NetworkFunctionType( Router(routes=json.dumps(routes) ) ))
-							router=Service(namespace=ns, name=Name(Hostname("router."+str(ns_service_name))),
-									type=ServiceType( netfun ), owner=str(ns_service_name))
-							self.services.append(router)
-							self.platform.subservices.append(router)
-							peer=Peer(service_name=ns_service_name, role=PeerRole.host, consumer=None)
-							self.links.append( Link(name=router.name, description="Router hosted in "+self._namespaces[ns]['name'],
-										link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
-						self._namespaces[ns]['router']['service_name']=router.name
-						self._namespaces[ns]['router']['ifaces'].append(idx)
-
-	
-			# Discover bridges
-			if ns is None:
-				cmd=['brctl',  'show']
-			else:
-				cmd=['ip', 'netns',  'exec', ns, 'brctl',  'show']
-			brctl = subprocess.run(cmd, capture_output=True)
-			wlist = map(str.split, brctl.stdout.decode().splitlines()[1:])
-			brwlist = filter(lambda x: len(x) != 1, wlist)
-			brlist = map(lambda x: x[0], brwlist)
-			for br in brlist:
-				cmdbr = cmd + [br]
-				brctl = subprocess.run(cmdbr, capture_output=True)
-				brid = brctl.stdout.decode().split()[1]
-				ifaces = brctl.stdout.decode().split()[10:]
-				netfun=NetworkFunction(name=br, id=brid, description="Linux bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
-				self._namespaces[ns]['bridges'][br] = []
-				for iface in ifaces:
-					self._namespaces[ns]['bridges'][br].append(self._namespaces[ns]['ifaces_idx'][iface])
-					port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface], iface=iface, mac=None, ips = None)
-					netfun.type.getObj()['ifaces'].append(port)
-
-				net_service = Service(namespace=ns, name=Name(br+".bridge."+str(ns_service_name)), type=ServiceType(netfun), owner=str(self.platform.name))
-				self.services.append(net_service)
-				self.platform.subservices.append(net_service.name)
-
-				peer=Peer(service_name=ns_service_name, role=PeerRole.host, consumer=None)
-				self.links.append( Link(name=net_service.name, description="Bridge hosted in "+self._namespaces[ns]['name'],
-							link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
-
+			self._discover_routers(ns)
+			self._discover_bridges(ns)
 
 									
+	def _discover_routers(self, ns):
+		""" Discover routers
+			
+			@:param ns: Network namespace name
+		"""
+		ns_service_name=self._namespaces[ns]['service_name']
+		with pyroute2.IPRoute(netns=ns) as iprns:
+			# Discover router
+			router=None
+			# Loop for all network interfaces in the container
+			for link in iprns.get_links(): 
+				idx = link['index'] 
+				# Add a router, if not done yet
+				routes = []
+				if (link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET')['forwarding'] == 1 or \
+						link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET6').get_attr('IFLA_INET6_CONF')['forwarding'] == 1): 
+					if router is None:
+						self._namespaces[ns]['router']['ifaces'] = []
+						netfun = NetworkFunction(name="Router", id=ns,
+								description="Linux software router@"+str(ns_service_name),
+								type=NetworkFunctionType( Router(routes=json.dumps(routes) ) ))
+						router=Service(namespace=ns, name=Name("router:"+str(ns_service_name)),
+								type=ServiceType( netfun ), owner=str(ns_service_name))
+						self.services.append(router)
+						self.platform.subservices.append(router)
+						peer=Peer(service_name=ns_service_name, role=PeerRole.host, consumer=None)
+						self.links.append( Link(name=router.name, description="Router hosted in "+self._namespaces[ns]['name'],
+									link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
+					self._namespaces[ns]['router']['service_name']=router.name
+					self._namespaces[ns]['router']['ifaces'].append(idx)
 
 
-	def _discover_bridges(self):
-		""" Discover network connections to bridges """
-		logger.warn("_discover_bridges still to be implemented!!!")
+	def _discover_bridges(self, ns):
+		""" Discover bridges 
+			
+			@:param ns: Network namespace name
+		"""
+
+		ns_service_name=self._namespaces[ns]['service_name']
+		if ns is None:
+			cmd=['brctl',  'show']
+		else:
+			cmd=['ip', 'netns',  'exec', ns, 'brctl',  'show']
+		brctl = subprocess.run(cmd, capture_output=True)
+		wlist = map(str.split, brctl.stdout.decode().splitlines()[1:])
+		brwlist = filter(lambda x: len(x) != 1, wlist)
+		brlist = map(lambda x: x[0], brwlist)
+		for br in brlist:
+			cmdbr = cmd + [br]
+			brctl = subprocess.run(cmdbr, capture_output=True)
+			brid = brctl.stdout.decode().split()[1]
+			ifaces = brctl.stdout.decode().split()[10:]
+			netfun=NetworkFunction(name=br, id=brid, description="Linux bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
+			if 'ifaces' not in self._namespaces[ns]['bridges'][br]: # An interface should be already present, but just to be sure
+				self._namespaces[ns]['bridges'][br]['ifaces'] = []
+			for iface in ifaces:
+				# A bridged interface is no more available to the namespace; it is replaced by the bridge interface
+				# If there are other interfaces connected to the network of a bridged interface (veth), they must be now connected to the bridge network
+				self._namespaces[ns]['bridges'][br]['ifaces'].append(self._namespaces[ns]['ifaces_idx'][iface])
+				cur_idx=None
+				for net in self._namespaces[ns]['networks']:
+					for k,v in net.items():
+						if k==self._namespaces[ns]['ifaces_idx'][iface]:
+							cur_idx=self._namespaces[ns]['networks'].index(net)
+					if cur_idx is not None:
+						break
+				cur=self._namespaces[ns]['networks'].pop(cur_idx)
+				for k, v in cur.items():
+					cur_iface_net=v
+				# Look for the removed network in the current and other namespaces
+				for ns2 in self._namespaces:
+					for net in self._namespaces[ns2]['networks']:
+						for k,v in net.items():
+							if v==cur_iface_net:
+								net[k]=self._namespaces[ns]['bridges'][br]['net'] 
+				port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface], iface=iface, mac=None, ips = None)
+				netfun.type.getObj()['ifaces'].append(port)
+
+			net_service = Service(namespace=ns, name=Name("bridge:"+br+"."+str(ns_service_name)), type=ServiceType(netfun), owner=str(self.platform.name))
+			self.services.append(net_service)
+			self.platform.subservices.append(net_service.name)
+			self._namespaces[ns]['bridges'][br]['service_name']=net_service.name
+			
+
+			# Add this bridge as a subservice of its main network
+			br_net_service = self.get_services(name=self._namespaces[ns]['bridges'][br]['net'], filter=Network)
+			assert len(br_net_service) == 1
+			br_net_service[0].subservices.append(net_service.name)
+			
+			peer=Peer(service_name=ns_service_name, role=PeerRole.host, consumer=None)
+			self.links.append( Link(name=net_service.name, description="Bridge hosted in "+self._namespaces[ns]['name'],
+						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
+
 
 
 	def _discover_links_networks(self):
 		""" Discover links between networks and network namespaces """
 		for ns in self._namespaces:
+			print("namespace: ", ns)
+			print("nets: ", self._namespaces[ns]['networks'])
 			for net in self._namespaces[ns]['networks']:
 				for idx, net_service in net.items():
 					peer = Peer(service_name=Name(net_service), role=PeerRole.forwarding, consumer=None)
-					self.links.append( Link(name=self._namespaces[ns]['service_name'], description="Connection to tunnel link",
+					self.links.append( Link(name=self._namespaces[ns]['service_name'], description="Connection to network",
 									link_type=LinkType.packet_flow,
 									role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
 
 	def _discover_links_net_functions(self):
 		""" Discover links between networks and network functions """
 		for ns in self._namespaces:
-			if 'service_name' in self._namespaces[ns]['router']:
-				peer = Peer(service_name=(self._namespaces[ns]['router']['service_name']), role=PeerRole.forwarding, consumer=None)
-				# TODO: Use maps and lambda functions to optimise the code
-				for iface_idx in self._namespaces[ns]['router']['ifaces']:
-					for net in self._namespaces[ns]['networks']:
-						for idx, net_service in net.items():
-							if iface_idx == idx:
-								self.links.append( Link(name=net_service, description="Connection to router",
-											link_type=LinkType.packet_flow,
-											role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
-						
-			for br, ifaces in self._namespaces[ns]['bridges'].items():
-				peer = Peer(service_name=Name(br), role=PeerRole.forwarding, consumer=None)
-				for iface_idx in ifaces:
-					for net in self._namespaces[ns]['networks']:
-						for idx, net_service in net.items():
-							if iface_idx == idx:
-								self.links.append( Link(name=net_service, description="Connection to bridge",
-											link_type=LinkType.packet_flow,
-											role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+			self._discover_links_routers(ns)
+			self._discover_links_bridges(ns)
 
-				
+	def _discover_links_routers(self, ns):
+		""" Discover links between routers and networks
+			
+			@:param ns: Network namespace name
+		"""
+		if 'service_name' in self._namespaces[ns]['router']:
+			peer = Peer(service_name=(self._namespaces[ns]['router']['service_name']), role=PeerRole.forwarding, consumer=None)
+			# TODO: Use maps and lambda functions to optimise the code
+			for iface_idx in self._namespaces[ns]['router']['ifaces']:
+				for net in self._namespaces[ns]['networks']:
+					for idx, net_service in net.items():
+						if iface_idx == idx:
+							self.links.append( Link(name=net_service, description="Connection to router",
+										link_type=LinkType.packet_flow,
+										role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+						
+	def _discover_links_bridges(self, ns):
+		""" Discover links between bridges and networks
+			 (A bridge is also a subservice of a network)
+			
+			@:param ns: Network namespace name
+		"""
+		for br in self._namespaces[ns]['bridges']:
+			peer = Peer(service_name=self._namespaces[ns]['bridges'][br]['service_name'], role=PeerRole.forwarding, consumer=None)
+			for iface_idx in self._namespaces[ns]['bridges'][br]['ifaces']:
+				for net in self._namespaces[ns]['networks']:
+					for idx, net_service in net.items():
+						if iface_idx == idx:
+							self.links.append( Link(name=net_service, description="Connection to bridge",
+										link_type=LinkType.packet_flow,
+										role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+			
 
 
 
