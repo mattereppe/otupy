@@ -1,8 +1,9 @@
-from otupy import Record
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_function_type import NetworkFunctionType
 
 
-class NetworkFunction(Record):
+
+class NetworkFunction(CTXDObject):
 	"""Network Function
 
 		A network function process network packets for both forwarding and security purposes.
@@ -10,12 +11,6 @@ class NetworkFunction(Record):
 		virtualization mechanisms (e.g., Linux namespaces). In these terms, the same model applies
 		for both legacy network devices and Network Virtual Functions.
 	"""
-	name: str = None
-	""" Name of the network function """
-	id: str = None
-	""" A unique identifier of the function, if available """
-	description: str = None
-	""" Generic description of the network function """
 	type: NetworkFunctionType = None
 	""" Type of the network function, including more complex data objects. """
 	version: str = None
@@ -23,27 +18,21 @@ class NetworkFunction(Record):
 
 
 	def __init__(self, 
-			name:str = None, 
-			id:str = None, 
-			description:str = None, 
+			netfun:object  = None,
 			version:str = None, 
-			type:NetworkFunctionType = None):
-		if isinstance(name, NetworkFunction):
-			self.name = name.name
-			self.id = name.id
-			self.description = name.description
-			self.version = name.version
-			self.type = name.type
+			type:NetworkFunctionType = None, **kwargs):
+		if isinstance(netfun, NetworkFunction):
+			super().__init__(name=netfun.name, id=netfun.id, description=netfun.description)
+			self.version = netfun.version
+			self.type = netfun.type
 		else:
-			self.name = str(name) if name is not None else None
-			self.id = str(id) if id is not None else None
-			self.description = str(description) if description is not None else None
+			super().__init__(**kwargs)
 			self.version = str(version) if version is not None else None
-			self.type = type if type is not None else None
+			self.type = type 
 
 	def __repr__(self):
 		return (f"NetworkFunction("
-	            f"name={self.name}, "
+	            f"{super().__repr__()}, "
 				  	f"id={self.id}, "
 					f"description={self.description}, "
 					f"version={self.version}, "

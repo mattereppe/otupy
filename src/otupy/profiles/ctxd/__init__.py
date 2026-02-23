@@ -32,9 +32,14 @@ from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.network import Network
 from otupy.profiles.ctxd.data.network_node import NetworkNode
+from otupy.profiles.ctxd.data.network_interface import NetworkInterface
 from otupy.profiles.ctxd.data.network_router import Router
+from otupy.profiles.ctxd.data.network_bridge import Bridge
 from otupy.profiles.ctxd.data.network_nat import NAT
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
+from otupy.profiles.ctxd.data.ip_network import IPNetwork
+from otupy.profiles.ctxd.data.veth_network import VEthNetwork
+from otupy.profiles.ctxd.data.tunnel_network import TunnelNetwork
 from otupy.profiles.ctxd.data.network_type import NetworkType
 from otupy.profiles.ctxd.data.network_function import NetworkFunction
 from otupy.profiles.ctxd.data.network_function_type import NetworkFunctionType

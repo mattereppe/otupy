@@ -49,10 +49,10 @@ class IPInfo(Record):
 	def __init__(self, ip: IPAddress, prefix: int = None, gw: IPAddress = None):
 		self.ip = IPAddress(ip)
 		if prefix is None:
-			prefix = 32 if type(self.ip.getObj()) == IPv4Addr else 64
+			prefix = 32 if type(self.ip.getObj()) == IPv4Addr else 128
 
 		if (int(prefix) < 0) or (type(self.ip.getObj()) == IPv4Addr and  int(prefix) > 32) or \
-			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 64):
+			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 128):
 			raise ipaddress.NetmaskValueError("Wrong prefix length: "+str(prefix))
 		self.prefix = int(prefix)
 		self.gw = IPAddress(gw) if gw is not None else None
@@ -82,25 +82,23 @@ class NetworkInterface(Record):
 	ips: ArrayOf(IPInfo) = None
 	""" List of IP addresses/gateways associated to the interface """
 
-	def __init__(self, interface = None, description = None, id = None, iface = None, ips = None):
+	def __init__(self, interface = None, description = None, id = None, mac = None, iface = None, ips = None):
 		if isinstance(interface, NetworkInterface):
 			self.description = interface.description
 			self.id = interface.id
+			self.mac = interface.mac
 			self.iface = interface.iface
 			self.ips = interface.ips
 		else:
 			self.description = str(description) if description is not None else None
 			self.id = str(id) if id is not None else None
+			self.mac = mac
 			self.iface = str(iface) if iface is not None else None
-			self.ips = ips if ips is not None else None
+			self.ips = ips 
 
 	def __repr__(self):
-		return (f"Port(description={self.description}, id={self.id}, iface={self.iface}, ips={self.ips})") 
+		return (f"Port(description={self.description}, id={self.id}, mac={self.mac}, iface={self.iface}, ips={self.ips})") 
 	
 	def __str__(self):
-		return f"NetworkInterface(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"iface={self.iface}, " \
-					f"ips={self.ips}" 
+		return self.__repr__()
 
