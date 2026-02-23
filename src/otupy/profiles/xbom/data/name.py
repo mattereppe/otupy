@@ -75,7 +75,7 @@ class Name(Choice):
 
 			  This method assumes the conversion to string is managed by the object type.
         """
-        return self.getObj()
+        return str(self.getObj())
 
     def __eq__(self, other):
         """ Compare two Names
@@ -85,13 +85,11 @@ class Name(Choice):
 
 			  :param other: The Name to compare.
 			  :return: True if type and content match.
-        """
-        if other == None:
+		"""
+        if other is None or not isinstance(other, Name):
             return False
         if( self.getName() != other.getName() ):
             return False
         if( self.getObj() == other.getObj() ):
             return True
-
         return False
-

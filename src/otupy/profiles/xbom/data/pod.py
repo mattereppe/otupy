@@ -1,65 +1,51 @@
-from otupy.types.base import Record, ArrayOf
-from otupy.profiles.xbom.data.port import Port
+from otupy import ArrayOf
+from otupy.profiles.xbom.data.host import Host
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
-class Pod(Record):
+class Pod(Host):
 	""" Kubernetes pod
 		
 		A pod is the logical unit in Kubernetes to run one or more containers. Other
-		orchestration tool does not have this concept.
+		orchestration tool does not have this concept. 
+		
+		The concrete implementation of a Kubernetes Pod is a network namespace (in Linux).
+		More than one containers can be hosted inside a Pod, each sharing the same
+		network interface but with its own pid and filesystem namespaces. In this respect,
+		the Pod does not provide totally isolated environments like other virtualisation
+		models (i.e., virtual machines), because for containers inside the same Pod
+		there is an overlapping of the network namespace. Indeed, the Pod is more a 
+		management unit than a true isolation environment. However, since multiple
+		containers in the same Pod are often used as sidecars for network operations
+		(e.g., TLS/SSL proxy), we consider the Pod as a lightweight virtualised Host, 
+		which is necessary to maintain consistency with the Host-ExecutionEnvironment 
+		hierarchy we are implementing.
+		
+		As any other ``Host``, the Pod is expected to have internal subsystems for the
+		network, filesystems, etc.
 
 	"""
-	description: str = None
-	""" Generic description of the Container """
-	id: str = None
-	""" ID of the Pod """
-	name: str = None
-	""" Name of the Pod"""
 	namespace: str = None
 	""" Namespace where the pod is instantiated """
-	ports: ArrayOf(Port) = None
-	""" Network interfaces of the Pod"""
 
-	def __init__(self, description = None, id = None, name = None, namespace = None, ports = None):
-		if isinstance(description, Pod):
-			self.description = description.description
-			self.id = description.id
-			self.name = description.name
-			self.namespace = description.namespace
-			self.ports = description.ports
+	def __init__(self, pod:object = None, namespace:str = None, **kwargs):
+		if isinstance(pod, Pod):
+			super().__init__(pod)
+			self.namespace = pod.namespace
 		else:
-			self.description = str(description) if description is not None else None
-			self.id = str(id) if id is not None else None
-			self.name = str(name) if name is not None else None
+			super().__init__(**kwargs)
 			self.namespace = str(namespace) if namespace is not None else None
-			self.ports = ArrayOf(Port)(ports) if ports is not None else None
-		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Pod(description={self.description}, id={self.id}, "
-	             f"name={self.name}, namespace={self.namespace}, ports={self.ports})")
-	
-	def __str__(self):
 		return f"Pod(" \
 	            f"description={self.description}, " \
 	            f"id={self.id}, " \
 	            f"name={self.name}, " \
-	            f"namespace={self.namespace}, " \
-				f"ports={self.ports}" 
+	            f"namespace={self.namespace})" 
 	
-	def validate_fields(self):
-		if self.description is not None and not isinstance(self.description, str):
-			raise TypeError(f"Expected 'description' to be of type {str}, but got {type(self.description)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'id' to be of type {str}, but got {type(self.id)}")		
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type {str}, but got {type(self.name)}")
-		if self.namespace is not None and not isinstance(self.namespace, str):
-			raise TypeError(f"Expected 'namespace' to be of type {str}, but got {type(self.namespace)}")
-		if self.ports is not None and not issubclass(type(self.ports), list):
-			raise TypeError(f"Expected 'ports' to be of type {ArrayOf(Port)}, but got {type(self.ports)}")
+	def __str__(self):
+		return self.__repr__()
 
 	def as_cyclonedx(self) -> Service:
 		"""Convert Pod to CycloneDX service format.
@@ -74,12 +60,10 @@ class Pod(Record):
 			properties.append(Property(name="otupy:pod:id", value=self.id))
 		if self.namespace is not None:
 			properties.append(Property(name="otupy:pod:namespace", value=self.namespace))
-		
-		# Add port properties
-		if self.ports is not None:
-			for port in self.ports:
-				port_props = port.as_cyclonedx()
-				properties.extend(port_props)
+		if self.vendor is not None:
+			properties.append(Property(name="otupy:pod:vendor", value=self.vendor))
+		if self.model is not None:
+			properties.append(Property(name="otupy:pod:model", value=self.model))
 		
 		# Generate a unique bom_ref using centralized generator
 		bom_ref = generate_bom_ref("pod")

@@ -9,13 +9,16 @@ from otupy.types.base.array_of import ArrayOf
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service as CycloneDXService
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.types.base.record import Record
 
-class Service(otupy.types.base.Record):
-
-    #Class Service is implemented
-	
+class Service(Record):
+	"""Service"""
 	name: Name = None
 	""" Name of the service """
+	domain: str = None
+	""" Domain of the service (e.g. OpenStack domain)"""
+	namespace: str = None
+	""" Tenant/namespace of the service """
 	type: ServiceType = None
 	"""It identifies the type of the service"""
 #	links: ArrayOf(Name) = None # type: ignore
@@ -27,55 +30,55 @@ class Service(otupy.types.base.Record):
 	release: str = None
 	""" Release version of the service """
 
-	def __init__(self, name:Name = None, type:ServiceType = None, #links:ArrayOf(Name) = None, # type: ignore
+	def __init__(self, name:Name = None, domain:str = None, namespace:str = None, type:ServiceType = None, 
 					    subservices:ArrayOf(Name) = None, owner:str = None, release:str = None): # type: ignore
 		if isinstance(name, Service):
 			self._init_from_service(name)
 		else:
-			self._init_from_params(name, type, subservices, owner, release)
-#self._init_from_params(name, type, links, subservices, owner, release)
+			self._init_from_params(name, domain, namespace, type, subservices, owner, release)
 		self.validate_fields()
 			
 	def _init_from_service(self, service):
 		self.name = service.name if service.name is not None else None
+		self.domain = service.domain if service.domain is not None else None
+		self.namespace = service.namespace if service.namespace is not None else None
 		self.type = service.type if service.type is not None else None
-#		self.links = service.links if service.links is not None else None
 		self.subservices = service.subservices if service.subservices is not None else None
 		self.owner = service.owner if service.owner is not None else None
 		self.release = service.release if service.release is not None else None
 
-	def _init_from_params(self, name:Name = None, type:ServiceType = None, # links:ArrayOf(Name) = None, # type: ignore
+	def _init_from_params(self, name:Name = None, domain:str = None, namespace:str = None, 
+						type:ServiceType = None, 
 					    subservices:ArrayOf(Name) = None, owner:str = None, release:str = None): # type: ignore
 		self.name = name
-		self.type = type
-#self.links = links
+		self.domain = domain
+		self.namespace = namespace
+		self.type = ServiceType(type)
 		self.subservices = subservices
 		self.owner = owner
 		self.release = release
 
-#	def add_link(self, link: Link):
-#self.links.append(link)
-
 	def __repr__(self):
-		return (f"Service(name={self.name}, type={self.type}, "
-#f"links={self.links}, subservices={self.subservices}, owner={self.owner}, ")
-	             f"subservices={self.subservices}, owner={self.owner}, ")
+		return (f"Service(name={self.domain}/{self.namespace}/{self.name.getObj() if self.name else None}, type={self.type}, "
+	             f"subservices={self.subservices}, owner={self.owner}, release={self.release}) ")
 	
 	def __str__(self):
-		return f"Service(" \
-	            f"name={self.name.getObj()}, " \
+		return f"Service("\
+	            f"name={self.domain}/{self.namespace}/{self.name.getObj() if self.name else None}, " \
 	            f"type={self.type}, " \
                f"subservices={self.subservices}, " \
 					f"owner={self.owner}, " \
-					f"release={self.release}, " 
+					f"release={self.release}) " 
 
 	def validate_fields(self):
 		if self.name is not None and not isinstance(self.name, Name):
 			raise TypeError(f"Expected 'name' to be of type {Name}, but got {type(self.name)}")
+		if self.domain is not None and not isinstance(self.domain, str):
+			raise TypeError(f"Expected 'domain' to be of type str, but got {type(self.domain)}")
+		if self.namespace is not None and not isinstance(self.namespace, str):
+			raise TypeError(f"Expected 'namespace' to be of type str, but got {type(self.namespace)}")
 		if self.type is not None and not isinstance(self.type, ServiceType):
 			raise TypeError(f"Expected 'type' to be of type {ServiceType}, but got {type(self.type)}")
-#if self.links is not None and not isinstance(self.links, Array):
-#raise TypeError(f"Expected 'links' to be of type {Array}, but got {type(self.links)}")
 		if self.subservices is not None and not isinstance(self.subservices, Array):
 			raise TypeError(f"Expected 'subservices' to be of type {Array}, but got {type(self.subservices)}")
 		if self.owner is not None and not isinstance(self.owner, str):
@@ -83,41 +86,32 @@ class Service(otupy.types.base.Record):
 		if self.release is not None and not isinstance(self.release, str):
 			raise TypeError(f"Expected 'release' to be of type str, but got {type(self.release)}")
 
-	def as_cyclonedx(self) -> CycloneDXService:
+	def as_cyclonedx(self) -> any: # type: ignore
 		"""Convert Service to CycloneDX service format.
 		
 		Returns:
-			CycloneDXService: CycloneDX Service representation with nested subservices.
+			Service: CycloneDX Service, component or anything 
 		"""
-		properties = [
-			Property(name="otupy:type", value="service")
-		]
-		if self.type is not None:
-			type_value = self.type.name if hasattr(self.type, 'name') else str(self.type)
-			properties.append(Property(name="otupy:service:type", value=type_value))
+		if self.type is None:
+			raise ValueError(f"Service {self.name.getObj() if self.name else None} has no type, cannot convert to CycloneDX format.")
+		wrapped_service = self.type.getObj() if self.type is not None else "unknown"
+		cdx_service = wrapped_service.as_cyclonedx() if hasattr(wrapped_service, 'as_cyclonedx') else None
+		if cdx_service is None:
+			raise ValueError(f"Cannot convert service of type {self.type} to CycloneDX format. Missing 'as_cyclonedx' method.")
+		if self.name is not None:
+			cdx_service.name = str(self.name.getObj())
+		
+		properties = list()
+		if self.domain is not None:
+			properties.append(Property(name="otupy:service:domain", value=self.domain))
+		if self.namespace is not None:
+			properties.append(Property(name="otupy:service:namespace", value=self.namespace))
 		if self.owner is not None:
 			properties.append(Property(name="otupy:service:owner", value=self.owner))
 		if self.release is not None:
 			properties.append(Property(name="otupy:service:release", value=self.release))
 		
-		# Add nested subservices
-		nested_services = []
-		if self.subservices is not None and len(self.subservices) > 0:
-			for subservice in self.subservices:
-				subservice_name = subservice.getObj() if hasattr(subservice, 'getObj') else str(subservice)
-				nested_services.append(CycloneDXService(
-					name=subservice_name,
-					properties=[Property(name="otupy:type", value="service")]
-				))
+		if hasattr(cdx_service, 'properties') and cdx_service.properties is not None:
+			cdx_service.properties.update(properties)
 		
-		service_name = self.name.getObj() if self.name is not None else "unknown"
-		
-		# Generate a unique bom_ref using centralized generator
-		bom_ref = generate_bom_ref("service")
-
-		return CycloneDXService(
-			name=service_name,
-			bom_ref=bom_ref,
-			properties=properties,
-			services=nested_services if nested_services else None
-		)
+		return cdx_service

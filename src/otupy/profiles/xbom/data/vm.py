@@ -1,56 +1,59 @@
-import otupy.types.base
-#from otupy.profiles.xbom.data.os import OS
-#from otupy.types.data.hostname import Hostname
+from otupy.types.base import Enumerated
+from otupy.profiles.xbom.data.host import Host
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
-class VM(otupy.types.base.Record):
-	"""VM
-    it is the description of the service - Virtual Machine
+class HyperVisorType(Enumerated):
+	""" Type of hypervisor 
+
+		Type1 (bare-metal) o Type2 (hosted)
 	"""
-	description: str = None
-	""" Generic description of the VM """
-	id: str = None
-	""" ID of the VM """
-	name: str = None
-	""" Name of the VM"""
+	native = 1
+	hosted = 2
+
+class VM(Host):
+	""" Virtual Machine
+
+		A Virtual Machine is a virtualization environment that emulates a full computer hardware.
+		It provides virtualized hardware as network interfaces, virtual CPUs, virtual RAM, and storage.
+		Since this model shares most of the components with any other network host, it will inherit from
+		the `Host` abstraction and will extend with additional information for virtualization.
+	"""
+	hypervisor: str = None
+	""" Hypervisor name (e.g., QEMU, XEN, ...) """
+	hypervisor_type: HyperVisorType = None
+	""" Type of the hypervisor: native (bare-metal) or hosted """
 	image: str = None
 	""" Software image loaded in the VM """
 
-	def __init__(self, description:str = None, id:str = None, name:str = None, image:str = None):
-		if(isinstance(description, VM)):
-			self.description = description.description
-			self.id = description.id
-			self.name = description.name
-			self.image = description.image
+
+	def __init__(self, 
+			vm: object = None,
+			hypervisor: str = None,
+			hypervisor_type: HyperVisorType=None, 
+			image:str = None, 
+			**kwargs):
+		if(isinstance(vm, VM)):
+			super().__init__(vm)
+			self.hypervisor = vm.hypervisor
+			self.hypervisor_type = vm.hypervisor_type
+			self.image = vm.image
 		else:
-			self.description = description if description is not None else None
-			self.id = id if id is not None else None
-			self.name = name if name is not None else None
-			self.image = image if image is not None else None
-		self.validate_fields()
+			super().__init__(**kwargs)
+			self.hypervisor = hypervisor 
+			self.hypervisor_type = hypervisor_type 
+			self.image = image 
 
 	def __repr__(self):
-		return (f"VM(description='{self.description}', id={self.id}, "
-	             f"name='{self.name}', image={self.image})")
+		return (f"VM("
+					 f"{super().__repr__()},"
+					 f"hypervisor={self.hypervisor},"
+					 f"hypervisor_type={self.hypervisor_type}," 
+	             f"image={self.image}")
 	
 	def __str__(self):
-		return f"VM(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"name={self.name}, " \
-	            f"image={self.image})"
-
-	def validate_fields(self):
-		if self.description is not None and not (isinstance(self.description, str) or isinstance(self.description, VM)):
-			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'id' to be of type str, but got {type(self.id)}")
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type str, but got {type(self.name)}")
-		if self.image is not None and not isinstance(self.image, str):
-			raise TypeError(f"Expected 'image' to be of type {str}, but got {type(self.image)}")
+		return self.__repr__()
 
 	def as_cyclonedx(self) -> Component:
 		"""Convert VM to CycloneDX component format.
@@ -63,8 +66,17 @@ class VM(otupy.types.base.Record):
 		]
 		if self.id is not None:
 			properties.append(Property(name="otupy:vm:id", value=self.id))
+		if self.hypervisor is not None:
+			properties.append(Property(name="otupy:vm:hypervisor", value=self.hypervisor))
+		if self.hypervisor_type is not None:
+			ht_value = self.hypervisor_type.name if hasattr(self.hypervisor_type, 'name') else str(self.hypervisor_type)
+			properties.append(Property(name="otupy:vm:hypervisor-type", value=ht_value))
 		if self.image is not None:
 			properties.append(Property(name="otupy:vm:image", value=self.image))
+		if self.vendor is not None:
+			properties.append(Property(name="otupy:vm:vendor", value=self.vendor))
+		if self.model is not None:
+			properties.append(Property(name="otupy:vm:model", value=self.model))
 		
 		return Component(
 			name=self.name or "unknown",

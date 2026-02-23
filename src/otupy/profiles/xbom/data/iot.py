@@ -1,49 +1,33 @@
-import otupy.types.base
+from otupy.profiles.xbom.data.host import Host
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
-class IOT(otupy.types.base.Record):
+class IOT(Host):
 	"""IOT
-    it is the description of the service - IOT
+    it is the description of the service - IOT device
+
 	"""
-	description: str = None
-	""" Identifier of IOT function """
-	name: str = None
-	""" Name of the IOT service provider """
 	type: str = None
 	""" type of the IOT device"""
 
 
-	def __init__(self, description = None, name = None, type = None):
-		if isinstance(description, IOT):
-			self.description = description.description
-			self.name = description.name
-			self.type = description.type
+	def __init__(self, iot=None, type=None, **kwargs):
+		if isinstance(iot, IOT):
+			super().__init__(iot)
+			self.type = iot.type
 		else:
-			self.description = description if description is not None else None
-			self.name = name if name is not None else None
-			self.type = type if type is not None else None
-		self.validate_fields()
+			super().__init__(**kwargs)
+			self.type = type 
 
 	def __repr__(self):
-		return (f"IOT(description={self.description}, "
-	             f"name={self.name}, type={self.type})")
+		return (f"IoT("
+					 f"{super().__repr__()},"
+	             f"type={self.type})")
 	
 	def __str__(self):
-		return f"IOT(" \
-	            f"description={self.description}, " \
-	            f"name={self.name}, " \
-	            f"type={self.type})"
-	
-	def validate_fields(self):
-		if self.description is not None and not isinstance(self.description, str):
-			raise TypeError(f"Expected 'description' to be of type {str}, but got {type(self.description)}")		
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type {str}, but got {type(self.name)}")
-		if self.type is not None and not isinstance(self.type, str):
-			raise TypeError(f"Expected 'type' to be of type {str}, but got {type(self.type)}")
+		return self.__repr__()
 
 	def as_cyclonedx(self) -> Component:
 		"""Convert IOT to CycloneDX component format.
@@ -54,10 +38,20 @@ class IOT(otupy.types.base.Record):
 		properties = [
 			Property(name="otupy:type", value="iot")
 		]
+		if self.id is not None:
+			properties.append(Property(name="otupy:iot:id", value=self.id))
 		if self.type is not None:
-			properties.append(Property(name="otupy:iot:type", value=self.type))
-		
-		
+			properties.append(Property(name="otupy:iot:device-type", value=self.type))
+		if self.vendor is not None:
+			properties.append(Property(name="otupy:iot:vendor", value=self.vendor))
+		if self.model is not None:
+			properties.append(Property(name="otupy:iot:model", value=self.model))
+		if self.serial is not None:
+			properties.append(Property(name="otupy:iot:serial", value=self.serial))
+		if self.firmware is not None:
+			properties.append(Property(name="otupy:iot:firmware", value=self.firmware))
+		if self.version is not None:
+			properties.append(Property(name="otupy:iot:version", value=self.version))
 		
 		return Component(
 			name=self.name or "unknown",

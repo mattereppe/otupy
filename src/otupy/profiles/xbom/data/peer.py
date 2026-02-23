@@ -25,9 +25,15 @@ class Peer(otupy.types.base.Record):
 			self.role = service_name.role if service_name.role is not None else None
 			self.consumer = service_name.consumer if service_name.consumer is not None else None	
 		else:
-			self.service_name = service_name if service_name is not None else None
-			self.role = role if role is not None else None
-			self.consumer = consumer if consumer is not None else None
+			self.service_name = Name(service_name) if service_name is not None else None
+			try:
+				self.role = PeerRole[role] if role is not None else None
+			except:
+				self.role = PeerRole(role) if role is not None else None
+			if isinstance(consumer, dict):
+				self.consumer = Consumer(**consumer) if consumer is not None else None
+			else:
+				self.consumer = Consumer(consumer) if consumer is not None else None
 		self.validate_fields()
 
 	def __repr__(self):
@@ -59,7 +65,7 @@ class Peer(otupy.types.base.Record):
 		"""
 		properties = []
 		
-		service_name_str = self.service_name.getObj() if self.service_name is not None else "unknown"
+		service_name_str = str(self.service_name.getObj()) if self.service_name is not None else "unknown"
 		
 		properties.append(Property(name=f"{prefix}:service-name", value=service_name_str))
 		

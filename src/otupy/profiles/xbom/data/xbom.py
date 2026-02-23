@@ -183,6 +183,17 @@ class CyclonedxXbom(Xbom):
 		"""
 		if self.bom is None:
 			raise ValueError("Cannot add dependency to an empty BOM")
+		if not parent_ref or not child_ref:
+			raise ValueError("Both parent_ref and child_ref must be provided")
+		# check that both refs exist in the BOM
+		parent_exists = any((comp.bom_ref and comp.bom_ref.value == parent_ref) for comp in self.bom.components) or \
+						any((svc.bom_ref and svc.bom_ref.value == parent_ref) for svc in self.bom.services)
+		child_exists = any((comp.bom_ref and comp.bom_ref.value == child_ref) for comp in self.bom.components) or \
+					   any((svc.bom_ref and svc.bom_ref.value == child_ref) for svc in self.bom.services)
+		if not parent_exists:
+			raise ValueError(f"parent_ref '{parent_ref}' does not exist in the BOM")
+		if not child_exists:
+			raise ValueError(f"child_ref '{child_ref}' does not exist in the BOM")
 
 		dependency = Dependency(ref=BomRef(child_ref), dependencies=[Dependency(ref=BomRef(parent_ref))])
 		self.bom.dependencies.add(dependency)
@@ -232,6 +243,41 @@ class CyclonedxXbom(Xbom):
 		# Add the dependency relationship
 		self.add_dependency(dep_bom_ref, from_ref)
 
+	def add_link(self, item_name: str, link: any) -> None:
+		""" Add a link to an item in the BOM by name
+		
+			This is a convenience method that finds the bom_ref of the item by name and adds it as a property.
+		
+			:param item_name: The name of the item to link to
+			:return: None
+		"""
+		if self.bom is None:
+			raise ValueError("Cannot add link to an empty BOM")
+		
+		item_ref = self.find_ref_by_name(item_name)
+		if item_ref is None:
+			raise ValueError(f"No component or service with name '{item_name}' found in the BOM")
+		link = link.as_cyclonedx() if hasattr(link, 'as_cyclonedx') else link
+
+		# Look up for the right item to add the link to
+		for service in self.bom.services:
+			if service.bom_ref and service.bom_ref.value == item_ref:
+				if isinstance(link, list):
+					for prop in link:
+						service.properties.add(prop)
+				else:
+					service.properties.add(link)
+				return
+		for component in self.bom.components:
+			if component.bom_ref and component.bom_ref.value == item_ref:
+				if isinstance(link, list):
+					for prop in link:
+						component.properties.add(prop)
+				else:
+					component.properties.add(link)
+				return
+
+		raise ValueError(f"No component or service with bom_ref '{item_ref}' found in the BOM")
 
 	def merge(self, other: 'Xbom') -> None:
 		""" Merge another XBOM into this one
@@ -271,6 +317,9 @@ class CyclonedxXbom(Xbom):
 		if not isinstance(dic, dict):
 			raise TypeError("Expected dictionary")
 		
+		# print(f"DEBUG fromdict - Input dic keys: {dic.keys()}")
+		# print(f"DEBUG fromdict - Full dic: {dic}")
+		
 		fmt = dic.get('format')
 		if fmt:
 			fmt = e.fromdict(SbomFormat, fmt)
@@ -278,6 +327,8 @@ class CyclonedxXbom(Xbom):
 		instance = cls(format=fmt)
 		
 		bom_data = dic.get('bom')
+		# print(f"DEBUG fromdict - bom_data type: {type(bom_data)}")
+		# print(f"DEBUG fromdict - bom_data: {bom_data}")
 		if bom_data:
 			instance.deserialize(bom_data)
 			
@@ -306,8 +357,14 @@ class CyclonedxXbom(Xbom):
 		"""
 		match self.format:
 			case SbomFormat.cyclonedx:
+				# print(f"DEBUG deserialize - Input type: {type(data)}")
+				# print(f"DEBUG deserialize - Input data: {data}")
 				validator = JsonStrictValidator(schema_version=_cyclonedx_schema_version)
 				data = data if isinstance(data, str) else json.dumps(data)
+				# print(f"DEBUG deserialize - After conversion: {data[:500] if len(data) > 500 else data}")
+				validation_result = validator.validate_str(data)
+				# print(f"DEBUG deserialize - Validation result: {validation_result}")
+				# print(f"DEBUG deserialize - Validation errors: {validator.validation_errors if hasattr(validator, 'validation_errors') else 'N/A'}")
 				if validator.validate_str(data):
 					raise ValueError("Invalid CycloneDX JSON data")
 				self.bom = Bom.from_json(json.loads(data))

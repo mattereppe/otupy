@@ -1,18 +1,23 @@
 from otupy.types.base import Choice
 from otupy.core.register import Register
+from otupy.profiles.xbom.data.ethernet_network import EthernetNetwork
+from otupy.profiles.xbom.data.mobile_network import MobileNetwork
+from otupy.profiles.xbom.data.vlan_network import VLANNetwork
+from otupy.profiles.xbom.data.ip_network import IPNetwork
 
-#ATTENTION!! THIS IS NOT THE DEFINITION OF THE CTXD SPECIFICATION 
+#ATTENTION!! THIS IS ONLY PARTIALLY DEFINED!!!
 class NetworkType(Choice):
 	""" Network type
 
 		The network type carries different configuration parameters, depending on the specific network 
 		technology.
 
-		WARNING: This definition is currently wrong, since it does not include network paramters.
-		It returns something like: "ethernet": "ethernet".
+		WARNING: This definition is currently partial, since it does not include network parameters for
+		most of network types. When the network is defined as str, it returns something like: "ethernet": "ethernet".
 	"""
 
-	register = Register({'ethernet': str, '802.11': str, '802.15': str, 'zigbee': str, 'vlan': str, 'vpn': str, 'lorawan': str, 'wan': str})
+	register = Register({'ip': IPNetwork, 'ethernet': EthernetNetwork, '802.11': str, '802.15': str, 'zigbee': str,
+			'vlan': VLANNetwork, 'vpn': str, 'lorawan': str, 'wan': str, '5G': MobileNetwork})
 
 	def __init__(self, type):
 		if(isinstance(type, NetworkType)):

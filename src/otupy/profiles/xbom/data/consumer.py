@@ -39,21 +39,30 @@ class Consumer(otupy.types.base.Record):
 	def __init__(self, host:str = None, port:int = None, protocol:int = None, endpoint:str = None, 
 			transfer:str = None, encoding:str = None,
 			profile:str = nsid, actuator = None):
-		self.host = Hostname(host) if host is not None else None
-		self.port = port if port is not None else None
-		self.protocol = L4Protocol[protocol] if protocol is not None else None
-		self.endpoint = endpoint if endpoint is not None else None
-		self.transfer = Transfers[transfer] if transfer is not None else None
-		self.encoding = Encoders[encoding].value if encoding is not None else None
-		self.profile = profile # Default value assigned in function declaration
-#self.actuator = actuator if actuator is not None else None
-		specifiers = None
-		if actuator is not None:
-			try:
-				specifiers = Extensions['Actuators'][profile](actuator)
-			except:
-				logger.error("Cannot instantiate %s profile for consumer: %s", profile, consumer)
-		self.actuator=specifiers
+		if isinstance(host, Consumer):
+			self.host = host.host
+			self.port = host.port
+			self.protocol = host.protocol
+			self.endpoint = host.endpoint
+			self.transfer = host.transfer
+			self.encoding = host.encoding
+			self.profile = host.profile
+			self.actuator = host.actuator
+		else:
+			self.host = host if host is not None else None
+			self.port = port if port is not None else None
+			self.protocol = L4Protocol[protocol] if protocol is not None else None
+			self.endpoint = endpoint if endpoint is not None else None
+			self.transfer = Transfers[transfer] if transfer is not None else None
+			self.encoding = Encoders[encoding].value if encoding is not None else None
+			self.profile = profile # Default value assigned in function declaration
+			specifiers = None
+			if actuator is not None:
+				try:
+					specifiers = Extensions['Actuators'][profile](actuator)
+				except:
+					logger.error("Cannot instantiate %s profile for consumer: %s", profile, host)
+			self.actuator=specifiers
 
 		self.validate_fields()
 
@@ -74,8 +83,8 @@ class Consumer(otupy.types.base.Record):
 					f"actuator={self.actuator}"
 
 	def validate_fields(self):
-		if self.host is not None and not isinstance(self.host, Hostname):
-			raise TypeError(f"Expected 'host' to be of type {Hostname}, but got {type(self.host)}")
+		if self.host is not None and not isinstance(self.host, str):
+			raise TypeError(f"Expected 'host' to be of type {str}, but got {type(self.host)}")
 		if self.port is not None and not isinstance(self.port, int):
 			raise TypeError(f"Expected 'port' to be of type {int}, but got {type(self.port)}")		
 		if self.protocol is not None and not isinstance(self.protocol, L4Protocol):

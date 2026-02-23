@@ -1,25 +1,31 @@
-from otupy.types.base import Choice
-from otupy.types.data.hostname import  Hostname
-from otupy.types.data.ipv4_addr import IPv4Addr
-from otupy.core.register import Register
+from otupy.profiles.xbom.data.host import Host
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
-class Server(Choice):
-	""" Generic computing environment
+class Server(Host):
+	""" Physical server
 
-		A Server is a generic computing environment (no cloud).
-		Probably not used.
-
-		It can be identified by either its hostname or IPv4 address.
+		A ``Server`` is a true computing hardware, currently intended for any kind of high-end or low-end
+		computer (namely, it includes laptops and desktops). This might be changed in the future with
+		additional revisions and refinements of the model.
+		It provides real hardware as network interfaces, virtual CPUs, virtual RAM, and storage.
+		Since this model shares most of the components with any other network host, it will inherit from
+		the `Host` abstraction and will extend with additional information. 
 	"""
 
-    #hostname: hostname of the server
-	#ipv4_addr: 32 bit IPv4 address as defined in [RFC0791]
+	def __init__(self, server=None, **kwargs):
+		if isinstance(server, Server):
+			super().__init__(server)
+		else:
+			super().__init__(**kwargs)
 
-	register = Register({'hostname': Hostname, 'ipv4_addr': IPv4Addr})
+	def __repr__(self):
+		return f"Server({super().__repr__()})"
+	
+	def __str__(self):
+		return self.__repr__()
 
 	def as_cyclonedx(self) -> Component:
 		"""Convert Server to CycloneDX component format.
@@ -30,22 +36,24 @@ class Server(Choice):
 		properties = [
 			Property(name="otupy:type", value="server")
 		]
-		
-		# Get the current choice value
-		choice_key = self.getName()
-		choice_value = self.getObj()
-		name = "unknown"
-		
-		if choice_key == 'hostname':
-			name = str(choice_value)
-		elif choice_key == 'ipv4_addr':
-			name = str(choice_value)
-			properties.append(Property(name="otupy:server:ipv4-addr", value=str(choice_value)))
+		if self.id is not None:
+			properties.append(Property(name="otupy:server:id", value=self.id))
+		if self.vendor is not None:
+			properties.append(Property(name="otupy:server:vendor", value=self.vendor))
+		if self.model is not None:
+			properties.append(Property(name="otupy:server:model", value=self.model))
+		if self.serial is not None:
+			properties.append(Property(name="otupy:server:serial", value=self.serial))
+		if self.firmware is not None:
+			properties.append(Property(name="otupy:server:firmware", value=self.firmware))
+		if self.version is not None:
+			properties.append(Property(name="otupy:server:version", value=self.version))
 		
 		return Component(
-			name=name,
+			name=self.name or "unknown",
 			type=ComponentType.PLATFORM,
 			bom_ref=generate_bom_ref("server"),
+			description=self.description,
 			properties=properties
 		)
 

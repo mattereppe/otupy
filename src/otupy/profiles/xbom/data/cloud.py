@@ -1,3 +1,4 @@
+from otupy.profiles.xbom.data.xbom_object import XBOMObject
 import otupy.types.base
 from cyclonedx.model import Property
 from cyclonedx.model.contact import OrganizationalEntity
@@ -5,16 +6,10 @@ from cyclonedx.model.service import Service
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
 
-class Cloud(otupy.types.base.Record):
+class Cloud(XBOMObject):
 	"""Cloud
     it is the description of the service - Cloud
 	"""
-	description: str = None
-	""" Generic description of the cloud service """
-	id: str = None
-	""" ID of the Container """
-	name: str = None
-	""" Name of the cloud provider """
 	type: str = None
 	""" type of the cloud service"""
 
@@ -33,15 +28,10 @@ class Cloud(otupy.types.base.Record):
 		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Cloud(description={self.description}, id={self.id}, "
-	             f"name={self.name}, type={self.type})")
+		return (f"Cloud({super().__repr__()}, type={self.type})")
 	
 	def __str__(self):
-		return f"Cloud(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"name={self.name}, " \
-	            f"type={self.type})"
+		return f"Cloud({super().__str__()}, type={self.type})"
 
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):

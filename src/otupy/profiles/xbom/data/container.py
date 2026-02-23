@@ -1,22 +1,16 @@
-import otupy.types.base
+from otupy.profiles.xbom.data.execution_environment import ExecutionEnvironment
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 
-class Container(otupy.types.base.Record):
+class Container(ExecutionEnvironment):
 	""" Container
 
 		A container is a software image run in with linux namespace sandbox or similar technology.
-		A container might be directly run (as in docker) or part of a higher abstraction (the pod,
-		as in Kubernetes). Containers are often grouped into namespaces, but this is not necessary
-		for Kubernetes, where the namespace concept applies to pods.
+		A container is an execution environment made of its own subsystems (network interfaces, file 
+		systems, etc.). There are not part of the container model, but will be included as part
+		of the container service.
 	"""
-	description: str = None
-	""" Generic description of the Container """
-	id: str = None
-	""" ID of the Container """
-	name: str = None
-	""" Name of the Container"""
 	namespace: str = None
 	""" Namespace of the Container"""
 	status: str = None
@@ -24,49 +18,25 @@ class Container(otupy.types.base.Record):
 	image: str = None
 	""" Image used by the Container """
 
-	def __init__(self, description = None, id = None, name = None, namespace=None, status = None, image = None):
-		if isinstance(description, Container):
-			self.description = description.description
-			self.id = description.id
-			self.name = description.name
-			self.namespace = description.namespace
-			self.status = description.status
-			self.image = description.image
+	def __init__(self, container = None, description = None, id = None, name = None, 
+			namespace=None, status = None, image = None):
+		if container is not None:
+			super().__init__(name=container.name, id=container.id, description=container.description)
+			self.namespace = container.namespace
+			self.status = container.status
+			self.image = container.image
 		else:
-			self.description = str(description) if description is not None else None
-			self.id = str(id) if id is not None else None
-			self.name = str(name) if name is not None else None
+			super().__init__(name=name, id=id, description=description)
 			self.namespace = str(namespace) if namespace is not None else None
 			self.status = str(status) if status is not None else None
 			self.image = image if image is not None else None
-		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Container(description={self.description}, id={self.id}, "
-	             f"name={self.name}, namespace={self.namespace}, status={self.status},image={self.image})")
+		return (f"Container({super().__repr__()},"
+	             f"namespace={self.namespace}, status={self.status},image={self.image})")
 	
 	def __str__(self):
-		return f"Container(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"name={self.name}, " \
-	            f"namespace={self.namespace}, " \
-				f"status={self.status}, " \
-	            f"image={self.image})"
-	
-	def validate_fields(self):
-		if self.description is not None and not isinstance(self.description, str):
-			raise TypeError(f"Expected 'description' to be of type {str}, but got {type(self.description)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'id' to be of type {str}, but got {type(self.id)}")		
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type {str}, but got {type(self.name)}")
-		if self.namespace is not None and not isinstance(self.namespace, str):
-			raise TypeError(f"Expected 'namespace' to be of type {str}, but got {type(self.namespace)}")
-		if self.status is not None and not isinstance(self.status, str):
-			raise TypeError(f"Expected 'status' to be of type {str}, but got {type(self.status)}")	
-		if self.image is not None and not isinstance(self.image, str):
-			raise TypeError(f"Expected 'image' to be of type {str}, but got {type(self.image)}")
+		return self.__repr__()
 
 	def as_cyclonedx(self) -> Component:
 		"""Convert Container to CycloneDX component format.
@@ -86,11 +56,24 @@ class Container(otupy.types.base.Record):
 		if self.image is not None:
 			properties.append(Property(name="otupy:container:image", value=self.image))
 		
+		# Add nested components from ExecutionEnvironment (apps, libs, pkgs)
+		nested_components = []
+		if self.apps is not None:
+			for app in self.apps:
+				nested_components.append(app.as_cyclonedx())
+		if self.libs is not None:
+			for lib in self.libs:
+				nested_components.append(lib.as_cyclonedx())
+		if self.pkgs is not None:
+			for pkg in self.pkgs:
+				nested_components.append(pkg.as_cyclonedx())
+		
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.CONTAINER,
 			bom_ref=generate_bom_ref("container"),
 			description=self.description,
-			properties=properties
+			properties=properties,
+			components=nested_components if nested_components else None
 		)
 
