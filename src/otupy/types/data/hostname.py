@@ -11,7 +11,7 @@ class Hostname:
 		if fqdn.FQDN(str(hostname), min_labels=1).is_valid:
 			self._hostname = str(hostname)
 		else:
-			raise ValueError("Invalid hostname -- not compliant to RFC 1123")
+			raise ValueError(f"Invalid hostname {hostname} -- not compliant to RFC 1123")
 
 	def get(self):
 		""" Returns the hostname as string """
@@ -20,5 +20,19 @@ class Hostname:
 	def __str__(self):
 		return self._hostname
 
+	def __repr__(self):
+		return self._hostname
+
+	def __hash__(self):
+		return hash(self._hostname)
+
 	def __eq__(self, other):
-		return self._hostname == other._hostname if other is not None else False
+		if other is None:
+			return False
+		# Support comparison with strings
+		if isinstance(other, str):
+			return self._hostname == other
+		# Support comparison with other Hostname objects
+		if hasattr(other, '_hostname'):
+			return self._hostname == other._hostname
+		return False
