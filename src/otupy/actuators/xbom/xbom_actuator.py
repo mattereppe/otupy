@@ -370,8 +370,9 @@ class XBOMActuator:
 		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
-		self.discover_services()
-		self.discover_links()
+		# self.discover_services()
+		# self.discover_links()
+		self.discover_context()
 		self._build_bom()
 		
 	def __notimplemented(self, cmd):

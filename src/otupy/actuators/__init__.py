@@ -22,3 +22,5 @@ from otupy.actuators.xbom.xbom_actuator_openstack import XBOMActuator_openstack
 from otupy.actuators.xbom.xbom_actuator_docker import XBOMActuator_docker
 from otupy.actuators.xbom.xbom_actuator_file import XBOMActuator_file
 from otupy.actuators.xbom.xbom_actuator_open5gs import XBOMActuator_open5gs
+from otupy.actuators.xbom.xbom_actuator_file import XBOMActuator_file
+from otupy.actuators.xbom.xbom_actuator_host import XBOMActuator_host
