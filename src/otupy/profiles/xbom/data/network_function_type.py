@@ -1,6 +1,7 @@
 from otupy import Choice, Register
 from otupy.profiles.xbom.data.network_router import Router
 from otupy.profiles.xbom.data.network_nat import NAT
+from otupy.profiles.xbom.data.network_bridge import Bridge
 
 #ATTENTION!! THIS IS ONLY PARTIALLY DEFINED!!!
 class NetworkFunctionType(Choice):
@@ -12,7 +13,7 @@ class NetworkFunctionType(Choice):
 		WARNING: This definition is currently partial, since it does not include all possible functions.
 	"""
 
-	register = Register({'router': Router, 'vpn': str, 'nat': NAT})
+	register = Register({'router': Router, 'vpn': str, 'nat': NAT, 'bridge': Bridge})
 
 	def __init__(self, type):
 		if(isinstance(type, NetworkFunctionType)):

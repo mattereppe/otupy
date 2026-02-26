@@ -53,7 +53,7 @@ class IPInfo(Record):
 			prefix = 32 if type(self.ip.getObj()) == IPv4Addr else 64
 
 		if (int(prefix) < 0) or (type(self.ip.getObj()) == IPv4Addr and  int(prefix) > 32) or \
-			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 64):
+			(type(self.ip.getObj()) == IPv6Addr and int(prefix) > 128):
 			raise ipaddress.NetmaskValueError("Wrong prefix length: "+str(prefix))
 		self.prefix = int(prefix)
 		self.gw = IPAddress(gw) if gw is not None else None

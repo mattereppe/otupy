@@ -40,6 +40,9 @@ from otupy.profiles.xbom.data.ip_net_address import IPNetAddress
 from otupy.profiles.xbom.data.ethernet_network import EthernetNetwork
 from otupy.profiles.xbom.data.vlan_network import VLANNetwork
 from otupy.profiles.xbom.data.mobile_network import MobileNetwork
+from otupy.profiles.xbom.data.network_bridge import Bridge
+from otupy.profiles.xbom.data.veth_network import VEthNetwork
+from otupy.profiles.xbom.data.tunnel_network import TunnelNetwork
 
 # Service types
 from otupy.profiles.xbom.data.service import Service
