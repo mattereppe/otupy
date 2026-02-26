@@ -41,7 +41,8 @@ class ExecutionEnvironment(XBOMObject):
 			name:Hostname = None, 
 			libs: ArrayOf(Library)=None,
 			pkgs: ArrayOf(Package)=None,
-			apps: ArrayOf(Application)=None):
+			apps: ArrayOf(Application)=None,
+			**kwargs):
 
 		if execenv is not None:
 			super().__init__(name=execenv.name, id=execenv.id, description=execenv.description)
