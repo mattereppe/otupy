@@ -335,28 +335,15 @@ class XBOMActuator:
 		names_filter = sbom_target.get('names')
 
 		if cmd.args.get('name_only') == True:
-			res['bom_names'] = self._collect_names(names_filter)
+			pass
 		else:
 			res['bom'] = self.bom
-			res['bom_names'] = self._collect_names(names_filter)
 
 		if len(res) > 0:
 			# logger.debug("Returning SBOM: %s", res)
 			return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=xbom.Results(**res))
 		else:
 			return Response(status=StatusCode.OK, status_text="No matching BOMs found")
-
-	def _collect_names(self, names_filter=None):
-		""" Collect service/component names from discovered services, optionally filtered
-
-			:param names_filter: A list of name strings to filter by, or None for all names.
-			:return: An ArrayOf(Name) with the matching names.
-		"""
-		names = ArrayOf(Name)()
-		for s in self.services:
-			if names_filter is None or str(s.name) in names_filter:
-				names.append(s.name)
-		return names
 
 	def _update(self):
 		""" Update boms

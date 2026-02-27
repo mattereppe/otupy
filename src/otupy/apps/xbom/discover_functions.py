@@ -81,10 +81,6 @@ def discovery(config) -> None:
 			ctx['boms'] = add_resource(ctx.get('boms'), root, 'bom', [resources['bom']])
 		except:
 			logger.warning("No bom returned for %s", root)
-		try:
-			ctx['bom_names'] = add_resource(ctx.get('bom_names'), root, 'bom_name', resources['bom_names'])
-		except:
-			logger.warning("No bom_names returned for %s", root)
 		# # TODO: recursive discovery of peers with valid actuators in links
 
 	_log_context(ctx)
