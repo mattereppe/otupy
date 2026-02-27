@@ -279,9 +279,9 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					id=service.metadata.uid,
 					type=NetworkFunctionType(NAT(rules=rules)))
 			name=Name(Hostname(self._k8s_dns_name(nat.name, service.metadata.namespace, "svc")))
-			nat_service = (Service(name=name, type=ServiceType(nat), 
+			nat_service = Service(name=name, type=ServiceType(nat), 
 						namespace=service.metadata.namespace,
-						subservices=None, owner=self.owner, release=None))
+						subservices=None, owner=self.owner, release=None)
 			self.services.append(nat_service)
 			if pods is not None:
 				for p in pods:
@@ -330,7 +330,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 #		for n in k8s_nodes:
 #			subservices.append(self._k8s_dns_name(name=n.metadata.name, namespace=None, resource_type="router"))
 
-		self.services.append(Service(name=Name(Hostname(self._k8s_dns_name(name=net.name, namespace=None, resource_type="network"))) , 
+		self.services.append(Service(name=Name(Hostname(self._k8s_dns_name(name=net.name, 
+								namespace=None, resource_type="network"))) , 
 					type=ServiceType(net),
 				subservices=subservices, owner=self.owner, release=None))
 
@@ -688,7 +689,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 		for n in nodes:
 			# A Kubernetes node is an execution environment and hosts a kubelet
-			node = ExecutionEnvironment(hostname=n.metadata.name, id=n.metadata.uid,
+			node = ExecutionEnvironment(name=n.metadata.name, id=n.metadata.uid,
 						description="Kubernetes node"+n.status.node_info.container_runtime_version,
                   os= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
 			logger.debug("Found node: %s", str(node))
@@ -786,9 +787,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					port_list.append( Port(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
 			
 			node_type = NetworkNode(description="Pod network ports", id=pod.metadata.uid,
-					name="Ports", ifaces=port_list)
+					name=pod.metadata.name, ifaces=port_list)
 			nodename=Name(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "ports"))
-			self.services.append(Service(name=nodename, type=ServiceType(node_type), 
+			self.services.append(Service(name=nodename, 
+						namespace=pod.metadata.namespace,
+						type=ServiceType(node_type), 
 					subservices=ArrayOf(Name)(), release=None, owner=None))
 			pod_subservices_list.append(nodename)
 			
@@ -810,7 +813,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 						if len(controller_list) == 0: # Create a new Application for this controller
 							app = Application(name=owner.name, description=owner.kind,
 									id=owner.uid, app_type=owner.kind)
-							controller = Service(name=controllername, type=ServiceType(app), 
+							controller = Service(name=controllername, 
+									type=ServiceType(app), 
 									subservices=ArrayOf(Name)(), release=owner.api_version)
 							self.services.append(controller)
 						else:
@@ -878,7 +882,8 @@ class CTXDActuator_kubernetes(CTXDActuator):
 #				k8s_services.append(self._k8s_dns_name(name=n.metadata.name, resource_type="node"))	
 #		except:
 #			pass
-		self.services.append(Service(name=Name(k8s.name),type=ServiceType(k8s), 
+		self.services.append(Service(name=Name(k8s.name),
+				type=ServiceType(k8s), 
 				subservices=k8s_subservices, owner=self.owner, release=None))
 
 	def _k8s_pod_list(self, label_selector=""):

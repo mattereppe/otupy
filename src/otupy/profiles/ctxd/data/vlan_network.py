@@ -26,5 +26,15 @@ class VLANNetwork(Map):
 		:param netv6nets: Network IPv6 addresses used in this network
 	"""
 
+	def getNets(self):
+		nets = []
+		if 'type' in self:
+			nets.append("type:"+self['type'])
+		if 'vlan_id' in self:
+			nets.append("vlan:"+self['vlan_id'])
+		if 'nets' in self:
+			for n in self['nets']:
+				nets.append(n)		
+		return nets
 
 

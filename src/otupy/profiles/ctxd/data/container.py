@@ -28,6 +28,9 @@ class Container(ExecutionEnvironment):
 			self.status = str(status) if status is not None else None
 			self.image = image if image is not None else None
 
+	def getType(self):
+		return "container"
+
 	def __repr__(self):
 		return (f"Container({super().__repr__()},"
 	             f"namespace={self.namespace}, status={self.status},image={self.image})")

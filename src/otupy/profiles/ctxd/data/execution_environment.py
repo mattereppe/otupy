@@ -54,6 +54,12 @@ class ExecutionEnvironment(CTXDObject):
 				for lib in libs:
 					self.libs.append(Library(lib))
 
+	def getType(self):
+		return "base"
+
+	def getId(self, domain=None, namespace=None):
+		return "execenv:" + self.getType() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+
 	def __repr__(self):
 		return (f"ExecutionEnvironment("
 					f"{super().__repr__()},")

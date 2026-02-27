@@ -45,6 +45,9 @@ class NetworkNode(CTXDObject):
 			else:
 				self.ifaces = None
 
+	def getId(self, domain=None, namespace=None):
+		return "ports:" + self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+
 	def __repr__(self):
 		return (f"NetworkNode("
 					f"{super().__repr__()},"

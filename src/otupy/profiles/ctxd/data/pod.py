@@ -34,6 +34,9 @@ class Pod(Host):
 			super().__init__(**kwargs)
 			self.namespace = str(namespace) 
 
+	def getType(self):
+		return "pod"
+
 	def __repr__(self):
 		return f"Pod(" \
 	            f"description={self.description}, " \

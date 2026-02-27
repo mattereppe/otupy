@@ -30,6 +30,9 @@ class OS(ExecutionEnvironment):
 			self.family = str(family) 
 			self.arch = str(arch)
 
+	def getType(self):
+		return "os"
+
 	def __repr__(self):
 		return (f"OS({super().__repr__()},"
 	             f"version={self.version}, family={self.family}, type={self.arch})")

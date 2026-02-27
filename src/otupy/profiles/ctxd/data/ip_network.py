@@ -20,5 +20,7 @@ class IPNetwork(Map):
 		This is the definition of the fields beard by the  IP network.
 	"""
 
+	def getNets(self):
+		return self['nets']
 
 

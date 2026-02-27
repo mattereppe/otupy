@@ -1,32 +1,39 @@
-import otupy.types.base
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_type import NetworkType
 
 
-class Network(otupy.types.base.Record):
-	"""Network
-    it is the description of the service - Network
+class Network(CTXDObject):
+	""" Network
+		
+		This is a generic network description, including different types of virtual and physical networks.
 	"""
-	description: str = None
-	""" Generic description of the network """
-	name: str = None
-	""" Name of the network provider """
-	id: str = None
-	""" A unique identifier of the network """
 	type: NetworkType = None
 	""" type of the network service"""
 
 
-	def __init__(self, description = None, name = None, id = None, type = None):
-		if isinstance(description, Network):
-			self.description = description.description
-			self.name = description.name
-			self.id = description.id
-			self.type = description.type
+	def __init__(self, network = None, description = None, name = None, id = None, type = None):
+		if isinstance(network, Network):
+			super().__init__(name=network.name, description=network.description, id=network.id)
+			self.type = network.type
 		else:
-			self.description = str(description) if description is not None else None
-			self.name = str(name) if name is not None else None
-			self.id = str(id) if id is not None else None
-			self.type = type if type is not None else None
+			super().__init(name=name, description=description, id=id)
+			self.type = type 
+
+
+	def getId(self, domain=None, namespace=None):
+		""" Return a network id 
+
+			The network id includes the network type and list of ip addresses, or any
+			other type of network identfiers, if available
+
+		"""
+		service_id="net:"+self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/"
+
+		for n in type.getObj().getNets():
+			service_id = service_id + "+" + str(n)
+
+		return service_id
+
 
 	def __repr__(self):
 		return (f"Network(description={self.description}, "

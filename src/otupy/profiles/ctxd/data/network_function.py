@@ -1,8 +1,8 @@
-from otupy import Record
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_function_type import NetworkFunctionType
 
 
-class NetworkFunction(Record):
+class NetworkFunction(CTXDObject):
 	"""Network Function
 
 		A network function process network packets for both forwarding and security purposes.
@@ -10,12 +10,6 @@ class NetworkFunction(Record):
 		virtualization mechanisms (e.g., Linux namespaces). In these terms, the same model applies
 		for both legacy network devices and Network Virtual Functions.
 	"""
-	name: str = None
-	""" Name of the network function """
-	id: str = None
-	""" A unique identifier of the function, if available """
-	description: str = None
-	""" Generic description of the network function """
 	type: NetworkFunctionType = None
 	""" Type of the network function, including more complex data objects. """
 	version: str = None
@@ -23,23 +17,24 @@ class NetworkFunction(Record):
 
 
 	def __init__(self, 
+			netfun:object = None,
 			name:str = None, 
 			id:str = None, 
 			description:str = None, 
 			version:str = None, 
 			type:NetworkFunctionType = None):
-		if isinstance(name, NetworkFunction):
-			self.name = name.name
-			self.id = name.id
-			self.description = name.description
-			self.version = name.version
-			self.type = name.type
+		if isinstance(netfun, NetworkFunction):
+			super().__init__(name=netfun.name, description=netfun.description, id=netfun.id)
+			self.version = netfun.version
+			self.type = netfun.type
 		else:
-			self.name = str(name) if name is not None else None
-			self.id = str(id) if id is not None else None
-			self.description = str(description) if description is not None else None
+			super().__init__(name=name, description=description, id=id)
 			self.version = str(version) if version is not None else None
-			self.type = type if type is not None else None
+			self.type = type 
+
+	def getId(self, domain=None, namespace=None):
+		return "netfun:" + self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+		
 
 	def __repr__(self):
 		return (f"NetworkFunction("
