@@ -34,4 +34,4 @@ class Application(CTXDObject):
 	             f"version='{self.version}', owner={self.owner}, app_type='{self.app_type}')")
 	
 	def __str__(self):
-		return __repr__()
+		return self.__repr__()

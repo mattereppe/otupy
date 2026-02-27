@@ -406,12 +406,12 @@ class CTXDActuator_kubernetes(CTXDActuator):
 #						ipnets.append(ipaddress.ip_network(ip, strict=False))
 					ipnets.append(ipaddress.ip_network(pod.status.host_ip, strict=False))
 					eth = IPNetwork({'nets': ipnets})
-					netname=Name(Hostname(self._k8s_dns_name(name=K8S_ADVERTISE_ADDRESS, namespace=None, resource_type="network")))
+					netname=self._k8s_dns_name(name=K8S_ADVERTISE_ADDRESS, namespace=None, resource_type="network")
 					net = Network(name=netname,
 							description="Kube API server public address",
 							id=None, type=NetworkType(eth))
 					self.services.append(Service(
-								name=Name(netname),
+								name=Name(Hostname(netname)),
 								namespace=None,
 								type=ServiceType(net),
 								subservices=ArrayOf(Name)(), owner=self.owner, release=None))
@@ -489,13 +489,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		k8s_nets = self.get_services(filter=Network)
 
 		for node in self.net_on_node:
-			print("nodes: ", node)
 			consumer=self.get_consumer(Name(node))
 			peer = Peer(service_name=Name(Hostname(node)),
 					role=PeerRole.host, # Node hodes network implementation
 					consumer=consumer)
 			for net in self.net_on_node[node]:
-				print("net: ", net)
 				# TODO: Check if some networks are present only on specific nodes (where the pod is running
 				description="Network "+str(net)+" implemented in " + str(peer.service_name)
 				self.links.append(Link(name=Name(Hostname(net)), description=description,

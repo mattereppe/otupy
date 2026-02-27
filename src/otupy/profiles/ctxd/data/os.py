@@ -30,7 +30,8 @@ class OS(ExecutionEnvironment):
 			self.family = str(family) 
 			self.arch = str(arch)
 
-	def getType(self):
+	@staticmethod
+	def getType():
 		return "os"
 
 	def __repr__(self):

@@ -19,7 +19,7 @@ class Network(CTXDObject):
 			super().__init__(name=network.name, description=network.description, id=network.id)
 			self.type = network.type
 		else:
-			super().__init(name=name, description=description, id=id)
+			super().__init__(name=name, description=description, id=id)
 			self.type = type 
 
 
@@ -32,7 +32,7 @@ class Network(CTXDObject):
 		"""
 		service_id="net:"+self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/"
 
-		for n in type.getObj().getNets():
+		for n in self.type.getObj().getNets():
 			service_id = service_id + "+" + str(n)
 
 		return service_id

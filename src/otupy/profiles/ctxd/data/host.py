@@ -63,6 +63,13 @@ class Host(CTXDObject):
 			self.firmware = firmware
 			self.version = version
 	
+	@staticmethod
+	def getType():
+		return "base"
+
+	def getId(self, domain=None, namespace=None):
+		return "host:" + self.getType() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+
 	def __repr__(self):
 		return (f"Host({super().__repr__()}),"
 					f"vendor='{self.vendor}'," 

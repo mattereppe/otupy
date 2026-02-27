@@ -36,12 +36,12 @@ class Service(otupy.types.base.Record):
 	release: str = None
 	""" Release version of the service """
 
-	def __init__(self, service:object = None, name:Name = None, domain:str = None, namespace:str = None, 
+	def __init__(self, service:object = None, name:Name = None, domain:str = None, namespace:str = None, id:str= None,
 						type:ServiceType = None, subservices:ArrayOf(str) = None, owner:str = None, release:str = None): # type: ignore
 		if isinstance(service, Service):
 			self._init_from_service(service=service)
 		else:
-			self._init_from_params(name=name, domain=domain, namespace=namespace,
+			self._init_from_params(name=name, domain=domain, namespace=namespace, id=id,
 						type=type, subservices=subservices, owner=owner, release=release)
 			
 	def _init_from_service(self, service):
@@ -54,7 +54,7 @@ class Service(otupy.types.base.Record):
 		self.owner = service.owner 
 		self.release = service.release 
 
-	def _init_from_params(self, name:Name = None, domain:str = None, namespace:str = None, type:ServiceType = None, 
+	def _init_from_params(self, name:Name = None, domain:str = None, namespace:str = None, id:str = None, type:ServiceType = None, 
 				subservices:ArrayOf(str) = None, owner:str = None, release:str = None): # type: ignore
 		self.name = name
 		self.domain = domain
@@ -63,12 +63,12 @@ class Service(otupy.types.base.Record):
 		self.subservices = subservices
 		self.owner = owner
 		self.release = release
-		self.id = self.type.getObj().getId(domain=domain, namespace=namespace)
+		self.id = self.type.getObj().getId(domain=domain, namespace=namespace) if id is None else id
 
 	def __repr__(self):
-		return (f"Service(name={self.name.getObj()}, id={self.id}, type={self.type}, "
+		return (f"Service(name={self.name.getObj()}, id=, type={self.type}, "
 	             f"subservices={self.subservices}, owner={self.owner}, release={self.release}) ")
 	
 	def __str__(self):
-		return __repr__()
+		return self.__repr__()
 

@@ -43,7 +43,10 @@ class VM(Host):
 			self.hypervisor_type = hypervisor_type 
 			self.image = image 
 
-		self.validate_fields()
+
+	@staticmethod
+	def getType():
+		return "vm"
 
 	def __repr__(self):
 		return (f"VM("

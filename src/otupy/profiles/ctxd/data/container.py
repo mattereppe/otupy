@@ -28,7 +28,8 @@ class Container(ExecutionEnvironment):
 			self.status = str(status) if status is not None else None
 			self.image = image if image is not None else None
 
-	def getType(self):
+	@staticmethod
+	def getType():
 		return "container"
 
 	def __repr__(self):

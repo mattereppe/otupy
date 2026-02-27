@@ -18,6 +18,10 @@ class Server(Host):
 		else:
 			super().__init__(**kwargs)
 
+	@staticmethod
+	def getType():
+		return "server"
+
 	def __repr__(self):
 		return (f"Server("
 					 f"{super().__repr__()},")
