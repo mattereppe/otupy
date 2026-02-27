@@ -35,10 +35,9 @@ class NetworkFunction(CTXDObject):
 	def getId(self, domain=None, namespace=None):
 		return "netfun:" + self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
 		
-
 	def __repr__(self):
 		return (f"NetworkFunction("
-	            f"name={self.name}, "
+	            f"{super().__repr__()}, "
 				  	f"id={self.id}, "
 					f"description={self.description}, "
 					f"version={self.version}, "

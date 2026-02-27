@@ -1,14 +1,17 @@
 from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_type import NetworkType
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 
 
 class Network(CTXDObject):
-	""" Network
-		
-		This is a generic network description, including different types of virtual and physical networks.
+	""" Networking service
+
+		A Network is a service able to transfer packets. There are different types of networks,
+		subject to different composition patterns (e.g., physical ethernet, 5G networks, VLAN,
+		etc.).
 	"""
 	type: NetworkType = None
-	""" type of the network service"""
+	""" Type of network (Ethernet, veth link, VLAN, ...) """
 
 
 	def __init__(self, network = None, description = None, name = None, id = None, type = None):
@@ -36,13 +39,9 @@ class Network(CTXDObject):
 
 
 	def __repr__(self):
-		return (f"Network(description={self.description}, "
-	             f"name={self.name}, id={self.id}, type={self.type.getObj()})")
+		return (f"Network({super().__repr__()},"
+	             f"type={self.type.getObj()})")
 	
 	def __str__(self):
-		return f"Network(" \
-	            f"description={self.description}, " \
-	            f"name={self.name}, " \
-					f"id={self.id}, " \
-	            f"type={self.type.getObj()})"
+		return self.__repr__()
 
