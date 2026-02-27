@@ -46,6 +46,14 @@ class XBOMActuator_file(XBOMActuator):
 		self._services = self._create_services(services)
 		self._links = self._create_links(links)
 
+	def discover_context(self):
+		""" Discover context
+
+			The context is static and does not need to be discovered. 
+		"""
+		self.discover_services()
+		self.discover_links()
+
 	def discover_services(self):
 		""" Discover services
 
