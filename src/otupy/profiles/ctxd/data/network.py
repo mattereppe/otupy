@@ -23,20 +23,8 @@ class Network(CTXDObject):
 			self.type = type 
 
 
-	def getId(self, domain=None, namespace=None):
-		""" Return a network id 
-
-			The network id includes the network type and list of ip addresses, or any
-			other type of network identfiers, if available
-
-		"""
-		service_id="net:"+self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/"
-
-		for n in self.type.getObj().getNets():
-			service_id = service_id + "+" + str(n)
-
-		return service_id
-
+	def get_subtype(self):
+		return self.type.getName()
 
 	def __repr__(self):
 		return (f"Network({super().__repr__()},"

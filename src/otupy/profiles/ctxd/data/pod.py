@@ -34,9 +34,9 @@ class Pod(Host):
 			super().__init__(**kwargs)
 			self.namespace = str(namespace) 
 
-	@staticmethod
-	def getType():
-		return "pod"
+#	@staticmethod
+#	def get_subtype():
+#		return "pod"
 
 	def __repr__(self):
 		return f"Pod(" \

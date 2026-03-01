@@ -32,8 +32,8 @@ class NetworkFunction(CTXDObject):
 			self.version = str(version) if version is not None else None
 			self.type = type 
 
-	def getId(self, domain=None, namespace=None):
-		return "netfun:" + self.type.getName() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+	def get_subtype(self):
+		return self.type.getName()
 		
 	def __repr__(self):
 		return (f"NetworkFunction("

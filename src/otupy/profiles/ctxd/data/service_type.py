@@ -18,11 +18,22 @@ from otupy.core.extensions import Register
 
 # TODO: Add auto-registration of the classes with a decorator to avoid missing them in the list below
 class ServiceType(Choice):
-    
-    register = Register({'application': Application, 'execution_environment': ExecutionEnvironment, 'vm': VM, 
-			 'server': Server, 'os': OS, 'pod': Pod, 'container': Container, 'host': Host, 'network_node': NetworkNode,
-         'api': API, 'cloud': Cloud, 'network': Network, 'network_function': NetworkFunction, 'iot': IOT})
-    #Il tipo Hostname è utilizzabile per reverse-dns
-
-    def __init__(self, service_type):
-        super().__init__(service_type)
+	
+	register = Register({'application': Application, 'execution_environment': ExecutionEnvironment, 'vm': VM, 
+		'server': Server, 'os': OS, 'pod': Pod, 'container': Container, 'host': Host, 'network_node': NetworkNode,
+		 'api': API, 'cloud': Cloud, 'network': Network, 'network_function': NetworkFunction, 'iot': IOT})
+	#Il tipo Hostname è utilizzabile per reverse-dns
+	
+	def __init__(self, service_type):
+		super().__init__(service_type)
+	
+	@staticmethod
+	def get_type_name(service_type: object):
+		""" Get the name associated to a given class
+		    
+			If the class is not registered, None is returned.
+			
+			@:param service_type: The class to get the name for.
+			@:return: The string used to register the class.
+		"""
+		return ServiceType.register.getName(service_type)

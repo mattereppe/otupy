@@ -18,9 +18,9 @@ class Server(Host):
 		else:
 			super().__init__(**kwargs)
 
-	@staticmethod
-	def getType():
-		return "server"
+#	@staticmethod
+#	def get_subtype():
+#		return "server"
 
 	def __repr__(self):
 		return (f"Server("

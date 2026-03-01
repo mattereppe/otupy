@@ -44,9 +44,9 @@ class VM(Host):
 			self.image = image 
 
 
-	@staticmethod
-	def getType():
-		return "vm"
+#	@staticmethod
+#	def get_subtype():
+#		return "vm"
 
 	def __repr__(self):
 		return (f"VM("

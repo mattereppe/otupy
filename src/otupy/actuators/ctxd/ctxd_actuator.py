@@ -18,7 +18,7 @@ from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCo
 import otupy.profiles.ctxd as ctxd
 
 from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service
+from otupy.profiles.ctxd.data.service import Service, SId
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.link import Link
@@ -181,6 +181,28 @@ class CTXDActuator:
 							service_list.append(s)
 
 		return service_list
+
+	def get_services_by_sid(self, sid: SId = None):
+		""" Returns the list of current services
+
+			Returns the list of discovered services. Filter by sid. None fields are
+			treated as wildcards.
+
+			:param sid: The sid of the service to retrieve (all if not set).
+			:return: A list of services that match the searching criteria.
+		"""
+		service_list= []
+		for s in self.services:
+			if sid.type == None or ( sid.type == s.sid.type ):
+				if sid.subtype == None or ( sid.subtype == s.sid.subtype):
+					if sid.namespace == None or sid.namespace == s.sid.namespace:
+						if sid.domain == None or sid.domain == s.sid.domain:
+							if sid.name == None or ( sid.name == s.sid.name ):
+								if sid.version == None or (sid.name == s.sid.name):
+									service_list.append(s)
+
+		return service_list
+
 
 	def get_links(self, name: Name = None, filter: LinkType = None) -> []:
 		""" Returns the list of current links

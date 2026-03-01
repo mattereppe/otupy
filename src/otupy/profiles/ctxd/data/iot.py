@@ -18,9 +18,9 @@ class IOT(Host):
 			super().__init__(**kwargs)
 			self.type = type 
 
-	@staticmethod
-	def getType():
-		return "iot"
+#	@staticmethod
+#	def get_subtype():
+#		return "iot"
 
 	def __repr__(self):
 		return (f"IoT("

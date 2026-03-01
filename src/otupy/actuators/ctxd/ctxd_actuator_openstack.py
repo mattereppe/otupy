@@ -43,10 +43,11 @@ from otupy import Extensions
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service
+from otupy.profiles.ctxd.data.service import Service, SId
 from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
 from otupy.profiles.ctxd.data.network_node import NetworkNode
+from otupy.profiles.ctxd.data.network_firewall import Firewall
 from otupy.profiles.ctxd.data.network_interface import NetworkInterface
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.profiles.ctxd.data.server import Server
@@ -162,13 +163,14 @@ class CTXDActuator_openstack(CTXDActuator):
 
 	def _discover_os_services(self):
 		""" Discover Openstack as a composite service made of multiple applications """
-		cloud_subservices = ArrayOf(Name)()
+		cloud_subservices = ArrayOf(SId)()
 
 		# Software components of openstack
 		# Map OpenStack meta-services (nova, cinder, ...) to their endpoints (URLs) 
 		# -------------------------------------------------------------------------
 		for service in self.cloud_services:
 			eps = self._get_openstack_endpoints(service['id'])
+			version = self._get_openstack_versions(service['id'])
 			endpoints=ArrayOf(Endpoint)()
 			for e in eps:
 				endpoints.append( Endpoint(description=service['type'], endpoint_type=e['interface'],transfer="HTTP", 
@@ -176,16 +178,18 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			srv = API(name=service['name'], description=service['description'], id=service['id'],
 					type=service['type'], endpoints=endpoints)
+			# TODO: Discover service versions (_openstack_versions_show())
 
 			logger.debug("Found openstack service: %s", str(srv.name))
 			# TODO: Add software release (maybe with its SBOM)
 			name=Name(self._os_dns_name(srv.name))
+			sid=SId.create_from_service_type(srv)
 			# TODO: Add applications running on the controller/compute nodes as subservices
 			# (This requires to identifies all applications and to select proper identifiers; 
 			#  probably it is simpler to retrieve them from a specific actuator
-			self.services.append(Service(name=name, type=ServiceType(srv), #links=ArrayOf(Link)(),
-						subservices=ArrayOf(Service)(), owner=self.owner, release=None))
-			cloud_subservices.append(name)
+			self.services.append(Service(name=name, sid=sid, type=ServiceType(srv), 
+						subservices=ArrayOf(SId)(), owner=self.owner, release=None))
+			cloud_subservices.append(sid)
 
 		# The root service: OpenStack as cloud environment (meta-service including concrete applications)
 		# openstack = { nova, neutron, glance, ... }
@@ -193,7 +197,7 @@ class CTXDActuator_openstack(CTXDActuator):
 		os = Cloud(description='cloud', id=None, name=self.cloud, type='IaaS')
 		# TODO: Fill in with Openstack version/release
 		name=Name(self._os_dns_name(os.name))
-		self.services.append(Service(name=name,type=ServiceType(os), #links=ArrayOf(Name)(),
+		self.services.append(Service(name=name, sid=SId.create_from_service_type(os), type=ServiceType(os), 
 				subservices=cloud_subservices, owner=self.owner, release=None))
 
 		
@@ -221,7 +225,7 @@ class CTXDActuator_openstack(CTXDActuator):
 
 				ifaces.append(NetworkInterface(description=p['description'], id=p['id'], iface=None, ips=ips))
 
-			netnode = NetworkNode(name="Ports", description="Openstack ports", ifaces=ifaces)
+			netnode = NetworkNode(name=vm['name'], description="Openstack ports", ifaces=ifaces)
 
 			server = VM(name= vm['name'],
 							id= vm['id'], 
@@ -236,17 +240,20 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			name=Name(self._os_dns_name(server.name))
 			netnode_name=Name(server.name+".ports")
+			netnode_sid=SId.create_from_service_type(netnode, domain=domain, namespace=project)
 			
-			vm_service = Service(name=name, type=ServiceType(server), #links=ArrayOf(Name)(),
+			vm_service = Service(name=name, sid=SId.create_from_service_type(server, domain=domain, namespace=project), 
 					domain=domain, namespace=project,
-						subservices=ArrayOf(Name)(), owner=self.owner, release=None)
+					type=ServiceType(server), 
+						subservices=ArrayOf(SId)(), owner=self.owner, release=None)
 			self.services.append(vm_service)
 
 			# Add ports service
-			self.services.append(Service(name=netnode_name, type=ServiceType(netnode),
+			self.services.append(Service(name=netnode_name, sid=netnode_sid,
 						domain=domain, namespace=project,
-						subservices=ArrayOf(Name)(), owner=str(name), release=None))
-			vm_service.subservices.append(netnode_name)
+						type=ServiceType(netnode),
+						subservices=ArrayOf(SId)(), owner=str(name), release=None))
+			vm_service.subservices.append(netnode_sid)
 			
 
 
@@ -259,12 +266,13 @@ class CTXDActuator_openstack(CTXDActuator):
 		# Hypervisors running VMs in the cloud infrastructure
 		# ---------------------------------------------------
 		for h in self.cloud_hypervisors:
-			hyper = Server(name=Hostname(h['name']), id=h['service_details']['id'],
+			hyper = OS(name=Hostname(h['name']), id=h['service_details']['id'],
 					description="OpenStack hypervisor")
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
-			self.services.append(Service(name=Name(str(h['name'])), type=ServiceType(hyper), #links=ArrayOf(Name)(),
+			self.services.append(Service(name=Name(str(h['name'])), sid=SId.create_from_service_type(hyper),
+						type=ServiceType(hyper), 
 						subservices=None, owner=self.owner, release=None))
 
 
@@ -308,9 +316,11 @@ class CTXDActuator_openstack(CTXDActuator):
 
 
 			name=Name(self._os_dns_name(n['name']))
-			self.services.append(Service(name=name, type=ServiceType(net),
+			self.services.append(Service(name=name, sid=SId.create_from_service_type(net, domain=domain, namespace=project),
 					domain=domain, namespace=project,
-					subservices=ArrayOf(Name)(), owner=self.owner, release=n['updated_at']))
+					type=ServiceType(net),
+					subservices=ArrayOf(SId)(), owner=self.owner, release=n['updated_at']))
+
 
 	def _discover_os_routers(self):
 		""" Add a network service for each router
@@ -331,9 +341,10 @@ class CTXDActuator_openstack(CTXDActuator):
 			project, domain = self._get_openstack_project_and_domain(r['project_id'])
 
 			router_name=Name(self._os_dns_name(r['name']))
-			router_service=Service(name=router_name, type=ServiceType(router),
+			router_service=Service(name=router_name, sid=SId.create_from_service_type(router, domain=domain, namespace=project),
 					domain=domain, namespace=project,
-					subservices=ArrayOf(Name)(), owner=self.owner, release=r['updated_at'])
+					type=ServiceType(router),
+					subservices=ArrayOf(SId)(), owner=self.owner, release=r['updated_at'])
 			self.services.append(router_service)
 
 			# Second, create a network node that hosts the network function
@@ -350,17 +361,19 @@ class CTXDActuator_openstack(CTXDActuator):
 						logger.error("Unable to add ip address for router: ", e)
 				ifaces.append(NetworkInterface(description=p['description'], id=p['id'], iface=None, ips=ips))
 
-			node = NetworkNode(name="Ports",
+			node = NetworkNode(name=r['name'],
 							id=None, 
 							description="Network ports of Router "+str(router_name),
 							ifaces = ifaces)
+			ports_sid=SId.create_from_service_type(node, domain=domain, namespace=project)
 
-			self.services.append(Service(name=ports_name, type=ServiceType(node),
+			self.services.append(Service(name=ports_name, sid=ports_sid,
 					domain=domain, namespace=project,
+					type=ServiceType(node),
 					subservices=None, owner=self.owner, release=r['updated_at']))
 
-			# Add ports as subservice of the Router
-			router_service.subservices.append(ports_name)
+			# Add ports as subservice of the Router 
+			router_service.subservices.append(ports_sid)
 
 
 	def _discover_os_link_vms(self):
@@ -377,11 +390,12 @@ class CTXDActuator_openstack(CTXDActuator):
 		for s in os_services:
 			if s.type.getObj().type == "compute":
 				for v in os_vms:
-					peer = Peer(service_name= v.name,
+					peer = Peer(service_name= v.name, sid=v.sid,
 								role= PeerRole.controlled)  #VM is controlled by Openstack
 					description="Openstack controls "+v.name.getObj()
-					self.links.append(Link(name = s.name, description=description, 
+					self.links.append(Link(name = s.name, sid=s.sid, description=description, 
 								link_type=LinkType.controlling, role=PeerRole.control, peers=ArrayOf(Peer)([peer])))
+
 
 	def _discover_os_link_networks(self):
 		""" Add links between neutron and networks
@@ -395,11 +409,12 @@ class CTXDActuator_openstack(CTXDActuator):
 		for s in os_services:
 			if s.type.getObj().type == "network":
 				for n in os_networks:
-					peer = Peer(service_name= n.name,
+					peer = Peer(service_name= n.name, sid=n.sid,
 								role= PeerRole.controlled)  #VM is controlled by Openstack
 					description="Openstack controls "+n.name.getObj()
-					self.links.append(Link(name = s.name, description=description, 
+					self.links.append(Link(name = s.name, sid=s.sid,  description=description, 
 								link_type=LinkType.controlling, role=PeerRole.control, peers=ArrayOf(Peer)([peer])))
+
 
 	def _discover_os_link_networkfunctions(self):
 		""" Add links between neutron and network functions
@@ -413,10 +428,10 @@ class CTXDActuator_openstack(CTXDActuator):
 		for s in os_services:
 			if s.type.getObj().type == "network":
 				for n in os_networkfunctions:
-					peer = Peer(service_name= n.name,
+					peer = Peer(service_name= n.name, sid=n.sid,
 								role= PeerRole.controlled)  #VM is controlled by Openstack
 					description="Openstack controls "+n.name.getObj()
-					self.links.append(Link(name = s.name, description=description, 
+					self.links.append(Link(name = s.name, sid=s.sid, description=description, 
 								link_type=LinkType.controlling, role=PeerRole.control, peers=ArrayOf(Peer)([peer])))
 
 
@@ -436,11 +451,12 @@ class CTXDActuator_openstack(CTXDActuator):
 				consumer = self.get_consumer(Name(self.sg))
 				name=Name(self._os_dns_name(self.sg))
 				if s is not None:
-					peer = Peer(service_name=name,
+					peer = Peer(service_name=name, sid=self._os_sg_sid(self.sg),
 							role=PeerRole.controlled, consumer=consumer)
 					description="OpenStack Security Groups"
-					self.links.append(Link(name = s.name, description=description, role=PeerRole.control,
+					self.links.append(Link(name = s.name, sid=s.sid,  description=description, role=PeerRole.control,
 								link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
+
 
 
 	def _discover_vms_link_hypervisors(self):
@@ -449,7 +465,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			Currently these links are returned by `_discover_servers` to avoid duplicating
 			the OpenStack query (which takes time)
 		"""	
-		hypervisors = self._openstack_hypervisor_list()
+#		hypervisors = self._openstack_hypervisor_list()
 		os_vms = self.get_services(filter=VM)
 
 		for v in os_vms:
@@ -459,9 +475,10 @@ class CTXDActuator_openstack(CTXDActuator):
 				description="OpenStack server "+str(v.name)+" hosted on "+ hp_name
 				consumer = self.get_consumer(hp_name)
 				peer = Peer(service_name=Name(vmdetails['hypervisor_hostname']), 
+						sid=SId.create_from_service_type(OS(name=vmdetails['hypervisor_hostname'])),
 						role=PeerRole.host, consumer=consumer)
 
-				self.links.append(Link(name=v.name, description=description, role=PeerRole.guest,
+				self.links.append(Link(name=v.name, sid=v.sid, description=description, role=PeerRole.guest,
 							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
 
@@ -477,12 +494,14 @@ class CTXDActuator_openstack(CTXDActuator):
 			consumer=self.get_consumer(v.name)
 
 			if consumer is not None:
-				peer = Peer(service_name= v.name,
+				peer = Peer(service_name= v.name, sid=v.sid,
 							role= PeerRole.host,  #VM is controlled by Openstack
 							consumer=consumer) # This is the consumer running on that service.
 				description="System and application software installed on "+v.name.getObj()
-				self.links.append(Link(name = v.name, description=description, role=PeerRole.guest,
+				self.links.append(Link(name = v.name, sid=SId.create_from_service_type(OS(name=str(v.name))),
+							description=description, role=PeerRole.guest,
 							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+
 
 	def _discover_vms_link_networks(self):
 		""" Add links from VMs to attached networks """
@@ -491,8 +510,8 @@ class CTXDActuator_openstack(CTXDActuator):
 
 		for v in vms:
 			if v.subservices is not None:
-				for subname in v.subservices:
-					subsrv=self.get_services(name=subname, domain=v.domain, namespace=v.namespace)
+				for subsid in v.subservices:
+					subsrv=self.get_services_by_sid(SId(sid=subsid, domain=v.domain, namespace=v.namespace))
 					assert len(subsrv) <= 1
 					for s in subsrv:
 						if type(s.type.getObj())==NetworkNode:
@@ -507,13 +526,14 @@ class CTXDActuator_openstack(CTXDActuator):
 									nets = None
 
 								for n in nets:
-									peer = Peer(service_name= n.name,
+									peer = Peer(service_name= n.name, sid=n.sid,
 												role= PeerRole.forwarding,
 												consumer=None) 
 									description="VM " + str(v.name) + " attached to network "+str(n.name)
-									self.links.append(Link(name = v.name, description=description, role=PeerRole.endpoint,
+									self.links.append(Link(name = v.name, sid=v.sid, description=description, role=PeerRole.endpoint,
 												link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 
+		
 
 	def _discover_routers_link_controllers_and_networks(self):
 		""" Add links from routers to hosting network nodes 
@@ -539,14 +559,15 @@ class CTXDActuator_openstack(CTXDActuator):
 			controller_name=Name(Hostname(n))
 			consumer=self.get_consumer(controller_name)
 			controller_peers.append( Peer(service_name= controller_name,
+						sid=SId.create_from_service_type(OS(name=n)),
 						role= PeerRole.host,
 						consumer=consumer))
 
 		for r in netfuns:
 			if type(r.type.getObj().type.getObj()) == Router:
 				if r.subservices is not None:
-					for subname in r.subservices:
-						subsrvs = self.get_services(name=subname)
+					for subsid in r.subservices:
+						subsrvs = self.get_services_by_sid(subsid)
 						assert len(subsrvs) <= 1
 						for s in subsrvs:
 							if type(s.type.getObj())==NetworkNode:
@@ -560,14 +581,11 @@ class CTXDActuator_openstack(CTXDActuator):
 										nets = self.get_services(name=Name(self._os_dns_name(net['name'])), namespace=project, filter=Network)
 										
 										for w in nets:
-											peer = Peer(service_name= w.name,
+											peer = Peer(service_name= w.name, sid=w.sid,
 														role= PeerRole.forwarding,
 														consumer=None) 
 											description="Router " + str(r.name) + " attached to network "+str(w.name)
-											peer = Peer(service_name=w.name,
-													role=PeerRole.forwarding,
-													consumer=None)
-											self.links.append(Link(name = r.name, description=description, role=PeerRole.forwarding,
+											self.links.append(Link(name = r.name, sid=r.sid, description=description, role=PeerRole.forwarding,
 														link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 									except:
 										logger.warn("Unable to find net: %s", net_id)
@@ -578,6 +596,7 @@ class CTXDActuator_openstack(CTXDActuator):
 									self.links.append(Link(name = r.name, description=description, 
 												link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([p])))
 			
+
 	def _discover_networks_link_controllers(self):
 		""" Create link between networks and underlying controllers """
 
@@ -596,18 +615,20 @@ class CTXDActuator_openstack(CTXDActuator):
 
 		controller_peers = []
 		for n in neutron_controllers:
+			print("controller: ", n)
 			controller_name=Name(Hostname(n))
 			consumer=self.get_consumer(controller_name)
-			controller_peers.append( Peer(service_name= controller_name,
+			controller_peers.append( Peer(service_name= controller_name, sid=SId.create_from_service_type(OS(name=n)),
 						role= PeerRole.host,
 						consumer=consumer))
 
 		for n in os_nets:
 			for p in controller_peers:
 				description="Network " + str(n.name) + " hosted on "+str(p.service_name)
-				self.links.append(Link(name = n.name, description=description, 
+				self.links.append(Link(name = n.name, sid=n.sid,  description=description, 
 							link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([p])))
 			
+
 
 	def _discover_execenvs_link_vms(self):
 		""" Discover execenvs hosted in vms 
@@ -621,17 +642,19 @@ class CTXDActuator_openstack(CTXDActuator):
 				match = re.search('^(.*) login', log, re.M)
 				if match is not None:
 					hostname=Name(Hostname(match.group(1)))
+					sid=SId.create_from_service_type(OS(name=match.group(1)))
 					consumer=self.get_consumer(hostname)
-					peer = Peer(service_name=hostname,
+					peer = Peer(service_name=hostname, sid=sid,
 							role=PeerRole.guest,
 							consumer=consumer)
 					# Create the link
-					self.links.append(Link(name=v.name, description=str(hostname)+" running in "+str(v.name),
+					self.links.append(Link(name=v.name, sid=v.sid, description=str(hostname)+" running in "+str(v.name),
 								link_type=LinkType.hosting, role=PeerRole.host, peers=ArrayOf(Peer)([peer])))
 					# and add as subservice
-					v.subservices.append(hostname)
+					v.subservices.append(sid)
 
 					
+
 
 
 	def _discover_sg_link_vms(self):
@@ -648,14 +671,16 @@ class CTXDActuator_openstack(CTXDActuator):
 			consumer=self.get_consumer(sg)
 
 			if consumer is not None:
-				peer = Peer(service_name= v.name,
+				peer = Peer(service_name= v.name, sid=v.sid,
 							role= PeerRole.protected,  #VM is controlled by Openstack
 							consumer=consumer) # This is the consumer running on that service.
 				description="OpenStack Security Groups protect "+v.name.getObj()
-				self.links.append(Link(name = sg, description=description,  role=PeerRole.protect,
+				self.links.append(Link(name = sg, sid=self._os_sg_sid(self.sg), 
+							description=description,  role=PeerRole.protect,
 							link_type=LinkType.protecting, peers=ArrayOf(Peer)([peer])))
 
 
+		print(self.links)
 
 	
 	def _connect_to_openstack(self):
@@ -726,6 +751,12 @@ class CTXDActuator_openstack(CTXDActuator):
 		
 		# Format the response as a JSON-like structure for pretty printing
 		return self._format_os_data(services)
+		
+	def _openstack_versions_show(self):
+		""" Retrieve list of OpenStack services """
+		self._connect_to_openstack()
+
+		# TODO: what api to get service versions (openstack versions show)???
 		
 	def _openstack_endpoint_list(self):
 		""" Retrieve list of OpenStack service endpoints """
@@ -935,6 +966,11 @@ class CTXDActuator_openstack(CTXDActuator):
 				ep.append(e)
 		return ep
 
+	def _get_openstack_versions(self, serviceid):
+		""" Retrieve the version number of a service id """
+		return None
+		
+
 	def _get_openstack_project(self, project_id):
 		""" Retrieve the project from a list """
 		for p in self.cloud_projects:
@@ -1022,3 +1058,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			name=base
 
 		return name
+
+	def _os_sg_sid(self, sg):
+		""" Provide a common sid for OpenStack security groups """
+		return SId.create_from_service_type(NetworkFunction(name=str(sg), type=NetworkFunctionType(Firewall())))

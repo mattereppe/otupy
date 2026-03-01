@@ -55,9 +55,9 @@ class ExecutionEnvironment(CTXDObject):
 				for lib in libs:
 					self.libs.append(Library(lib))
 
-	@staticmethod
-	def getType():
-		return "base"
+#	@staticmethod
+#	def get_subtype():
+#		return "base"
 
 	def getId(self, domain=None, namespace=None):
 		return "execenv:" + self.getType() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)

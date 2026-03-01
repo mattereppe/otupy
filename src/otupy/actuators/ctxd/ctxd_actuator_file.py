@@ -22,7 +22,8 @@ import logging
 from otupy import Encoder, actuator_implementation
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd.data.service import Service, ServiceType, Link 
+from otupy.profiles.ctxd.data.service import Service, ServiceType
+from otupy.profiles.ctxd.data.link import Link 
 
 
 logger = logging.getLogger(__name__)

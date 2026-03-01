@@ -38,7 +38,7 @@ class API(CTXDObject):
 			self.version = version
 
 	def getId(self, domain=None, namespace=None):
-		return "api:" + str(self.app_type) + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name) + "@" + str(self.version)
+		return "api:" + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name) + "@" + str(self.version)
 		
 	def __repr__(self):
 		return (f"API({super().__repr__()},  type={self.type}, "
