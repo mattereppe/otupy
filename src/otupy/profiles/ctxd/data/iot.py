@@ -1,7 +1,6 @@
-from otupy.profiles.ctxd.data.host import Host
+from otupy import  Record
 
-
-class IOT(Host):
+class IoT(Record):
 	"""IOT
     it is the description of the service - IOT
 
@@ -10,21 +9,15 @@ class IOT(Host):
 	""" type of the IOT device"""
 
 
-	def __init__(self, iot=None, type=None, **kwargs):
-		if isinstance(iot, IOT):
-			super().__init__(server)
+	def __init__(self, iot=None, type=None):
+		if iot is not None:
 			self.type = iot.type
 		else:
-			super().__init__(**kwargs)
 			self.type = type 
 
-#	@staticmethod
-#	def get_subtype():
-#		return "iot"
 
 	def __repr__(self):
 		return (f"IoT("
-					 f"{super().__repr__()},"
 	             "type={self.type})")
 	
 	def __str__(self):

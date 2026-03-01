@@ -45,12 +45,14 @@ from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service import Service, SId
 from otupy.profiles.ctxd.data.link import Link
+from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
+from otupy.profiles.ctxd.data.host_type import HostType
+from otupy.profiles.ctxd.data.host import  Host
 from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
 from otupy.profiles.ctxd.data.network_node import NetworkNode
 from otupy.profiles.ctxd.data.network_firewall import Firewall
 from otupy.profiles.ctxd.data.network_interface import NetworkInterface
 from otupy.profiles.ctxd.data.vm import VM
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress
 
 from otupy.profiles.ctxd import *
@@ -100,6 +102,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			self._connect_to_openstack()
 		except Exception as e:
 			logger.error(f"Connection to OpenStack failed: {e}")
+
 
 	def discover_context(self):
 		""" Discover services and links
@@ -227,10 +230,10 @@ class CTXDActuator_openstack(CTXDActuator):
 
 			netnode = NetworkNode(name=vm['name'], description="Openstack ports", ifaces=ifaces)
 
-			server = VM(name= vm['name'],
+			server = Host(name= vm['name'],
 							id= vm['id'], 
 							description=vm['description'],
-							image = vm['image']['id'])
+							type=HostType(VM(image = vm['image']['id'])))
 			
 
 			logger.debug("Found server: %s", str(server))
@@ -266,8 +269,8 @@ class CTXDActuator_openstack(CTXDActuator):
 		# Hypervisors running VMs in the cloud infrastructure
 		# ---------------------------------------------------
 		for h in self.cloud_hypervisors:
-			hyper = OS(name=Hostname(h['name']), id=h['service_details']['id'],
-					description="OpenStack hypervisor")
+			hyper = ExecutionEnvironment(name=Hostname(h['name']), id=h['service_details']['id'],
+					description="OpenStack hypervisor", type=ExecutionEnvironmentType(OS()) )
 
 			logger.debug("Found hypervisor: %s", str(hyper))
 
@@ -384,7 +387,8 @@ class CTXDActuator_openstack(CTXDActuator):
 		"""
 
 		os_services = self.get_services(filter=API)
-		os_vms = self.get_services(filter=VM)
+#os_vms = self.get_services(filter=VM)
+		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
 		for s in os_services:
@@ -466,7 +470,8 @@ class CTXDActuator_openstack(CTXDActuator):
 			the OpenStack query (which takes time)
 		"""	
 #		hypervisors = self._openstack_hypervisor_list()
-		os_vms = self.get_services(filter=VM)
+#		os_vms = self.get_services(filter=VM)
+		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		for v in os_vms:
 			vmdetails = self._get_openstack_server(v.type.getObj().id)
@@ -475,7 +480,7 @@ class CTXDActuator_openstack(CTXDActuator):
 				description="OpenStack server "+str(v.name)+" hosted on "+ hp_name
 				consumer = self.get_consumer(hp_name)
 				peer = Peer(service_name=Name(vmdetails['hypervisor_hostname']), 
-						sid=SId.create_from_service_type(OS(name=vmdetails['hypervisor_hostname'])),
+						sid=SId.create_from_service_type(ExecutionEnvironment(name=vmdetails['hypervisor_hostname'], type=ExecutionEnvironmentType(OS()))),
 						role=PeerRole.host, consumer=consumer)
 
 				self.links.append(Link(name=v.name, sid=v.sid, description=description, role=PeerRole.guest,
@@ -488,7 +493,8 @@ class CTXDActuator_openstack(CTXDActuator):
 			This is something outside the OpenStack scope, which is delegated to a remote peer
 			(currently read by configuration file).
 		"""
-		os_vms = self.get_services(filter=VM)
+#os_vms = self.get_services(filter=VM)
+		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		for v in os_vms:
 			consumer=self.get_consumer(v.name)
@@ -498,7 +504,8 @@ class CTXDActuator_openstack(CTXDActuator):
 							role= PeerRole.host,  #VM is controlled by Openstack
 							consumer=consumer) # This is the consumer running on that service.
 				description="System and application software installed on "+v.name.getObj()
-				self.links.append(Link(name = v.name, sid=SId.create_from_service_type(OS(name=str(v.name))),
+				self.links.append(Link(name = v.name, 
+							sid=SId.create_from_service_type(ExecutionEnvironment(name=str(v.name), type=ExecutionEnvironmentType(OS()))),
 							description=description, role=PeerRole.guest,
 							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
@@ -506,7 +513,8 @@ class CTXDActuator_openstack(CTXDActuator):
 	def _discover_vms_link_networks(self):
 		""" Add links from VMs to attached networks """
 
-		vms = self.get_services(filter=VM)
+#vms = self.get_services(filter=VM)
+		vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		for v in vms:
 			if v.subservices is not None:
@@ -559,7 +567,7 @@ class CTXDActuator_openstack(CTXDActuator):
 			controller_name=Name(Hostname(n))
 			consumer=self.get_consumer(controller_name)
 			controller_peers.append( Peer(service_name= controller_name,
-						sid=SId.create_from_service_type(OS(name=n)),
+						sid=SId.create_from_service_type(ExecutionEnvironment(name=n, type=ExecutionEnvironmentType(OS()))),
 						role= PeerRole.host,
 						consumer=consumer))
 
@@ -615,10 +623,10 @@ class CTXDActuator_openstack(CTXDActuator):
 
 		controller_peers = []
 		for n in neutron_controllers:
-			print("controller: ", n)
 			controller_name=Name(Hostname(n))
 			consumer=self.get_consumer(controller_name)
-			controller_peers.append( Peer(service_name= controller_name, sid=SId.create_from_service_type(OS(name=n)),
+			controller_peers.append( Peer(service_name= controller_name, 
+						sid=SId.create_from_service_type(ExecutionEnvironment(name=n, type=ExecutionEnvironmentType(OS()))),
 						role= PeerRole.host,
 						consumer=consumer))
 
@@ -634,7 +642,8 @@ class CTXDActuator_openstack(CTXDActuator):
 		""" Discover execenvs hosted in vms 
 			TODO: This might be implemented in a more clean way with virsh (libvirt).
 		"""
-		os_vms = self.get_services(filter=VM)
+#os_vms = self.get_services(filter=VM)
+		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		for v in os_vms:
 			log = self._openstack_console_show(v.type.getObj().id)
@@ -642,7 +651,7 @@ class CTXDActuator_openstack(CTXDActuator):
 				match = re.search('^(.*) login', log, re.M)
 				if match is not None:
 					hostname=Name(Hostname(match.group(1)))
-					sid=SId.create_from_service_type(OS(name=match.group(1)))
+					sid=SId.create_from_service_type(ExecutionEnvironment(name=match.group(1), type=ExecutionEnvironmentType(OS())))
 					consumer=self.get_consumer(hostname)
 					peer = Peer(service_name=hostname, sid=sid,
 							role=PeerRole.guest,
@@ -664,7 +673,8 @@ class CTXDActuator_openstack(CTXDActuator):
 			Security groups are modelled as a security function implemented by an external actuator.
 			They protect all VMs hosted in OpenStack.
 		"""
-		os_vms = self.get_services(filter=VM)
+#os_vms = self.get_services(filter=VM)
+		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		sg = Name(self.sg)
 		for v in os_vms:
@@ -680,7 +690,6 @@ class CTXDActuator_openstack(CTXDActuator):
 							link_type=LinkType.protecting, peers=ArrayOf(Peer)([peer])))
 
 
-		print(self.links)
 
 	
 	def _connect_to_openstack(self):

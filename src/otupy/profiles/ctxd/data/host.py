@@ -1,4 +1,5 @@
 from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
+from otupy.profiles.ctxd.data.host_type import HostType
 from otupy import Hostname
 
 class Host(CTXDObject):
@@ -32,6 +33,8 @@ class Host(CTXDObject):
 	""" Name of the firmware (e.g., BIOS, UEFI, iOS) """
 	version: str = None
 	""" Firmware version/release """
+	type: HostType = None
+	""" Specific device type (including virtual and physical devices """
 
 	def __init__(self, 
 			host:object = None,
@@ -43,7 +46,8 @@ class Host(CTXDObject):
 			release: str = None,
 			serial: str = None,
 			firmware: str = None,
-			version: str = None):
+			version: str = None,
+			type: HostType = None):
 	
 		if host is not None:
 			super().__init__(name=host.name, id=host.id, description=host.description)
@@ -53,7 +57,7 @@ class Host(CTXDObject):
 			self.serial = host.serial
 			self.firmware = host.firmware
 			self.version = host.version
-			self.ports = host.ports
+			self.type = host.type
 		else:
 			super().__init__(name=name, id=id, description=description)
 			self.vendor = vendor 
@@ -62,16 +66,11 @@ class Host(CTXDObject):
 			self.serial = serial 
 			self.firmware = firmware
 			self.version = version
+			self.type = type
 	
-#	@staticmethod
-#	def get_subtype():
-#		return "base"
-
-	def getId(self, domain=None, namespace=None):
-		return "host:" + self.getType() + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
 
 	def __repr__(self):
-		return (f"Host({super().__repr__()}),"
+		return (f"Host("
 					f"vendor='{self.vendor}'," 
 					f"model='{self.model}'," 
 					f"release='{self.release}'," 
@@ -80,5 +79,5 @@ class Host(CTXDObject):
 					f"version='{self.version}'")
 	
 	def __str__(self):
-		return __repr__(self)
+		return self.__repr__()
 

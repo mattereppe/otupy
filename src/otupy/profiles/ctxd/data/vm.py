@@ -1,5 +1,4 @@
-from otupy.types.base import  ArrayOf
-from otupy.profiles.ctxd.data.host import Host
+from otupy import  Record, ArrayOf
 from otupy.types.base import Enumerated
 
 class HyperVisorType(Enumerated):
@@ -10,7 +9,7 @@ class HyperVisorType(Enumerated):
 	native = 1
 	hosted = 2
 
-class VM(Host):
+class VM(Record):
 	""" Virtual Machine
 
 		A Virtual Machine is a virtualization environment that emulates a full computer hardware.
@@ -30,27 +29,19 @@ class VM(Host):
 			vm: object = None,
 			hypervisor: str = None,
 			hypervisor_type: HyperVisorType=None, 
-			image:str = None, 
-			**kwargs):
+			image:str = None):
 		if(isinstance(vm, VM)):
-			super().__init__(vm)
 			self.hypervisor = vm.hypervisor
 			self.hypervisor_type = vm.hypervisor_type
 			self.image = vm.image
 		else:
-			super().__init__(**kwargs)
 			self.hypervisor = hypervisor 
 			self.hypervisor_type = hypervisor_type 
 			self.image = image 
 
 
-#	@staticmethod
-#	def get_subtype():
-#		return "vm"
-
 	def __repr__(self):
 		return (f"VM("
-					 f"{super().__repr__()},"
 					 f"hypervisor={self.hypervisor},"
 					 f"hypervisor_type={self.hypervisor_type}," 
 	             f"image={self.image}")
@@ -58,10 +49,3 @@ class VM(Host):
 	def __str__(self):
 		return self.__repr__()
 
-	def validate_fields(self):
-		if self.hypervisor is not None and not isinstance(self.hypervisor, str):
-			raise TypeError(f"Expected 'hypervisor' to be of type {str}, but got {type(self.hypervisor)}")
-		if self.hypervisor_type is not None and not isinstance(self.hypervisor_type, str):
-			raise TypeError(f"Expected 'hypervisor_type' to be of type {HyperVisorType}, but got {type(self.hypervisor_type)}")
-		if self.image is not None and not isinstance(self.image, str):
-			raise TypeError(f"Expected 'image' to be of type {str}, but got {type(self.image)}")

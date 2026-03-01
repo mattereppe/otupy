@@ -1,7 +1,6 @@
-from otupy import ArrayOf
-from otupy.profiles.ctxd.data.host import Host
+from otupy import  Record
 
-class Pod(Host):
+class Pod(Record):
 	""" Kubernetes pod
 		
 		A pod is the logical unit in Kubernetes to run one or more containers. Other
@@ -26,25 +25,16 @@ class Pod(Host):
 	namespace: str = None
 	""" Namespace where the pod is instantiated """
 
-	def __init__(self, pod:object = None, namespace:str = None, **kwargs):
-		if isinstance(pod, Pod):
-			super().__init(pod)
+	def __init__(self, pod:object = None, namespace:str = None):
+		if pod is not None:
 			self.namespace = pod.namespace
 		else:
-			super().__init__(**kwargs)
 			self.namespace = str(namespace) 
 
-#	@staticmethod
-#	def get_subtype():
-#		return "pod"
 
 	def __repr__(self):
 		return f"Pod(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"name={self.name}, " \
-	            f"namespace={self.namespace}, " \
-				f"ports={self.ports})" 
+	            f"namespace={self.namespace}" 
 	
 	def __str__(self):
 		return self.__repr__()
