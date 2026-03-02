@@ -501,42 +501,46 @@ class CTXDHostActuator(CTXDActuator):
 
 		
 							case 'tun':
-								# The ned_id will be iface.client@iface.server. We create a partial name here, and will update it later on
-								net_id=self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-								net_service=None
-								if len(ipnetaddrs) > 0:
-									netaddr = ipnetaddrs[0]
-									# There should be only 1 IP address assigned to a tunnel interface...
-									ip = ipaddress.ip_network(netaddr.getObj())
-									old_net_name=None
-									for i, s in tuns.items():
-										if ip.subnet_of(ipaddress.ip_network(i)): # The new element is a client of an existing element
-											tuns_server[i]=copy.deepcopy(s)
-											net_service=s
-											net_service.name=Name("tun:"+net_id+"@"+net_service.name.getObj())
-											net_service.type.getObj().name=str(ipnetaddrs[0])
-											net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
-											# Is it possible to be client of multiple servers???
-										elif ip.supernet_of(ipaddress.ip_network(i)): # The new element is a server of the current element
-											net_service=s
-											old_net_name=net_service.name
-											net_service.name=Name("tun:"+net_service.name.getObj()+"@"+net_id)
-											net_service.type.getObj().id=net_id
-											net_service.type.getObj().type.getObj()['server']=net_id
-											tuns_servers[str(ip)]=copy.deepcopy(s)
-											tuns_servers[str(ip)].name=Name(net_id)
-											# Do not break the loop, because it might be the server of many clients
-								if net_service is None:
-									# Create a network service, we will change its name later on when we discover its client/server
-									net_service=self._add_net_service(name=Name(net_id), description="Tunnel network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=TunnelNetwork) 
-									tuns[str(ip)]=net_service
-									for i, s in tuns_servers.items():
-										if ip.subnet_of(ipaddress.ip_network(i)): # Another client of a previously-seen server
-											net_service.name=Name("tun:"+net_id+"@"+s.name.getObj())
-											net_service.type.getObj().id=s.type.getObj().id
-											net_service.type.getObj().type.getObj()['server']=s.type.getObj().id
-								else:
-									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+								logger.warn("tun/tap vpns must be managed at the application layer!")
+								# tun/tap interfaces are vpn made at the application layer, and it is not possible to infer the network here
+								# The following code worked in an empirical way for all namespaces in this host, but it cannot discover 
+								# vpn links to outside nodes.
+#								# The ned_id will be iface.client@iface.server. We create a partial name here, and will update it later on
+#								net_id=self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
+#								net_service=None
+#								if len(ipnetaddrs) > 0:
+#									netaddr = ipnetaddrs[0]
+#									# There should be only 1 IP address assigned to a tunnel interface...
+#									ip = ipaddress.ip_network(netaddr.getObj())
+#									old_net_name=None
+#									for i, s in tuns.items():
+#										if ip.subnet_of(ipaddress.ip_network(i)): # The new element is a client of an existing element
+#											tuns_server[i]=copy.deepcopy(s)
+#											net_service=s
+#											net_service.name=Name("tun:"+net_id+"@"+net_service.name.getObj())
+#											net_service.type.getObj().name=str(ipnetaddrs[0])
+#											net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
+#											# Is it possible to be client of multiple servers???
+#										elif ip.supernet_of(ipaddress.ip_network(i)): # The new element is a server of the current element
+#											net_service=s
+#											old_net_name=net_service.name
+#											net_service.name=Name("tun:"+net_service.name.getObj()+"@"+net_id)
+#											net_service.type.getObj().id=net_id
+#											net_service.type.getObj().type.getObj()['server']=net_id
+#											tuns_servers[str(ip)]=copy.deepcopy(s)
+#											tuns_servers[str(ip)].name=Name(net_id)
+#											# Do not break the loop, because it might be the server of many clients
+#								if net_service is None:
+#									# Create a network service, we will change its name later on when we discover its client/server
+#									net_service=self._add_net_service(name=Name(net_id), description="Tunnel network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=TunnelNetwork) 
+#									tuns[str(ip)]=net_service
+#									for i, s in tuns_servers.items():
+#										if ip.subnet_of(ipaddress.ip_network(i)): # Another client of a previously-seen server
+#											net_service.name=Name("tun:"+net_id+"@"+s.name.getObj())
+#											net_service.type.getObj().id=s.type.getObj().id
+#											net_service.type.getObj().type.getObj()['server']=s.type.getObj().id
+#								else:
+#									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
 
 							case 'bridge':
 								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
