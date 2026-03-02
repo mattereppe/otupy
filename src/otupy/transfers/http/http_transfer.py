@@ -13,9 +13,12 @@ import requests
 import logging
 import copy
 import re
+import datetime
+import gunicorn.app.base
 
 from flask import Flask, request, make_response
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
+from werkzeug.serving import WSGIRequestHandler
 
 import otupy as oc2
 from otupy.transfers.http.message import Message
@@ -33,7 +36,7 @@ class HTTPTransfer(oc2.Transfer):
 
 		Use `HTTPTransfer` to build OpenC2 communication stacks in `Producer` and `Consumer`.
 	"""
-	def __init__(self, host, port = 80, endpoint = '/.well-known/openc2', usessl=False):
+	def __init__(self, host, port = 80, endpoint = '/.well-known/openc2', usessl=False, http_server='werkzeug'):
 		""" Builds the `HTTPTransfer` instance
 
 			The `host` and `port` parameters are used either for selecting the remote server (`Producer`) or
@@ -51,6 +54,7 @@ class HTTPTransfer(oc2.Transfer):
 		self.scheme = 'https' if usessl else 'http'
 		self.url = f"{self.scheme}://{host}:{port}{endpoint}"
 		self.ssl_context = None
+		self.http_server=http_server
 
 	def _tohttp(self, msg, encoder):
 		""" Convert otupy `Message` to HTTP `Message` """
@@ -138,6 +142,7 @@ class HTTPTransfer(oc2.Transfer):
 		if self.scheme == 'https':
 			logger.warning("Certificate validation disabled!")
 		response = requests.post(self.url, data=openc2data, headers=openc2headers, verify=False)
+			
 		logger.info("HTTP got response: %s", response)
 		logger.debug("HTTP Response Content:\n%s", response.text)
 	
@@ -224,6 +229,7 @@ class HTTPTransfer(oc2.Transfer):
 		app.config['OPENC2']=self
 		app.config['CALLBACK']=callback
 		app.config['ENCODER']=encoder
+		app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(seconds=30)
 
 		@app.route(self.endpoint, methods=['POST'])
 		def _consumer():
@@ -292,7 +298,51 @@ class HTTPTransfer(oc2.Transfer):
 
 			return httpresp, resp_code
 
-		app.run(debug=True, host=self.host, port=self.port, ssl_context=self.ssl_context)
+		match self.http_server:
+			case 'werkzeug':
+				# Run the integrated werkzeug server (development only)
+				app.run(debug=True, host=self.host, port=self.port, ssl_context=self.ssl_context)
+
+			case 'gunicorn':
+				logger.warn("Add SSL support to Gunicorn server!")
+				# Definitions to run the application with Gunicorn
+				# Gunicorn is delivered as application, with no API to invoke within a Python application
+				# (it expects the python application to be provided from the command line).
+				# The following code was taken partially from Gunicorn documentation and from the stackoverflow:
+				# https://gunicorn.org/custom/
+				# https://stackoverflow.com/questions/70396641/how-to-run-gunicorn-inside-python-not-as-a-command-line
+				def number_of_workers():
+		#				return (multiprocessing.cpu_count() * 2) + 1
+					return 2 # Simplification, we don't expect a high load
+		
+		
+				class HTTPServer(gunicorn.app.base.BaseApplication):
+		
+					def __init__(self, app, options=None):
+						self.options = options or {}
+						self.application = app
+						super().__init__()
+					
+					def load_config(self):
+						config = {key: value for key, value in self.options.items()
+										if key in self.cfg.settings and value is not None}
+						for key, value in config.items():
+							self.cfg.set(key.lower(), value)
+					
+					def load(self):
+						return self.application
+				
+				options = {
+					'bind': '%s:%s' % (self.host, self.port),
+					'workers': number_of_workers(),
+				}
+				
+				HTTPServer(app, options).run()
+	
+			case _:
+				logger.err("Unknown HTTP server: %s", http_server)
+				raise ValueError("Invalid HTTP server")
+
 
 
 @oc2.transfer("https")
