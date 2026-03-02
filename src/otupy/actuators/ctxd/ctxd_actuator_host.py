@@ -831,7 +831,7 @@ class CTXDHostActuator(CTXDActuator):
 		"""
 		if 'service_sid' in self._namespaces[ns]['router']:
 			peer = Peer(service_name=Name(self._namespaces[ns]['router']['service_sid'].name), 
-								sid=self._namespaces[ns]['router']['service_sid'].name, 
+								sid=self._namespaces[ns]['router']['service_sid'],
 								role=PeerRole.forwarding, consumer=None)
 			# TODO: Use maps and lambda functions to optimise the code
 			for iface_idx in self._namespaces[ns]['router']['ifaces']:
