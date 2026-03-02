@@ -44,7 +44,7 @@ from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.mobile_network import MobileNetwork
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
-from otupy.profiles.ctxd.data.iot import IOT
+from otupy.profiles.ctxd.data.iot import IoT
 from otupy.profiles.ctxd.data.network_type import NetworkType
 
 from otupy import ArrayOf, IPv4Net, IPv6Net, actuator_implementation
@@ -119,7 +119,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 					subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
 		for u in self.users:
-			iot = IOT(name=u['name'], description="Mobile phone", type="phone")
+			iot = IoT(name=u['name'], description="Mobile phone", type="phone")
 			self.services.append(Service(name=Name(u['name']), type=ServiceType(iot),
 					subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 

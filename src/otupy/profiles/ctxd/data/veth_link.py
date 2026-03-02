@@ -12,7 +12,7 @@ class VEthNetwork(Map):
 		A flexible container for network characteristics. 
 		Currently expects the network address/prefix as mandatory field.
 	"""
-	fieldtypes = dict(peers: (touple), nets = ArrayOf(IPNetAddress))
+	fieldtypes = dict(peers= (touple), nets = ArrayOf(IPNetAddress))
 	""" Field types
 	
 		This is the definition of the fields beard by the `Mobile` network.

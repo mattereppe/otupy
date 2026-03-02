@@ -25,6 +25,8 @@ class Library(CTXDObject):
 			self.source = source
 			self.lib_type = lib_type
 
+	def getId(self, domain=None, namespace=None):
+		return "lib:" + str(self.lib_type) + "/" + str(source) + "/" + str(self.name) + "@" + str(self.version)
 
 	def __repr__(self):
 		return (f"Application("

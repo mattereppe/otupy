@@ -1,6 +1,6 @@
-from otupy.profiles.ctxd.data.host import Host
+from otupy import  Record
 
-class Server(Host):
+class Server(Record):
 	""" Physical server
 
 		A ``Serveer`` is a true computing hardware, currently intended for any kind of high-end or low-end
@@ -11,16 +11,16 @@ class Server(Host):
 		the `Host` abstraction and will extend with additional information. 
 	"""
 
-	def __init__(self, server=None,
-			**kwargs):
-		if(isinstance(server, Server)):
-			super().__init__(server)
+	def __init__(self, server=None):
+		# Placeholder for future extensions
+		if server is not None:
+			pass
 		else:
-			super().__init__(**kwargs)
+			pass
+
 
 	def __repr__(self):
-		return (f"Server("
-					 f"{super().__repr__()},")
+		return f"Server()"
 	
 	def __str__(self):
 		return self.__repr__()

@@ -19,5 +19,7 @@ class EthernetNetwork(Map):
 		This is the definition of the fields beard by the `Ethernet` network.
 	"""
 
+	def getNets(self):
+		return self['nets']
 
 

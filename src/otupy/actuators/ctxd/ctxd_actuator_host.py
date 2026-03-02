@@ -146,8 +146,10 @@ class CTXDHostActuator(CTXDActuator):
 				pkg_list.append( Package(name=r[1], version=r[2], arch=r[3], description=r[4]) )
 
 		# TODO: Add more platform specific info for Mac, Windows, Linux, Android
+		# Note: platform.version() and platform.release() are swapped because platform.release()
+		# is more suitable to represent a compact version of the kernel.
 		execenv = OS(name=name, description=platform.platform(), 
-				family=platform.system(), version=platform.version(), release=platform.release, 
+				family=platform.system(), release=platform.version(), version=platform.release, 
 				arch=platform.machine(), pkgs=pkg_list)
 		self.platform = Service(name=Name(Hostname(name)), 
 					type=ServiceType(execenv), subservices=ArrayOf(Name)(),

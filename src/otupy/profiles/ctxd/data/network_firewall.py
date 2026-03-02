@@ -1,15 +1,15 @@
-""" Network router
+""" Network firewall
 
-	Defines the main characteristics of an IP router.
+	Defines the main characteristics of an IP firewall.
 """
 
 from otupy import Map
 
-class Router(Map):
-	""" Router
+class Firewall(Map):
+	""" Firewall
 
-		A flexible container for routing configurations.
-		To be implemented
+		This is only a placeholder to automatically generate valid subtypes for SIds.
+		
 	"""
 	fieldtypes = dict(routes= str)
 	""" Field types
@@ -22,5 +22,5 @@ class Router(Map):
 		return self.__repr__()
 
 	def __repr__(self):
-		return f"Router({self['routes'] if 'routes' in self else None})"
+		return f"Firewall()"
 

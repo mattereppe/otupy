@@ -2,7 +2,6 @@ from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_function_type import NetworkFunctionType
 
 
-
 class NetworkFunction(CTXDObject):
 	"""Network Function
 
@@ -18,18 +17,24 @@ class NetworkFunction(CTXDObject):
 
 
 	def __init__(self, 
-			netfun:object  = None,
+			netfun:object = None,
+			name:str = None, 
+			id:str = None, 
+			description:str = None, 
 			version:str = None, 
-			type:NetworkFunctionType = None, **kwargs):
+			type:NetworkFunctionType = None):
 		if isinstance(netfun, NetworkFunction):
-			super().__init__(name=netfun.name, id=netfun.id, description=netfun.description)
+			super().__init__(name=netfun.name, description=netfun.description, id=netfun.id)
 			self.version = netfun.version
 			self.type = netfun.type
 		else:
-			super().__init__(**kwargs)
+			super().__init__(name=name, description=description, id=id)
 			self.version = str(version) if version is not None else None
 			self.type = type 
 
+	def get_subtype(self):
+		return self.type.getName()
+		
 	def __repr__(self):
 		return (f"NetworkFunction("
 	            f"{super().__repr__()}, "

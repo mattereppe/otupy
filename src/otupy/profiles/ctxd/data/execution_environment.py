@@ -1,5 +1,6 @@
 from otupy import ArrayOf
 from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
+from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
 from otupy.profiles.ctxd.data.application import Application
 from otupy.profiles.ctxd.data.library import Library
 from otupy.profiles.ctxd.data.package import Package
@@ -25,6 +26,8 @@ class ExecutionEnvironment(CTXDObject):
 		In general, we expect applications or libraries to be present to support the execution
 		of other software.
 	"""
+	type: ExecutionEnvironmentType = None
+	""" Specific type of Execution Environment """
 	libs: ArrayOf(Library) = None
 	""" List of libraries installed in this ExecutionEnvironment """
 	pkgs: ArrayOf(Package) = None
@@ -36,16 +39,19 @@ class ExecutionEnvironment(CTXDObject):
 			description:str = None, 
 			id:str = None, 
 			name:Hostname = None, 
+			type:ExecutionEnvironmentType = None,
 			libs: ArrayOf(Library)=None,
 			apps: ArrayOf(Application)=None,
 			**kwargs):
 
 		if execenv is not None:
 			super().__init__(name=execenv.name, id=execenv.id, description=execenv.description)
+			self.type = execenv.type
 			self.apps = execenv.apps
 			self.libs = execenv.libs
 		else:
 			super().__init__(name=name, id=id, description=description)
+			self.type = type
 			if apps is not None:
 				self.apps = ArrayOf(Application)()
 				for app in apps:
@@ -54,6 +60,9 @@ class ExecutionEnvironment(CTXDObject):
 				self.libs = ArrayOf(Library)()
 				for lib in libs:
 					self.libs.append(Library(lib))
+
+	def get_subtype(self):
+		return self.type.getName()
 
 	def __repr__(self):
 		return (f"ExecutionEnvironment("

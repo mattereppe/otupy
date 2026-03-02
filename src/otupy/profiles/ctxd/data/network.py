@@ -1,4 +1,4 @@
-import otupy.types.base
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_type import NetworkType
 from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 
@@ -19,8 +19,12 @@ class Network(CTXDObject):
 			super().__init__(name=network.name, description=network.description, id=network.id)
 			self.type = network.type
 		else:
-			super().__init__(name=name, id=id, description=description)
+			super().__init__(name=name, description=description, id=id)
 			self.type = type 
+
+
+	def get_subtype(self):
+		return self.type.getName()
 
 	def __repr__(self):
 		return (f"Network({super().__repr__()},"
