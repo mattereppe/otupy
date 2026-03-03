@@ -29,6 +29,9 @@ class Package(CTXDObject):
 			self.source = source
 			self.pkg_type = pkg_type
 
+	def getId(self, domain=None, namespace=None):
+		return "pkg:" + str(self.lib_type) + "/" + str(source) + "/" + str(self.name) + "#" + str(self.arch) + "@" + str(self.version)
+
 
 	def __repr__(self):
 		return (f"Application("

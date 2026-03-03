@@ -20,5 +20,8 @@ class TunnelNetwork(Map):
 		:param nets: Network addesses used in this network
 	"""
 
+	def getNets(self):
+		return self['nets']
+
 
 

@@ -45,6 +45,7 @@ class NetworkNode(CTXDObject):
 			else:
 				self.ifaces = None
 
+
 	def __repr__(self):
 		return (f"NetworkNode("
 					f"{super().__repr__()},"

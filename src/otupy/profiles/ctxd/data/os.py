@@ -1,6 +1,6 @@
-from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
+from otupy.types.base import Record
 
-class OS(ExecutionEnvironment):
+class OS(Record):
 	""" Operating System
 
 		The Operating System is one common Execution Environment, which
@@ -8,31 +8,32 @@ class OS(ExecutionEnvironment):
 		and applications, as well as many subsystems (file systems, etc.).
 
 	"""
-	version: str = None
-	""" Version of the OS """
 	family: str = None
 	""" Family of the OS """
+	version: str = None
+	""" Version of the OS """
+	release: str = None
+	""" Release number/string """
 	arch: str = None
 	""" Supported CPU architecture """
 
 
-	def __init__(self, os = None, 
-			version = None, family = None, arch = None,
-			**kwargs):
+	def __init__(self, os = None, version = None, family = None, release=None,  arch = None):
 		if os is not None:
-			super().__init__(os=os)
-			self.version=os.version
 			self.family=os.family
+			self.version=os.version
+			self.release=os.release
 			self.arch=os.family
 		else:
-			super().__init__(**kwargs)
-			self.version = str(version) 
 			self.family = str(family) 
+			self.version = str(version) 
+			self.release = str(release) 
 			self.arch = str(arch)
 
+
 	def __repr__(self):
-		return (f"OS({super().__repr__()},"
-	             f"version={self.version}, family={self.family}, type={self.arch})")
+		return (f"OS("
+	             f"family={self.family}, version={self.version}, release={self.release}, type={self.arch})")
 	
 	def __str__(self):
 		return self.__repr__()
