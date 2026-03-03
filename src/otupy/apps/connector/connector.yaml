@@ -35,7 +35,7 @@ logger:
          filename: "connector.log"
    root:
       handlers: [console]
-      level: INFO
+      level: DEBUG
    loggers:
       otupy:
          handlers: [console]

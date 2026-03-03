@@ -28,20 +28,19 @@ class eBPFActuator:
         self.logger = logging.getLogger(__name__)
 
     def run(self, cmd: Command) -> Response:
-        try:
 
-            match cmd.action:
-                case Actions.create: return self.create(cmd)
-                case Actions.query: return self.query(cmd)
-                case Actions.delete: return self.delete(cmd)
-                case _: return self.__notimplemented(cmd)
-        except Exception as e:
-            return self.__servererror(cmd, e)
+
+        match cmd.action:
+            case Actions.create: return self.create(cmd)
+            case Actions.query: return self.query(cmd)
+            case Actions.delete: return self.delete(cmd)
+            case _: return self.__notimplemented(cmd)
+
 
     def create(self, cmd: Command) -> Response:
         obj = cmd.target.getObj()
         if obj.file is None or obj.direction is None or obj.attach_type is None:
-            return Response(StatusCode.BAD_REQUEST, "Missing required eBPF parameters")
+            return Response(StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
 
         try:
             prog_type = obj.attach_type.Name.lower()
@@ -52,10 +51,10 @@ class eBPFActuator:
                 direction=obj.direction.Name.lower()
             )
             prog.load(ifaces=["wlp7s0"])
-            return Response(StatusCode.OK, "Program loaded successfully")
+            return Response(StatusCode.OK, status_text="Program loaded successfully")
         except Exception as e:
             self.logger.exception(e)
-            return Response(StatusCode.INTERNAL_ERROR, f"Failed to attach eBPF program: {type(e)}")
+            return self.__servererror(cmd, e)
 
     def query(self, cmd: Command) -> Response:
         target = cmd.target.getObj()
@@ -78,7 +77,7 @@ class eBPFActuator:
             return Response(StatusCode.OK, f"{len(programs)} programs loaded", results)
         except Exception as e:
             self.logger.exception(e)
-            return Response(StatusCode.INTERNAL_ERROR, f"Failed to retrieve eBPF programs: {type(e)}")
+            return self.__servererror(cmd, e)
 
     def delete(self, cmd: Command) -> Response:
         target = cmd.target.getObj()
@@ -94,11 +93,21 @@ class eBPFActuator:
             Response(status=StatusCode.OK, status_text="TODO REMOVE EBPF ACTUATOR")
         except Exception as e:
             self.logger.exception(e)
-            return Response(StatusCode.INTERNAL_ERROR, f"Failed to remove eBPF program: {type(e)}")
+            return self.__servererror(cmd, e)
 
     def __notimplemented(self, cmd: Command):
-        return Response(StatusCode.NOTIMPLEMENTED, f'Action {cmd.action.name} not implemented')
+        return Response(StatusCode.NOTIMPLEMENTED, status_text = f'Action {cmd.action.name} not implemented')
 
-    def __servererror(self, cmd: Command, e: Exception):
-        self.logger.exception(e)
-        return Response(StatusCode.INTERNAL_ERROR, 'Internal server error')
+    def __servererror(self, cmd, e):
+        """ Internal server error
+
+            Default response in case something goes wrong while processing the command.
+
+            :param cmd: The command that triggered the error.
+            :param e: The Exception returned.
+            :return: A standard INTERNALSERVERERROR response.
+        """
+        if(logging.root.level < logging.INFO):
+            return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error: ' + str(e))
+        else:
+            return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error')
