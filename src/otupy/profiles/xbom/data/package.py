@@ -55,7 +55,7 @@ class Package(XBOMObject):
 
 		return Component(
 			name=self.name or "unknown",
-			type=ComponentType.LIBRARY,
+			type=ComponentType.FILE,
 			bom_ref=generate_bom_ref("package"),
 			version=self.version,
 			description=self.description,
