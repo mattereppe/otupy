@@ -1,0 +1,13 @@
+ebpf-example:
+  actuator: "x-ebpf"
+  profile: "x-ebpf"
+  specifiers:
+    domain: null
+    asset_id: "ebpf-example"
+  consumer:
+    host: "127.0.0.1"
+    port: 8080
+    protocol: "tcp"
+    endpoint: "/.well-known/openc2"
+    transfer: "http"
+    encoding: "json"

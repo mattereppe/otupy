@@ -1,0 +1,20 @@
+consumer:
+  host: 127.0.0.1
+  port: 8080
+
+asset_id: "ebpf-example"
+
+actions:
+  - type: load
+    program: "./src/otupy/apps/ebpf/obsolete/allow_all.o"
+    interface: "wlp7s0"
+    direction: "ingress"
+    attach_type: "tc"
+
+  #- type: query
+
+  #- type: delete
+  #  program: "./src/otupy/apps/ebpf/allow_all.o"
+  #  interface: "wlp7s0"
+  #  direction: "ingress"
+  #  attach_type: "tc"

@@ -7,7 +7,7 @@ from otupy.apps.ebpf.producer_manager import (
     delete_program
 )
 
-ASSET_ID = "ebpfTest1"
+ASSET_ID = "ebpf-example"
 
 
 def print_menu():

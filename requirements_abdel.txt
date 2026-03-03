@@ -8,4 +8,6 @@ azure-mgmt-resourcegraph
 azure.mgmt.sql
 azure.mgmt.web
 proxmoxer
+pyyaml 
+jsonschema
 bcc

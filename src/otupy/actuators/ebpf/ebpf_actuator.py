@@ -3,6 +3,7 @@ from otupy import Version, StatusCode
 from otupy import  StatusCodeDescription, Actions, Command, Response
 from otupy.actuators.ebpf.programs.TCprogram import TCProgram
 from otupy.actuators.ebpf.managers.ebpf_program_manager import EBPFProgramManager
+from otupy.core.actuator import actuator_implementation
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
@@ -11,8 +12,16 @@ from otupy.profiles.ebpf.query_results import QueryResults
 from otupy.types.base.array_of import ArrayOf
 from otupy.actuators.ebpf.programs.XDPprogram import XDPProgram
 
+
+@actuator_implementation("x-ebpf")
 class eBPFActuator:
-    def __init__(self):
+    def __init__(self,  **kwargs):
+
+        self.auth = kwargs['auth'] if 'auth' in kwargs else None
+        self.config = kwargs['config'] if 'config' in kwargs else None
+        self.peers = kwargs['peers'] if 'peers' in kwargs else None
+        self.owner = kwargs['owner'] if 'owner' in kwargs else None
+        self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
         self.manager = EBPFProgramManager()
         self.manager.register_program_type("tc", TCProgram)
         self.manager.register_program_type("xdp", XDPProgram)
