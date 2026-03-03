@@ -40,7 +40,7 @@ class eBPFActuator:
     def create(self, cmd: Command) -> Response:
         obj = cmd.target.getObj()
         if obj.file is None or obj.direction is None or obj.attach_type is None:
-            return Response(StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
+            return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
 
         try:
             prog_type = obj.attach_type.Name.lower()
@@ -51,7 +51,7 @@ class eBPFActuator:
                 direction=obj.direction.Name.lower()
             )
             prog.load(ifaces=["wlp7s0"])
-            return Response(StatusCode.OK, status_text="Program loaded successfully")
+            return Response(status=StatusCode.OK, status_text="Program loaded successfully")
         except Exception as e:
             self.logger.exception(e)
             return self.__servererror(cmd, e)
@@ -74,7 +74,7 @@ class eBPFActuator:
                 Direction=ArrayOf(Direction)([p["direction"] for p in programs]),
                 Interfaces=ArrayOf(Interfaces)([p["interface"] for p in programs])
             )
-            return Response(StatusCode.OK, f"{len(programs)} programs loaded", results)
+            return Response(status=StatusCode.OK, status_text=f"{len(programs)} programs loaded", results=results)
         except Exception as e:
             self.logger.exception(e)
             return self.__servererror(cmd, e)
@@ -90,7 +90,8 @@ class eBPFActuator:
                 direction=target.direction.Name.lower()
             )
             prog.remove(ifaces=target.interfaces.Names if target.interfaces else None)
-            Response(status=StatusCode.OK, status_text="TODO REMOVE EBPF ACTUATOR")
+            
+            return Response(status=StatusCode.OK, status_text="Program has been deleted successfully")
         except Exception as e:
             self.logger.exception(e)
             return self.__servererror(cmd, e)
