@@ -690,13 +690,15 @@ class CTXDActuator_kubernetes(CTXDActuator):
 				if sub.type == ServiceType.get_type_name(Application):
 					peer = Peer(service_name=sub.name, sid=sub, role=PeerRole.controlled,
 										consumer=self.get_consumer(sid=sub))
-					self.links.append( Link(name=K8S_APISERVER_NAME, sid=self._k8s_apiserver, 
-										description="Kube-apiserver controls kubelets",
-										link_type=LinkType.controlling, role=PeerRole.control, 
-										peers=ArrayOf(Peer)([peer])))
+					if self._k8s_apiserver is not None:
+						self.links.append( Link(name=K8S_APISERVER_NAME, sid=self._k8s_apiserver, 
+											description="Kube-apiserver controls kubelets",
+											link_type=LinkType.controlling, role=PeerRole.control, 
+											peers=ArrayOf(Peer)([peer])))
 					peer.role=PeerRole.control
 					for pod in cloud_pods:
-						self.links.append( Link(name=pod.name, sid=pod.sid, 
+						if self.nodes[str(pod.sid)].name == sub.domain:
+							self.links.append( Link(name=pod.name, sid=pod.sid, 
 															description="Kubelet controls pod "+str(pod.name),
 															link_type=LinkType.controlling, role=PeerRole.controlled,
 															peers=ArrayOf(Peer)([peer])))
@@ -782,15 +784,16 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			Network Policies implement sort of a slpf firewall, hence they are a security function. However, they are not
 			standalone software, and they are implemented by kubernetes..
 		"""
-		consumer = self.get_consumer(sid=self._get_networkpolicies_sid())
-		peer = Peer(service_name=Name("kubernetes-networkpolicies"), 
-						sid=self._get_networkpolicies_sid(),
-						role=PeerRole.controlled, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
-						consumer=consumer)
-		description="Kubernetes API controls Network Policies"
-		self.links.append(Link(name=Name(K8S_APISERVER_NAME), sid=self._k8s_apiserver, description=description,
-						link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
-
+		if self._k8s_apiserver is not None:
+			consumer = self.get_consumer(sid=self._get_networkpolicies_sid())
+			peer = Peer(service_name=Name("kubernetes-networkpolicies"), 
+							sid=self._get_networkpolicies_sid(),
+							role=PeerRole.controlled, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
+							consumer=consumer)
+			description="Kubernetes API controls Network Policies"
+			self.links.append(Link(name=Name(K8S_APISERVER_NAME), sid=self._k8s_apiserver, description=description,
+							link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
+	
  
 	
 	def _discover_k8s_pods(self):
