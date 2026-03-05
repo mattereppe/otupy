@@ -1,0 +1,13 @@
+ctxd-host-vm:
+  actuator: "ctxd-host"
+  profile: "x-ctxd"
+  owner: "tnt-lab"
+  specifiers:
+    domain: null
+    asset_id: "ctxd-host-kube0"
+  kubernetes:
+    use_suffix: true
+#    suffix: 'acme.eu'
+    kubelet_config: '/var/lib/kubelet/config.yaml'
+    namespaces:
+      - my5gtestbed
