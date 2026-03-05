@@ -149,12 +149,16 @@ def main() -> None:
         encoder = Encoders[consumer['encoding']].value
 
         # Load the transferer (beautiful name, eh?).
+        try:
+            transfer_options = consumer['transfer_options']
+        except:
+            transfer_options= {}
         if consumer['transfer'] not in Transfers:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
         if 'endpoint' in consumer:
-            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'], **transfer_options)
         else:
-            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'])
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], **transfer_options)
 
         consumer = Consumer(connector, actuators, encoder, transferer)
         consumer.run()

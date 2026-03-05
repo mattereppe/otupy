@@ -102,11 +102,13 @@ class CTXDHostActuator(CTXDActuator):
 					ifaces_idx:			# Similar maps as before, but reversed (get idx from name)
 						<name>
 							<idx>
-					networks:			# Keep a list of network service names connected to this namespace,
+					networks:			# Keep a list of network service sids connected to this namespace,
 						- <idx>			# organized according to the interface giving access.
-							<netname>
+							<netsid>
 					service_name:		# The service name of the service associated to this namespace. It might
 						<name>			# be external (e.g., in case of Kubernetes pods).
+					service_sid			# The service sid associated to this namespace.
+						<sid>
 					service:				# The service instance associated to this namespace (if locally created).
 						<name>			# It could be retrieved by ``get_services()``, but this link is faster.
 					router:				
@@ -123,9 +125,18 @@ class CTXDHostActuator(CTXDActuator):
 							ifaces:
 								- <idx>
 
+			An additional structure is kept to store network dependencies (e.g., virtual networks
+			hosted on other physical networks).
+
+			self._net_deps:
+				<idx, ns>:				# Interfaces index and namespace of the hosting network
+					- <netsid>			# Network service sid
+											# (assuming the corresponding service might have not been created yet)
 		"""
+
 		# Retrieve the association between pods and namespaces from scratch
 		self.kube_pods=None
+		self._net_deps={}
 		# We discover again the platform at each run because packages might have changed
 		self._discover_platform()
 		self._discover_network_namespaces()
@@ -148,11 +159,14 @@ class CTXDHostActuator(CTXDActuator):
 		# TODO: Add more platform specific info for Mac, Windows, Linux, Android
 		# Note: platform.version() and platform.release() are swapped because platform.release()
 		# is more suitable to represent a compact version of the kernel.
-		execenv = OS(name=name, description=platform.platform(), 
-				family=platform.system(), release=platform.version(), version=platform.release, 
-				arch=platform.machine(), pkgs=pkg_list)
+		execenv = ExecutionEnvironment(name=name, description=platform.platform(),  pkgs=pkg_list,
+							type=ExecutionEnvironmentType(OS(family=platform.system(), 
+																		release=platform.version(), 
+																		version=platform.release, 
+																		arch=platform.machine() )))
 		self.platform = Service(name=Name(Hostname(name)), 
-					type=ServiceType(execenv), subservices=ArrayOf(Name)(),
+					sid=SId.create_from_service_type(execenv),
+					type=ServiceType(execenv), subservices=ArrayOf(SId)(),
 					release=None, owner="root")
 		self.services.append( self.platform )
 	
@@ -170,15 +184,15 @@ class CTXDHostActuator(CTXDActuator):
 					in this scope.
 		"""
 		if netns is None:
-			return self.platform.name, self.platform
+			return self.platform.sid, self.platform
 
-		kube_service_name = self._get_namespace_service_kubernetes(netns)
-		if kube_service_name is not None:
-			return kube_service_name, None
+		kube_service_sid = self._get_namespace_service_kubernetes(netns)
+		if kube_service_sid is not None:
+			return kube_service_sid, None
 
-		os_service_name = self._get_namespace_service_openstack(netns)
-		if os_service_name is not None:
-			return os_service_name, None
+		os_service_sid = self._get_namespace_service_openstack(netns)
+		if os_service_sid is not None:
+			return os_service_sid, None
 
 		netfun = self._get_namespace_function(netns)
 		# If I couldn't find any service or network function associated to this namespace,
@@ -186,13 +200,14 @@ class CTXDHostActuator(CTXDActuator):
 		if netfun is None:
 			netfun = self._get_namespace_execenv(netns)
 
-		net_service = Service(name=Name("netns:"+netns),
-				type=ServiceType(netfun), subservices=ArrayOf(Name)(),
+		net_service = Service(name=Name(netns),
+				sid=SId.create_from_service_type(netfun),
+				type=ServiceType(netfun), subservices=ArrayOf(SId)(),
 				owner=str(self.platform.name), release=None)
 		self.services.append(net_service)
-		self.platform.subservices.append(net_service)
+		self.platform.subservices.append(net_service.sid)
 
-		return net_service.name, net_service
+		return net_service.sid, net_service
 
 	def _get_namespace_execenv(self, netns):
 		""" Get the ExecutionEnvironment associated to a network namespace """
@@ -205,11 +220,14 @@ class CTXDHostActuator(CTXDActuator):
 	def _get_namespace_service_kubernetes(self, netns_name):
 		""" Infer the kubernetes service name based on container name
 
-			This implementation uses the ctr command to extract data from 
-			local kubelet, if installed.
+			The current implementation builds an internal map between namespaces and their pod names,
+			and then returns the value from this map at next calls (this speed up the execution).
 
-			Indeed, there is also a Python containerd package which implements the 
-			GRPC API, but the code is outdates and there is no clear documentation
+			This implementation previously used the ctr command to extract data from 
+			local kubelet, if installed, but this turned to be too slow.
+
+			Now, it leverages a Python containerd package which implements the 
+			GRPC API, even if the code is outdates and there is no clear documentation
 			apart from the simple example (which does not work with latest grpc package).
 		"""
 		if self.kube_pods is None:
@@ -229,19 +247,25 @@ class CTXDHostActuator(CTXDActuator):
 
 				for container in containers:
 					if self.kube_namespaces is None or container.labels['io.kubernetes.pod.namespace'] in self.kube_namespaces:
+						# currently pod_name is not used, but I keep it in case it should be restored in the future
 						pod_name=container.labels['io.kubernetes.pod.name']+'.pod.'+container.labels['io.kubernetes.pod.namespace']+self.kube_suffix
+						pod_sid=SId(name=container.labels['io.kubernetes.pod.name'], 
+											domain=self.kube_suffix, 
+											namespace=container.labels['io.kubernetes.pod.namespace'],
+											type=ServiceType.get_type_name(ExecutionEnvironment),
+											subtype=HostType.get_type_name(Pod))
 						jsondata=json.loads(container.spec.value)
 						linux_namespaces=jsondata['linux']['namespaces']
 					for ns in linux_namespaces:
 						if ns['type'] == 'network':
 							try:
 								inode=os.stat(ns['path']).st_ino
-								self.kube_pods[nsmap[inode]]=pod_name
+								self.kube_pods[nsmap[inode]]=pod_sid
 							except:
 								pass
 
 		if netns_name in self.kube_pods:
-			return Name(Hostname(self.kube_pods[netns_name]))
+			return self.kube_pods[netns_name]
 		else:
 			return None	
 
@@ -335,12 +359,12 @@ class CTXDHostActuator(CTXDActuator):
 		self._namespaces = {}
 		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
 			self._namespaces[ns] = {'name': ns, 'netnsmap': {}, 'ifaces': {}, 'ifaces_idx': {}, 
-				'service_name': None, 'service': None, 'networks': [], 'router': {} , 'bridges': {} }
+				'service_name': None, 'service_id': None, 'service': None, 'networks': [], 'router': {} , 'bridges': {} }
 			if ns is None:
 				self._namespaces[ns]['name']=str(self.platform.name)
 
 			ports = {}
-			self._namespaces[ns]['service_name'], self._namespaces[ns]['service'] = self._get_namespace_service(ns)	
+			self._namespaces[ns]['service_sid'], self._namespaces[ns]['service'] = self._get_namespace_service(ns)	
 			with pyroute2.IPRoute(netns=ns) as iprns:
 				# Retrieve the description of the interface
 				if ns is None:
@@ -360,7 +384,7 @@ class CTXDHostActuator(CTXDActuator):
 					self._namespaces[ns]['netnsmap'][0]=None # Main network stack does not have a name, and it is referred to as '0' 
 
 				# Create the NetworkNode object associated to this namespace
-				netnode = NetworkNode(name="Ports", description=description, id=None, # Kubernetes id,
+				netnode = NetworkNode(name=ns, description=description, id=None, # Kubernetes id,
 					ifaces=ArrayOf(NetworkInterface)())
 
 				# Retrieve the default gateway for this container
@@ -398,20 +422,31 @@ class CTXDHostActuator(CTXDActuator):
 					netnode.ifaces.append( port )
 
 				port_service = Service(namespace=ns, name=Name(self._namespaces[ns]['name']+".ports"),
-						type=ServiceType(netnode), subservices=None, owner=str(self._namespaces[ns]['service_name']))
+						sid=SId.create_from_service_type(netnode, namespace=ns),
+						type=ServiceType(netnode), subservices=None, owner=str(self._namespaces[ns]['service_sid']))
 				self.services.append(port_service)
 				if self._namespaces[ns]['service'] is not None:
-					self._namespaces[ns]['service'].subservices.append(port_service)
+					self._namespaces[ns]['service'].subservices.append(port_service.sid)
 
-	def _add_net_service(self, name:Name = None, namespace:str = None, id:str=None, description:str = "Network", ipnetaddrs:ArrayOf(IPNetAddress)=ArrayOf(IPNetAddress)(), nettype:object= IPNetwork):
+	def _add_net_service(self, service_name:Name = None, 
+			net_name:str = None, 
+			namespace:str = None, 
+			id:str=None, 
+			description:str = "Network", 
+			ipnetaddrs:ArrayOf(IPNetAddress)=ArrayOf(IPNetAddress)(), 
+			nettype:object= IPNetwork,
+			**kwargs): # Additional arguments to be passed to nettype
 		""" Add a network service
 		"""
-		net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
+		if net_name is None:
+			net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
 		ipnet = Network(name=net_name, id=id, description=description,
-				type=NetworkType( nettype({'nets': ipnetaddrs } )))
-		net_service= Service(name=name, namespace=namespace, type=ServiceType(ipnet), subservices=ArrayOf(Name)(), owner=str(self.platform.name))
+				type=NetworkType( nettype({'nets': ipnetaddrs, **kwargs } )))
+		net_service= Service(name=service_name, namespace=namespace, 
+				sid=SId.create_from_service_type(ipnet, namespace=namespace),
+				type=ServiceType(ipnet), subservices=ArrayOf(SId)(), owner=str(self.platform.sid))
 		self.services.append(net_service)
-		self.platform.subservices.append(net_service)
+		self.platform.subservices.append(net_service.sid)
 		
 		return net_service
 
@@ -445,30 +480,47 @@ class CTXDHostActuator(CTXDActuator):
 								else: # Same namespace
 									ns2=ns
 								peer2=(link.get_attrs('IFLA_LINK')[0], self._namespaces[ns2]['name'])
-								net_id="veth:if"+str(peer1[0])+'.'+str(peer1[1])+"@"+"if"+str(peer2[0])+"."+str(peer2[1])
+								net_id="if"+str(peer1[0])+'.'+str(peer1[1])+"+"+"if"+str(peer2[0])+"."+str(peer2[1])
 								if [(peer1, peer2)] not in veths and [(peer2, peer1)] not in veths:
 									veths.append( [(peer1, peer2)] )
-									peer1_service_name = self._namespaces[ns]['service_name']
-									peer2_service_name = self._namespaces[ns2]['service_name']
-									description="Veth link between " + str(peer1_service_name) + " and " + str(peer2_service_name)
+									peer1_service_sid = self._namespaces[ns]['service_sid']
+									peer2_service_sid = self._namespaces[ns2]['service_sid']
+									description="Veth link between " + peer1_service_sid.name + " and " + peer2_service_sid.name
 									# Default: try with peer1
 									net_name = self._create_net_name(netns=self._namespaces[ns]['name'], if_idx=peer1[0])
 									if net_name is None: # If peer1 has not got a valid ip address, try with ip2 (may be None as well)
 										net_name = self._create_net_name(netns=self._namespaces[ns2]['name'], if_idx=peer2[0])
+										if net_name is None:
+											net_name=net_id
+
+									if ns == ns2:
+										use_namespace=ns # Veth is fully contained in a specific namespace
+									else:
+										use_namespace=None # Veth across multiple namespaces
 								
 									for addr in self._get_net_addrs(netns=self._namespaces[ns2]['name'], if_idx=peer2[0]):
 										ipnetaddrs.append(addr)
-									network = Network(name=net_name, id=net_id, description=description, type=NetworkType(VEthNetwork({'peers': (peer1, peer2), 'nets': ipnetaddrs})))
+#									network = Network(name=net_name, id=net_id, description=description, type=NetworkType(VEthNetwork({'peers': (peer1, peer2), 'nets': ipnetaddrs})))
+#									net_service = Service(name=Name(net_id), type=ServiceType(network), 
+#										sid=SId.create_from_service_type(network, namespace=use_namespace),
+#										namespace=use_namespace,
+#										subservices=None, owner=str(self.platform.sid), release=None)
+#									self.platform.subservices.append(net_service.sid)
+#									self.services.append(net_service)
 								
 									# Create services for the virtual network (even if it is only a link)
-									net_service = Service(name=Name(net_id), type=ServiceType(network), 
-										subservices=None, owner=str(self.platform.name), release=None)
-									self.platform.subservices.append(net_service.name)
-									self.services.append(net_service)
+									net_service=self._add_net_service(service_name=Name(net_id), 
+																					net_name=net_name,
+																					description=description,
+																					ipnetaddrs=ipnetaddrs, 
+																					id=net_id, 
+																					nettype=VEthNetwork,
+																					peers=(peer1, peer2))
+
 
 									# Save network service name in the connected namespaces (used later to create links)
-									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
-									self._namespaces[ns2]['networks'].append({peer2[0]: net_service.name})
+									self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
+									self._namespaces[ns2]['networks'].append({peer2[0]: net_service.sid})
 
 #									# Create links between containers and the network
 #									peer = Peer(service_name=net_service.name, role=PeerRole.forwarding, consumer=None)
@@ -494,64 +546,87 @@ class CTXDHostActuator(CTXDActuator):
 										for ip in ipnetaddrs:
 											net_service.type.getObj().type.getObj()['nets'].append(ip)
 									except:
-										net_service=self._add_net_service(name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
+										net_service=self._add_net_service(service_name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
 
-									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+									self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 
 								else:
 									logger.warn("Unsupported macvlan mode: %s", attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] )
 
 		
 							case 'tun':
-								# The ned_id will be iface.client@iface.server. We create a partial name here, and will update it later on
-								net_id=self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-								net_service=None
-								if len(ipnetaddrs) > 0:
-									netaddr = ipnetaddrs[0]
-									# There should be only 1 IP address assigned to a tunnel interface...
-									ip = ipaddress.ip_network(netaddr.getObj())
-									old_net_name=None
-									for i, s in tuns.items():
-										if ip.subnet_of(ipaddress.ip_network(i)): # The new element is a client of an existing element
-											tuns_server[i]=copy.deepcopy(s)
-											net_service=s
-											net_service.name=Name("tun:"+net_id+"@"+net_service.name.getObj())
-											net_service.type.getObj().name=str(ipnetaddrs[0])
-											net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
-											# Is it possible to be client of multiple servers???
-										elif ip.supernet_of(ipaddress.ip_network(i)): # The new element is a server of the current element
-											net_service=s
-											old_net_name=net_service.name
-											net_service.name=Name("tun:"+net_service.name.getObj()+"@"+net_id)
-											net_service.type.getObj().id=net_id
-											net_service.type.getObj().type.getObj()['server']=net_id
-											tuns_servers[str(ip)]=copy.deepcopy(s)
-											tuns_servers[str(ip)].name=Name(net_id)
-											# Do not break the loop, because it might be the server of many clients
-								if net_service is None:
-									# Create a network service, we will change its name later on when we discover its client/server
-									net_service=self._add_net_service(name=Name(net_id), description="Tunnel network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=TunnelNetwork) 
-									tuns[str(ip)]=net_service
-									for i, s in tuns_servers.items():
-										if ip.subnet_of(ipaddress.ip_network(i)): # Another client of a previously-seen server
-											net_service.name=Name("tun:"+net_id+"@"+s.name.getObj())
-											net_service.type.getObj().id=s.type.getObj().id
-											net_service.type.getObj().type.getObj()['server']=s.type.getObj().id
-								else:
-									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+								logger.warn("tun/tap vpns must be managed at the application layer!")
+								# tun/tap interfaces are vpn made at the application layer, and it is not possible to infer the network here
+								# The following code worked in an empirical way for all namespaces in this host, but it cannot discover 
+								# vpn links to outside nodes.
+#								# The ned_id will be iface.client@iface.server. We create a partial name here, and will update it later on
+#								net_id=self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
+#								net_service=None
+#								if len(ipnetaddrs) > 0:
+#									netaddr = ipnetaddrs[0]
+#									# There should be only 1 IP address assigned to a tunnel interface...
+#									ip = ipaddress.ip_network(netaddr.getObj())
+#									old_net_name=None
+#									for i, s in tuns.items():
+#										if ip.subnet_of(ipaddress.ip_network(i)): # The new element is a client of an existing element
+#											tuns_server[i]=copy.deepcopy(s)
+#											net_service=s
+#											net_service.name=Name("tun:"+net_id+"@"+net_service.name.getObj())
+#											net_service.type.getObj().name=str(ipnetaddrs[0])
+#											net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
+#											# Is it possible to be client of multiple servers???
+#										elif ip.supernet_of(ipaddress.ip_network(i)): # The new element is a server of the current element
+#											net_service=s
+#											old_net_name=net_service.name
+#											net_service.name=Name("tun:"+net_service.name.getObj()+"@"+net_id)
+#											net_service.type.getObj().id=net_id
+#											net_service.type.getObj().type.getObj()['server']=net_id
+#											tuns_servers[str(ip)]=copy.deepcopy(s)
+#											tuns_servers[str(ip)].name=Name(net_id)
+#											# Do not break the loop, because it might be the server of many clients
+#								if net_service is None:
+#									# Create a network service, we will change its name later on when we discover its client/server
+#									net_service=self._add_net_service(name=Name(net_id), description="Tunnel network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=TunnelNetwork) 
+#									tuns[str(ip)]=net_service
+#									for i, s in tuns_servers.items():
+#										if ip.subnet_of(ipaddress.ip_network(i)): # Another client of a previously-seen server
+#											net_service.name=Name("tun:"+net_id+"@"+s.name.getObj())
+#											net_service.type.getObj().id=s.type.getObj().id
+#											net_service.type.getObj().type.getObj()['server']=s.type.getObj().id
+#								else:
+#									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
 
 							case 'bridge':
 								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-								net_service=self._add_net_service(name=Name(net_id), description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
+								net_service=self._add_net_service(service_name=Name(net_id), net_name=self._namespaces[ns]['ifaces'][link_idx], namespace=self._namespaces[ns]['name'], description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
 								# This is a virtual ethernet network with one bridge as subservice with the same name of the interface
 								if link_name not in self._namespaces[ns]['bridges']:
 									self._namespaces[ns]['bridges'][link_name] = {}
-								self._namespaces[ns]['bridges'][link_name]['net']=net_service.name
+								self._namespaces[ns]['bridges'][link_name]['net']=net_service.sid
 								# Do not add the bridge interface to the list of its interfaces, otherwise this will create a recursive link between the bridge network and the bridge
 #								self._namespaces[ns]['bridges'][link_name]['ifaces']=[link_idx]
 								self._namespaces[ns]['bridges'][link_name]['ifaces']=[]
-								self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 								
+							case 'vxlan':
+								for a in attr.get_attrs('IFLA_INFO_DATA'):
+									vni = a.get_attrs('IFLA_VXLAN_ID')[0]
+									fw_iface_idx = a.get_attrs('IFLA_VXLAN_LINK')[0]
+									port=a.get_attrs('IFLA_VXLAN_PORT')[0]
+								net_id="vxlan:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
+								net_service=self._add_net_service(service_name=Name(net_id), 
+																				net_name=str(vni), 
+																				namespace=peer1[1],
+																				description="VXLAN interface "+link_name, 
+																				ipnetaddrs=ipnetaddrs, 
+																				id=net_id, 
+																				nettype=VXLANNetwork,
+																				vni=vni,
+																				port=port)
+								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
+								if (fw_iface_idx, ns) not in self._net_deps:
+									self._net_deps[(fw_iface_idx, ns)] = []
+								self._net_deps[(fw_iface_idx, ns)].append(net_service.sid)
 
 							case _:
 								logger.warn("Unable to manage interface %s of type: %s", link_name, link_type)
@@ -565,8 +640,8 @@ class CTXDHostActuator(CTXDActuator):
 							if net_service.type.getObj().name is None:
 								net_service.type.getObj().name=str(ipnetaddrs[0]) # We use the first IP address as network identifier
 						except:
-							net_service=self._add_net_service(name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
-						self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+							net_service=self._add_net_service(service_name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
+						self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 
 #						peer = Peer(service_name=net_service.name, role=PeerRole.forwarding, consumer=None)
 
@@ -619,7 +694,7 @@ class CTXDHostActuator(CTXDActuator):
 			
 			@:param ns: Network namespace name
 		"""
-		ns_service_name=self._namespaces[ns]['service_name']
+		ns_service_sid=self._namespaces[ns]['service_sid']
 		with pyroute2.IPRoute(netns=ns) as iprns:
 			# Discover router
 			router=None
@@ -633,16 +708,18 @@ class CTXDHostActuator(CTXDActuator):
 					if router is None:
 						self._namespaces[ns]['router']['ifaces'] = []
 						netfun = NetworkFunction(name="Router", id=ns,
-								description="Linux software router@"+str(ns_service_name),
+								description="Linux software router@"+str(ns_service_sid.name),
 								type=NetworkFunctionType( Router(routes=json.dumps(routes) ) ))
-						router=Service(namespace=ns, name=Name("router:"+str(ns_service_name)),
-								type=ServiceType( netfun ), owner=str(ns_service_name))
+						router=Service(namespace=ns, name=Name(ns_service_sid.name),
+								sid=SId.create_from_service_type(netfun, namespace=ns),
+								type=ServiceType( netfun ), owner=str(ns_service_sid))
 						self.services.append(router)
-						self.platform.subservices.append(router)
-						peer=Peer(service_name=ns_service_name, role=PeerRole.host, consumer=None)
+						self.platform.subservices.append(router.sid)
+						peer=Peer(service_name=ns_service_sid.name, sid=ns_service_sid, role=PeerRole.host, consumer=None)
 						self.links.append( Link(name=router.name, description="Router hosted in "+self._namespaces[ns]['name'],
+									sid=router.sid,
 									link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
-					self._namespaces[ns]['router']['service_name']=router.name
+					self._namespaces[ns]['router']['service_sid']=router.sid
 					self._namespaces[ns]['router']['ifaces'].append(idx)
 
 
@@ -652,7 +729,7 @@ class CTXDHostActuator(CTXDActuator):
 			@:param ns: Network namespace name
 		"""
 
-		ns_service_name=self._namespaces[ns]['service_name']
+		ns_service_sid=self._namespaces[ns]['service_sid']
 		if ns is None:
 			cmd=['brctl',  'show']
 		else:
@@ -692,34 +769,54 @@ class CTXDHostActuator(CTXDActuator):
 				port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface], iface=iface, mac=None, ips = None)
 				netfun.type.getObj()['ifaces'].append(port)
 
-			net_service = Service(namespace=ns, name=Name("bridge:"+br+"."+str(ns_service_name)), type=ServiceType(netfun), owner=str(self.platform.name))
+			net_service = Service(namespace=ns, name=Name(br+"."+str(ns_service_sid)), 
+					sid=SId.create_from_service_type(netfun, namespace=ns),
+					type=ServiceType(netfun), owner=str(self.platform.sid))
 			self.services.append(net_service)
-			self.platform.subservices.append(net_service.name)
-			self._namespaces[ns]['bridges'][br]['service_name']=net_service.name
+			self.platform.subservices.append(net_service.sid)
+			self._namespaces[ns]['bridges'][br]['service_sid']=net_service.sid
 			
 
 			# Add this bridge as a subservice of its main network
-			br_net_service = self.get_services(name=self._namespaces[ns]['bridges'][br]['net'], filter=Network)
+			br_net_service = self.get_services_by_sid(self._namespaces[ns]['bridges'][br]['net'])
 			assert len(br_net_service) == 1
-			br_net_service[0].subservices.append(net_service.name)
+			br_net_service[0].subservices.append(net_service.sid)
 			
-			peer=Peer(service_name=ns_service_name, role=PeerRole.host, consumer=None)
+			peer=Peer(service_name=ns_service_sid.name, sid=ns_service_sid, role=PeerRole.host, consumer=None)
 			self.links.append( Link(name=net_service.name, description="Bridge hosted in "+self._namespaces[ns]['name'],
 						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
 
 
 
 	def _discover_links_networks(self):
+		self._discover_links_networks_to_namespaces()
+		self._discover_links_networks_hosted()
+		
+	def _discover_links_networks_hosted(self):
+		""" Discover links between virtual networks hosted on physical interfaces """
+		for k, v in self._net_deps.items():
+			for net in self._namespaces[k[1]]['networks']:
+				if k[0] in net:	
+					peer=Peer(service_name=net[k[0]].name, sid=net[k[0]], role=PeerRole.host, consumer=None)
+					for sid in v:
+						self.links.append( Link(name=sid.name, 
+									description="Virtual network "+sid.name+ " hosted on "+str(sid),
+									link_type=LinkType.hosting, role=PeerRole.guest, 
+									peers=ArrayOf(Peer)([peer])))
+			
+
+	def _discover_links_networks_to_namespaces(self):
 		""" Discover links between networks and network namespaces """
 		for ns in self._namespaces:
-			print("namespace: ", ns)
-			print("nets: ", self._namespaces[ns]['networks'])
 			for net in self._namespaces[ns]['networks']:
-				for idx, net_service in net.items():
-					peer = Peer(service_name=Name(net_service), role=PeerRole.forwarding, consumer=None)
-					self.links.append( Link(name=self._namespaces[ns]['service_name'], description="Connection to network",
+				for idx, net_service_sid in net.items():
+					peer = Peer(service_name=Name(net_service_sid.name), sid=net_service_sid, role=PeerRole.forwarding, consumer=None)
+					self.links.append( Link(name=Name(self._namespaces[ns]['service_sid'].name),
+									sid=self._namespaces[ns]['service_sid'], 
+									description="Connection to network",
 									link_type=LinkType.packet_flow,
 									role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+
 
 	def _discover_links_net_functions(self):
 		""" Discover links between networks and network functions """
@@ -732,14 +829,18 @@ class CTXDHostActuator(CTXDActuator):
 			
 			@:param ns: Network namespace name
 		"""
-		if 'service_name' in self._namespaces[ns]['router']:
-			peer = Peer(service_name=(self._namespaces[ns]['router']['service_name']), role=PeerRole.forwarding, consumer=None)
+		if 'service_sid' in self._namespaces[ns]['router']:
+			peer = Peer(service_name=Name(self._namespaces[ns]['router']['service_sid'].name), 
+								sid=self._namespaces[ns]['router']['service_sid'],
+								role=PeerRole.forwarding, consumer=None)
 			# TODO: Use maps and lambda functions to optimise the code
 			for iface_idx in self._namespaces[ns]['router']['ifaces']:
 				for net in self._namespaces[ns]['networks']:
-					for idx, net_service in net.items():
+					for idx, net_service_sid in net.items():
 						if iface_idx == idx:
-							self.links.append( Link(name=net_service, description="Connection to router",
+							self.links.append( Link(name=Name(net_service_sid.name), 
+									  	sid=net_service_sid,
+										description="Connection to router",
 										link_type=LinkType.packet_flow,
 										role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
 						
@@ -750,12 +851,16 @@ class CTXDHostActuator(CTXDActuator):
 			@:param ns: Network namespace name
 		"""
 		for br in self._namespaces[ns]['bridges']:
-			peer = Peer(service_name=self._namespaces[ns]['bridges'][br]['service_name'], role=PeerRole.forwarding, consumer=None)
+			peer = Peer(service_name=Name(self._namespaces[ns]['bridges'][br]['service_sid'].name),
+								sid=self._namespaces[ns]['bridges'][br]['service_sid'],
+							  	role=PeerRole.forwarding, consumer=None)
 			for iface_idx in self._namespaces[ns]['bridges'][br]['ifaces']:
 				for net in self._namespaces[ns]['networks']:
-					for idx, net_service in net.items():
+					for idx, net_service_sid in net.items():
 						if iface_idx == idx:
-							self.links.append( Link(name=net_service, description="Connection to bridge",
+							self.links.append( Link(name=Name(net_service_sid.name), 
+										sid=net_service_sid, 
+										description="Connection to bridge",
 										link_type=LinkType.packet_flow,
 										role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
 			
