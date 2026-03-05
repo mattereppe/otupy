@@ -25,9 +25,9 @@ class Application(CTXDObject):
 			self.app_type = app_type 
 
 
-	def getId(self, domain=None, namespace=None):
-		return "app:" + str(self.app_type) + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name) + "@" + str(self.version)
-		
+	def get_subtype(self):
+		""" Might be replace in the future with a subtype type """
+		return app_type
 
 	def __repr__(self):
 		return (f"Application({super().__repr__()},"

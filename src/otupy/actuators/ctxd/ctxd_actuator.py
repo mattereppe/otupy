@@ -221,22 +221,37 @@ class CTXDActuator:
 
 		return link_list
 		
-	def get_consumer(self, service_name: Name) -> Consumer:
+	def get_consumer(self, name: Name=None, sid: SId=None) -> Consumer:
 		""" Returns consumer data
 
-			Returns the `Consumer` data for the selected service name.
+			Returns the `Consumer` data for the selected service name or identifier.
 
-			:param service_name: name of the service which consumer is searched.
+			:param name: name of the service which consumer is searched.
+			:param sid: service identifier of the service which consumer is searched.
 			:return: The consumer serving the given service, if any, None otherwise.
 		"""
-		if service_name is None:
+		if name is None and sid is None:
 			return None
+		if isinstance(sid, str):
+			sid=SId.from_str(sid)	
 
 		consumer=None
 		for p in self.peers:
-			if Name(p['service_name']) == Name(service_name):
+			service_name = Name(p['service_name']) if 'service_name' in p else None
+			if 'service_sid' in p:
+				if type(p['service_sid'])==str:
+					service_sid = SId.from_str(p['service_sid'])
+				else:
+					service_sid = SId(**p['service_sid'])
+			else:
+				service_sid = None
+			if service_name is not None and name is not None and service_name == Name(name):
 				consumer = Consumer(**p['consumer'])
 				logger.debug("Found consumer %s for %s", consumer, service_name)
+				break
+			if service_sid is not None and sid is not None and service_sid == sid:
+				consumer = Consumer(**p['consumer'])
+				logger.debug("Found consumer by sid %s for %s", consumer, service_sid)
 				break
 
 		return consumer

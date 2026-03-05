@@ -26,6 +26,8 @@ class ExecutionEnvironment(CTXDObject):
 		In general, we expect applications or libraries to be present to support the execution
 		of other software.
 	"""
+	version:str = None
+	""" Version of this Execution environment"""
 	type: ExecutionEnvironmentType = None
 	""" Specific type of Execution Environment """
 	libs: ArrayOf(Library) = None
@@ -39,6 +41,7 @@ class ExecutionEnvironment(CTXDObject):
 			description:str = None, 
 			id:str = None, 
 			name:Hostname = None, 
+			version:str = None,
 			type:ExecutionEnvironmentType = None,
 			libs: ArrayOf(Library)=None,
 			apps: ArrayOf(Application)=None,
@@ -46,11 +49,13 @@ class ExecutionEnvironment(CTXDObject):
 
 		if execenv is not None:
 			super().__init__(name=execenv.name, id=execenv.id, description=execenv.description)
+			self.version = execenv.version
 			self.type = execenv.type
 			self.apps = execenv.apps
 			self.libs = execenv.libs
 		else:
 			super().__init__(name=name, id=id, description=description)
+			self.version = version
 			self.type = type
 			if apps is not None:
 				self.apps = ArrayOf(Application)()
@@ -66,7 +71,9 @@ class ExecutionEnvironment(CTXDObject):
 
 	def __repr__(self):
 		return (f"ExecutionEnvironment("
-					f"{super().__repr__()},")
+					f"{super().__repr__()},"
+					f"version={self.version},"
+					f"type={self.type.getObj().__repr__()}")
 	
 	def __str__(self):
 		return self.__repr__()

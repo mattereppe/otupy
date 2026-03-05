@@ -56,10 +56,11 @@ class Consumer(otupy.types.base.Record):
 			self.profile = profile # Default value assigned in function declaration
 			specifiers = None
 			if actuator is not None:
-	#	try:
-				specifiers = Extensions['Actuators'][profile](actuator)
-	#			except:
-	#				logger.error("Cannot instantiate %s profile for consumer: %s", profile, host)
+				try:
+					specifiers = Extensions['Actuators'][profile](actuator)
+				except:
+					specifiers = None
+					logger.error("Cannot instantiate %s profile for consumer: %s", profile, host)
 			self.actuator=specifiers
 
 		self.validate_fields()

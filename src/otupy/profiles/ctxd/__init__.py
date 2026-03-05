@@ -36,6 +36,7 @@ from otupy.profiles.ctxd.data.network_interface import NetworkInterface
 from otupy.profiles.ctxd.data.network_router import Router
 from otupy.profiles.ctxd.data.network_bridge import Bridge
 from otupy.profiles.ctxd.data.network_nat import NAT
+from otupy.profiles.ctxd.data.network_firewall import Firewall
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
 from otupy.profiles.ctxd.data.ip_network import IPNetwork
 from otupy.profiles.ctxd.data.veth_network import VEthNetwork
@@ -47,7 +48,7 @@ from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.service import Service
+from otupy.profiles.ctxd.data.service import Service, SId
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.profiles.ctxd.data.vm import HyperVisorType
 from otupy.profiles.ctxd.data.endpoint import Endpoint

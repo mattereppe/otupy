@@ -180,14 +180,12 @@ class CTXDActuator_open5gs(CTXDActuator):
 
 		for i in upf_conf['upf']['subnet']:
 			ip = ipaddress.ip_network(i['addr'],strict=False)
-			print("ip: ", ip)
 			if type(ip) == ipaddress.IPv4Network:
 				self.mobilenetv4=ip
 			else:
 				self.mobilenetv6=ip
 
 		self.mobile_services = []
-		print("parsing: ", glob(kwargs['config']['config_dir']+"/templates/network/30_open5gs/*.yaml"))
 		for file in glob(kwargs['config']['config_dir']+"/templates/network/30_open5gs/*.yaml"):
 			try:
 				with open(file) as f:
