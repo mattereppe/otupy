@@ -5,12 +5,12 @@ consumer:
 asset_id: "ebpf-example"
 
 actions:
-  #- type: delete
-  - type: query
+  - type: delete
+  #- type: query
   #- type: load
-  #  program: "./src/otupy/apps/ebpf/obsolete/allow_all.o"
-  #  interface: "wlp7s0"
-  #  direction: "ingress"
+    program: "./src/otupy/apps/ebpf/obsolete/allow_all.o"
+    interface: "wlp7s0"
+    direction: "ingress"
     attach_type: "tc"
 
 

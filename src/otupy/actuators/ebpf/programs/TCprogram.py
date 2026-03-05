@@ -42,7 +42,6 @@ class TCProgram(BaseEBPFProgram):
                             "tc", "filter", "del", "dev", iface, self.direction,
                             "protocol", "all", "pref", pref, "bpf"
                         ], check=False)
-
     def query(
         self,
         file: str = None,
@@ -68,17 +67,22 @@ class TCProgram(BaseEBPFProgram):
 
                 for line in cp.stdout.splitlines():
 
+                    # get preference
                     pref_match = re.search(r"pref\s+(\d+)", line)
                     if not pref_match:
                         continue
-
                     pref = pref_match.group(1)
 
-                    obj_match = re.search(r"obj\s+(\S+)", line)
-                    obj = obj_match.group(1) if obj_match else None
+                    # get file and section
+                    file_match = re.search(r"(\S+\.o)(?::\[(\S+)\])?", line)
+                    if not file_match:
+                        continue  # skip placeholder / empty filters
+                    obj = file_match.group(1) if file_match else None
+                    section = file_match.group(2) if file_match else None
 
-                    sec_match = re.search(r"sec\s+(\S+)", line)
-                    section = sec_match.group(1) if sec_match else None
+                    # get program name
+                    prog_match = re.search(r"name\s+(\S+)", line)
+                    program_name = prog_match.group(1) if prog_match else None
 
                     record = {
                         "interface": iface,
@@ -86,10 +90,11 @@ class TCProgram(BaseEBPFProgram):
                         "pref": pref,
                         "file": obj,
                         "section": section,
+                        "program": program_name,
                         "attach_type": attach_type or "tc"
                     }
 
-                    # filtering
+                    # filtering by file name if requested
                     if file and obj:
                         if os.path.basename(obj) != os.path.basename(file):
                             continue

@@ -14,6 +14,10 @@ from otupy.types.base.array_of import ArrayOf
 from otupy.profiles.ebpf.validation.TCHookValidation import validate_command
 
 
+from otupy.profiles.ebpf.targets.TCHook.eBPF_load_TCprogram import eBPF_load_TCprogram
+from otupy.profiles.ebpf.targets.TCHook.eBPF_remove_TCprogram import eBPF_remove_TCprogram
+from otupy.profiles.ebpf.targets.TCHook.eBPF_query_TCProgram import eBPF_query_TCProgram
+
 @actuator_implementation("x-TCebpf")
 class TCActuator(BaseEBPFActuator):
     def __init__(self,  **kwargs):
@@ -38,7 +42,7 @@ class TCActuator(BaseEBPFActuator):
 
 
     def create(self, cmd: Command) -> Response:
-        obj = cmd.target.getObj()
+        obj : eBPF_load_TCprogram  = cmd.target.getObj()
         if obj.file is None or obj.direction is None or obj.attach_type is None or obj.interface:
             return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
 
@@ -50,20 +54,20 @@ class TCActuator(BaseEBPFActuator):
                 section=obj.file.Section,
                 direction=obj.direction.Name.lower()
             )
-            prog.load(ifaces=["wlp7s0"])
+            prog.load(ifaces=obj.interface)
             return Response(status=StatusCode.OK, status_text="Program loaded successfully")
         except Exception as e:
             self.logger.exception(e)
             return self.__servererror(cmd, e)
 
     def query(self, cmd: Command) -> Response:
-        target = cmd.target.getObj()
+        target : eBPF_query_TCProgram= cmd.target.getObj()
         try:
             prog_type = target.attach_type.Name.lower() if target.attach_type else None
-            programs = self.manager.create_program(prog_type).query()
+            programs = self.manager.create_program(prog_type).query(attach_type = prog_type)
            
 
-            program_files = [ProgramFile(Program=p["program"], Section=p.get("section")) for p in programs]
+            program_files = [ProgramFile(Program=p["file"], Section=p.get("section")) for p in programs]
             results = QueryResults(
                 Program=ArrayOf(ProgramFile)(program_files),
                 hook_point=ArrayOf(AttachType)([p["attach_type"] for p in programs]),
@@ -76,8 +80,8 @@ class TCActuator(BaseEBPFActuator):
             return self.__servererror(cmd, e)
 
     def delete(self, cmd: Command) -> Response:
-        target = cmd.target.getObj()
-        if target.file is None or target.direction is None or target.attach_type is None or target.interface:
+        target : eBPF_remove_TCprogram= cmd.target.getObj()
+        if target.file is None or target.direction is None or target.attach_type is None or target.interfaces is None:
             return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
         try:
             prog_type = target.attach_type.Name.lower() if target.attach_type else None

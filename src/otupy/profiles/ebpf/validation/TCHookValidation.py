@@ -6,7 +6,7 @@ from otupy.types.data.action_targets import ActionTargets
 from otupy.types.data.target_enum import TargetEnum
 
 
-AllowedActions = [ Actions.query, Actions.delete, Actions.query]
+AllowedActions = [ Actions.create, Actions.delete, Actions.query]
 AllowedCommandTarget = ActionTargets()
 """ List of allowed `Target` for each `Action`
 
@@ -14,11 +14,9 @@ AllowedCommandTarget = ActionTargets()
 """
 
 
-AllowedCommandTarget[Actions.query] = [TargetEnum.features, 
-									   TargetEnum['eBPF_load_TCprogram'],
-									   TargetEnum['eBPF_query_TCProgram'],
-                                       TargetEnum['eBPF_remove_TCprogram']
-                                       ]
+AllowedCommandTarget[Actions.query] = [TargetEnum['eBPF_query_TCProgram']]
+AllowedCommandTarget[Actions.create] = [TargetEnum['eBPF_load_TCprogram']]
+AllowedCommandTarget[Actions.delete] = [TargetEnum['eBPF_remove_TCprogram']]
 def validate_command(cmd):
 	""" Validate a `Command` 
 

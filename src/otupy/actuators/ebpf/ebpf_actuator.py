@@ -44,6 +44,7 @@ class eBPFActuator:
 
         try:
             prog_type = obj.attach_type.Name.lower()
+            ifaces = obj.interface
             prog = self.manager.create_program(
                 prog_type,
                 prog_path=obj.file.Name,
