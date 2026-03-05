@@ -3,9 +3,10 @@ from otupy.types.base.record import Record
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
+from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 
-@oc2.target(name="eBPF_load_TCprogram", nsid=None)
-class eBPF_load_TCprogram(Record):
+@oc2.target(name="eBPF_query_TCProgram", nsid=None)
+class eBPF_query_TCProgram(Record):
     """
     OpenC2-compliant target record for loading an eBPF program file.
     """
@@ -16,14 +17,16 @@ class eBPF_load_TCprogram(Record):
     file: ProgramFile = None
     direction: Direction = None
     attach_type: AttachType = None
-
-    def __init__(self, file: ProgramFile = None, direction: Direction = None, attach_type: AttachType = None):
+    interfaces: Interfaces = None
+    def __init__(self, file: ProgramFile = None, direction: Direction = None, 
+                 attach_type: AttachType = None, interfaces: Interfaces = None):
         super().__init__()
 
         # Assign directly to public fields for OpenC2 serialization
         self.file = file
         self.direction = direction
         self.attach_type = attach_type
+        self.interfaces = interfaces
 
     # ------------------------
     # Representation
@@ -41,5 +44,6 @@ class eBPF_load_TCprogram(Record):
         return {
             "file": self.file.to_dict() if self.file else None,
             "direction": self.direction.to_dict() if self.direction else None,
-            "attach_type": self.attach_type.to_dict() if self.attach_type else None
+            "attach_type": self.attach_type.to_dict() if self.attach_type else None,
+            "interfaces": self.interfaces.to_dict() if self.interfaces else None
         }

@@ -1,5 +1,5 @@
 ebpf-example:
-  actuator: "x-ebpf"
+  actuator: "x-TCebpf"
   profile: "x-ebpf"
   specifiers:
     domain: null

@@ -101,11 +101,13 @@ def validate_action_logic(config: dict):
                     )
 
         if action_type == "query":
-            extra_fields = set(action.keys()) - {"type"}
-            if extra_fields:
-                raise ValueError(
-                    f"Action[{i}] (query) must not define extra fields: {extra_fields}"
-                )
+            required_fields = ["attach_type"]
+            for field in required_fields:
+                if field not in action:
+                    raise ValueError(
+                        f"Action[{i}] ({action_type}) missing required field: {field}"
+                    )
+
 
 # ==========================================================
 # EXECUTION
@@ -172,7 +174,8 @@ def run_from_config(config_path: str):
                 )
 
             elif action_type == "query":
-                query_programs(producer, asset_id=asset_id)
+                query_programs(producer, asset_id=asset_id,
+                    attach_type=action["attach_type"])
 
             print("Success.")
 

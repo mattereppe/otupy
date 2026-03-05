@@ -5,12 +5,12 @@ import logging
 import otupy as oc2
 from otupy.encoders.json import JSONEncoder
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+from otupy.profiles.ebpf.targets.TCHook.eBPF_query_TCProgram import eBPF_query_TCProgram
 from otupy.transfers.http import HTTPTransfer
 from otupy.transfers.http.message import Message
 from otupy.profiles.ebpf.actuator import Specifiers
-from otupy.profiles.ebpf.targets.eBPF_load_TCprogram import eBPF_load_TCprogram
-from otupy.profiles.ebpf.targets.eBPF_load_XDPProgram import eBPF_load_XDPProgram
-from otupy.profiles.ebpf.targets.eBPF_query import eBPF_query
+from otupy.profiles.ebpf.targets.TCHook.eBPF_load_TCprogram import eBPF_load_TCprogram
+from otupy.profiles.ebpf.targets.TCHook.eBPF_remove_TCprogram import eBPF_remove_TCprogram
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
@@ -83,7 +83,8 @@ def load_program(producer: oc2.Producer, asset_id:str, program_path: str, iface:
     target_features = eBPF_load_TCprogram(
         file=prog,
         direction=direction_obj,
-        attach_type=attach_obj
+        attach_type=attach_obj,
+        interface=iface
     )
 
     cmd = oc2.Command(
@@ -110,7 +111,7 @@ def delete_program(producer: oc2.Producer, asset_id:str, program_path: str, ifac
     attach_obj = AttachType(attach_type)
     interfaces = Interfaces(iface)
     actuator_spec = Specifiers({"asset_id": asset_id})
-    target_features = eBPF_query(
+    target_features = eBPF_remove_TCprogram(
         file=prog,
         direction=direction_obj,
         attach_type=attach_obj,
@@ -130,12 +131,17 @@ def delete_program(producer: oc2.Producer, asset_id:str, program_path: str, ifac
 # -----------------------------
 # Function: query loaded programs
 # -----------------------------
-def query_programs(producer: oc2.Producer, asset_id: str):
-    if not asset_id:
-        raise ValueError("Asset id must be provided")
+def query_programs(producer: oc2.Producer, asset_id:str,  attach_type:str):
 
+
+    if not asset_id :
+        raise ValueError("Asset id must be provided")
+    if not attach_type :
+        raise ValueError("attach type must be provided")
     actuator_spec = Specifiers({"asset_id": asset_id})
-    target_query = eBPF_query()
+
+    attach_obj = AttachType(attach_type)
+    target_query = eBPF_query_TCProgram(attach_type=attach_obj)
     cmd = oc2.Command(
         action=oc2.Actions.query,
         target=target_query,
