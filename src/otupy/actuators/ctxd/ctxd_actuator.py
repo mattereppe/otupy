@@ -230,6 +230,8 @@ class CTXDActuator:
 			:param sid: service identifier of the service which consumer is searched.
 			:return: The consumer serving the given service, if any, None otherwise.
 		"""
+		if self.peers is None:
+			return None
 		if name is None and sid is None:
 			return None
 		if isinstance(sid, str):
