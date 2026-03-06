@@ -197,7 +197,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		# --------------------------------------------------
 		# K8S is considered PaaS when managed by an external service provider
 		name=self.dns if self.dns is not None  else "kubernetes"
-		k8s = Cloud(description='Kubernetes cloud', id=None, name=name, type='kubernetes')
+		k8s = Cloud(description='Kubernetes cloud', id=None, name=name, type='k8s')
 		k8s_subservices = ArrayOf(SId)()
 		# TODO: Fill in with k8s version/release
 
