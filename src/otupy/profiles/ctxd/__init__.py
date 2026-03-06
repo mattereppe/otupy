@@ -32,6 +32,7 @@ from otupy.profiles.ctxd.data.port import Port, IPAddress, IPInfo
 from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
 from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
 from otupy.profiles.ctxd.data.os import OS
+from otupy.profiles.ctxd.data.linux_netns import LinuxNetns
 from otupy.profiles.ctxd.data.container import Container
 from otupy.profiles.ctxd.data.host import Host
 from otupy.profiles.ctxd.data.host_type import HostType
