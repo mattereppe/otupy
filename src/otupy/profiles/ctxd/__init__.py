@@ -48,6 +48,7 @@ from otupy.profiles.ctxd.data.network_nat import NAT
 from otupy.profiles.ctxd.data.network_firewall import Firewall
 from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
 from otupy.profiles.ctxd.data.ip_network import IPNetwork
+from otupy.profiles.ctxd.data.mobile_network import MobileNetwork
 from otupy.profiles.ctxd.data.veth_network import VEthNetwork
 from otupy.profiles.ctxd.data.tunnel_network import TunnelNetwork
 from otupy.profiles.ctxd.data.vlan_network import VLANNetwork

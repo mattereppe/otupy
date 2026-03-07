@@ -194,6 +194,10 @@ class CTXDActuator_open5gs(CTXDActuator):
 								description="Routing function connected to Tunnel Network",
 								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
 								peers=ArrayOf(Peer)([peer])))
+		print(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
+								description="Routing function connected to Tunnel Network",
+								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
+								peers=ArrayOf(Peer)([peer])))
 
 		# Add link between mobile terminals and tunnel network
 		# Note: we do not consider the role of the gNodeB
@@ -267,7 +271,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 						try:
 							if c['kind'] == "StatefulSet" or c['kind'] == "Deployment":
 								sid=SId(name= c['metadata']['name'], domain=self.k8s_domain, 
-										namespace=self.k8s_namespace, version=self.cn5t_version)
+										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
 								self.mobile_services.append(sid)
 								try:
 									if c['spec']['template']['metadata']['labels']['epc-role'] == 'upf':

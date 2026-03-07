@@ -930,8 +930,9 @@ class CTXDActuator_kubernetes(CTXDActuator):
 
 
 				# Add subservice to existing instance
-				if controller is not None:
-					controller.subservices.append(container_sid)
+				# --- Currently replaced by pod (see below)
+#				if controller is not None:
+#					controller.subservices.append(container_sid)
 
 
 			# NO -> Create the pod service with containers as subservices 
@@ -946,6 +947,10 @@ class CTXDActuator_kubernetes(CTXDActuator):
 						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
 						subservices=pod_subservices_list,
 						owner=self.owner, release=pod.metadata.resource_version))
+
+			# Add pod as subservice of a controller (StatefulSet, Deployment, ...)
+			if controller is not None:
+				controller.subservices.append(pod_sid)
 
 			if pod.spec.node_name != "" and pod.spec.node_name is not None:
 				self.nodes[str(pod_sid)] = self._k8s_nodes[pod.spec.node_name]
