@@ -15,7 +15,6 @@ kubernetes==34.1.0
 macaddress==2.0.2
 mediatype==0.1.6
 openstacksdk==4.8.0
-otupy==1.1.12
 paho_mqtt==2.1.0
 pybrctl==0.1.4
 pymongo==4.16.0
