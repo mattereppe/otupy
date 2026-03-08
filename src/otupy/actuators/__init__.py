@@ -10,7 +10,7 @@
 #from otupy.actuators.slpf.dump_actuator import DumbActuator
 from otupy.actuators.ctxd.ctxd_actuator_kubernetes import CTXDActuator_kubernetes
 from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
-from otupy.actuators.ctxd.ctxd_actuator_host import CTXDActuator_host
+from otupy.actuators.ctxd.ctxd_actuator_host import CTXDHostActuator
 from otupy.actuators.ctxd.ctxd_actuator_file import CTXDActuator_file
 from otupy.actuators.ctxd.ctxd_actuator_docker import CTXDActuator_docker
 
