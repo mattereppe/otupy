@@ -137,6 +137,7 @@ class CTXDHostActuator(CTXDActuator):
 
 		# Retrieve the association between pods and namespaces from scratch
 		self.kube_pods=None
+		self.domain=None
 		self._net_deps={}
 		# We discover again the platform at each run because packages might have changed
 		self._discover_platform()
@@ -148,6 +149,7 @@ class CTXDHostActuator(CTXDActuator):
 
 	def _discover_platform(self):
 		name = platform.node()
+		self.domain = name
     
 		pkgs = subprocess.run(DPKG_LIST, capture_output=True)
 		
@@ -167,7 +169,8 @@ class CTXDHostActuator(CTXDActuator):
 																		version=platform.release, 
 																		arch=platform.machine() )))
 		self.platform = Service(name=Name(Hostname(name)), 
-					sid=SId.create_from_service_type(execenv),
+					sid=SId.create_from_service_type(execenv, domain=self.domain),
+					domain=self.domain,
 					type=ServiceType(execenv), subservices=ArrayOf(SId)(),
 					release=None, owner="root")
 		self.services.append( self.platform )
@@ -416,6 +419,7 @@ class CTXDHostActuator(CTXDActuator):
 
 	def _add_net_service(self, service_name:Name = None, 
 			net_name:str = None, 
+			domain:str = None,
 			namespace:str = None, 
 			id:str=None, 
 			description:str = "Network", 
@@ -428,8 +432,8 @@ class CTXDHostActuator(CTXDActuator):
 			net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
 		ipnet = Network(name=net_name, id=id, description=description,
 				type=NetworkType( nettype({'nets': ipnetaddrs, **kwargs } )))
-		net_service= Service(name=service_name, namespace=namespace, 
-				sid=SId.create_from_service_type(ipnet, namespace=namespace),
+		net_service= Service(name=service_name, domain=domain, namespace=namespace, 
+				sid=SId.create_from_service_type(ipnet, domain=domain, namespace=namespace),
 				type=ServiceType(ipnet), subservices=ArrayOf(SId)(), owner=str(self.platform.sid))
 		self.services.append(net_service)
 		self.platform.subservices.append(net_service.sid)
@@ -490,6 +494,7 @@ class CTXDHostActuator(CTXDActuator):
 									# Create services for the virtual network (even if it is only a link)
 									net_service=self._add_net_service(service_name=Name(net_id), 
 #																					net_name=net_name,
+																					domain=self.domain, # Veth are always internal networks
 																					net_name=net_id,
 																					description=description,
 																					ipnetaddrs=ipnetaddrs, 
@@ -528,6 +533,7 @@ class CTXDHostActuator(CTXDActuator):
 										for ip in ipnetaddrs:
 											net_service.type.getObj().type.getObj()['nets'].append(ip)
 									except:
+										# Macvlan is an external network, so don't set the domain here
 										net_service=self._add_net_service(service_name=Name(net_id), net_name=net_id, ipnetaddrs=ipnetaddrs, id=net_id) 
 
 									self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
@@ -586,7 +592,14 @@ class CTXDHostActuator(CTXDActuator):
 							case 'bridge':
 								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
 #								net_service=self._add_net_service(service_name=Name(net_id), net_name=self._namespaces[ns]['ifaces'][link_idx], namespace=self._namespaces[ns]['name'], description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
-								net_service=self._add_net_service(service_name=Name(net_id), net_name=self._namespaces[ns]['ifaces'][link_idx], namespace=ns, description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
+								# Bridge metanetworks are always "internal" to the ExecEnv, so set the domain name
+								net_service=self._add_net_service(service_name=Name(net_id), 
+																				net_name=self._namespaces[ns]['ifaces'][link_idx], 
+																				domain=self.domain, 
+																				namespace=ns, description="Bridged network", 
+																				ipnetaddrs=ipnetaddrs,  
+																				id=net_id, 
+																				nettype=EthernetNetwork) 
 								# This is a virtual ethernet network with one bridge as subservice with the same name of the interface
 								if link_name not in self._namespaces[ns]['bridges']:
 									self._namespaces[ns]['bridges'][link_name] = {}
