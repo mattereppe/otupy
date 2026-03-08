@@ -270,7 +270,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 					for c in configs:
 						try:
 							if c['kind'] == "StatefulSet" or c['kind'] == "Deployment":
-								sid=SId(name= c['metadata']['name'], domain=self.k8s_domain, 
+								sid=SId(name= c['metadata']['name'], type="app", domain=self.k8s_domain, 
 										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
 								self.mobile_services.append(sid)
 								try:
