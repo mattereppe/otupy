@@ -41,10 +41,9 @@ class IOT(Record):
 			properties.append(Property(name="otupy:iot:type", value=self.type))
 		
 		return Component(
-			name=self.name or "unknown",
+			name="iot-device",
 			type=ComponentType.DEVICE,
 			bom_ref=generate_bom_ref("iot"),
-			description=self.description,
 			properties=properties
 		)
 

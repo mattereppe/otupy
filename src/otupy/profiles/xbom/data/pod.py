@@ -44,31 +44,24 @@ class Pod(Record):
 		return self.__repr__()
 
 	def as_cyclonedx(self) -> Component:
-		"""Convert Pod to CycloneDX service format.
+		"""Convert Pod to CycloneDX component format.
 		
 		Returns:
-			Service: CycloneDX Service representation.
+			Component: CycloneDX Component representation.
 		"""
 		properties = [
 			Property(name="otupy:type", value="pod")
 		]
-		if self.id is not None:
-			properties.append(Property(name="otupy:pod:id", value=self.id))
 		if self.namespace is not None:
 			properties.append(Property(name="otupy:pod:namespace", value=self.namespace))
-		if self.vendor is not None:
-			properties.append(Property(name="otupy:pod:vendor", value=self.vendor))
-		if self.model is not None:
-			properties.append(Property(name="otupy:pod:model", value=self.model))
 		
 		# Generate a unique bom_ref using centralized generator
 		bom_ref = generate_bom_ref("pod")
 		
 		return Component(
-			name=self.name or "unknown",
+			name="pod",
 			type=ComponentType.PLATFORM,
 			bom_ref=bom_ref,
-			description=self.description,
 			properties=properties
 		)	
 

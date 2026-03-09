@@ -51,7 +51,7 @@ class Cloud(XBOMObject):
 		
 		return Service(
 			name=self.name or "unknown",
-			bom_ref=self.getId() if self.id is not None else generate_bom_ref(self),
+			bom_ref=generate_bom_ref("cloud"),
 			description=self.description,
 			provider=provider,
 			properties=properties

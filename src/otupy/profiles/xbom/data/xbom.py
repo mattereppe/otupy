@@ -98,7 +98,7 @@ class CyclonedxXbom(Xbom):
 			:return: The version number (defaults to 1 if not set)
 		"""
 		if self.bom is None:
-			return 1
+			return 0
 		return self.bom.version if self.bom.version else 1
 
 	def get_bom_link(self, element_bom_ref: str) -> str:

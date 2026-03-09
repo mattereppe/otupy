@@ -64,8 +64,6 @@ class VM(Record):
 		properties = [
 			Property(name="otupy:type", value="virtual_machine")
 		]
-		if self.id is not None:
-			properties.append(Property(name="otupy:vm:id", value=self.id))
 		if self.hypervisor is not None:
 			properties.append(Property(name="otupy:vm:hypervisor", value=self.hypervisor))
 		if self.hypervisor_type is not None:
@@ -73,15 +71,10 @@ class VM(Record):
 			properties.append(Property(name="otupy:vm:hypervisor-type", value=ht_value))
 		if self.image is not None:
 			properties.append(Property(name="otupy:vm:image", value=self.image))
-		if self.vendor is not None:
-			properties.append(Property(name="otupy:vm:vendor", value=self.vendor))
-		if self.model is not None:
-			properties.append(Property(name="otupy:vm:model", value=self.model))
 		
 		return Component(
-			name=self.name or "unknown",
+			name="vm",
 			type=ComponentType.PLATFORM,
 			bom_ref=generate_bom_ref("vm"),
-			description=self.description,
 			properties=properties
 		)

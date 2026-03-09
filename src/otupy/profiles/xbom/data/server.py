@@ -38,24 +38,11 @@ class Server(Record):
 		properties = [
 			Property(name="otupy:type", value="server")
 		]
-		if self.id is not None:
-			properties.append(Property(name="otupy:server:id", value=self.id))
-		if self.vendor is not None:
-			properties.append(Property(name="otupy:server:vendor", value=self.vendor))
-		if self.model is not None:
-			properties.append(Property(name="otupy:server:model", value=self.model))
-		if self.serial is not None:
-			properties.append(Property(name="otupy:server:serial", value=self.serial))
-		if self.firmware is not None:
-			properties.append(Property(name="otupy:server:firmware", value=self.firmware))
-		if self.version is not None:
-			properties.append(Property(name="otupy:server:version", value=self.version))
 		
 		return Component(
-			name=self.name or "unknown",
+			name="server",
 			type=ComponentType.PLATFORM,
 			bom_ref=generate_bom_ref("server"),
-			description=self.description,
 			properties=properties
 		)
 
