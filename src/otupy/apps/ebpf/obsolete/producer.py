@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from otupy.apps.ebpf.producer_manager import (
+from otupy.apps.ebpf.obsolete.producer_manager import (
     create_producer,
     load_program,
     query_programs,

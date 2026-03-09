@@ -9,5 +9,6 @@ azure.mgmt.sql
 azure.mgmt.web
 proxmoxer
 pyyaml 
+yaml
 jsonschema
 bcc
