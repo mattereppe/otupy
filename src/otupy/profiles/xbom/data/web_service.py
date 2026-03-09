@@ -3,8 +3,9 @@ from otupy.profiles.xbom.data.server import Server
 from cyclonedx.model import Property, XsUri
 from cyclonedx.model.service import Service
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.types.base.record import Record
 
-class WebService(otupy.types.base.Record):
+class WebService(Record):
 	
 	"""WebService
     it is the description of the service - WebService
@@ -60,9 +61,9 @@ class WebService(otupy.types.base.Record):
 		properties = [
 			Property(name="otupy:type", value="web_service")
 		]
-		if self.server is not None:
-			server_value = str(self.server.getObj()) if hasattr(self.server, 'getObj') else str(self.server)
-			properties.append(Property(name="otupy:webservice:server", value=server_value))
+		# if self.server is not None:
+		# 	server_value = str(self.server.getObj()) if hasattr(self.server, 'getObj') else str(self.server)
+		# 	properties.append(Property(name="otupy:webservice:server", value=server_value))
 		if self.port is not None:
 			properties.append(Property(name="otupy:webservice:port", value=str(self.port)))
 		if self.owner is not None:

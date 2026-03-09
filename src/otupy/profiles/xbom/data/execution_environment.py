@@ -1,5 +1,6 @@
 from otupy import ArrayOf
 from otupy.profiles.xbom.data.xbom_object import XBOMObject
+from otupy.profiles.xbom.data.execution_environment_type import ExecutionEnvironmentType
 from otupy.profiles.xbom.data.application import Application
 from otupy.profiles.xbom.data.library import Library
 from otupy.profiles.xbom.data.package import Package
@@ -28,6 +29,8 @@ class ExecutionEnvironment(XBOMObject):
 		In general, we expect applications or libraries to be present to support the execution
 		of other software.
 	"""
+	type: ExecutionEnvironmentType = None
+	""" Specific type of Execution Environment """
 	libs: ArrayOf(Library) = None
 	""" List of libraries installed in this ExecutionEnvironment """
 	pkgs: ArrayOf(Package) = None
@@ -39,6 +42,7 @@ class ExecutionEnvironment(XBOMObject):
 			description:str = None, 
 			id:str = None, 
 			name:Hostname = None, 
+			type:ExecutionEnvironmentType = None,
 			libs: ArrayOf(Library)=None,
 			pkgs: ArrayOf(Package)=None,
 			apps: ArrayOf(Application)=None,
@@ -46,11 +50,13 @@ class ExecutionEnvironment(XBOMObject):
 
 		if execenv is not None:
 			super().__init__(name=execenv.name, id=execenv.id, description=execenv.description)
+			self.type = execenv.type
 			self.apps = execenv.apps
 			self.libs = execenv.libs
 			self.pkgs = execenv.pkgs
 		else:
 			super().__init__(name=name, id=id, description=description)
+			self.type = type
 			if apps is not None:
 				self.apps = ArrayOf(Application)()
 				for app in apps:
@@ -63,6 +69,9 @@ class ExecutionEnvironment(XBOMObject):
 				self.pkgs = ArrayOf(Package)()
 				for pkg in pkgs:
 					self.pkgs.append(Package(pkg))
+
+	def get_subtype(self):
+		return self.type.getName()
 
 	def __repr__(self):
 		return (f"ExecutionEnvironment("
@@ -94,12 +103,39 @@ class ExecutionEnvironment(XBOMObject):
 		if self.pkgs is not None:
 			for pkg in self.pkgs:
 				nested_components.append(pkg.as_cyclonedx())
+
+		exec_env_tmp = Component(
+				name=self.name or "unknown",
+				type=ComponentType.PLATFORM,
+				bom_ref=generate_bom_ref("execenv"),
+				description=self.description,
+				properties=properties,
+				components=nested_components if nested_components else None
+			)
 		
-		return Component(
-			name=self.name or "unknown",
-			type=ComponentType.PLATFORM,
-			bom_ref=generate_bom_ref("execenv"),
-			description=self.description,
-			properties=properties,
-			components=nested_components if nested_components else None
-		)
+		# Recusively get the bom representation
+		exec_env = self.type.getObj() if self.type is not None else None
+		if exec_env is not None and hasattr(exec_env, 'as_cyclonedx'):
+			exec_env_cdx = exec_env.as_cyclonedx()
+			if exec_env_cdx is not None:
+				# Add name and description from current component
+				exec_env_cdx.name = exec_env_cdx.name or exec_env_tmp.name
+				exec_env_cdx.description = exec_env_cdx.description or exec_env_tmp.description
+				nested_type = None
+				if exec_env_cdx.properties is not None:
+					for prop in exec_env_cdx.properties:
+						if getattr(prop, "name", None) == "otupy:type":
+							nested_type = getattr(prop, "value", None)
+							break
+				if nested_type is not None:
+					exec_env_cdx.properties.add(Property(name=nested_type+"id", value=self.id))
+				if exec_env_cdx.components is not None:
+					for component in nested_components:
+						exec_env_cdx.components.add(component)
+				else:
+					exec_env_cdx.components = nested_components if nested_components else None
+				return exec_env_cdx
+			else:
+				return exec_env_tmp
+		else:
+			return exec_env_tmp

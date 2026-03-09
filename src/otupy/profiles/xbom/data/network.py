@@ -14,21 +14,22 @@ class Network(XBOMObject):
 	""" type of the network service"""
 
 
-	def __init__(self, description = None, name = None, id = None, type = None):
-		if isinstance(description, Network):
-			self.description = description.description
-			self.name = description.name
-			self.id = description.id
-			self.type = description.type
+	def __init__(self, network = None, description = None, name = None, id = None, type = None):
+		if isinstance(network, Network):
+			super().__init__(name=network.name, description=network.description, id=network.id)
+			self.type = network.type
 		else:
-			self.description = str(description) if description is not None else None
-			self.name = str(name) if name is not None else None
-			self.id = str(id) if id is not None else None
-			self.type = type if type is not None else None
+			super().__init__(name=name, description=description, id=id)
+			self.type = type 
 
-	def __repr__(self):
-		return (f"Network({super().__repr__()}, type={self.type.getObj() if self.type else None})")
+
+	def get_subtype(self):
+		return self.type.getName()
 	
+	def __repr__(self):
+		return (f"Network({super().__repr__()},"
+	             f"type={self.type.getObj()})")
+
 	def __str__(self):
 		return self.__repr__()
 
@@ -44,7 +45,7 @@ class Network(XBOMObject):
 		if self.id is not None:
 			properties.append(Property(name="otupy:network:id", value=self.id))
 		if self.type is not None:
-			type_value = self.type.name if hasattr(self.type, 'name') else str(self.type)
+			type_value = self.get_subtype() if hasattr(self.type, 'getName') else str(self.type)
 			properties.append(Property(name="otupy:network:type", value=type_value))
 		
 		return Service(

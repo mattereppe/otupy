@@ -243,8 +243,8 @@ class CyclonedxXbom(Xbom):
 		# Add the dependency relationship
 		self.add_dependency(dep_bom_ref, from_ref)
 
-	def add_link(self, item_name: str, link: any) -> None:
-		""" Add a link to an item in the BOM by name
+	def add_link(self, item_ref: str, link: any) -> None:
+		""" Add a link to an item in the BOM by bom_ref
 		
 			This is a convenience method that finds the bom_ref of the item by name and adds it as a property.
 		
@@ -254,9 +254,6 @@ class CyclonedxXbom(Xbom):
 		if self.bom is None:
 			raise ValueError("Cannot add link to an empty BOM")
 		
-		item_ref = self.find_ref_by_name(item_name)
-		if item_ref is None:
-			raise ValueError(f"No component or service with name '{item_name}' found in the BOM")
 		link = link.as_cyclonedx() if hasattr(link, 'as_cyclonedx') else link
 
 		# Look up for the right item to add the link to

@@ -20,4 +20,4 @@ class Args(oc2.Args):
 		:param cached: Set to True to speed up the answer by returning cached results, False (default) to update services before returning the response.
 
 	"""
-	fieldtypes = {'name_only': bool, 'cached': bool}
+	fieldtypes = {'cached': bool}

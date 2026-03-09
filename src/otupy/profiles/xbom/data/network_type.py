@@ -6,6 +6,7 @@ from otupy.profiles.xbom.data.vlan_network import VLANNetwork
 from otupy.profiles.xbom.data.ip_network import IPNetwork
 from otupy.profiles.xbom.data.veth_network import VEthNetwork
 from otupy.profiles.xbom.data.tunnel_network import TunnelNetwork
+from otupy.profiles.xbom.data.vxlan_network import VXLANNetwork
 
 #ATTENTION!! THIS IS ONLY PARTIALLY DEFINED!!!
 class NetworkType(Choice):
@@ -18,8 +19,9 @@ class NetworkType(Choice):
 		most of network types. When the network is defined as str, it returns something like: "ethernet": "ethernet".
 	"""
 
-	register = Register({'ip': IPNetwork, 'ethernet': EthernetNetwork, '802.11': str, '802.15': str, 'zigbee': str,
-			'vlan': VLANNetwork, 'veth': VEthNetwork, 'tunnel': TunnelNetwork, 'vpn': str, 'lorawan': str, 'wan': str, '5G': MobileNetwork})
+	register = Register({'ip': IPNetwork, 'eth': EthernetNetwork, '802.11': str, '802.15': str, 'zigbee': str, 
+			'vlan': VLANNetwork, 'tun': TunnelNetwork, 'veth': VEthNetwork, 'vxlan': VXLANNetwork,
+			'vpn': str, 'lorawan': str, 'wan': str, '5G': MobileNetwork})
 
 	def __init__(self, type):
 		if(isinstance(type, NetworkType)):

@@ -119,7 +119,7 @@ class XBOMActuator_open5gs(XBOMActuator):
 					subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
 		for u in self.users:
-			iot = IOT(name=u['name'], description="Mobile phone", type="phone")
+			iot = IoT(name=u['name'], description="Mobile phone", type="phone")
 			self.services.append(Service(name=Name(u['name']), type=ServiceType(iot),
 					subservices=ArrayOf(Name)(), owner=self.owner, release=None))
 
@@ -201,7 +201,3 @@ class XBOMActuator_open5gs(XBOMActuator):
 							pass
 			except Exception as e: 
 				logger.error("Unable to parse %s: %s", file, e)
-	
-
-
-

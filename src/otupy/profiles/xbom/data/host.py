@@ -1,8 +1,12 @@
+from typing import TYPE_CHECKING
 from otupy.profiles.xbom.data.xbom_object import XBOMObject
 from otupy import Hostname
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+
+if TYPE_CHECKING:
+	from otupy.profiles.xbom.data.host_type import HostType
 
 class Host(XBOMObject):
 	""" Generic Host
@@ -35,6 +39,8 @@ class Host(XBOMObject):
 	""" Name of the firmware (e.g., BIOS, UEFI, iOS) """
 	version: str = None
 	""" Firmware version/release """
+	type: 'HostType' = None
+	""" Specific device type (including virtual and physical devices """
 
 	def __init__(self, 
 			host:object = None,
@@ -46,7 +52,8 @@ class Host(XBOMObject):
 			release: str = None,
 			serial: str = None,
 			firmware: str = None,
-			version: str = None):
+			version: str = None,
+			type: 'HostType' = None):
 	
 		if host is not None:
 			super().__init__(name=host.name, id=host.id, description=host.description)
@@ -56,7 +63,7 @@ class Host(XBOMObject):
 			self.serial = host.serial
 			self.firmware = host.firmware
 			self.version = host.version
-			self.ports = host.ports
+			self.type = host.type
 		else:
 			super().__init__(name=name, id=id, description=description)
 			self.vendor = vendor 
@@ -65,6 +72,7 @@ class Host(XBOMObject):
 			self.serial = serial 
 			self.firmware = firmware
 			self.version = version
+			self.type = type
 	
 	def __repr__(self):
 		return (f"Host({super().__repr__()}),"
@@ -73,7 +81,8 @@ class Host(XBOMObject):
 					f"release='{self.release}'," 
 					f"serial='{self.serial}'," 
 					f"firmware='{self.firmware}'," 
-					f"version='{self.version}'")
+					f"version='{self.version}',"
+					f"type='{self.type}')")
 	
 	def __str__(self):
 		return self.__repr__()
@@ -101,7 +110,9 @@ class Host(XBOMObject):
 			properties.append(Property(name="otupy:host:firmware", value=self.firmware))
 		if self.version is not None:
 			properties.append(Property(name="otupy:host:version", value=self.version))
-
+		if self.type is not None:
+			properties.append(Property(name="otupy:host:type", value=self.type.get_type_name(type(self.type.getObj())) if self.type is not None else "unknown"))
+			
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.PLATFORM,

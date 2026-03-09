@@ -22,7 +22,10 @@ import logging
 from otupy import Encoder, actuator_implementation
 
 from otupy.actuators.xbom.xbom_actuator import XBOMActuator
-from otupy.profiles.xbom.data.service import Service, ServiceType, Link 
+from otupy.profiles.xbom.data.service import Service, SId
+from otupy.profiles.xbom.data.service_type import ServiceType
+from otupy.profiles.xbom.data.link import Link 
+
 
 
 logger = logging.getLogger(__name__)
@@ -47,25 +50,11 @@ class XBOMActuator_file(XBOMActuator):
 		self._links = self._create_links(links)
 
 	def discover_context(self):
-		""" Discover context
+		""" Discover services and links
 
-			The context is static and does not need to be discovered. 
-		"""
-		self.discover_services()
-		self.discover_links()
-
-	def discover_services(self):
-		""" Discover services
-
-			Services are reset any time the discover_services is invoked. 
+			Services are reset any time the update_context is invoked. 
 		"""
 		self.services = self._services
-	
-	def discover_links(self):
-		""" Discover links
-
-			Links are reset any time the discover_links is invoked. 
-		"""
 		self.links = self._links
 	
 	def _create_services(self, services):

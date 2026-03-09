@@ -27,6 +27,17 @@ class VLANNetwork(Map):
 		:param type: VLAN protocol (e.g., 802.1Q)
 		:param nets: Network addresses used in this network
 	"""
+	
+	def getNets(self):
+		nets = []
+		if 'type' in self:
+			nets.append("type:"+self['type'])
+		if 'vlan_id' in self:
+			nets.append("vlan:"+self['vlan_id'])
+		if 'nets' in self:
+			for n in self['nets']:
+				nets.append(n)		
+		return nets
 
 	def as_cyclonedx(self) -> Service:
 		"""Convert VLANNetwork to CycloneDX service format.

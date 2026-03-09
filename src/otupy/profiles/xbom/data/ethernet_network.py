@@ -21,6 +21,8 @@ class EthernetNetwork(Map):
 	
 		This is the definition of the fields beard by the `Ethernet` network.
 	"""
+	def getNets(self):
+		return self['nets']
 
 	def as_cyclonedx(self) -> Service:
 		"""Convert EthernetNetwork to CycloneDX service format.

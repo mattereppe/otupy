@@ -1,9 +1,9 @@
-from otupy.profiles.xbom.data.execution_environment import ExecutionEnvironment
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.types.base.record import Record
 
-class Container(ExecutionEnvironment):
+class Container(Record):
 	""" Container
 
 		A container is a software image run in with linux namespace sandbox or similar technology.
@@ -18,21 +18,18 @@ class Container(ExecutionEnvironment):
 	image: str = None
 	""" Image used by the Container """
 
-	def __init__(self, container = None, description = None, id = None, name = None, 
-			namespace=None, status = None, image = None):
+	def __init__(self, container = None, namespace=None, status = None, image = None):
 		if container is not None:
-			super().__init__(name=container.name, id=container.id, description=container.description)
 			self.namespace = container.namespace
 			self.status = container.status
 			self.image = container.image
 		else:
-			super().__init__(name=name, id=id, description=description)
 			self.namespace = str(namespace) if namespace is not None else None
 			self.status = str(status) if status is not None else None
-			self.image = image if image is not None else None
+			self.image = image 
 
 	def __repr__(self):
-		return (f"Container({super().__repr__()},"
+		return (f"Container("
 	             f"namespace={self.namespace}, status={self.status},image={self.image})")
 	
 	def __str__(self):
@@ -47,8 +44,8 @@ class Container(ExecutionEnvironment):
 		properties = [
 			Property(name="otupy:type", value="container")
 		]
-		if self.id is not None:
-			properties.append(Property(name="otupy:container:id", value=self.id))
+		# if self.id is not None:
+		# 	properties.append(Property(name="otupy:container:id", value=self.id))
 		if self.namespace is not None:
 			properties.append(Property(name="otupy:container:namespace", value=self.namespace))
 		if self.status is not None:
@@ -56,24 +53,9 @@ class Container(ExecutionEnvironment):
 		if self.image is not None:
 			properties.append(Property(name="otupy:container:image", value=self.image))
 		
-		# Add nested components from ExecutionEnvironment (apps, libs, pkgs)
-		nested_components = []
-		if self.apps is not None:
-			for app in self.apps:
-				nested_components.append(app.as_cyclonedx())
-		if self.libs is not None:
-			for lib in self.libs:
-				nested_components.append(lib.as_cyclonedx())
-		if self.pkgs is not None:
-			for pkg in self.pkgs:
-				nested_components.append(pkg.as_cyclonedx())
-		
 		return Component(
-			name=self.name or "unknown",
+			name="tmp",
 			type=ComponentType.CONTAINER,
-			bom_ref=generate_bom_ref("container"),
-			description=self.description,
-			properties=properties,
-			components=nested_components if nested_components else None
+			properties=properties
 		)
 

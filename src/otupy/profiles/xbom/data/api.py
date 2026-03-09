@@ -23,36 +23,33 @@ class API(XBOMObject):
 	""" A list of endpoints that are exposed by this service """
 	provider: str = None
 	""" Provider of the API """
+	version: str = None
+	""" API version """
 
-	def __init__(self, description = None, type = None, name = None, endpoints = None, id = None, provider = None):
-		self.description = description if description is not None else None
-		self.type = type if type is not None else None
-		self.id = id if id is not None else None
-		self.name = name if name is not None else None
-		self.endpoints = endpoints if endpoints is not None else None
-		self.provider = provider if provider is not None else None
+	def __init__(self, api = None, description = None, type = None, name = None, endpoints = None, id = None, provider = None, version=None):
+		if isinstance(api, API):
+			super().__init__(name=api.name, description=api.description, id=api.id)
+			self.type=api.type
+			self.endpoints=api.endpoints
+			self.provider=api.provider
+			self.version=api.version
+		else:
+			super().__init__(name=name, description=description, id=id)
+			self.type = type 
+			self.endpoints = endpoints 
+			self.provider = provider 
+			self.version = version
 
+	def getId(self, domain=None, namespace=None):
+		return "api:" + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name) + "@" + str(self.version)
+		
 	def __repr__(self):
-		return (f"API({super().__repr__()}, type={self.type},\
-		  endpoints={self.endpoints}, provider={self.provider})")
+		return (f"API({super().__repr__()},  type={self.type}, "
+	             f"endpoints={self.provider},provider={self.provider},version={self.version})")
 	
 	def __str__(self):
 		return self.__repr__()
-
-	def validate_fields(self):
-		if self.description is not None and not isinstance(self.description, str):
-			raise TypeError(f"Expected 'description' to be of type str, but got {type(self.description)}")
-		if self.type is not None and not isinstance(self.type, str):
-			raise TypeError(f"Expected 'type' to be of type str, but got {type(self.type)}")
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type str, but got {type(self.name)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'id' to be of type str, but got {type(self.id)}")
-		if self.endpoints is not None and not isinstance(self.endpoints, ArrayOf(Endpoint)):
-			raise TypeError(f"Expected 'endpoints' to be of type ArrayOf(Endpoint), but got {type(self.endpoints)}")
-		if self.provider is not None and not isinstance(self.provider, str):
-			raise TypeError(f"Expected 'provider' to be of type {str}, but got {type(self.provider)}")
-
+	
 	def as_cyclonedx(self) -> Service:
 		"""Convert API to CycloneDX service format.
 		
@@ -86,16 +83,13 @@ class API(XBOMObject):
 					try:
 						endpoint_uris.append(XsUri(uri_to_add))
 					except Exception:
-						# If URI validation still fails, skip it
-						# The original URI will still be preserved in endpoint properties
 						pass
-				# Add endpoint properties
 				endpoint_props = endpoint.as_cyclonedx(prefix=f"otupy:api:endpoint:{i}")
 				properties.extend(endpoint_props)
 		
 		return Service(
 			name=self.name if self.name is not None else None,
-			bom_ref=generate_bom_ref("api"),
+			bom_ref=self.getId() if self.id is not None else generate_bom_ref(self),
 			description=self.description,
 			endpoints=endpoint_uris if endpoint_uris else None,
 			properties=properties

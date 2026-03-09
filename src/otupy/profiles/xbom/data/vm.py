@@ -1,8 +1,8 @@
 from otupy.types.base import Enumerated
-from otupy.profiles.xbom.data.host import Host
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.types.base.record import Record
 
 class HyperVisorType(Enumerated):
 	""" Type of hypervisor 
@@ -12,7 +12,7 @@ class HyperVisorType(Enumerated):
 	native = 1
 	hosted = 2
 
-class VM(Host):
+class VM(Record):
 	""" Virtual Machine
 
 		A Virtual Machine is a virtualization environment that emulates a full computer hardware.

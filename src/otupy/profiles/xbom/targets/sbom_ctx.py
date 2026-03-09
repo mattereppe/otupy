@@ -2,11 +2,11 @@ import otupy as oc2
 
 from otupy.profiles.xbom.profile import Profile
 from otupy.types.base.array_of import ArrayOf
-from otupy.profiles.xbom.data.sbom_format import SbomFormat
+from otupy.profiles.xbom.data.sbom_format import XbomFormat
 
 
-@oc2.target(name='sbom', nsid=Profile.nsid)
-class SbomCtx(oc2.Map):
+@oc2.target(name='xbom', nsid=Profile.nsid)
+class XbomCtx(oc2.Map):
 	""" Sbom-ctx
 		
 	The Sbom type defines the arguments used to identify or format a Software Bill of Materials.
@@ -14,7 +14,7 @@ class SbomCtx(oc2.Map):
 	:param format: Specifies the format of the SBOM (e.g. CycloneDX). Defaults to CycloneDX if not specified.
 	:param names: A list of specific names used to identify components or services.
 	"""
-	fieldtypes = {'format': SbomFormat, 'names': ArrayOf(str)}
+	fieldtypes = {'format': XbomFormat}
 	
 	def __init__(self, dic=None, **kwargs):
 		""" Initialize the Sbom-ctx target

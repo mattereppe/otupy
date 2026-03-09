@@ -5,13 +5,17 @@ from otupy.profiles.xbom.data.name import Name
 from otupy.profiles.xbom.data.consumer import Consumer
 from otupy.profiles.xbom.data.peer_role import PeerRole
 from cyclonedx.model import Property
+from otupy.profiles.xbom.data.service import SId
+from otupy.types.base.record import Record
 
-class Peer(otupy.types.base.Record):
+class Peer(Record):
 	"""Peer
     Service connected on the other side of the link
 	"""
 	
 	service_name: Name = None
+	""" Name of the service """
+	sid: SId = None
 	""" Id of the service """
 	role: PeerRole = None
 	""" Role of this Peer in the link """
@@ -19,13 +23,15 @@ class Peer(otupy.types.base.Record):
 	""" Consumer connected on the other side of the link """
 
 
-	def __init__(self, service_name:Name = None, role:PeerRole = None, consumer:Consumer = None):
-		if(isinstance(service_name, Peer)):
-			self.service_name = service_name.service_name if service_name.service_name is not None else None
-			self.role = service_name.role if service_name.role is not None else None
-			self.consumer = service_name.consumer if service_name.consumer is not None else None	
+	def __init__(self, peer:object = None, service_name:Name = None, sid:SId = None, role:PeerRole = None, consumer:Consumer = None):
+		if peer is not None:
+			self.service_name = peer.service_name 
+			self.sid = peer.sid
+			self.role = peer.role 
+			self.consumer = peer.consumer 
 		else:
 			self.service_name = Name(service_name) if service_name is not None else None
+			self.sid = sid
 			try:
 				self.role = PeerRole[role] if role is not None else None
 			except:
@@ -34,17 +40,13 @@ class Peer(otupy.types.base.Record):
 				self.consumer = Consumer(**consumer) if consumer is not None else None
 			else:
 				self.consumer = Consumer(consumer) if consumer is not None else None
-		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Peer(service_name={self.service_name}, role={self.role},"
-	             f"consumer={self.consumer}")
+		return (f"Peer(service_name={self.service_name}, sid={self.sid}, role={self.role},"
+	             f"consumer={self.consumer})")
 	
 	def __str__(self):
-		return f"Peer(" \
-	            f"service_name={self.service_name.getObj()}, " \
-					f"role={self.role}, " \
-	            f"consumer={self.consumer}" 
+		return self.__repr__()
 
 	def validate_fields(self):
 		if self.service_name is not None and not isinstance(self.service_name, Name):
@@ -65,16 +67,15 @@ class Peer(otupy.types.base.Record):
 		"""
 		properties = []
 		
-		service_name_str = str(self.service_name.getObj()) if self.service_name is not None else "unknown"
-		
-		properties.append(Property(name=f"{prefix}:service-name", value=service_name_str))
+		sid = str(self.sid) if self.sid is not None else self.service_name.getObj() if self.service_name is not None else "unknown"
+		properties.append(Property(name=f"{prefix}:sid", value=sid))
 		
 		if self.role is not None:
-			properties.append(Property(name=f"{prefix}:{service_name_str}:role", value=self.role.name.lower()))
+			properties.append(Property(name=f"{prefix}::{sid}::role", value=self.role.name.lower()))
 		
 		# Add consumer properties
 		if self.consumer is not None:
-			consumer_props = self.consumer.as_cyclonedx(prefix=f"{prefix}:{service_name_str}:consumer")
+			consumer_props = self.consumer.as_cyclonedx(prefix=f"{prefix}:{sid}:consumer")
 			properties.extend(consumer_props)
 		
 		return properties

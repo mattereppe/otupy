@@ -20,7 +20,7 @@ import otupy.profiles.xbom as xbom
 from otupy.profiles.xbom.data.name import Name
 from otupy.profiles.xbom.data.service_type import ServiceType
 from otupy.profiles.xbom.data.consumer import Consumer
-from otupy.profiles.xbom.data.service import Service
+from otupy.profiles.xbom.data.service import Service, SId
 from otupy.profiles.xbom.data.link import Link
 from otupy.profiles.xbom.data.xbom import CyclonedxXbom
 from otupy.profiles.xbom.data.abstract_xbom import Xbom
@@ -113,40 +113,47 @@ class XBOMActuator:
 				logger.error("Error adding service %s to BOM: %s", service.name, e)
 
 		# Create dependency relationships based on subservices
+		# for service in self.services:
+		# 	if service.subservices is not None and len(service.subservices) > 0:
+		# 		parent_name = service.name.getObj() if hasattr(service.name, 'getObj') else str(service.name)
+				
+		# 		for subservice in service.subservices:
+		# 			# Skip None values in subservices
+		# 			if subservice is None:
+		# 				logger.warning("Skipping None value in subservices for service %s", parent_name)
+		# 				continue
+					
+		# 			child_name = None
+		# 			for s in self.services:
+		# 				if s.name == subservice:
+		# 					child_name = s.name.getObj() if hasattr(s.name, 'getObj') else str(s.name)
+		# 					break
+
+		# 			if child_name is None:
+		# 				logger.warning("Could not find matching service for subservice %s in service %s, skipping dependency", subservice, parent_name)
+		# 				continue
+					
+		# 			logger.debug("Adding dependency from %s to subservice %s", parent_name, child_name)
+		# 			parent_ref = self.bom.find_ref_by_name(str(parent_name))
+		# 			child_ref = self.bom.find_ref_by_name(str(child_name))
+					
+		# 			if parent_ref is None:
+		# 				logger.warning("Could not find parent '%s' in BOM, skipping dependency", parent_name)
+		# 				continue
+		# 			if child_ref is None:
+		# 				logger.warning("Could not find child '%s' (BOM name: '%s') in BOM, skipping dependency", otupy_name, subservice_str)
+		# 				continue
+						
+		# 			self.bom.add_dependency(parent_ref=parent_ref, child_ref=child_ref)
 		for service in self.services:
 			if service.subservices is not None and len(service.subservices) > 0:
-				parent_name = service.name.getObj() if hasattr(service.name, 'getObj') else str(service.name)
-				
 				for subservice in service.subservices:
-					# Skip None values in subservices
-					if subservice is None:
-						logger.warning("Skipping None value in subservices for service %s", parent_name)
-						continue
-					
-					child_name = None
-					for s in self.services:
-						if s.name == subservice:
-							child_name = s.name.getObj() if hasattr(s.name, 'getObj') else str(s.name)
-							break
+					if subservice is not None:
+						logger.debug("Adding dependency from %s to subservice %s", service.name, subservice)
+						self.bom.add_dependency(parent_ref=str(service.sid), child_ref=str(subservice))
 
-					if child_name is None:
-						logger.warning("Could not find matching service for subservice %s in service %s, skipping dependency", subservice, parent_name)
-						continue
-					
-					logger.debug("Adding dependency from %s to subservice %s", parent_name, child_name)
-					parent_ref = self.bom.find_ref_by_name(str(parent_name))
-					child_ref = self.bom.find_ref_by_name(str(child_name))
-					
-					if parent_ref is None:
-						logger.warning("Could not find parent '%s' in BOM, skipping dependency", parent_name)
-						continue
-					if child_ref is None:
-						logger.warning("Could not find child '%s' (BOM name: '%s') in BOM, skipping dependency", otupy_name, subservice_str)
-						continue
-						
-					self.bom.add_dependency(parent_ref=parent_ref, child_ref=child_ref)
-
-		# Add links as properties to the matching services/components
+		# # Add links as properties to the matching services/components
+		logger.info("Adding %d links to the BOM", len(self.links))
 		for link in self.links:
 			self._add_link_to_bom(link)
 
@@ -158,15 +165,23 @@ class XBOMActuator:
 		if self.bom is None or self.bom.bom is None:
 			logger.warning("No BOM available to add link %s", link.name)
 			return
+		# Try matching by name first, then fall back to sid
 		for service in self.services:
 			if service.name == link.name:
-				item_name = service.name.getObj() if hasattr(service.name, 'getObj') else str(service.name)
-				logger.debug("Adding link properties to service %s for link %s", item_name, link)
 				try:
-					self.bom.add_link(item_name, link)
+					self.bom.add_link(item_ref=str(service.sid), link=link)
 				except Exception as e:
-					logger.error("Error adding link properties to service %s: %s", service.name, e)
+					logger.error("Error adding link %s to service %s: %s", link.name, service.name, e)
 				return
+		# Fallback: match by sid (name may differ, e.g. short name vs full DNS hostname)
+		if link.sid is not None:
+			for service in self.services:
+				if service.sid is not None and str(service.sid) == str(link.sid):
+					try:
+						self.bom.add_link(item_ref=str(service.sid), link=link)
+					except Exception as e:
+						logger.error("Error adding link %s to service %s: %s", link.name, service.name, e)
+					return
 		logger.warning("Could not find service/component '%s' to add link", link.name)
 
 
@@ -389,3 +404,24 @@ class XBOMActuator:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error: ' + str(e))
 		else:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error')
+
+	def get_services_by_sid(self, sid: SId = None):
+		""" Returns the list of current services
+
+			Returns the list of discovered services. Filter by sid. None fields are
+			treated as wildcards.
+
+			:param sid: The sid of the service to retrieve (all if not set).
+			:return: A list of services that match the searching criteria.
+		"""
+		service_list= []
+		for s in self.services:
+			if sid.type == None or ( sid.type == s.sid.type ):
+				if sid.subtype == None or ( sid.subtype == s.sid.subtype):
+					if sid.namespace == None or sid.namespace == s.sid.namespace:
+						if sid.domain == None or sid.domain == s.sid.domain:
+							if sid.name == None or ( sid.name == s.sid.name ):
+								if sid.version == None or (sid.name == s.sid.name):
+									service_list.append(s)
+
+		return service_list

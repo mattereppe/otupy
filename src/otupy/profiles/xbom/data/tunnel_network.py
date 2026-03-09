@@ -22,6 +22,8 @@ class TunnelNetwork(Map):
 		:param server: The server of the VPN
 		:param nets: Network addesses used in this network
 	"""
+	def getNets(self):
+		return self['nets']
 
 	def as_cyclonedx(self) -> Service:
 		"""Convert TunnelNetwork to CycloneDX service format.

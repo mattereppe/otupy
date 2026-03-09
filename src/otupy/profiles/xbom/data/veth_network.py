@@ -22,6 +22,9 @@ class VEthNetwork(Map):
 		:param peers: A couple of interfaces names
 		:param nets: Network addesses used in this network
 	"""
+	
+	def getNets(self):
+		return self['nets']
 
 	def as_cyclonedx(self) -> Service:
 		"""Convert VEthNetwork to CycloneDX service format.

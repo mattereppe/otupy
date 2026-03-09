@@ -14,7 +14,7 @@ from otupy.profiles.xbom.args import Args
 AllowedActions = [ Actions.query]
 """ List of allowed `Action`s """
 
-AllowedTargets = [ 'features', Profile.nsid+':sbom' ]
+AllowedTargets = [ 'features', Profile.nsid+':xbom' ]
 """ List of allowed `Target`s 
 
 	 This is probably not strictly necessary
@@ -29,7 +29,7 @@ AllowedCommandTarget = ActionTargets()
 	 Command Matrix: valid Command/Target pairs
 """
 
-AllowedCommandTarget[Actions.query] = [TargetEnum.features, TargetEnum[Profile.nsid+':sbom']]
+AllowedCommandTarget[Actions.query] = [TargetEnum.features, TargetEnum[Profile.nsid+':xbom']]
 
 
 AllowedCommandArguments = ActionArguments()
@@ -46,7 +46,7 @@ def fillin_allowed_command_arguments(AllowedCommandArguments, action, targets, a
 # TODO: complete the list (if necessary)
 args = ['response_requested', 'name_only', 'cached']
 AllowedCommandArguments[(Actions.query, TargetEnum.features)] = ['response_requested']
-AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid+':sbom'])] = ['name_only', 'cached']
+AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid+':xbom'])] = ['cached']
 
 def validate_command(cmd):
 	""" Validate a `Command` 

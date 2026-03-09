@@ -1,10 +1,11 @@
 from otupy import ArrayOf
-from otupy.profiles.xbom.data.host import Host
 from cyclonedx.model import Property
-from cyclonedx.model.service import Service
+from cyclonedx.model.component import Component
+from cyclonedx.model.component_type import ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.types.base.record import Record
 
-class Pod(Host):
+class Pod(Record):
 	""" Kubernetes pod
 		
 		A pod is the logical unit in Kubernetes to run one or more containers. Other
@@ -29,25 +30,21 @@ class Pod(Host):
 	namespace: str = None
 	""" Namespace where the pod is instantiated """
 
-	def __init__(self, pod:object = None, namespace:str = None, **kwargs):
-		if isinstance(pod, Pod):
-			super().__init__(pod)
+	def __init__(self, pod:object = None, namespace:str = None):
+		if pod is not None:
 			self.namespace = pod.namespace
 		else:
-			super().__init__(**kwargs)
-			self.namespace = str(namespace) if namespace is not None else None
+			self.namespace = str(namespace) 
+
 
 	def __repr__(self):
 		return f"Pod(" \
-	            f"description={self.description}, " \
-	            f"id={self.id}, " \
-	            f"name={self.name}, " \
-	            f"namespace={self.namespace})" 
+	            f"namespace={self.namespace}" 
 	
 	def __str__(self):
 		return self.__repr__()
 
-	def as_cyclonedx(self) -> Service:
+	def as_cyclonedx(self) -> Component:
 		"""Convert Pod to CycloneDX service format.
 		
 		Returns:
@@ -68,8 +65,9 @@ class Pod(Host):
 		# Generate a unique bom_ref using centralized generator
 		bom_ref = generate_bom_ref("pod")
 		
-		return Service(
+		return Component(
 			name=self.name or "unknown",
+			type=ComponentType.PLATFORM,
 			bom_ref=bom_ref,
 			description=self.description,
 			properties=properties

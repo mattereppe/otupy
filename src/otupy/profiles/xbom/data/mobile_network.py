@@ -27,6 +27,16 @@ class MobileNetwork(Map):
 		:param netv4addrs: Network addresses used in this network
 		:param netv6addrs: Network IPv6 addresses used in this network
 	"""
+	def getNets(self):
+		nets = []
+		if 'mcc' in self:
+			nets.append("mcc:"+self['mcc'])
+		if 'mnc' in self:
+			nets.append("mnc:"+self['vlan_id'])
+		if 'nets' in self:
+			for n in self['nets']:
+				nets.append(n)		
+		return nets
 
 	def as_cyclonedx(self) -> Service:
 		"""Convert MobileNetwork to CycloneDX service format.
@@ -39,8 +49,6 @@ class MobileNetwork(Map):
 		]
 		
 		name = self.get('name')
-		if name is not None:
-			properties.append(Property(name="otupy:mobile:name", value=name))
 		
 		mcc = self.get('mcc')
 		if mcc is not None:

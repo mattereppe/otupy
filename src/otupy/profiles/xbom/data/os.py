@@ -1,10 +1,10 @@
-from otupy.profiles.xbom.data.execution_environment import ExecutionEnvironment
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.types.base.record import Record
 
 
-class OS(ExecutionEnvironment):
+class OS(Record):
 	"""OS
     Operating System
     
@@ -12,29 +12,32 @@ class OS(ExecutionEnvironment):
     can execute almost any software. It will have a full set of libraries
     and applications, as well as many subsystems (file systems, etc.).
 	"""
-	version: str = None
-	""" Version of the OS """
 	family: str = None
 	""" Family of the OS """
+	version: str = None
+	""" Version of the OS """
+	release: str = None
+	""" Release number/string """
 	arch: str = None
 	""" Supported CPU architecture """
 
 
-	def __init__(self, os=None, version=None, family=None, arch=None, **kwargs):
-		if os is not None and isinstance(os, OS):
-			super().__init__(os)
-			self.version = os.version
-			self.family = os.family
-			self.arch = os.arch
+	def __init__(self, os = None, version = None, family = None, release=None,  arch = None):
+		if os is not None:
+			self.family=os.family
+			self.version=os.version
+			self.release=os.release
+			self.arch=os.family
 		else:
-			super().__init__(**kwargs)
-			self.version = str(version) if version is not None else None
-			self.family = str(family) if family is not None else None
-			self.arch = str(arch) if arch is not None else None
+			self.family = str(family) 
+			self.version = str(version) 
+			self.release = str(release) 
+			self.arch = str(arch)
+
 
 	def __repr__(self):
-		return (f"OS({super().__repr__()}, "
-	             f"version={self.version}, family={self.family}, arch={self.arch})")
+		return (f"OS("
+	             f"family={self.family}, version={self.version}, release={self.release}, type={self.arch})")
 	
 	def __str__(self):
 		return self.__repr__()
@@ -48,36 +51,20 @@ class OS(ExecutionEnvironment):
 		properties = [
 			Property(name="otupy:type", value="os")
 		]
-		if self.id is not None:
-			properties.append(Property(name="otupy:os:id", value=self.id))
+		# if self.id is not None:
+		# 	properties.append(Property(name="otupy:os:id", value=self.id))
 		if self.family is not None:
 			properties.append(Property(name="otupy:os:family", value=self.family))
 		if self.arch is not None:
 			properties.append(Property(name="otupy:os:arch", value=self.arch))
 		
 		# Include nested components from ExecutionEnvironment
-		nested_components = []
-		if self.libs:
-			for lib in self.libs:
-				if hasattr(lib, 'as_cyclonedx'):
-					nested_components.append(lib.as_cyclonedx())
-		if self.pkgs:
-			for pkg in self.pkgs:
-				if hasattr(pkg, 'as_cyclonedx'):
-					nested_components.append(pkg.as_cyclonedx())
-		if self.apps:
-			for app in self.apps:
-				if hasattr(app, 'as_cyclonedx'):
-					nested_components.append(app.as_cyclonedx())
 		
 		return Component(
-			name=self.name or "unknown",
+			name= "tmp",
 			type=ComponentType.OPERATING_SYSTEM,
 			bom_ref=generate_bom_ref("os"),
 			version=self.version,
-			description=self.description,
-			components=nested_components if nested_components else None,
+			# description=self.description,
 			properties=properties
 		)
-
-
