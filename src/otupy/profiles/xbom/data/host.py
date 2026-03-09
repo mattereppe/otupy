@@ -73,7 +73,10 @@ class Host(XBOMObject):
 			self.firmware = firmware
 			self.version = version
 			self.type = type
-	
+
+	def get_subtype(self):
+		return self.type.getName()
+
 	def __repr__(self):
 		return (f"Host({super().__repr__()}),"
 					f"vendor='{self.vendor}'," 
@@ -111,7 +114,7 @@ class Host(XBOMObject):
 		if self.version is not None:
 			properties.append(Property(name="otupy:host:version", value=self.version))
 		if self.type is not None:
-			properties.append(Property(name="otupy:host:type", value=self.type.get_type_name(type(self.type.getObj())) if self.type is not None else "unknown"))
+			properties.append(Property(name="otupy:host:type", value=self.get_subtype() if hasattr(self.type, 'getName') else str(self.type)))
 			
 		return Component(
 			name=self.name or "unknown",

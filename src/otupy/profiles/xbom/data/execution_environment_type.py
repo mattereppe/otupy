@@ -1,6 +1,7 @@
 from otupy import Choice, Register
 from otupy.profiles.xbom.data.container import Container
 from otupy.profiles.xbom.data.os import OS
+from otupy.profiles.xbom.data.linux_netns import LinuxNetns
 
 class ExecutionEnvironmentType(Choice):
 	""" Execution environment types
@@ -10,7 +11,7 @@ class ExecutionEnvironmentType(Choice):
 	"""
 
 	# This could be further extended with different container types (e.g., docker, containerd)
-	register = Register({'container': Container, 'os': OS})
+	register = Register({'container': Container, 'os': OS, 'netns': LinuxNetns})
 
 	def __init__(self, type):
 		if(isinstance(type, ExecutionEnvironmentType)):

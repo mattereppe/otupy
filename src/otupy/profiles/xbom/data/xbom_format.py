@@ -1,9 +1,9 @@
 from otupy.types.base import Enumerated
 
-class SbomFormat(Enumerated):
-	"""Sbom-Format
+class XbomFormat(Enumerated):
+	"""Xbom-Format
 	
-	Defines the allowable standards for the Sbom data.
+	Defines the allowable standards for the Xbom data.
 	The CycloneDX standard for application security contexts and supply chain component analysis.
 	"""
 	

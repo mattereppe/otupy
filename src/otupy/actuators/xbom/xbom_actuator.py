@@ -24,7 +24,7 @@ from otupy.profiles.xbom.data.service import Service, SId
 from otupy.profiles.xbom.data.link import Link
 from otupy.profiles.xbom.data.xbom import CyclonedxXbom
 from otupy.profiles.xbom.data.abstract_xbom import Xbom
-from otupy.profiles.xbom.data.sbom_format import SbomFormat
+from otupy.profiles.xbom.data.xbom_format import XbomFormat
 
 logger = logging.getLogger()
 
@@ -33,8 +33,8 @@ OPENC2VERS=Version(1,0)
 
 # An implementation of the ctxd profile. 
 # Registry of BOM implementations by format
-_BOM_REGISTRY: dict[SbomFormat, type[Xbom]] = {
-	SbomFormat.cyclonedx: CyclonedxXbom,
+_BOM_REGISTRY: dict[XbomFormat, type[Xbom]] = {
+	XbomFormat.cyclonedx: CyclonedxXbom,
 }
 
 
@@ -47,8 +47,8 @@ class XBOMActuator:
 	bom: Xbom | None = None
 	""" Discovered BOM for this actuator """
 	
-	sbom_format: SbomFormat = SbomFormat.cyclonedx
-	""" The SBOM format to use for BOM creation (set from target) """
+	xbom_format: XbomFormat = XbomFormat.cyclonedx
+	""" The XBOM format to use for BOM creation (set from target) """
 	
 	def __init__(self, **kwargs):
 		""" Initialization
@@ -68,7 +68,7 @@ class XBOMActuator:
 		self.peers = kwargs['peers'] if 'peers' in kwargs else None
 		self.owner = kwargs['owner'] if 'owner' in kwargs else None
 		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
-		self.sbom_format = SbomFormat.cyclonedx
+		self.xbom_format = XbomFormat.cyclonedx
 		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
@@ -82,9 +82,9 @@ class XBOMActuator:
 			:return: A new BOM instance of the appropriate type
 			:raises NotImplementedError: If the requested format is not supported
 		"""
-		bom_class = _BOM_REGISTRY.get(self.sbom_format)
+		bom_class = _BOM_REGISTRY.get(self.xbom_format)
 		if bom_class is None:
-			raise NotImplementedError(f"SBOM format {self.sbom_format} is not supported")
+			raise NotImplementedError(f"SBOM format {self.xbom_format} is not supported")
 		return bom_class()
 
 	def _build_bom(self) -> None:
@@ -150,7 +150,10 @@ class XBOMActuator:
 				for subservice in service.subservices:
 					if subservice is not None:
 						logger.debug("Adding dependency from %s to subservice %s", service.name, subservice)
-						self.bom.add_dependency(parent_ref=str(service.sid), child_ref=str(subservice))
+						try:
+							self.bom.add_dependency(parent_ref=str(service.sid), child_ref=str(subservice))
+						except ValueError as e:
+							logger.warning("Skipping dependency: %s", e)
 
 		# # Add links as properties to the matching services/components
 		logger.info("Adding %d links to the BOM", len(self.links))
@@ -245,7 +248,7 @@ class XBOMActuator:
 		"""
 		if ( type(cmd.target.getObj()) == Features): 
 			r = self._query_feature(cmd)
-		elif (isinstance(cmd.target.getObj(), xbom.SbomCtx)):
+		elif (isinstance(cmd.target.getObj(), xbom.XbomCtx)):
 			# SBOM target with format and names fields
 			r = self._query_sbom(cmd)
 		else:
@@ -307,19 +310,39 @@ class XBOMActuator:
 
 		return service_list
 		
-	def get_consumer(self, service_name: Name) -> Consumer:
+	def get_consumer(self, name: Name=None, sid: SId=None) -> Consumer:
 		""" Returns consumer data
 
-			Returns the `Consumer` data for the selected service name.
+			Returns the `Consumer` data for the selected service name or identifier.
 
-			:param service_name: name of the service which consumer is searched.
+			:param name: name of the service which consumer is searched.
+			:param sid: service identifier of the service which consumer is searched.
 			:return: The consumer serving the given service, if any, None otherwise.
 		"""
+		if self.peers is None:
+			return None
+		if name is None and sid is None:
+			return None
+		if isinstance(sid, str):
+			sid=SId.from_str(sid)
+
 		consumer=None
 		for p in self.peers:
-			if Name(p['service_name']) == service_name:
+			service_name = Name(p['service_name']) if 'service_name' in p else None
+			if 'service_sid' in p:
+				if type(p['service_sid'])==str:
+					service_sid = SId.from_str(p['service_sid'])
+				else:
+					service_sid = SId(**p['service_sid'])
+			else:
+				service_sid = None
+			if service_name is not None and name is not None and service_name == Name(name):
 				consumer = Consumer(**p['consumer'])
 				logger.debug("Found consumer %s for %s", consumer, service_name)
+				break
+			if service_sid is not None and sid is not None and service_sid == sid:
+				consumer = Consumer(**p['consumer'])
+				logger.debug("Found consumer by sid %s for %s", consumer, service_sid)
 				break
 
 		return consumer
@@ -327,7 +350,7 @@ class XBOMActuator:
 	def _query_sbom(self, cmd):
 		""" Query SBOM - returns the single BOM for this actuator
 
-			Handles the SbomCtx target which allows specifying the SBOM format
+			Handles the XbomCtx target which allows specifying the SBOM format
 			and a list of component/service names to filter the returned names.
 
 			:param cmd: The `Command` including `Target` and optional `Args`.
@@ -338,7 +361,7 @@ class XBOMActuator:
 
 		# Get format if specified and set it for BOM creation
 		if sbom_target.get('format') is not None:
-			self.sbom_format = sbom_target.get('format')
+			self.xbom_format = sbom_target.get('format')
 
 		if not (cmd.args.get('cached') == True):
 			self._update()

@@ -7,6 +7,7 @@ from otupy import Map, ArrayOf, IPv4Net, IPv6Net
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
+from otupy.profiles.xbom.data.ip_net_address import IPNetAddress
 
 class MobileNetwork(Map):
 	""" Mobile 4/5G Network

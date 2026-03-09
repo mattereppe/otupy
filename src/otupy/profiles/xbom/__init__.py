@@ -13,8 +13,8 @@ from otupy.profiles.xbom.actuator import *
 
 from otupy import TargetEnum
 from otupy.profiles.xbom.data import *
-from otupy.profiles.xbom.data.sbom_format import SbomFormat
-from otupy.profiles.xbom.targets import Context, SbomCtx
+from otupy.profiles.xbom.data.xbom_format import XbomFormat
+from otupy.profiles.xbom.targets import Context, XbomCtx
 
 
 # According to the standard, extended targets must be prefixed with the nsid
@@ -34,6 +34,7 @@ from otupy.profiles.xbom.data.port import Port, IPAddress, IPInfo
 from otupy.profiles.xbom.data.execution_environment import ExecutionEnvironment
 from otupy.profiles.xbom.data.execution_environment_type import ExecutionEnvironmentType
 from otupy.profiles.xbom.data.os import OS
+from otupy.profiles.xbom.data.linux_netns import LinuxNetns
 from otupy.profiles.xbom.data.container import Container
 from otupy.profiles.xbom.data.host import Host
 from otupy.profiles.xbom.data.host_type import HostType
@@ -46,8 +47,10 @@ from otupy.profiles.xbom.data.network_interface import NetworkInterface
 from otupy.profiles.xbom.data.network_router import Router
 from otupy.profiles.xbom.data.network_bridge import Bridge
 from otupy.profiles.xbom.data.network_nat import NAT
+from otupy.profiles.xbom.data.network_firewall import Firewall
 from otupy.profiles.xbom.data.ethernet_network import EthernetNetwork
 from otupy.profiles.xbom.data.ip_network import IPNetwork
+from otupy.profiles.xbom.data.mobile_network import MobileNetwork
 from otupy.profiles.xbom.data.veth_network import VEthNetwork
 from otupy.profiles.xbom.data.tunnel_network import TunnelNetwork
 from otupy.profiles.xbom.data.vlan_network import VLANNetwork
@@ -57,6 +60,9 @@ from otupy.profiles.xbom.data.network_function import NetworkFunction
 from otupy.profiles.xbom.data.network_function_type import NetworkFunctionType
 from otupy.profiles.xbom.data.peer import Peer
 from otupy.profiles.xbom.data.peer_role import PeerRole
+from otupy.profiles.xbom.data.service_type import ServiceType
+from otupy.profiles.xbom.data.service import Service, SId
+from otupy.profiles.xbom.data.vm import VM
 from otupy.profiles.xbom.data.vm import HyperVisorType
 from otupy.profiles.xbom.data.endpoint import Endpoint
 from otupy.profiles.xbom.data.api import API

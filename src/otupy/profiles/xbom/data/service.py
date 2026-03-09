@@ -99,8 +99,21 @@ class SId(Record):
 			@:return: A SId class
 		"""
 		sid_list=re.split(':|/|@', sid)
-		return SId(type=sid_list[0], subtype=sid_list[1], domain=sid_list[2], namespace=sid_list[3], name=sid_list[4], version=sid_list[5])
+		return SId(type=sid_list[0] if sid_list[0] != 'None' else None, 
+							subtype=sid_list[1] if sid_list[1] != 'None' else None, 
+							domain=sid_list[2] if sid_list[2] != 'None' else None, 
+							namespace=sid_list[3] if sid_list[3] != 'None' else None,
+						  	name=sid_list[4] if sid_list[4] != 'None' else None, 
+							version=sid_list[5] if sid_list[5] != 'None' else None)
 
+	def __eq__(self, other):
+		""" Compare two sids for equality """
+		return  self.name == other.name and \
+							self.type == other.type and \
+							self.subtype == other.subtype and \
+							self.domain == other.domain and \
+							self.namespace == other.namespace and \
+							self.version == other.version
 
 	def __str__(self):
 		""" Return the SId as simple string according to the initial scheme """

@@ -2,15 +2,15 @@ from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING
 
 from otupy.types.base import Record
-from otupy.profiles.xbom.data.sbom_format import SbomFormat
+from otupy.profiles.xbom.data.xbom_format import XbomFormat
 
 if TYPE_CHECKING:
 	from cyclonedx.model.component import Component
 	from cyclonedx.model.service import Service
 
-# Registry mapping SbomFormat to concrete Xbom subclasses
+# Registry mapping XbomFormat to concrete Xbom subclasses
 # This is populated by subclasses when they are imported
-_XBOM_FORMAT_REGISTRY: dict[SbomFormat, type['Xbom']] = {}
+_XBOM_FORMAT_REGISTRY: dict[XbomFormat, type['Xbom']] = {}
 
 
 class Xbom(Record, ABC):
@@ -24,7 +24,7 @@ class Xbom(Record, ABC):
 	remain in the concrete implementations.
 	"""
 	
-	format: SbomFormat = None  # type: ignore
+	format: XbomFormat = None  # type: ignore
 	""" Format of the XBOM """
 	
 	bom: Any = None
@@ -46,15 +46,15 @@ class Xbom(Record, ABC):
 		if clstype is Xbom:
 			if isinstance(dic, dict) and 'format' in dic:
 				format_value = dic.get('format')
-				# Convert format value to SbomFormat enum if it's a string or int
+				# Convert format value to XbomFormat enum if it's a string or int
 				if isinstance(format_value, str):
-					format_enum = SbomFormat[format_value]
+					format_enum = XbomFormat[format_value]
 				elif isinstance(format_value, int):
-					format_enum = SbomFormat(format_value)
-				elif isinstance(format_value, SbomFormat):
+					format_enum = XbomFormat(format_value)
+				elif isinstance(format_value, XbomFormat):
 					format_enum = format_value
 				else:
-					format_enum = SbomFormat.cyclonedx  # Default
+					format_enum = XbomFormat.cyclonedx  # Default
 				
 				# Look up the concrete class for this format
 				concrete_class = _XBOM_FORMAT_REGISTRY.get(format_enum)

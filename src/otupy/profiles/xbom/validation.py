@@ -8,7 +8,7 @@ from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnu
 
 from otupy.profiles import xbom
 from otupy.profiles.xbom.profile import Profile
-from otupy.profiles.xbom.targets import SbomCtx
+from otupy.profiles.xbom.targets import XbomCtx
 from otupy.profiles.xbom.args import Args
 
 AllowedActions = [ Actions.query]
@@ -44,7 +44,7 @@ def fillin_allowed_command_arguments(AllowedCommandArguments, action, targets, a
 	return AllowedCommandArguments
 
 # TODO: complete the list (if necessary)
-args = ['response_requested', 'name_only', 'cached']
+args = ['response_requested', 'cached']
 AllowedCommandArguments[(Actions.query, TargetEnum.features)] = ['response_requested']
 AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid+':xbom'])] = ['cached']
 

@@ -28,9 +28,9 @@ class Application(XBOMObject):
 			self.app_type = app_type 
 
 
-	def getId(self, domain=None, namespace=None):
-		return "app:" + str(self.app_type) + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name) + "@" + str(self.version)
-		
+	def get_subtype(self):
+		""" Might be replace in the future with a subtype type """
+		return self.app_type
 
 	def __repr__(self):
 		return (f"Application({super().__repr__()},"
@@ -53,12 +53,11 @@ class Application(XBOMObject):
 		if self.owner is not None:
 			properties.append(Property(name="otupy:application:owner", value=self.owner))
 		if self.app_type is not None:
-			properties.append(Property(name="otupy:application:type", value=self.app_type))
+			properties.append(Property(name="otupy:application:type", value=self.get_subtype() if hasattr(self, 'get_subtype') else str(self.app_type)))
 		
 		return Component(
 			name=self.name or "unknown",
 			type=ComponentType.APPLICATION,
-			bom_ref=self.getId() if self.id is not None else generate_bom_ref(self),
 			version=self.version,
 			description=self.description,
 			properties=properties

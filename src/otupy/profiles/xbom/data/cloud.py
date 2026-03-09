@@ -21,8 +21,10 @@ class Cloud(XBOMObject):
 			super().__init__(name=name, description=description, id=id)
 			self.type = type 
 
-	def getId(self, domain=None, namespace=None):
-		return "cloud:" + str(self.type) + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+	def get_subtype(self):
+		""" This function might be replace in the future by
+			providing type classes like for other services."""
+		return self.type
 
 	def __repr__(self):
 		return (f"Cloud(description={self.description}, id={self.id}, "
@@ -41,7 +43,7 @@ class Cloud(XBOMObject):
 			Property(name="otupy:type", value="cloud")
 		]
 		if self.type is not None:
-			properties.append(Property(name="otupy:cloud:type", value=self.type))
+			properties.append(Property(name="otupy:cloud:type", value=self.get_subtype() if hasattr(self, 'get_subtype') else str(self.type)))
 		if self.id is not None:
 			properties.append(Property(name="otupy:cloud:id", value=self.id))
 		

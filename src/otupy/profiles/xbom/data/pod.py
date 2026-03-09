@@ -1,7 +1,6 @@
 from otupy import ArrayOf
 from cyclonedx.model import Property
-from cyclonedx.model.component import Component
-from cyclonedx.model.component_type import ComponentType
+from cyclonedx.model.component import Component, ComponentType
 from otupy.profiles.xbom.data.bom_ref import generate_bom_ref
 from otupy.types.base.record import Record
 

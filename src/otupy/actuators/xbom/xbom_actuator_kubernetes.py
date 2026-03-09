@@ -74,6 +74,8 @@ from otupy.profiles.xbom.data.network import Network, NetworkType
 logger = logging.getLogger(__name__)
 
 # TODO: Add to configuration items (or read from file
+K8S_APISERVER_NAME="kube-apiserver"
+K8S_APISERVER_LABEL="apiserver"
 K8S_CLUSTER_NETWORK="k8s-pod-network"
 K8S_ADVERTISE_ADDRESS='advertise-address'
 
@@ -109,9 +111,11 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		self.cniconfig = kwargs['config']['cni'] if 'config' in kwargs and 'cni' in kwargs['config'] else None
 		self.domain=self.dns
 
+		self._k8s_nodes = {} # Keep a list of nodes and their sids
+		self._k8s_apiserver = None # Keep the SId of the apiserver container (if any)
+
 		self.nats = {} # Keep a map of NAT associated to each pod
 		self.nodes = {} # Keep a map of nodes hosting each pod
-		self.routers = {} # Keep a map of routers for each pod
 		self.networks = {} # Keep a map of networks for each pod
 		self.pods = {} # Keep a map of pods associated to each container
 		self.net_on_node = {} # Keep a map of where networks are expected to be implemented
@@ -137,12 +141,12 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			- Nodes
 			- Namespaces available
 		"""
+		self._discover_k8s_cloud()
 		self._discover_k8s_services()
 		self._discover_k8s_pods()
 		self._discover_k8s_namespaces()		
 		self._discover_k8s_networks()
 		self._discover_pod_networks()
-#		self._discover_k8s_routers()
 #self._discover_k8s_nodes() We don't create services for nodes, since these should be created by another Actuator
 
 	def discover_links(self):
@@ -190,6 +194,55 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			return [ ns for ns in namespace_list if ns.metadata.name in self.namespaces ]
 
 		
+	def _discover_k8s_cloud(self):
+		# The root service: K8S cluster
+		# --------------------------------------------------
+		# K8S is considered PaaS when managed by an external service provider
+		name=self.dns if self.dns is not None  else "kubernetes"
+		k8s = Cloud(description='Kubernetes cloud', id=None, name=name, type='k8s')
+		k8s_subservices = ArrayOf(SId)()
+		# TODO: Fill in with k8s version/release
+
+		# Discover kubelet names
+		k8s_nodes = self._k8s_node_list()
+
+
+		for n in k8s_nodes:
+			# A Kubernetes node is an execution environment and hosts a kubelet
+			node = ExecutionEnvironment(name=n.metadata.name, id=n.metadata.uid, version=n.status.node_info.kernel_version,
+						description="Kubernetes node "+n.status.node_info.container_runtime_version,
+                  type= ExecutionEnvironmentType( OS(family=n.status.node_info.operating_system, arch=n.status.node_info.architecture,
+							version=n.status.node_info.kernel_version)) )
+
+			self._k8s_nodes[n.metadata.name]=SId.create_from_service_type(node)
+
+			kubelet = Application(name="kubelet", description="Kubernetes node agent",
+					version=n.status.node_info.kubelet_version , owner=self.owner, app_type="kubelet")
+			k8s_subservices.append(SId.create_from_service_type(kubelet, domain=n.metadata.name))
+
+		# Discover kube-api server
+		# This is a container discovered later on
+#		label_selector= "component=kube-apiserver"
+#		master_list = self._k8s_pod_list(label_selector=label_selector)
+#		for master in master_list:
+#			try:
+#				for c in master.spec.containers:
+#					if c.name == "kube-apiserver":
+#						version = c.image.split(':')[1]
+#						apiserver = Application(name="kube-apiserver", description="Kubernetes API server",
+#								version=version, owner=self.owner, app_type='kubelet')
+#						k8s_subservices.append(SId.create_from_service_type(apiserver, domain=self.domain,
+#								namespace=master.metadata.namespace))
+#			except Exception as e:
+#				logger.warn("Unable to find kube-apiserver: %s", e)
+#				apiserver = None
+
+		self.services.append(Service(name=Name(k8s.name),
+				sid=SId.create_from_service_type(k8s, domain=self.domain),
+				type=ServiceType(k8s), 
+				subservices=k8s_subservices, owner=self.owner, release=None))
+
+
 
 	def _discover_k8s_services(self):
 		""" Discover Kubernetes services 
@@ -221,8 +274,8 @@ class XBOMActuator_kubernetes(XBOMActuator):
 				pods = self._k8s_pod_list(label_selector=label_selector)
 			elif service.metadata.labels is not None:
 				# Workaround: the internal NAT to translate between service CIDR and public API IP has not selector. It uses the label: "component=kube-apiserver"
-				if "component" in service.metadata.labels and service.metadata.labels['component'] == 'apiserver':
-					label_selector= "component=kube-apiserver"
+				if "component" in service.metadata.labels and service.metadata.labels['component'] == K8S_APISERVER_LABEL:
+					label_selector= "component="+K8S_APISERVER_NAME
 					pods = self._k8s_pod_list(label_selector=label_selector)
 			else:
 				pods = None
@@ -259,7 +312,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 
 			try:
 				# Try to detect the kubeapi service (if cluster-wide visibility is available)
-				if ( service.metadata.labels['component'] == "apiserver" and
+				if ( service.metadata.labels['component'] == K8S_APISERVER_LABEL and
 						service.metadata.labels['provider'] == "kubernetes" ):
 					# This is the apiserver for Kubernetes; subservices are kubelets
 					description="Kubernetes API Service"
@@ -291,9 +344,11 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			self.services.append(nat_service)
 			if pods is not None:
 				for p in pods:
-					pod_ref=str(Name(Hostname(self._k8s_dns_name(p.metadata.name, p.metadata.namespace, "pod"))))
-#					pod_ref=str(Name(uuid.UUID(p.metadata.uid)))
-					self.nats[pod_ref]=nat_service
+#					pod_ref=str(Name(Hostname(self._k8s_dns_name(p.metadata.name, p.metadata.namespace, "pod"))))
+					pod_sid=SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(Pod), 
+										domain=self.domain, namespace=p.metadata.namespace, 
+										name=p.metadata.name)
+					self.nats[str(pod_sid)]=nat_service
 
 
 # Not sure this is a good idea, once I understood K8S svc are NATs
@@ -329,16 +384,12 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		net = Network(name=K8S_CLUSTER_NETWORK, description="Kubernetes cluster network",
 				id=None, type=NetworkType(eth))
 	
-		# The cluster network is implemented by routers hosted at each node. 
-		# Update: No, the cluster network is an abstraction, and the real connection can be detected at the lower level
 		subservices=ArrayOf(SId)()
-#		k8s_nodes = self._k8s_node_list()
-#		for n in k8s_nodes:
-#			subservices.append(self._k8s_dns_name(name=n.metadata.name, namespace=None, resource_type="router"))
 
 		self.services.append(Service(name=Name(Hostname(self._k8s_dns_name(name=net.name, 
 								namespace=None, resource_type="network"))) , 
 								sid=SId.create_from_service_type(net, domain=self.domain),
+								domain=self.domain,
 								type=ServiceType(net),
 								subservices=subservices, owner=self.owner, release=None))
 
@@ -378,6 +429,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 																			namespace=pod.metadata.namespace, 
 																			resource_type="network")))
 						net_services = self.get_services(name=netname, namespace=pod.metadata.namespace, filter=Network)
+						my_net_services = self.get_services(filter=Network)
 #						net_services_by_sid = self.get_services_by_sid(SId(name=net['name'], namespace=pod.metadata.namespace, type=ServiceType.get_type_name(Network)))
 						assert len(net_services) < 2 # This is necessary because in the else branch I assume a single element to be returned
 						if len(net_services) == 0: # Not registered yet
@@ -393,6 +445,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 							net_service = Service(
 										name=netname,
 										sid=SId.create_from_service_type(net, domain=self.domain, namespace=pod.metadata.namespace),
+										namespace=pod.metadata.namespace,
 										type=ServiceType(net),
 										subservices=ArrayOf(SId)(), owner=self.owner, release=None)
 							self.services.append(net_service)
@@ -410,11 +463,9 @@ class XBOMActuator_kubernetes(XBOMActuator):
 											if not found:
 												 mynet.type.getObj().type.getObj()['nets'].append(ip2)
 						self.networks[podname].append(net_service)
-						self._add_k8s_node(net_service, SId(name=pod.spec.node_name, type=ServiceType.get_type_name(ExecutionEnvironment),
-								  	subtype=ExecutionEnvironmentType.get_type_name(OS), domain=self.domain, 
-									version=k8s_node_dict[pod.spec.node_name].status.node_info.kernel_version))
+						self._add_k8s_node(net_service, self._k8s_nodes[pod.spec.node_name]) 
 									
-			if pod.metadata.labels is not None and 'component' in pod.metadata.labels and  pod.metadata.labels['component']=="kube-apiserver":
+			if pod.metadata.labels is not None and 'component' in pod.metadata.labels and  pod.metadata.labels['component']==K8S_APISERVER_NAME:
 				# Workaround: kubeapiserver listen on public network
 				if pod.status.host_ip is not None:
 					ipnets=ArrayOf(IPNetAddress)()
@@ -423,7 +474,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 					ipnets.append(ipaddress.ip_network(pod.status.host_ip, strict=False))
 					eth = IPNetwork({'nets': ipnets})
 					netname=self._k8s_dns_name(name=K8S_ADVERTISE_ADDRESS, namespace=None, resource_type="network")
-					net = Network(name=netname,
+					net = Network(name=K8S_ADVERTISE_ADDRESS,
 							description="Kube API server public address",
 							id=None, type=NetworkType(eth))
 					net_service = Service(
@@ -433,16 +484,12 @@ class XBOMActuator_kubernetes(XBOMActuator):
 								subservices=ArrayOf(SId)(), owner=self.owner, release=None)
 					self.services.append(net_service)
 					self.networks[podname].append(net_service)
-					self._add_k8s_node(net_service, SId(name=pod.spec.node_name, type=ServiceType.get_type_name(ExecutionEnvironment), 
-								subtype=ExecutionEnvironmentType.get_type_name(OS), domain=self.domain, 
-								version=k8s_node_dict[pod.spec.node_name].status.node_info.kernel_version))
+					self._add_k8s_node(net_service, self._k8s_nodes[pod.spec.node_name])
 
-			net_services = self.get_services(name=Name(K8S_CLUSTER_NETWORK), filter=Network)
+#			net_services = self.get_services(name=Name(K8S_CLUSTER_NETWORK), filter=Network)
+			net_services = self.get_services_by_sid(SId(name=K8S_CLUSTER_NETWORK, domain=self.domain, type=ServiceType.get_type_name(Network)))
 			if len(net_services) > 0:
-				self._add_k8s_node(net_services[0], name=pod.spec.node_name, type=ServiceType.get_type_name(ExecutionEnvironment), 
-						subtype=ExecutionEnvironmentType.get_type_name(OS), domain=self.domain, 
-									version=k8s_node_dict[pod.spec.node_name].status.node_info.kernel_version)
-
+				self._add_k8s_node(net_services[0], self._k8s_nodes[pod.spec.node_name])
 
 
 	def _k8s_service_list(self, namespaces=None):
@@ -491,17 +538,16 @@ class XBOMActuator_kubernetes(XBOMActuator):
 	def _discover_pod_links_nodes(self):
 		""" Add links between pods and nodes where they are hosted 
 		"""
-#		k8s_pods = self.get_services(filter=Pod)
 		k8s_pods = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(Pod)))
-#		k8s_pods_by_sid = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Pod)))
 
 		# If nodes were discovered, I can safely assume to have cluster-wide visibility
 		for p in k8s_pods:
-			node = self._k8s_pod_node(p.type.getObj())
-			consumer=self.get_consumer(Name(node))
+			node=self.nodes[str(p.sid)]
+			consumer=self.get_consumer(sid=node)
+
 			# We assume the node name is the same as the service created by its actuator
 			# We know kubernetes nodes are implemented by plain operating systems (does not matter where they are hosted)
-			peer = Peer(service_name=Name(Hostname(node)), sid=SId(type="os", name=node),
+			peer = Peer(service_name=Name(Hostname(node.name)), sid=node,
 						role=PeerRole.host, # Node hosts pods
 						consumer=consumer)
 			description="Pod "+str(p.name)+" hosted on "+str(peer.service_name)
@@ -512,18 +558,14 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		""" Add links between virtual networks and the nodes that implement them
 		"""
 
-		k8s_nets = self.get_services(filter=Network)
-#		k8s_nets_by_sid = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Network)))
-#		k8s_nodes_dict = self._k8s_node_dict()
-
-		for node in self.net_on_node:
-			sid=SId.from_str(node),
-			consumer=self.get_consumer(Name(node))
-			peer = Peer(service_name=Name(Hostname(SId.from_str(node).name)), 
-					sid=SId.from_str(node),
+		for node, nets in self.net_on_node.items():
+			sid=SId.from_str(node)
+			consumer=self.get_consumer(sid=sid)
+			peer = Peer(service_name=Name(Hostname(sid.name)), 
+					sid=sid,
 					role=PeerRole.host, # Node hodes network implementation
 					consumer=consumer)
-			for net in self.net_on_node[node]:
+			for net in nets:
 				# TODO: Check if some networks are present only on specific nodes (where the pod is running
 				description="Network "+str(net)+" implemented in " + str(peer.sid)
 				net_sid = SId.from_str(net)
@@ -534,9 +576,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 	def _discover_pod_links_containers(self):
 		""" Add links between pods and containers they contain
 		"""
-#k8s_pods = self.get_services(filter=Pod)
 		k8s_pods = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(Pod)))
-#		k8s_pods_by_sid = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Pod)))
 
 		# This link might be removed, if we keep containers as subservices of pods
 		for p in k8s_pods:
@@ -554,43 +594,28 @@ class XBOMActuator_kubernetes(XBOMActuator):
 
 			(Container) --- (NAT) --- (k8s-pod-network )
 		"""
-#k8s_pods = self.get_services(filter=Pod)
 		k8s_pods = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(Pod)))
-#		k8s_sid = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Pod)))
-		nets = self.get_services(name=Name(Hostname(self._k8s_dns_name(K8S_CLUSTER_NETWORK, resource_type="network"))), filter=Network)
-#		nets_sid = self.get_services_by_sid(SId(domain=self.domain, name=K8S_CLUSTER_NETWORK, type=ServiceType.get_type_name(Network)))
+		nets = self.get_services_by_sid(SId(name=K8S_CLUSTER_NETWORK, domain=self.domain, type=ServiceType.get_type_name(Network)))
 
 		for p in k8s_pods:
 			for net in nets:
-				pod_name = str(p.name) 
-				if pod_name in self.nats:
-					nat = self.nats[pod_name]
+				pod_sid = str(p.sid) 
+				if pod_sid in self.nats:
+					nat = self.nats[pod_sid]
 					# Add NAT between pod and cluster network
-					peer = Peer(service_name=nat, sid=nat.sid, role=PeerRole.forwarding, consumer=None)
-					description="Pod "+str(p.name)+" attached to NAT " + str(nat)
+					peer = Peer(service_name=nat.name, sid=nat.sid, role=PeerRole.forwarding, consumer=None)
+					description="Pod "+str(p.sid)+" attached to NAT " + str(nat.sid)
 					self.links.append(Link(name=p.name, sid=p.sid, description=description, role=PeerRole.endpoint,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 					peer = Peer(service_name=net.name, sid=net.sid, role=PeerRole.forwarding, consumer=None)
 					description="NAT "+str(nat)+" attached to cluster network"
 					self.links.append(Link(name=nat, sid=nat.sid, description=description, role=PeerRole.forwarding,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
-#					if str(c.name) in self.routers:
-#						router=self.routers[str(c.name)]
-#						peer = Peer(service_name=router, role=PeerRole.forwarding, consumer=None)
-#						description="NAT "+str(nat)+" attached to router " + str(router)
-#						self.links.append(Link(name=nat, description=description, role=PeerRole.forwarding,
-#									link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 				else: # No NAT: pod attached directly to cluster network
 					peer = Peer(service_name=net.name, sid=net.sid, role=PeerRole.forwarding, consumer=None)
 					description="Pod "+str(p.name)+" attached to cluster network"
 					self.links.append(Link(name=p.name, sid=p.sid, description=description, role=PeerRole.endpoint,
 								link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
-#					if str(p.name) in self.routers:
-#						router=self.routers[str(p.name)]
-#						peer = Peer(service_name=router, role=PeerRole.forwarding, consumer=None)
-#						description="Pod "+str(p.name)+" attached to router " + str(router)
-#						self.links.append(Link(name=p.name, description=description, role=PeerRole.endpoint,
-#									link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
 			# Other networks:
 			pod_name=str(p.name)
 			if pod_name in self.networks:
@@ -605,69 +630,44 @@ class XBOMActuator_kubernetes(XBOMActuator):
 	def _discover_k8s_links_nodes(self):
 		""" Discover K8S links to nodes
 
-			Kube-api is hosted on master
-			Kubelets are hosted on slaves(/master)
+			Kube-api is hosted on master (but it is a pod, so we don't need to deal with it now)
+			Kubelets are hosted on nodes
 			
 			For now, a simplification is used and only Kubernetes hosted on master is reported
 		"""
+		cloud_services=self.get_services(filter=Cloud)
 
-		k8s_service = self.get_services(name=Name(Hostname(self._k8s_dns_name(name='kubernetes',
-																								namespace="default",
-																								resource_type="svc"))),
-													filter=API)
-#		k8s_service_by_sid = self.get_services_by_sid(SId(domain=self.domain, name="kubernetes", namespace="default", type=ServiceType.get_type_name(API)))
+		for cloud in cloud_services:
+			for sub in cloud.subservices:
+				if sub.type == ServiceType.get_type_name(Application):
+					node = self._k8s_nodes[sub.domain]
+					peer = Peer(service_name=node.name, sid=node, role=PeerRole.host,
+										consumer=self.get_consumer(sid=node))
+					self.links.append( Link(name=sub.name, sid=sub, description="Kubelet "+sub.name+" hosted on "+str(node),
+							role=PeerRole.guest, link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])) )
 
-		try:
-			# Try to get the master node from kubernets
-			master = (self._k8s_node_list(label_selector="node-role.kubernetes.io/control-plane"))[0].metadata.name
-
-			k8s_nodes = self._k8s_node_list()
-	
-			for k in k8s_service:
-				for n in k8s_nodes:
-					consumer=self.get_consumer(n.metadata.name)
-					peer = Peer(service_name=n.metadata.name, 
-								sid=SId(name=n.metadata.name, version=n.metadata.resource_version, 
-										type=ServiceType.get_type_name(ExecutionEnvironment),
-										subtype=ExecutionEnvironmentType.get_type_name(OS)),
-								role=PeerRole.host, # K8S is hosted on master node
-								consumer=consumer)
-					description="Kubernetes API Server hosted on "+str(n.metadata.name)
-					self.links.append(Link(name=k.name, sid=k.sid, description=description, role=PeerRole.guest,
-								link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
-
-		except Exception as e:
-			# Otherwise assign the 
-			pass
 			
 	def _discover_networkfunctions_links_nodes(self):
-		""" Assign routers to nodes 
+		""" Assign network functions to nodes 
 		"""
 		nfs = self.get_services(filter=NetworkFunction)
 #		nfs_by_id = self.get_services_by_sid(SId(type=ServiceType.get_type_name(NetworkFunction)))
 
-		nodes = self._k8s_node_list()
-
 		peersid=None
 		for nf in nfs:
-			if( type(nf.type.getObj().type.getObj()) == Router):
-				for n in nodes:
-					if nf.type.getObj().name == n.metadata.name:
-						peername=Name(Hostname(n.metadata.name))
-						description="Router " + str(nf.name) + " hosted on "+ str(peername)
-			elif ( type(nf.type.getObj().type.getObj()) == NAT):
-				for pod, nat in self.nats.items():
-					if nat.name == nf.name:
+			if ( nf.sid.subtype == NetworkFunctionType.get_type_name(NAT) ):
+				for pod_sid, nat in self.nats.items():
+					if nat.sid == nf.sid:
 						try:
-							peersid=self.nodes[pod]
-							description="NAT " + str(nf.name) + " hosted on "+ str(peersid)
+							peersid=self.nodes[str(pod_sid)]
+							description="NAT " + str(nf.sid) + " hosted on "+ str(peersid)
 						except Exception as e:
 							peersid=None
 			else:
 				peersid=None
 
 			if peersid is not None:
-				consumer = self.get_consumer(peersid)
+				consumer = self.get_consumer(sid=peersid)
 				peer=Peer(service_name=Name(peersid.name), sid=peersid,
 						role=PeerRole.host,
 						consumer=consumer)
@@ -680,45 +680,57 @@ class XBOMActuator_kubernetes(XBOMActuator):
 	def _discover_k8s_links_pods(self):
 		""" Discover K8S links to pods
 
-			This is an oversimplification: indeed, kude-admin (hosted on master) controls kubelets (hosted on slaves),
-			and kubelets controls pods. The first relationship should be build by _discover_k8s_links_nodes().
+			kude-apiserver controls kubelets, 
+			and kubelets controls pods. 
 		"""
+		cloud_services=self.get_services(filter=Cloud)
+		cloud_pods=self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(Pod)))
 
-		k8s_service = self.get_services(name=Name(Hostname(self._k8s_dns_name(name='kubernetes',
-																								namespace="default",
-																								resource_type="svc"))),
-													filter=API)
-#		k8s_service_by_id = self.get_services_by_sid(SId(name='kubernetes', namespace='default', type=ServiceType.get_type_name(API)))
+		for cloud in cloud_services:
+			for sub in cloud.subservices:
+				# Kube-apiserver controls kubelets
+				if sub.type == ServiceType.get_type_name(Application):
+					peer = Peer(service_name=sub.name, sid=sub, role=PeerRole.controlled,
+										consumer=self.get_consumer(sid=sub))
+					if self._k8s_apiserver is not None:
+						self.links.append( Link(name=K8S_APISERVER_NAME, sid=self._k8s_apiserver, 
+											description="Kube-apiserver controls kubelets",
+											link_type=LinkType.controlling, role=PeerRole.control, 
+											peers=ArrayOf(Peer)([peer])))
+					peer.role=PeerRole.control
+					for pod in cloud_pods:
+						if self.nodes[str(pod.sid)].name == sub.domain:
+							self.links.append( Link(name=pod.name, sid=pod.sid, 
+															description="Kubelet controls pod "+str(pod.name),
+															link_type=LinkType.controlling, role=PeerRole.controlled,
+															peers=ArrayOf(Peer)([peer])))
 
-		k8s_containers = self.get_services_by_sid(SId(type=ServiceType.get_type_name(ExecutionEnvironment), subtype=ExecutionEnvironmentType.get_type_name(Container)))
-#		k8s_containers_by_id = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Container)))
-
-		for s in k8s_service:
-			for c in k8s_containers:
-				peer = Peer(service_name=c.name, sid=c.sid,
-							role=PeerRole.controlled, # Kubernetes controls its containers
-							consumer=None)
-				description="Kubernetes controls container "+str(c.name.getObj())
-				self.links.append(Link(name=s.name, sid=s.sid, description=description,
-							link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
 
 
-	def _discover_k8s_routers(self):
-		""" Discover kubernetes "routers"
+		
 
-			Routers are not resources exposed by kubernets, however, a routing function is present in each
-			node to deliver packets within the nodes and external networks.
-		"""
-		nodes = self._k8s_node_list()
 
-		for n in nodes:
-			# Each node will also host a router to implement the cluster network
-			router = NetworkFunction(name=n.metadata.name, id=None,
-					description="Kubernetes router",type=NetworkFunctionType(Router()))
-			self.services.append(Service(name=Name(Hostname(self._k8s_dns_name(name=n.metadata.name, resource_type="router"))), 
-						sid=SId.create_from_service_type(router, domain=self.domain),
-						type=ServiceType(router), 
-						subservices=None, owner=self.owner, release=n.metadata.resource_version))
+
+
+#
+#		k8s_service = self.get_services(name=Name(Hostname(self._k8s_dns_name(name='kubernetes',
+#																								namespace="default",
+#																								resource_type="svc"))),
+#													filter=API)
+##		k8s_service_by_id = self.get_services_by_sid(SId(name='kubernetes', namespace='default', type=ServiceType.get_type_name(API)))
+#
+#		k8s_containers = self.get_services_by_sid(SId(type=ServiceType.get_type_name(ExecutionEnvironment), subtype=ExecutionEnvironmentType.get_type_name(Container)))
+##		k8s_containers_by_id = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Container)))
+#
+#		for s in k8s_service:
+#			for c in k8s_containers:
+#				peer = Peer(service_name=c.name, sid=c.sid,
+#							role=PeerRole.controlled, # Kubernetes controls its containers
+#							consumer=None)
+#				description="Kubernetes controls container "+str(c.name.getObj())
+#				self.links.append(Link(name=s.name, sid=s.sid, description=description,
+#							link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
+#
 
 
 	def _discover_k8s_nodes(self):
@@ -734,7 +746,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			# A Kubernetes node is an execution environment and hosts a kubelet
 			node = ExecutionEnvironment(name=n.metadata.name, id=n.metadata.uid,
 						description="Kubernetes node"+n.status.node_info.container_runtime_version,
-                  type= OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image))
+                  type= ExecutionEnvironmentType( OS(family=n.status.node_info.operating_system, name=n.status.node_info.os_image)))
 			logger.debug("Found node: %s", str(node))
 
 			self.services.append(Service(name=Name(Hostname(self._k8s_dns_name(name=n.metadata.name, resource_type="node"))), 
@@ -774,22 +786,16 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			Network Policies implement sort of a slpf firewall, hence they are a security function. However, they are not
 			standalone software, and they are implemented by kubernetes..
 		"""
-		k8s_service = self.get_services(name=Name(Hostname(self._k8s_dns_name(name='kubernetes',
-																								namespace="default",
-																								resource_type="svc"))),
-													filter=API)
-#		k8s_service_by_id = self.get_services_by_sid(SId(name='kubernetes', namespace='default', type=ServiceType.get_type_name(API)))
-
-		for s in k8s_service:
-			consumer = self.get_consumer(Name("kubernetes-networkpolicies"))
+		if self._k8s_apiserver is not None:
+			consumer = self.get_consumer(sid=self._get_networkpolicies_sid())
 			peer = Peer(service_name=Name("kubernetes-networkpolicies"), 
 							sid=self._get_networkpolicies_sid(),
 							role=PeerRole.controlled, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
 							consumer=consumer)
-			description="Kubernetes Network Policies"
-			self.links.append(Link(name=s.name, sid=s.sid, description=description,
+			description="Kubernetes API controls Network Policies"
+			self.links.append(Link(name=Name(K8S_APISERVER_NAME), sid=self._k8s_apiserver, description=description,
 							link_type=LinkType.controlling, peers=ArrayOf(Peer)([peer])))
-
+	
  
 	
 	def _discover_k8s_pods(self):
@@ -798,7 +804,6 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			Discovers pods and describes them including network interfaces and hosted containers.
 		"""
 		self.nodes = {}
-		self.routers = {}
 		controller = None
 
 		k8s_nodes_dict = self._k8s_node_dict()
@@ -868,19 +873,31 @@ class XBOMActuator_kubernetes(XBOMActuator):
 				for owner in pod.metadata.owner_references:
 					if owner.controller:
 						controllername = Name(Hostname(self._k8s_dns_name(owner.name, pod.metadata.namespace, owner.kind)))
-						controller_list = self.get_services(name=controllername, namespace=pod.metadata.namespace, filter=Application)
+#controller_list = self.get_services(name=controllername, namespace=pod.metadata.namespace, filter=Application)
+#assert len(controller_list) < 2 # Hopefully, only 1 result will be returned
+						# The owner maybe a StatefulSet/DaemonSet/... resource belonging to a namespace or even a kubernetes node,
+						# which does not belong to any namespace. The only reliable approach is to look for the name in any
+						# namespace, and then select the correct one by its id
+						controller_list = self.get_services(name=controllername, filter=Application)
+						controller = None
+						for ctr in controller_list:
+							if ctr.type.getObj().id == owner.uid:
+								controller = ctr
 #						controller_list_by_id = self.get_services_by_sid(SId(name=owner.name, namespace=pod.metadata.namespace, type=ServiceType.get_type_name(Application)))
-						assert len(controller_list) < 2 # Hopefully, only 1 result will be returned
-						if len(controller_list) == 0: # Create a new Application for this controller
+						if controller is None: # Create a new Application for this controller
 							app = Application(name=owner.name, description=owner.kind,
 									id=owner.uid, app_type=owner.kind)
+							# This is a trick, but for now it is enough
+							if owner.kind == 'Node':
+								owner_namespace = None
+							else:
+								owner_namespace = pod.metadata.namespace
 							controller = Service(name=controllername, 
-									sid=SId.create_from_service_type(app, domain=self.domain),
+									sid=SId.create_from_service_type(app, namespace=owner_namespace, domain=self.domain),
+									namespace=owner_namespace,
 									type=ServiceType(app), 
 									subservices=ArrayOf(SId)(), release=owner.api_version)
 							self.services.append(controller)
-						else:
-							controller = controller_list[0]
 					if pod.metadata.namespace == "kube-system" and controller.sid not in k8s_subservices:
 						k8s_subservices.append(controller.sid)
 
@@ -906,18 +923,19 @@ class XBOMActuator_kubernetes(XBOMActuator):
                   subservices=ArrayOf(SId)(), owner=self.owner, release=None))
 				pod_subservices_list.append(container_sid)
 
-				if pod.spec.node_name != "" and pod.spec.node_name is not None:
-#					self.nodes[str(c.id)]=Name(Hostname(pod.spec.node_name))
-					self.nodes[str(c.id)]=SId(name=pod.spec.node_name, version=k8s_nodes_dict[pod.spec.node_name].metadata.resource_version, 
-							type=ServiceType.get_type_name(ExecutionEnvironment), subtype=ExecutionEnvironmentType.get_type_name(OS)) 
-#					self.routers[str(podname)]=Name(Hostname(self._k8s_dns_name(name=pod.spec.node_name, resource_type="router")))
-				else:
-					self.nodes[str(podname)]=None
-#					self.routers[str(podname)]=None
+				# Look for Kubernetes API server
+				if c.name.startswith(K8S_APISERVER_NAME):
+					cloud_list = self.get_services(filter=Cloud)
+					self._k8s_apiserver = container_sid
+					for cloud in cloud_list:
+						cloud.subservices.append(container_sid)
+
 
 				# Add subservice to existing instance
-				if controller is not None:
-					controller.subservices.append(container_sid)
+				# --- Currently replaced by pod (see below)
+#				if controller is not None:
+#					controller.subservices.append(container_sid)
+
 
 			# NO -> Create the pod service with containers as subservices 
 			# The pod has a double role in Kubernets. It is the network namespace for its containers and
@@ -926,31 +944,21 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			# In our abstraction, the Pod is the Host of an Execution Environment, and Execution Environments are subservices
 			# of them.
 #			podname=Name(Hostname(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "pod"))) 
-			self.services.append(Service(name= podname,
-						sid=SId.create_from_service_type(pod_type, domain=self.domain, namespace=pod.metadata.namespace),
+			pod_sid=SId.create_from_service_type(pod_type, domain=self.domain, namespace=pod.metadata.namespace)
+			self.services.append(Service(name= podname, sid=pod_sid,
 						type=ServiceType(pod_type), #links= ArrayOf(Name)([]),
 						subservices=pod_subservices_list,
 						owner=self.owner, release=pod.metadata.resource_version))
 
-						
+			# Add pod as subservice of a controller (StatefulSet, Deployment, ...)
+			if controller is not None:
+				controller.subservices.append(pod_sid)
 
-		# The root service: K8S cluster
-		# --------------------------------------------------
-		# K8S is considered PaaS when managed by an external service provider
-		name=self.dns if self.dns is not None  else "kubernetes"
-		k8s = Cloud(description='Kubernetes cloud', id=None, name=name, type='IaaS')
-		# TODO: Fill in with k8s version/release
-		# Subservices are the application in 'kube-system' namespace
-#		try:
-#			nodes = self._k8s_node_list()
-#			for n in nodes:
-#				k8s_services.append(self._k8s_dns_name(name=n.metadata.name, resource_type="node"))	
-#		except:
-#			pass
-		self.services.append(Service(name=Name(k8s.name),
-				sid=SId.create_from_service_type(k8s, domain=self.domain),
-				type=ServiceType(k8s), 
-				subservices=k8s_subservices, owner=self.owner, release=None))
+			if pod.spec.node_name != "" and pod.spec.node_name is not None:
+				self.nodes[str(pod_sid)] = self._k8s_nodes[pod.spec.node_name]
+			else:
+				self.nodes[str(pod_sid)]=None
+						
 
 	def _k8s_pod_list(self, label_selector=""):
 		""" Retrieve the list of pods from the K8S API. """
@@ -982,11 +990,10 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			Network policies are modelled as a security function implemented by an external actuator.
 			They protect all pods hosted in Kubernetes..
 		"""
-		k8s_service = self.get_services_by_sid(SId(type=ServiceType.get_type_name(ExecutionEnvironment), subtype=ExecutionEnvironmentType.get_type_name(Container)))
-#		k8s_service_by_id = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Container)))
+		k8s_service = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(Pod)))
 
 		for s in k8s_service:
-			consumer = self.get_consumer(Name("kubernetes-networkpolicies"))
+			consumer = self.get_consumer(sid=self._get_networkpolicies_sid())
 			peer = Peer(service_name=Name("kubernetes-networkpolicies"), 
 							sid=self._get_networkpolicies_sid(),
 							role=PeerRole.protect, # Kubernetes controls its Network Policies (indeed, they are controlled by a CNI)
@@ -1028,7 +1035,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			return Exception("Failed to connect to kubernetes")
 		
 	def _get_networkpolicies_sid(self):
-		return SId(name='kubernetes-networkpolicies', domain=self.domain, type="network_function", subtype="fw")
+		return SId(name='kubernetes-networkpolicies', domain=self.domain, type=ServiceType.get_type_name(NetworkFunction), subtype=NetworkFunctionType.get_type_name(Firewall))
 		
 
 	def _k8s_dns_name(self, name: str, namespace: str = None, resource_type: str = None):

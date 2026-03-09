@@ -13,11 +13,12 @@ from cyclonedx.model import Property
 from cyclonedx.model.bom_ref import BomRef
 
 import uuid
-from otupy.profiles.xbom.data.sbom_format import SbomFormat
 from otupy.types.base import Record
 
 from typing import Any, List
 import json
+
+from otupy.profiles.xbom.data.xbom_format import XbomFormat
 
 _cyclonedx_schema_version = SchemaVersion.V1_7
 
@@ -27,18 +28,18 @@ class CyclonedxXbom(Xbom):
 	eXtended Bill of Materials using CycloneDX format.
 	This is the concrete implementation that uses the CycloneDX library.
 	"""
-	format: SbomFormat = None # type: ignore
+	format: XbomFormat = None # type: ignore
 	""" Format of the XBOM """
     
 	bom: Bom = None
 	""" CycloneDX Bill of Materials """
 
-	def __init__(self, format: SbomFormat | None = None, bom: Bom = None):
+	def __init__(self, format: XbomFormat | None = None, bom: Bom = None):
 		if format is not None and isinstance(format, Xbom):
 			self.format = format.format
 			self.bom = format.bom
 		else:
-			self.format = format if format is not None else SbomFormat.cyclonedx
+			self.format = format if format is not None else XbomFormat.cyclonedx
 			self.bom = bom if bom is not None else Bom()
 
 	def add(self, item: Component | Service | Dependency | Any ) -> None:
@@ -319,7 +320,14 @@ class CyclonedxXbom(Xbom):
 		
 		fmt = dic.get('format')
 		if fmt:
-			fmt = e.fromdict(SbomFormat, fmt)
+			if isinstance(fmt, XbomFormat):
+				pass  # already the correct type
+			elif isinstance(fmt, dict):
+				fmt = e.fromdict(fmt)
+			else:
+				fmt = XbomFormat[str(fmt)]  # convert string/int name to enum
+		else:
+			fmt = XbomFormat.cyclonedx  # Default format
 		
 		instance = cls(format=fmt)
 		
@@ -340,7 +348,7 @@ class CyclonedxXbom(Xbom):
 			return {}
 
 		match self.format:
-			case SbomFormat.cyclonedx:
+			case XbomFormat.cyclonedx:
 				serializer = JsonV1Dot7(self.bom)
 				return json.loads(serializer.output_as_string())
 			case _:
@@ -353,15 +361,10 @@ class CyclonedxXbom(Xbom):
 			:return: None
 		"""
 		match self.format:
-			case SbomFormat.cyclonedx:
-				# print(f"DEBUG deserialize - Input type: {type(data)}")
-				# print(f"DEBUG deserialize - Input data: {data}")
+			case XbomFormat.cyclonedx:
 				validator = JsonStrictValidator(schema_version=_cyclonedx_schema_version)
 				data = data if isinstance(data, str) else json.dumps(data)
-				# print(f"DEBUG deserialize - After conversion: {data[:500] if len(data) > 500 else data}")
 				validation_result = validator.validate_str(data)
-				# print(f"DEBUG deserialize - Validation result: {validation_result}")
-				# print(f"DEBUG deserialize - Validation errors: {validator.validation_errors if hasattr(validator, 'validation_errors') else 'N/A'}")
 				if validator.validate_str(data):
 					raise ValueError("Invalid CycloneDX JSON data")
 				self.bom = Bom.from_json(json.loads(data))
@@ -376,7 +379,7 @@ class CyclonedxXbom(Xbom):
 			return (f"XBOM(format={self.format}, bom=None)")
 
 		match self.format:
-			case SbomFormat.cyclonedx:
+			case XbomFormat.cyclonedx:
 				return (f"XBOM("
 						f"format={self.format}, "
 						f"bom_metadata={self.bom.metadata}, "

@@ -4,5 +4,5 @@
 """
 
 from otupy.profiles.xbom.targets.context import Context
-from otupy.profiles.xbom.targets.sbom_ctx import SbomCtx
+from otupy.profiles.xbom.targets.xbom_ctx import XbomCtx
 

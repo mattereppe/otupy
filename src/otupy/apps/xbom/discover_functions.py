@@ -117,8 +117,8 @@ def discover(service: dict) -> tuple[Xbom, None] | None:
 	producer = otupy.Producer("xbom-discovery.mirandaproject.eu", encoder, transferer)
                                                              
 	actuator = xbom.Specifiers({'asset_id': service['actuator']['asset_id']})
-	arg = xbom.Args({'name_only': False, 'cached': False})
-	target = xbom.SbomCtx() 
+	arg = xbom.Args({'cached': False})
+	target = xbom.XbomCtx() 
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
 	context = producer.sendcmd(cmd)
 	logger.info("Got context from: %s", context.from_)

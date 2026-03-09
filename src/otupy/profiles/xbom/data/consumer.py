@@ -61,6 +61,7 @@ class Consumer(otupy.types.base.Record):
 				try:
 					specifiers = Extensions['Actuators'][profile](actuator)
 				except:
+					specifiers = None
 					logger.error("Cannot instantiate %s profile for consumer: %s", profile, host)
 			self.actuator=specifiers
 

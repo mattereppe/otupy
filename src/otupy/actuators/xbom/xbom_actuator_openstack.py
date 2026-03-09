@@ -156,7 +156,6 @@ class XBOMActuator_openstack(XBOMActuator):
 		self._discover_os_link_networks()
 		self._discover_os_link_networkfunctions()
 		self._discover_vms_link_hypervisors()
-		self._discover_vms_link_executionenvironments()
 		self._discover_vms_link_networks()
 		self._discover_routers_link_controllers_and_networks()
 		self._discover_networks_link_controllers()
@@ -186,7 +185,7 @@ class XBOMActuator_openstack(XBOMActuator):
 			logger.debug("Found openstack service: %s", str(srv.name))
 			# TODO: Add software release (maybe with its SBOM)
 			name=Name(self._os_dns_name(srv.name))
-			sid=SId.create_from_service_type(srv)
+			sid=SId.create_from_service_type(srv, domain=self.cloud_region)
 			# TODO: Add applications running on the controller/compute nodes as subservices
 			# (This requires to identifies all applications and to select proper identifiers; 
 			#  probably it is simpler to retrieve them from a specific actuator
@@ -197,7 +196,7 @@ class XBOMActuator_openstack(XBOMActuator):
 		# The root service: OpenStack as cloud environment (meta-service including concrete applications)
 		# openstack = { nova, neutron, glance, ... }
 		# ------------------------------------------------------------------------------------------------
-		os = Cloud(description='cloud', id=None, name=self.cloud, type='IaaS')
+		os = Cloud(description='cloud', id=None, name=self.cloud, type='os')
 		# TODO: Fill in with Openstack version/release
 		name=Name(self._os_dns_name(os.name))
 		self.services.append(Service(name=name, sid=SId.create_from_service_type(os), type=ServiceType(os), 
@@ -487,27 +486,6 @@ class XBOMActuator_openstack(XBOMActuator):
 							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
 
-	def _discover_vms_link_executionenvironments(self):
-		""" Add links between VMs and the software they host
-
-			This is something outside the OpenStack scope, which is delegated to a remote peer
-			(currently read by configuration file).
-		"""
-#os_vms = self.get_services(filter=VM)
-		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
-
-		for v in os_vms:
-			consumer=self.get_consumer(v.name)
-
-			if consumer is not None:
-				peer = Peer(service_name= v.name, sid=v.sid,
-							role= PeerRole.host,  #VM is controlled by Openstack
-							consumer=consumer) # This is the consumer running on that service.
-				description="System and application software installed on "+v.name.getObj()
-				self.links.append(Link(name = v.name, 
-							sid=SId.create_from_service_type(ExecutionEnvironment(name=str(v.name), type=ExecutionEnvironmentType(OS()))),
-							description=description, role=PeerRole.guest,
-							link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
 
 
 	def _discover_vms_link_networks(self):
@@ -547,10 +525,10 @@ class XBOMActuator_openstack(XBOMActuator):
 		""" Add links from routers to hosting network nodes 
 				Add links from routers to servers hosting the neutron service
 		"""
-		netfuns = self.get_services(filter=NetworkFunction)
-		nodes = self.get_services(filter=NetworkNode)
+		netfuns = self.get_services_by_sid(SId(type=ServiceType.get_type_name(NetworkFunction)))
+		nodes = self.get_services_by_sid(SId(type=ServiceType.get_type_name(NetworkNode)))
 
-		os_services = self.get_services(filter=API)
+		os_services = self.get_services_by_sid(SId(type=ServiceType.get_type_name(API)))
 
 		# There will be only 1 nova instance, since we are connected to a single openstack cloud
 		neutron_controllers = []
@@ -601,7 +579,7 @@ class XBOMActuator_openstack(XBOMActuator):
 								# Add a link for the underlying network node too
 								for p in controller_peers:
 									description="Router " + str(r.name) + " hosted on "+str(p.service_name)
-									self.links.append(Link(name = r.name, description=description, 
+									self.links.append(Link(name = r.name, sid=r.sid, description=description, 
 												link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([p])))
 			
 
@@ -637,21 +615,29 @@ class XBOMActuator_openstack(XBOMActuator):
 							link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([p])))
 			
 
-
 	def _discover_execenvs_link_vms(self):
-		""" Discover execenvs hosted in vms 
-			TODO: This might be implemented in a more clean way with virsh (libvirt).
+		""" Add links between VMs and the software they host
+
+			This is something outside the OpenStack scope, which is delegated to a remote peer
+			(currently read by configuration file).
 		"""
-#os_vms = self.get_services(filter=VM)
 		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		for v in os_vms:
 			log = self._openstack_console_show(v.type.getObj().id)
 			if log is not None:
-				match = re.search('^(.*) login', log, re.M)
-				if match is not None:
-					hostname=Name(Hostname(match.group(1)))
-					sid=SId.create_from_service_type(ExecutionEnvironment(name=match.group(1), type=ExecutionEnvironmentType(OS())))
+				# Look for hostname
+				match_host = re.search('^(.*) login', log, re.M)
+				if match_host is not None:
+					hostname=Name(Hostname(match_host.group(1)))
+					# Look for Linux version
+					# TODO: Add support for more OSs
+					match_version = re.search('.*Linux version ([^ ]*) .*', log, re.M)
+					if match_version is not None:
+						version=match_version.group(1)
+					else:
+						version=None
+					sid=SId.create_from_service_type(ExecutionEnvironment(name=match_host.group(1), version=version, type=ExecutionEnvironmentType(OS())))
 					consumer=self.get_consumer(hostname)
 					peer = Peer(service_name=hostname, sid=sid,
 							role=PeerRole.guest,
@@ -661,6 +647,8 @@ class XBOMActuator_openstack(XBOMActuator):
 								link_type=LinkType.hosting, role=PeerRole.host, peers=ArrayOf(Peer)([peer])))
 					# and add as subservice
 					v.subservices.append(sid)
+			else:
+				logger.info("Unable to retrieve execenv for %s (shutdown?)", v.sid)
 
 					
 
@@ -673,21 +661,18 @@ class XBOMActuator_openstack(XBOMActuator):
 			Security groups are modelled as a security function implemented by an external actuator.
 			They protect all VMs hosted in OpenStack.
 		"""
-#os_vms = self.get_services(filter=VM)
 		os_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
 
 		sg = Name(self.sg)
 		for v in os_vms:
 			consumer=self.get_consumer(sg)
 
-			if consumer is not None:
-				peer = Peer(service_name= v.name, sid=v.sid,
-							role= PeerRole.protected,  #VM is controlled by Openstack
-							consumer=consumer) # This is the consumer running on that service.
-				description="OpenStack Security Groups protect "+v.name.getObj()
-				self.links.append(Link(name = sg, sid=self._os_sg_sid(self.sg), 
-							description=description,  role=PeerRole.protect,
-							link_type=LinkType.protecting, peers=ArrayOf(Peer)([peer])))
+			peer = Peer(service_name=sg, sid=self._os_sg_sid(self.sg),
+								role = PeerRole.protect, consumer=consumer)
+			description="OpenStack Security Groups protect "+v.name.getObj()
+			self.links.append(Link(name = v.name, sid=v.sid,
+						description=description,  role=PeerRole.protected,
+						link_type=LinkType.protecting, peers=ArrayOf(Peer)([peer])))
 
 
 
