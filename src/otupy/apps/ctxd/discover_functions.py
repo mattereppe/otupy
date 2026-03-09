@@ -33,16 +33,13 @@ def _log_context(ctx):
 					if item['service'].subservices is not None:
 						for s in item['service'].subservices:
 							sub+=str(s)+","
-					logger.info("Service: %s/%s/%s [%s] {%s}",
-							item['service'].domain, item['service'].namespace, item['service'].name, 
-							item['service'].type, sub)
-					logger.info("Id: %s", item['service'].sid)
-#				if 'link' in item:
-#					if item['link'].peers is not None:
-#						peers=""
-#						for p in item['link'].peers:
-#							peers+=str(p.service_name)+" ["+str(p.role)+"], "
-#					logger.info("Link: %s [%s] -- (%s) --> {%s}", item['link'].name, item['link'].role, item['link'].link_type, peers)
+					logger.info("Service: %s [%s] {%s}", item['service'].sid, item['service'].name, sub)
+				if 'link' in item:
+					if item['link'].peers is not None:
+						peers=""
+						for p in item['link'].peers:
+							peers+=str(p.sid)+"@"+str(p.consumer)+" ["+str(p.role)+"], "
+						logger.info("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
 	except:
 		logger.info("No service/link found!")
 

@@ -29,25 +29,13 @@ from glob import glob
 
 from otupy.profiles import slpf
 from otupy.profiles.ctxd.data.application import Application
-from otupy.types.data.ipv4_addr import IPv4Addr
+from otupy import IPv4Addr, IPv4Net
 
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd.data.consumer import Consumer
-from otupy.profiles.ctxd.data.network import Network
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service
-from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.peer import Peer
-from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.link import Link
-from otupy.profiles.ctxd.data.link_type import LinkType
-from otupy.profiles.ctxd.data.mobile_network import MobileNetwork
-from otupy.profiles.ctxd.data.ethernet_network import EthernetNetwork
-from otupy.profiles.ctxd.data.iot import IoT
-from otupy.profiles.ctxd.data.network_type import NetworkType
+from otupy.profiles.ctxd import *
 
-from otupy import ArrayOf, IPv4Net, IPv6Net, actuator_implementation
+from otupy import ArrayOf, actuator_implementation
 import otupy.profiles.ctxd as ctxd
 
 logger = logging.getLogger(__name__)
@@ -81,18 +69,25 @@ class CTXDActuator_open5gs(CTXDActuator):
 		"""
 		super().__init__(**kwargs)
 
+		self.mobilenets = []
+		self.mobileterminals_services = []
 		try:
 			self._load_open5gs_config(**kwargs)
 			self.configured = True
-		except:
+		except Exception as e:
+			logger.error("Unable to load open5gs configuration: %s", e)
 			self.configured = False
-
 
 		try:
 			self.service_name=kwargs['config']['name']
-		except:
+		except Exception as e:
+			logger.error("Unable to get open5gs service name: %s", e)
 			self.service_name="open5gs"
 
+
+	def discover_context(self):
+		self.discover_services()
+		self.discover_links()
 
 	def discover_services(self):
 		""" Mobile network + data network 
@@ -103,38 +98,118 @@ class CTXDActuator_open5gs(CTXDActuator):
 		if not self.configured:
 			return
 
+		# Main 5G composite service
 		mobile = MobileNetwork({'name': self.net_name, 'mcc': self.mcc, 'mnc': self.mnc,
-				'netv4nets': [IPv4Net(self.mobilenetv4)], 'netv6nets': [IPv6Net(self.mobilenetv6)]})
+				'nets': ArrayOf(IPNetAddress)(self.mobilenets) })
 		mobilenet = Network(name="Open5Gs", description="Open5Gs core and UERASIM RAN",
-				type=NetworkType(mobile))
+				type=NetworkType(mobile), version=self.cn5t_version)
 
+		self.service_sid=SId.create_from_service_type(mobilenet)
 		self.services.append(Service(name=Name(self.service_name), type=ServiceType(mobilenet),
-				subservices=ArrayOf(Name)(self.mobile_services), owner=self.owner, release=None))
+				sid=self.service_sid, 
+				subservices=ArrayOf(SId)(self.mobile_services), owner=self.owner, release=None))
 
-		data = EthernetNetwork({'netv4nets': [IPv4Net(self.datanetv4)]})
+		# Data network 
+		data = IPNetwork({'nets': [IPNetAddress(self.datanet)]})
 		datanet = Network(name="DataNetwork", description="Open5Gs data network",
 				type=NetworkType(data))
 
-		self.services.append(Service(name=Name('datanetwork'), type=ServiceType(datanet),
-					subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+		self.datanet_service = Service(name=Name("Data Network"), type=ServiceType(datanet),
+				sid=SId.create_from_service_type(datanet, domain=self.service_sid.name),
+				domain=self.service_sid.name,
+				subservices=ArrayOf(SId)(), owner=self.service_sid.name, release=None)
+		self.services.append(self.datanet_service)
+
+		# Tunnel network to connect mobile terminals
+		tunnel = TunnelNetwork({'server': self.upf, 'nets': ArrayOf(IPNetAddress)(self.mobilenets)})
+		tunnelnet = Network(name="Tunnel", description="5G internal tunnel",
+							type=NetworkType(tunnel))
+		self.tunnel_service = Service(name=Name("5G Tunnel"), type=ServiceType(tunnelnet),
+										sid=SId.create_from_service_type(tunnelnet, domain=self.service_sid.name),
+										domain=self.service_sid.name,
+										subservices=None, owner=self.service_sid.name, release=None)
+		self.services.append(self.tunnel_service)
+
+
+		# Router between tunnel network and data network
+		netfun = NetworkFunction(name=self.upf.name, id=None,
+				version=self.cn5t_version,
+				description="UPF routing function",
+				type=NetworkFunctionType( Router() ))
+		self.router=Service(name=Name("Router"),
+				sid=SId.create_from_service_type(netfun, domain=self.service_sid.name),
+				domain=self.service_sid.name,
+				type=ServiceType( netfun ), owner=self.service_sid.name)
+		self.services.append(self.router)
 
 		for u in self.users:
-			iot = IoT(name=u['name'], description="Mobile phone", type="phone")
-			self.services.append(Service(name=Name(u['name']), type=ServiceType(iot),
-					subservices=ArrayOf(Name)(), owner=self.owner, release=None))
+			# TODO: discover connected devices by querying the mobile network service
+			iot = Host(name=u['name'], description="Mobile phone", 
+							type=HostType(IoT(type="phone")))
+			self.mobileterminals_services.append(Service(name=Name(u['name']), type=ServiceType(iot),
+					sid=SId.create_from_service_type(iot),
+					subservices=ArrayOf(SId)(), owner=self.owner, release=None))
+	
 
 
 	def discover_links(self):
 		if not self.configured:
 			return
 
-		peer = Peer(service_name=Name(self.service_name), 
-					role=PeerRole.forwarding, # Network transport packets
-					consumer=None)
-		for u in self.users:
-			description="User "+str(u['name'])+" connected to network "+str(peer.service_name)
-			self.links.append(Link(name=u['name'], description=description,
-						link_type=LinkType.packet_flow, peers=ArrayOf(Peer)([peer])))
+		# Network service hosted in cloud
+		cloud_sid=SId(name=self.k8s_domain, type=ServiceType.get_type_name(Cloud),
+					subtype="k8s", domain=self.k8s_domain)
+		peer = Peer(service_name=Name("Kubernetes"), sid=cloud_sid,
+							role=PeerRole.host, consumer=self.get_consumer(sid=cloud_sid))
+		self.links.append(Link(name=Name(self.service_name), sid=self.service_sid,
+									link_type=LinkType.hosting, role=PeerRole.guest,
+									peers=ArrayOf(Peer)([peer])))
+
+
+		# Links between upf and datanet/tunnelnet
+		peer = Peer(service_name=Name(self.upf.name), sid=self.upf,
+							role=PeerRole.endpoint, consumer=self.get_consumer(sid=self.upf))
+		self.links.append(Link(name=self.datanet_service.name, sid=self.datanet_service.sid,
+								description="Data Network connected to upf",
+								link_type=LinkType.packet_flow, role=PeerRole.forwarding, 
+								peers=ArrayOf(Peer)([peer])))
+		self.links.append(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
+								description="Tunnel Network connected to upf",
+								link_type=LinkType.packet_flow, role=PeerRole.forwarding,
+								peers=ArrayOf(Peer)([peer])))
+		# Router hosted in upf
+		peer.role=PeerRole.host
+		self.links.append(Link(name=self.router.name, sid=self.router.sid,
+								description="Routing function implemented on UPF",
+								link_type=LinkType.hosting, role=PeerRole.guest, 
+								peers=ArrayOf(Peer)([peer])))
+		# Links between upf router and datanet/tunnelnet
+		peer = Peer(service_name=Name(self.router.name), sid=self.router.sid,
+							role=PeerRole.forwarding, consumer=None)
+		self.links.append(Link(name=self.datanet_service.name, sid=self.datanet_service.sid,
+								description="Routing function connected to Data Network",
+								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
+								peers=ArrayOf(Peer)([peer])))
+		self.links.append(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
+								description="Routing function connected to Tunnel Network",
+								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
+								peers=ArrayOf(Peer)([peer])))
+		print(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
+								description="Routing function connected to Tunnel Network",
+								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
+								peers=ArrayOf(Peer)([peer])))
+
+		# Add link between mobile terminals and tunnel network
+		# Note: we do not consider the role of the gNodeB
+		for u in self.mobileterminals_services:
+			peer = Peer(service_name=u.name, sid=u.sid,
+					role=PeerRole.endpoint, # Network transport packets
+					consumer=self.get_consumer(sid=u.sid))
+			description="User "+str(u.name)+" connected to network "+str(self.tunnel_service.name)
+			self.links.append(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
+						description=description,
+						link_type=LinkType.packet_flow, role=PeerRole.forwarding,
+						peers=ArrayOf(Peer)([peer])))
 
 	def _load_open5gs_config(self, **kwargs):
 		if kwargs['config']['deployment'] == 'kubernetes' and \
@@ -152,26 +227,32 @@ class CTXDActuator_open5gs(CTXDActuator):
 		except:
 			logger.error("Unable to load cn5t configuration file")
 			self.configured=False
-		self.datanetv4=config['DATANETWORK1']
+		self.datanet=config['DATANETWORK1']
 		self.k8s_domain=config['K8S_DOMAIN']
 		self.k8s_namespace=config['K8S_NAMESPACE']
+		self.cn5t_version=config['CN5T_RELEASE']
+		self.mcc=config['OPEN5GS_MCC']
+		self.mnc=config['OPEN5GS_MNC']
+		self.ssd=config['OPEN5GS_SST']
+		self.net_name=config['OPEN5GS_NETNAME']
 		malicious_users=config['DDOS_REPLICAS']
 		licit_users=config['CURL_REPLICAS']
 		self.users = []
+		logger.warn("TODO: implement real user discovery from mobile network")
 		for u in range(0, int(licit_users)):
 			self.users.append({'name': 'curl'+str(u)})
 		for u in range(0, int(malicious_users)):
-			self.users.append({'name': 'curl'+str(u)})
+			self.users.append({'name': 'goldeneye'+str(u)})
 
 		with open(kwargs['config']['config_dir']+"/templates/config/30_open5gs/amf-configmap.yaml") as file:
 			c=yaml.safe_load(file)
 		for k,v in c['data'].items():
 			amf_conf=yaml.safe_load(c['data'][k])
 
-		self.net_name=amf_conf['amf']['network_name']['full']
-		for i in amf_conf['amf']['plmn_support']:
-			self.mcc=str(i['plmn_id']['mcc'])
-			self.mnc=i['plmn_id']['mnc']
+#		self.net_name=amf_conf['amf']['network_name']['full']
+#		for i in amf_conf['amf']['plmn_support']:
+#			self.mcc=str(i['plmn_id']['mcc'])
+#			self.mnc=i['plmn_id']['mnc']
 
 		with open(kwargs['config']['config_dir']+"/templates/config/30_open5gs/upf-configmap.yaml") as file:
 			c=yaml.safe_load(file)
@@ -179,26 +260,26 @@ class CTXDActuator_open5gs(CTXDActuator):
 			upf_conf=yaml.safe_load(c['data'][k])
 
 		for i in upf_conf['upf']['subnet']:
-			ip = ipaddress.ip_network(i['addr'],strict=False)
-			print("ip: ", ip)
-			if type(ip) == ipaddress.IPv4Network:
-				self.mobilenetv4=ip
-			else:
-				self.mobilenetv6=ip
+			self.mobilenets.append( ipaddress.ip_network(i['addr'],strict=False) )
 
 		self.mobile_services = []
-		print("parsing: ", glob(kwargs['config']['config_dir']+"/templates/network/30_open5gs/*.yaml"))
 		for file in glob(kwargs['config']['config_dir']+"/templates/network/30_open5gs/*.yaml"):
 			try:
 				with open(file) as f:
 					configs = yaml.load_all(f, Loader=yaml.FullLoader)
 					for c in configs:
 						try:
-							if c['kind'] == "Service":
-								name=c['metadata']['name']+".svc."+self.k8s_namespace+"."+self.k8s_domain
-								self.mobile_services.append(name)
+							if c['kind'] == "StatefulSet" or c['kind'] == "Deployment":
+								sid=SId(name= c['metadata']['name'], type="app", domain=self.k8s_domain, 
+										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
+								self.mobile_services.append(sid)
+								try:
+									if c['spec']['template']['metadata']['labels']['epc-role'] == 'upf':
+										self.upf=sid
+								except:
+									pass
 						except Exception as e:
-							pass
+							logger.warning("Unable to retrieve mobile network service list: %s", e)
 			except Exception as e: 
 				logger.error("Unable to parse %s: %s", file, e)
 	

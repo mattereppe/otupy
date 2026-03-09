@@ -28,3 +28,14 @@ class NetworkType(Choice):
 			super().__init__(type.obj)
 		else:
 			super().__init__(type)
+
+	@staticmethod
+	def get_type_name(net_type: object):
+		""" Get the name associated to a given class
+		    
+			If the class is not registered, None is returned.
+			
+			@:param service_type: The class to get the name for.
+			@:return: The string used to register the class.
+		"""
+		return ExecutionEnvironmentType.register.getName(net_type)

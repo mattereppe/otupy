@@ -9,5 +9,5 @@ ctxd-host-vm:
     use_suffix: true
 #    suffix: 'acme.eu'
     kubelet_config: '/var/lib/kubelet/config.yaml'
-    namespaces: 
-      - mynamespace
+    namespaces:
+      - my5gtestbed

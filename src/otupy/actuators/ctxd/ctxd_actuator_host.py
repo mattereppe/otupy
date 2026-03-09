@@ -61,13 +61,14 @@ class CTXDHostActuator(CTXDActuator):
 		""" Initialize the actuator
 
 		"""
+		super().__init__(**kwargs)
 		self.platform = None # Keep an internal reference to the ExecutionEnvironment of this host
 
 		self.kube_namespaces = kwargs['kubernetes']['namespaces'] if 'kubernetes' in kwargs and 'namespaces' in kwargs['kubernetes'] else None
 		kube_use_suffix = kwargs['kubernetes']['use_suffix'] if 'kubernetes' in kwargs and 'use_suffix' in kwargs['kubernetes'] else True # This is the safe option to link to external service names
 		kube_kubelet_config = kwargs['kubernetes']['kubelet_config'] if 'kubernetes' in kwargs and 'kubelet_config' in kwargs['kubernetes'] else KUBELET_CONFIG_FILE
 		if kube_use_suffix is True:
-			self.kube_suffix = "."+kwargs['kubernetes']['suffix'] if 'kubernetes' in kwargs and 'suffix' in kwargs['kubernetes'] else self._get_kube_suffix(kube_kubelet_config)
+			self.kube_suffix = kwargs['kubernetes']['suffix'] if 'kubernetes' in kwargs and 'suffix' in kwargs['kubernetes'] else self._get_kube_suffix(kube_kubelet_config)
 		else:
 			self.kube_suffix = ""
 
@@ -136,6 +137,7 @@ class CTXDHostActuator(CTXDActuator):
 
 		# Retrieve the association between pods and namespaces from scratch
 		self.kube_pods=None
+		self.domain=None
 		self._net_deps={}
 		# We discover again the platform at each run because packages might have changed
 		self._discover_platform()
@@ -147,6 +149,7 @@ class CTXDHostActuator(CTXDActuator):
 
 	def _discover_platform(self):
 		name = platform.node()
+		self.domain = name
     
 		pkgs = subprocess.run(DPKG_LIST, capture_output=True)
 		
@@ -159,13 +162,15 @@ class CTXDHostActuator(CTXDActuator):
 		# TODO: Add more platform specific info for Mac, Windows, Linux, Android
 		# Note: platform.version() and platform.release() are swapped because platform.release()
 		# is more suitable to represent a compact version of the kernel.
-		execenv = ExecutionEnvironment(name=name, description=platform.platform(),  pkgs=pkg_list,
+		execenv = ExecutionEnvironment(name=name, description=platform.platform(),  
+							version=platform.release(), pkgs=pkg_list,
 							type=ExecutionEnvironmentType(OS(family=platform.system(), 
 																		release=platform.version(), 
 																		version=platform.release, 
 																		arch=platform.machine() )))
 		self.platform = Service(name=Name(Hostname(name)), 
-					sid=SId.create_from_service_type(execenv),
+					sid=SId.create_from_service_type(execenv, domain=self.domain),
+					domain=self.domain,
 					type=ServiceType(execenv), subservices=ArrayOf(SId)(),
 					release=None, owner="root")
 		self.services.append( self.platform )
@@ -194,11 +199,7 @@ class CTXDHostActuator(CTXDActuator):
 		if os_service_sid is not None:
 			return os_service_sid, None
 
-		netfun = self._get_namespace_function(netns)
-		# If I couldn't find any service or network function associated to this namespace,
-		# just keep it as a generic ExecutionEnvironment
-		if netfun is None:
-			netfun = self._get_namespace_execenv(netns)
+		netfun = self._get_namespace_execenv(netns)
 
 		net_service = Service(name=Name(netns),
 				sid=SId.create_from_service_type(netfun),
@@ -215,7 +216,8 @@ class CTXDHostActuator(CTXDActuator):
 		with pyroute2.IPRoute() as iprns:
 			for ns in iprns.get_netns_info():
 				inode=ns['inode']
-		return ExecutionEnvironment(name=netns, id=inode, description="Linux network namespace")
+		return ExecutionEnvironment(name=netns, id=inode, description="Linux network namespace", 
+												type=ExecutionEnvironmentType(LinuxNetns(inode=inode)))
 
 	def _get_namespace_service_kubernetes(self, netns_name):
 		""" Infer the kubernetes service name based on container name
@@ -256,6 +258,8 @@ class CTXDHostActuator(CTXDActuator):
 											subtype=HostType.get_type_name(Pod))
 						jsondata=json.loads(container.spec.value)
 						linux_namespaces=jsondata['linux']['namespaces']
+					else:
+						linux_namespaces = []
 					for ns in linux_namespaces:
 						if ns['type'] == 'network':
 							try:
@@ -278,7 +282,7 @@ class CTXDHostActuator(CTXDActuator):
 		try:
 			with open(kube_config_file,'r') as config:
 				yamlconfig = yaml.safe_load(config)
-				suffix="."+yamlconfig['clusterDomain']
+				suffix=yamlconfig['clusterDomain']
 		except Exception as e:
 			logger.warn("Unable to get cluster domain name from kubelet configuration file: %s", e)
 			suffix=""
@@ -290,21 +294,6 @@ class CTXDHostActuator(CTXDActuator):
 		""" Infer the OpenStack network function name based on container name """
 		pass
 
-	def _get_namespace_function(self, netns):
-		""" Model the container as a network function """
-		with pyroute2.IPRoute(netns=netns) as iprns:
-			for link in iprns.get_links(): 
-				# Check if this namespace routes packets
-				try:
-					routes = []
-					if link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET')['forwarding'] == 1 or \
-							link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET6').get_attr('IFLA_INET6_CONF')['forwarding'] == 1:
-						routes = self._get_namespace_routes(iprns)
-					if len(routes) > 0:
-						return NetworkFunction(name="router:"+netns, description="Linux router", type=NetworkFunctionType(Router(routes=json.dumps(routes))))
-					# TODO: Check if the namespace performs other kind of network functions (NAT, DHCP?)
-				except:
-					return None
 
 	def _get_namespace_routes(self, iprns):
 		""" Get network routes for namespace/execution environment
@@ -430,6 +419,7 @@ class CTXDHostActuator(CTXDActuator):
 
 	def _add_net_service(self, service_name:Name = None, 
 			net_name:str = None, 
+			domain:str = None,
 			namespace:str = None, 
 			id:str=None, 
 			description:str = "Network", 
@@ -442,8 +432,8 @@ class CTXDHostActuator(CTXDActuator):
 			net_name=str(ipnetaddrs[0]) if len(ipnetaddrs) > 0 else None
 		ipnet = Network(name=net_name, id=id, description=description,
 				type=NetworkType( nettype({'nets': ipnetaddrs, **kwargs } )))
-		net_service= Service(name=service_name, namespace=namespace, 
-				sid=SId.create_from_service_type(ipnet, namespace=namespace),
+		net_service= Service(name=service_name, domain=domain, namespace=namespace, 
+				sid=SId.create_from_service_type(ipnet, domain=domain, namespace=namespace),
 				type=ServiceType(ipnet), subservices=ArrayOf(SId)(), owner=str(self.platform.sid))
 		self.services.append(net_service)
 		self.platform.subservices.append(net_service.sid)
@@ -488,11 +478,11 @@ class CTXDHostActuator(CTXDActuator):
 									description="Veth link between " + peer1_service_sid.name + " and " + peer2_service_sid.name
 									# Default: try with peer1
 									net_name = self._create_net_name(netns=self._namespaces[ns]['name'], if_idx=peer1[0])
-									if net_name is None: # If peer1 has not got a valid ip address, try with ip2 (may be None as well)
-										net_name = self._create_net_name(netns=self._namespaces[ns2]['name'], if_idx=peer2[0])
-										if net_name is None:
-											net_name=net_id
-
+#									if net_name is None: # If peer1 has not got a valid ip address, try with ip2 (may be None as well)
+#										net_name = self._create_net_name(netns=self._namespaces[ns2]['name'], if_idx=peer2[0])
+#										if net_name is None:
+#											net_name=net_id
+#
 									if ns == ns2:
 										use_namespace=ns # Veth is fully contained in a specific namespace
 									else:
@@ -500,17 +490,12 @@ class CTXDHostActuator(CTXDActuator):
 								
 									for addr in self._get_net_addrs(netns=self._namespaces[ns2]['name'], if_idx=peer2[0]):
 										ipnetaddrs.append(addr)
-#									network = Network(name=net_name, id=net_id, description=description, type=NetworkType(VEthNetwork({'peers': (peer1, peer2), 'nets': ipnetaddrs})))
-#									net_service = Service(name=Name(net_id), type=ServiceType(network), 
-#										sid=SId.create_from_service_type(network, namespace=use_namespace),
-#										namespace=use_namespace,
-#										subservices=None, owner=str(self.platform.sid), release=None)
-#									self.platform.subservices.append(net_service.sid)
-#									self.services.append(net_service)
 								
 									# Create services for the virtual network (even if it is only a link)
 									net_service=self._add_net_service(service_name=Name(net_id), 
-																					net_name=net_name,
+#																					net_name=net_name,
+																					domain=self.domain, # Veth are always internal networks
+																					net_name=net_id,
 																					description=description,
 																					ipnetaddrs=ipnetaddrs, 
 																					id=net_id, 
@@ -538,18 +523,26 @@ class CTXDHostActuator(CTXDActuator):
 #
 							case 'macvlan':
 								if attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] == 'bridge':
+									link_idx2 = link.get_attrs('IFLA_LINK')[0]
 									ns2=self._namespaces[ns]['netnsmap'][link.get_attrs('IFLA_LINK_NETNSID')[0]]
 #									net_id=self._get_namespace_ifaces(ns2)[link.get_attrs('IFLA_LINK')[0]]+"@"+str(ns2)
-									net_id="ipnet:"+self._namespaces[ns2]['ifaces'][link.get_attrs('IFLA_LINK')[0]]+"@"+self._namespaces[ns2]['name']
+#net_id="ipnet:"+self._namespaces[ns2]['ifaces'][link.get_attrs('IFLA_LINK')[0]]+"@"+self._namespaces[ns2]['name']
+									net_id="if"+str(peer1[0])+'.'+str(peer1[1])
 									try:
 										net_service=self.get_services(name=Name(net_id), filter=Network)[0]
 										for ip in ipnetaddrs:
 											net_service.type.getObj().type.getObj()['nets'].append(ip)
 									except:
-										net_service=self._add_net_service(service_name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
+										# Macvlan is an external network, so don't set the domain here
+										net_service=self._add_net_service(service_name=Name(net_id), net_name=net_id, ipnetaddrs=ipnetaddrs, id=net_id) 
 
 									self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 
+									# Add link to hosting interface
+									if (link_idx2, ns2) not in self._net_deps:
+										self._net_deps[(link_idx2, ns2)] = []
+									self._net_deps[(link_idx2, ns2)].append(net_service.sid)
+	
 								else:
 									logger.warn("Unsupported macvlan mode: %s", attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] )
 
@@ -598,7 +591,15 @@ class CTXDHostActuator(CTXDActuator):
 
 							case 'bridge':
 								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-								net_service=self._add_net_service(service_name=Name(net_id), net_name=self._namespaces[ns]['ifaces'][link_idx], namespace=self._namespaces[ns]['name'], description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
+#								net_service=self._add_net_service(service_name=Name(net_id), net_name=self._namespaces[ns]['ifaces'][link_idx], namespace=self._namespaces[ns]['name'], description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
+								# Bridge metanetworks are always "internal" to the ExecEnv, so set the domain name
+								net_service=self._add_net_service(service_name=Name(net_id), 
+																				net_name=self._namespaces[ns]['ifaces'][link_idx], 
+																				domain=self.domain, 
+																				namespace=ns, description="Bridged network", 
+																				ipnetaddrs=ipnetaddrs,  
+																				id=net_id, 
+																				nettype=EthernetNetwork) 
 								# This is a virtual ethernet network with one bridge as subservice with the same name of the interface
 								if link_name not in self._namespaces[ns]['bridges']:
 									self._namespaces[ns]['bridges'][link_name] = {}
@@ -616,7 +617,7 @@ class CTXDHostActuator(CTXDActuator):
 								net_id="vxlan:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
 								net_service=self._add_net_service(service_name=Name(net_id), 
 																				net_name=str(vni), 
-																				namespace=peer1[1],
+#													namespace=peer1[1],
 																				description="VXLAN interface "+link_name, 
 																				ipnetaddrs=ipnetaddrs, 
 																				id=net_id, 
@@ -634,13 +635,13 @@ class CTXDHostActuator(CTXDActuator):
 
 					if len(link.get_attrs('IFLA_LINKINFO')) == 0 and link_name != "lo":
 						# These interfaces provide direct access to an IP network
-						net_id="ipnet:"+link_name+"."+self._namespaces[ns]['name']
+						net_id=link_name+"."+self._namespaces[ns]['name']
 						try:
 							net_service=self.get_services(name=Name(net_id), filter=Network)[0] # There might already be the network, if other interfaces created it (e.g., macvlan)
-							if net_service.type.getObj().name is None:
-								net_service.type.getObj().name=str(ipnetaddrs[0]) # We use the first IP address as network identifier
+#							if net_service.type.getObj().name is None:
+#								net_service.type.getObj().name=str(ipnetaddrs[0]) # We use the first IP address as network identifier
 						except:
-							net_service=self._add_net_service(service_name=Name(net_id), ipnetaddrs=ipnetaddrs, id=net_id) 
+							net_service=self._add_net_service(service_name=Name(net_id), net_name=net_id, ipnetaddrs=ipnetaddrs, id=net_id) 
 						self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 
 #						peer = Peer(service_name=net_service.name, role=PeerRole.forwarding, consumer=None)
@@ -702,11 +703,11 @@ class CTXDHostActuator(CTXDActuator):
 			for link in iprns.get_links(): 
 				idx = link['index'] 
 				# Add a router, if not done yet
-				routes = []
 				if (link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET')['forwarding'] == 1 or \
 						link.get_attr('IFLA_AF_SPEC').get_attr('AF_INET6').get_attr('IFLA_INET6_CONF')['forwarding'] == 1): 
 					if router is None:
 						self._namespaces[ns]['router']['ifaces'] = []
+						routes = self._get_namespace_routes(iprns)
 						netfun = NetworkFunction(name="Router", id=ns,
 								description="Linux software router@"+str(ns_service_sid.name),
 								type=NetworkFunctionType( Router(routes=json.dumps(routes) ) ))
@@ -783,7 +784,8 @@ class CTXDHostActuator(CTXDActuator):
 			br_net_service[0].subservices.append(net_service.sid)
 			
 			peer=Peer(service_name=ns_service_sid.name, sid=ns_service_sid, role=PeerRole.host, consumer=None)
-			self.links.append( Link(name=net_service.name, description="Bridge hosted in "+self._namespaces[ns]['name'],
+			self.links.append( Link(name=net_service.name, sid=net_service.sid, 
+						description="Bridge hosted in "+self._namespaces[ns]['name'],
 						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
 
 
@@ -800,6 +802,7 @@ class CTXDHostActuator(CTXDActuator):
 					peer=Peer(service_name=net[k[0]].name, sid=net[k[0]], role=PeerRole.host, consumer=None)
 					for sid in v:
 						self.links.append( Link(name=sid.name, 
+									sid=sid,
 									description="Virtual network "+sid.name+ " hosted on "+str(sid),
 									link_type=LinkType.hosting, role=PeerRole.guest, 
 									peers=ArrayOf(Peer)([peer])))
@@ -810,12 +813,19 @@ class CTXDHostActuator(CTXDActuator):
 		for ns in self._namespaces:
 			for net in self._namespaces[ns]['networks']:
 				for idx, net_service_sid in net.items():
-					peer = Peer(service_name=Name(net_service_sid.name), sid=net_service_sid, role=PeerRole.forwarding, consumer=None)
-					self.links.append( Link(name=Name(self._namespaces[ns]['service_sid'].name),
-									sid=self._namespaces[ns]['service_sid'], 
+#					peer = Peer(service_name=Name(net_service_sid.name), sid=net_service_sid, role=PeerRole.forwarding, consumer=None)
+					peer = Peer(service_name=Name(self._namespaces[ns]['service_sid'].name), sid=self._namespaces[ns]['service_sid'], 
+										role=PeerRole.endpoint, consumer=self.get_consumer(sid=self._namespaces[ns]['service_sid']))
+#					self.links.append( Link(name=Name(self._namespaces[ns]['service_sid'].name),
+#									sid=self._namespaces[ns]['service_sid'], 
+#									description="Connection to network",
+#									link_type=LinkType.packet_flow,
+#									role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+					self.links.append( Link(name=Name(net_service_sid.name),
+									sid=net_service_sid,
 									description="Connection to network",
 									link_type=LinkType.packet_flow,
-									role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
+									role=PeerRole.forwarding, peers=ArrayOf(Peer)([peer])))
 
 
 	def _discover_links_net_functions(self):

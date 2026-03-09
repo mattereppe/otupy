@@ -5,6 +5,7 @@
 
 from otupy import Map, ArrayOf, IPv4Net, IPv6Net
 from otupy.profiles.ctxd.data.ip_network import IPNetwork
+from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress
 
 class MobileNetwork(Map):
 	""" Mobile 4/5G Network
@@ -13,7 +14,7 @@ class MobileNetwork(Map):
 		Currently expects the network address/prefix as mandatory field.
 	"""
 	fieldtypes = dict(name = str, mcc = str, mnc = str, region = int, set = int, 
-			nets = ArrayOf(IPNetwork), netv4addrs = ArrayOf(IPv4Net), netv6addrs = ArrayOf(IPv6Net))
+			nets = ArrayOf(IPNetAddress))
 
 	""" Field types
 	

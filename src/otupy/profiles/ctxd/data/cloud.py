@@ -17,8 +17,10 @@ class Cloud(CTXDObject):
 			super().__init__(name=name, description=description, id=id)
 			self.type = type 
 
-	def getId(self, domain=None, namespace=None):
-		return "cloud:" + str(self.type) + "/" + str(domain) + "/" + str(namespace) + "/" + str(self.name)
+	def get_subtype(self):
+		""" This function might be replace in the future by
+			providing type classes like for other services."""
+		return self.type
 
 	def __repr__(self):
 		return (f"Cloud(description={self.description}, id={self.id}, "

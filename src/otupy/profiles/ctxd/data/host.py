@@ -68,15 +68,19 @@ class Host(CTXDObject):
 			self.version = version
 			self.type = type
 	
+	def get_subtype(self):
+		return self.type.getName()
 
 	def __repr__(self):
 		return (f"Host("
+					f"{super().__repr__()},"
 					f"vendor='{self.vendor}'," 
 					f"model='{self.model}'," 
 					f"release='{self.release}'," 
 					f"serial='{self.serial}'," 
 					f"firmware='{self.firmware}'," 
-					f"version='{self.version}'")
+					f"version='{self.version}',"
+					f"type='{self.type.getObj().__repr__()}')")
 	
 	def __str__(self):
 		return self.__repr__()
