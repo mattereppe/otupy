@@ -43,7 +43,7 @@ class TCActuator(BaseEBPFActuator):
 
     def create(self, cmd: Command) -> Response:
         obj : eBPF_load_TCprogram  = cmd.target.getObj()
-        if obj.file is None or obj.direction is None or obj.attach_type is None or obj.interface:
+        if obj.file is None or obj.direction is None or obj.attach_type is None or obj.interface is None:
             return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
 
         try:
@@ -54,7 +54,7 @@ class TCActuator(BaseEBPFActuator):
                 section=obj.file.Section,
                 direction=obj.direction.Name.lower()
             )
-            prog.load(ifaces=obj.interface)
+            prog.load(iface=obj.interface)
             return Response(status=StatusCode.OK, status_text="Program loaded successfully")
         except Exception as e:
             self.logger.exception(e)

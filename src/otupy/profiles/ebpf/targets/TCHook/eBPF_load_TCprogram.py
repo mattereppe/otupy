@@ -27,7 +27,7 @@ class eBPF_load_TCprogram(Record):
         self.file = file
         self.direction = direction
         self.attach_type = attach_type
-        self.interface = self.interface
+        self.interface = interface
 
     # ------------------------
     # Representation

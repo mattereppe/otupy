@@ -18,19 +18,22 @@ class TCProgram(BaseEBPFProgram):
             self.direction = direction
             self.executor = TCCommandExecutor() 
 
-    def load(self, ifaces: Optional[List[str]] = None):
+    def load(self, iface: str = None):
         iface_mgr = InterfaceManager(self.executor)
-        for iface in ifaces or iface_mgr.list_up():
-            iface_mgr.ensure_clsact(iface)
+        if iface_mgr.ensure_clsact(iface):
+
+            
             self.executor.run_cmd([
                 "tc", "filter", "add", "dev", iface, self.direction,
                 "bpf", "da", "obj", self.prog_path, "sec", self.section
             ], check=True)
+        else:
+            raise Exception("Cannot ensure clasct")
 
     def remove(self, ifaces: Optional[List[str]] = None):
         iface_mgr = InterfaceManager(self.executor)
         prog_name = os.path.basename(self.prog_path)
-        for iface in ifaces or iface_mgr.list_up():
+        for iface in ifaces:
             cp = self.executor.run_cmd(["tc", "filter", "show", "dev", iface, self.direction], check=False)
 
             for line in cp.stdout.splitlines():

@@ -1,4 +1,4 @@
-from otupy.core.message import Message
+from otupy.transfers.http.message import Message
 from otupy.encoders import json
 from otupy.encoders.json import JSONEncoder
 import json
