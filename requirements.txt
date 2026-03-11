@@ -1,6 +1,5 @@
 aenum==3.1.15
 apscheduler==3.11.2
-azure_storage==0.37.0
 cbor2==5.6.5
 containerd==1.5.3
 email_validator==2.2.0
@@ -15,7 +14,6 @@ kubernetes==34.1.0
 macaddress==2.0.2
 mediatype==0.1.6
 openstacksdk==4.8.0
-otupy==1.1.12
 paho_mqtt==2.1.0
 pybrctl==0.1.4
 pymongo==4.15.5
