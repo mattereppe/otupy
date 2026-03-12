@@ -7,26 +7,28 @@ from argparse import ArgumentParser
 import yaml
 from jsonschema import validate
 import otupy as oc2
+from otupy.encoders.json import JSONEncoder
+from otupy.transfers.http.http_transfer import HTTPTransfer
 from otupy.types.targets.features import Features
 
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
-from otupy.profiles.ebpf.targets.TCHook.eBPF_load_TCprogram import eBPF_load_TCprogram
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
-from otupy.apps.ebpf.obsolete.producer_manager import create_producer
 import yaml
 from jsonschema import validate
 
 from otupy.apps.ebpf.plugin_registry import ProducerPluginRegistry
 import otupy.apps.ebpf.plugins as plugins
 from otupy.apps.ebpf.plugin_loader import load_plugins
-from otupy.profiles.ebpf.targets.TCHook.eBPF_query_TCProgram import eBPF_query_TCProgram
-from otupy.profiles.ebpf.targets.TCHook.eBPF_remove_TCprogram import eBPF_remove_TCprogram
+from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 
 SCHEMA = {
     # same schema you already have
 }
+
+def create_producer(host="127.0.0.1", port=8080, name="producer") -> oc2.Producer:
+    return oc2.Producer(name, JSONEncoder(), HTTPTransfer(host, port))
 
 def validate_action_logic(config: dict):
     # same as your current function
@@ -47,12 +49,9 @@ def run_from_config(config_path: str):
     port = config["consumer"]["port"]
     asset_id = config["asset_id"]
 
-    #  Create a producer (single interface)
+
     producer = create_producer(host=host, port=port)
 
-
-    
-    producer = create_producer(host=host, port=port)
     
     for action in config["actions"]:
         program_path = action["program"]
@@ -72,19 +71,16 @@ def run_from_config(config_path: str):
 
                     match action["type"].lower():
                         case "load":
-                            program_path=action["program"]
-                            iface=action["interface"]
-                            direction=action["direction"]
-                            attach_type=action["attach_type"]
                             full_path = os.path.abspath(program_path)
-                            prog = ProgramFile(full_path, Section="main")
+                            prog = ProgramFile(full_path, Section="main")  # TODO: Section could be parameterized
                             direction_obj = Direction(direction)
                             attach_obj = AttachType(attach_type)
-                            target_features = eBPF_load_TCprogram(
+                            interfaces = Interfaces(iface)
+                            target_features = eBPF_program(
                                 file=prog,
                                 direction=direction_obj,
                                 attach_type=attach_obj,
-                                interface=iface
+                                interfaces=interfaces
                             )
                             parsed = plugin.load(producer, target=target_features, asset_id=asset_id)
                         case "delete":
@@ -93,7 +89,7 @@ def run_from_config(config_path: str):
                             direction_obj = Direction(direction)
                             attach_obj = AttachType(attach_type)
                             interfaces = Interfaces(iface)
-                            target_features = eBPF_remove_TCprogram(
+                            target_features = eBPF_program(
                                 file=prog,
                                 direction=direction_obj,
                                 attach_type=attach_obj,
@@ -102,7 +98,7 @@ def run_from_config(config_path: str):
                             parsed = plugin.delete(producer, target=target_features, asset_id=asset_id)
                         case "query":
                             attach_obj = AttachType(attach_type)
-                            target_features = eBPF_query_TCProgram(attach_type=attach_obj)
+                            target_features = eBPF_program(attach_type=attach_obj)
                             parsed = plugin.query(producer, target=target_features, asset_id=asset_id)
                         case "query_features":
                             

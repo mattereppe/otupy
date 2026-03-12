@@ -29,9 +29,9 @@ AllowedCommandTarget = ActionTargets()
 """
 
 
-AllowedCommandTarget[Actions.query] = [TargetEnum.features,TargetEnum[Profile.nsid+':eBPF_query_TCProgram']]
-AllowedCommandTarget[Actions.create] = [TargetEnum[Profile.nsid+':eBPF_load_TCprogram']]
-AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':eBPF_remove_TCprogram']]
+AllowedCommandTarget[Actions.query] = [TargetEnum.features,TargetEnum[Profile.nsid+':eBPF_program']]
+AllowedCommandTarget[Actions.create] = [TargetEnum[Profile.nsid+':eBPF_program']]
+AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':eBPF_program']]
 def validate_command(cmd):
 	""" Validate a `Command` 
 

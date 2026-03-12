@@ -6,6 +6,8 @@ from otupy.actuators.ebpf.base.ebpf_base import BaseEBPFProgram
 from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
 import re
 
+from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+
 class TCProgram(BaseEBPFProgram):
     def __init__(
             self,
@@ -18,17 +20,19 @@ class TCProgram(BaseEBPFProgram):
             self.direction = direction
             self.executor = TCCommandExecutor() 
 
-    def load(self, iface: str = None):
+    def load(self, ifaces: Interfaces = None):
         iface_mgr = InterfaceManager(self.executor)
-        if iface_mgr.ensure_clsact(iface):
+        for iface in ifaces.Names:
 
-            
-            self.executor.run_cmd([
-                "tc", "filter", "add", "dev", iface, self.direction,
-                "bpf", "da", "obj", self.prog_path, "sec", self.section
-            ], check=True)
-        else:
-            raise Exception("Cannot ensure clasct")
+            if iface_mgr.ensure_clsact(iface):
+
+                
+                self.executor.run_cmd([
+                    "tc", "filter", "add", "dev", iface, self.direction,
+                    "bpf", "da", "obj", self.prog_path, "sec", self.section
+                ], check=True)
+            else:
+                raise Exception("Cannot ensure clasct")
 
     def remove(self, ifaces: Optional[List[str]] = None):
         iface_mgr = InterfaceManager(self.executor)

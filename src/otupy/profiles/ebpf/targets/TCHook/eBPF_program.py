@@ -6,8 +6,8 @@ from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 
-@oc2.target(name="eBPF_query_TCProgram", nsid=Profile.nsid)
-class eBPF_query_TCProgram(Record):
+@oc2.target(name="eBPF_program", nsid=Profile.nsid)
+class eBPF_program(Record):
     """
     OpenC2-compliant target record for loading an eBPF program file.
     """
@@ -23,7 +23,7 @@ class eBPF_query_TCProgram(Record):
                  attach_type: AttachType = None, interfaces: Interfaces = None):
         super().__init__()
 
-        # Assign directly to public fields for OpenC2 serialization
+        
         self.file = file
         self.direction = direction
         self.attach_type = attach_type

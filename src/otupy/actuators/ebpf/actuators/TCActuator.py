@@ -16,9 +16,7 @@ from otupy.types.base.array_of import ArrayOf
 from otupy.profiles.ebpf.validation.TCHookValidation import validate_command
 
 from otupy import ResponseType, Results
-from otupy.profiles.ebpf.targets.TCHook.eBPF_load_TCprogram import eBPF_load_TCprogram
-from otupy.profiles.ebpf.targets.TCHook.eBPF_remove_TCprogram import eBPF_remove_TCprogram
-from otupy.profiles.ebpf.targets.TCHook.eBPF_query_TCProgram import eBPF_query_TCProgram
+from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 
 
 from otupy.actuators.ebpf.response_handler import servererror, badrequest, notimplemented, notfound, ok
@@ -51,12 +49,12 @@ class TCActuator(BaseEBPFActuator):
         # Check if the Specifiers are actually served by this Actuator
         try:
             if not self._BaseEBPFActuator__is_addressed_to_actuator(cmd.actuator.getObj()):
-                return Response(status=StatusCode.NOTFOUND, status_text='Requested Actuator not available')
+                return notfound(status_text='Requested Actuator not available')
         except AttributeError:
             
             pass
         except Exception as e:
-            return Response(status=StatusCode.INTERNALERROR, status_text='Unable to identify actuator')
+            return servererror(status_text='Unable to identify actuator')
         match cmd.action:
             case Actions.create: return self.create(cmd)
             case Actions.query: return self.query(cmd)
@@ -80,9 +78,9 @@ class TCActuator(BaseEBPFActuator):
         return False
 
     def create(self, cmd: Command) -> Response:
-        obj : eBPF_load_TCprogram  = cmd.target.getObj()
-        if obj.file is None or obj.direction is None or obj.attach_type is None or obj.interface is None:
-            return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
+        obj : eBPF_program  = cmd.target.getObj()
+        if obj.file is None or obj.direction is None or obj.attach_type is None or obj.interfaces is None:
+            return badrequest(status_text="Missing required eBPF parameters")
 
         try:
             prog_type = obj.attach_type.Name.lower()
@@ -92,10 +90,13 @@ class TCActuator(BaseEBPFActuator):
                 section=obj.file.Section,
                 direction=obj.direction.Name.lower()
             )
-            prog.load(iface=obj.interface)
-            return Response(status=StatusCode.OK, status_text="Program loaded successfully")
+            prog.load(ifaces=obj.interfaces)
+            
+            
+            return ok("Program loaded successfully")
+            
         except Exception as e:
-            self.logger.exception(e)
+            
             return self.__servererror(cmd, e)
 
     def query(self, cmd: Command) -> Response:
@@ -112,13 +113,13 @@ class TCActuator(BaseEBPFActuator):
         
         if cmd.target.getObj().__class__ == Features:
             r = self.query_feature(cmd)
-        elif cmd.target.getObj().__class__ == eBPF_query_TCProgram:
+        elif cmd.target.getObj().__class__ == eBPF_program:
             r = self.query_tc(cmd)
         else:
             return badrequest("Target not supported.")
         return r
     def query_tc(self,cmd):
-        target : eBPF_query_TCProgram= cmd.target.getObj()
+        target : eBPF_program= cmd.target.getObj()
         try:
             prog_type = target.attach_type.Name.lower() if target.attach_type else None
             programs = self.manager.create_program(prog_type).query(attach_type = prog_type)
@@ -131,9 +132,10 @@ class TCActuator(BaseEBPFActuator):
                 Direction=ArrayOf(Direction)([p["direction"] for p in programs]),
                 Interfaces=ArrayOf(Interfaces)([p["interface"] for p in programs])
             )
-            return Response(status=StatusCode.OK, status_text=f"{len(programs)} programs loaded", results=results)
+            return ok("{len(programs)} programs loaded",res=results)
+            
         except Exception as e:
-            self.logger.exception(e)
+            
             return self.__servererror(cmd, e)
     
     def query_feature(self,cmd):
@@ -181,8 +183,10 @@ class TCActuator(BaseEBPFActuator):
             return ok("Ok", res=res)
         except Exception as e:
             return servererror("Server error while processing command", e)
+    
+    
     def delete(self, cmd: Command) -> Response:
-        target : eBPF_remove_TCprogram= cmd.target.getObj()
+        target : eBPF_program= cmd.target.getObj()
         if target.file is None or target.direction is None or target.attach_type is None or target.interfaces is None:
             return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
         try:
@@ -194,14 +198,14 @@ class TCActuator(BaseEBPFActuator):
                 direction=target.direction.Name.lower()
             )
             prog.remove(ifaces=target.interfaces.Names if target.interfaces else None)
-            
-            return Response(status=StatusCode.OK, status_text="Program has been deleted successfully")
+            return ok("Program has been deleted successfully")
         except Exception as e:
-            self.logger.exception(e)
+            
             return self.__servererror(cmd, e)
 
     def __notimplemented(self, cmd: Command):
-        return Response(StatusCode.NOTIMPLEMENTED, status_text = f'Action {cmd.action.name} not implemented')
+        return notimplemented(f'Action {cmd.action.name} not implemented')
+    
 
     def __servererror(self, cmd, e):
         """ Internal server error
@@ -212,7 +216,9 @@ class TCActuator(BaseEBPFActuator):
             :param e: The Exception returned.
             :return: A standard INTERNALSERVERERROR response.
         """
+
         if(logging.root.level < logging.INFO):
-            return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error: ' + str(e))
+            return servererror('Internal server error',error=str(e))
+        
         else:
-            return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error')
+            return servererror('Internal server error')

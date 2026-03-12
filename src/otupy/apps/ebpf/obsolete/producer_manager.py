@@ -5,7 +5,7 @@ import logging
 import otupy as oc2
 from otupy.encoders.json import JSONEncoder
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
-from otupy.profiles.ebpf.targets.TCHook.eBPF_query_TCProgram import eBPF_query_TCProgram
+from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 from otupy.transfers.http import HTTPTransfer
 from otupy.transfers.http.message import Message
 from otupy.profiles.ebpf.actuator import Specifiers

@@ -5,7 +5,7 @@ consumer:
 asset_id: "ebpf-example"
 
 actions:
-  - type: query_features
+  - type: query
   #- type: query
   #- type: load
     program: "./src/otupy/apps/ebpf/obsolete/allow_all.o"
