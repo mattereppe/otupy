@@ -6,6 +6,21 @@ from otupy.types.data.action_targets import ActionTargets
 from otupy.types.data.target_enum import TargetEnum
 
 
+from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
+from otupy.types.targets.features import Features
+
+AllowedStatusCode = [
+    StatusCode.PROCESSING,
+    StatusCode.OK,
+    StatusCode.BADREQUEST,
+    StatusCode.UNAUTHORIZED,
+    StatusCode.FORBIDDEN,
+    StatusCode.NOTFOUND,
+    StatusCode.INTERNALERROR,
+    StatusCode.NOTIMPLEMENTED,
+    StatusCode.SERVICEUNAVAILABLE,
+]
+""" List of allowed status code in `Response` """
 AllowedActions = [ Actions.create, Actions.delete, Actions.query]
 AllowedCommandTarget = ActionTargets()
 """ List of allowed `Target` for each `Action`
@@ -14,9 +29,9 @@ AllowedCommandTarget = ActionTargets()
 """
 
 
-AllowedCommandTarget[Actions.query] = [TargetEnum['eBPF_query_TCProgram']]
-AllowedCommandTarget[Actions.create] = [TargetEnum['eBPF_load_TCprogram']]
-AllowedCommandTarget[Actions.delete] = [TargetEnum['eBPF_remove_TCprogram']]
+AllowedCommandTarget[Actions.query] = [TargetEnum.features,TargetEnum[Profile.nsid+':eBPF_query_TCProgram']]
+AllowedCommandTarget[Actions.create] = [TargetEnum[Profile.nsid+':eBPF_load_TCprogram']]
+AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':eBPF_remove_TCprogram']]
 def validate_command(cmd):
 	""" Validate a `Command` 
 

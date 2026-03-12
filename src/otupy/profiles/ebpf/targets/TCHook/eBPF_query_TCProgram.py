@@ -1,11 +1,12 @@
 import otupy as oc2
+from otupy.profiles.ebpf.profile import Profile
 from otupy.types.base.record import Record
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 
-@oc2.target(name="eBPF_query_TCProgram", nsid=None)
+@oc2.target(name="eBPF_query_TCProgram", nsid=Profile.nsid)
 class eBPF_query_TCProgram(Record):
     """
     OpenC2-compliant target record for loading an eBPF program file.

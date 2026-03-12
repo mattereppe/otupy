@@ -16,3 +16,7 @@ class BaseEBPFActuator(ABC):
     @abstractmethod
     def delete(self, cmd: Command) -> Response:
         pass
+
+    @abstractmethod
+    def __is_addressed_to_actuator(self, actuator) -> bool:
+        pass

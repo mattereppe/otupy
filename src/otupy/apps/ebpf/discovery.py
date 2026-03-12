@@ -6,8 +6,8 @@ from pathlib import Path
 from argparse import ArgumentParser
 import yaml
 from jsonschema import validate
-
-
+import otupy as oc2
+from otupy.types.targets.features import Features
 
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.profiles.ebpf.targets.TCHook.eBPF_load_TCprogram import eBPF_load_TCprogram
@@ -104,6 +104,11 @@ def run_from_config(config_path: str):
                             attach_obj = AttachType(attach_type)
                             target_features = eBPF_query_TCProgram(attach_type=attach_obj)
                             parsed = plugin.query(producer, target=target_features, asset_id=asset_id)
+                        case "query_features":
+                            
+                            target_features =Features([oc2.Feature.versions, oc2.Feature.profiles, oc2.Feature.pairs])
+                            parsed = plugin.query(producer, target=target_features, asset_id=asset_id)
+
                         case _:
                             raise ValueError(f"Unsupported action type: {action['type']}")
                     

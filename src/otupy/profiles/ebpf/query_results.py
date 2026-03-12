@@ -12,13 +12,7 @@ from otupy.profiles.ebpf.data.source_file import ProgramFile
 
 @oc2.extension(nsid=Profile.nsid)
 class QueryResults(oc2.Results):
-	""" CTXD Results
 
-		Extensions to the base class `otupy.core.response.Results`.
-		 
-		[Developing extensions](https://github.com/mattereppe/otupy/blob/main/docs/developingextensions.md#developing-extensions) Section of the main documentation.
-
-	"""
 	fieldtypes = {'Program': ArrayOf(ProgramFile), 'Direction': ArrayOf(Direction), 'hook_point': ArrayOf(AttachType), 
 			   'Interfaces': ArrayOf(Interfaces)}
 

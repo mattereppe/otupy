@@ -46,3 +46,10 @@ class TCProducer(BaseEBPFProducer):
 
         resp = producer.sendcmd(cmd)
         return handle_response(resp)
+
+    def query_features(self, producer: oc2.Producer, target, asset_id: str):
+
+        actuator_spec = Specifiers({"asset_id": asset_id})
+        cmd = oc2.Command(oc2.Actions.query, target=target, actuator = actuator_spec)
+        resp = producer.sendcmd(cmd)
+        return handle_response(resp)

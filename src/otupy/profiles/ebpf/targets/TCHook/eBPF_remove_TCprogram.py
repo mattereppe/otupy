@@ -4,8 +4,9 @@ from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+from otupy.profiles.ebpf.profile import Profile
 
-@oc2.target(name="eBPF_remove_TCprogram", nsid=None)
+@oc2.target(name="eBPF_remove_TCprogram", nsid=Profile.nsid)
 class eBPF_remove_TCprogram(Record):
     """
     OpenC2-compliant target record for loading an eBPF program file.

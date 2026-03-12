@@ -1,10 +1,12 @@
+from imaplib import Commands
 import logging
-from otupy import Version, StatusCode
+from otupy import StatusCode
 from otupy import   Actions, Command, Response
 from otupy.actuators.ebpf.base.base_ebpf_actuator import BaseEBPFActuator
 from otupy.actuators.ebpf.programs.TCprogram import TCProgram
 from otupy.actuators.ebpf.managers.ebpf_program_manager import EBPFProgramManager
 from otupy.core.actuator import actuator_implementation
+from otupy.profiles import ebpf
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
@@ -13,12 +15,23 @@ from otupy.profiles.ebpf.query_results import QueryResults
 from otupy.types.base.array_of import ArrayOf
 from otupy.profiles.ebpf.validation.TCHookValidation import validate_command
 
-
+from otupy import ResponseType, Results
 from otupy.profiles.ebpf.targets.TCHook.eBPF_load_TCprogram import eBPF_load_TCprogram
 from otupy.profiles.ebpf.targets.TCHook.eBPF_remove_TCprogram import eBPF_remove_TCprogram
 from otupy.profiles.ebpf.targets.TCHook.eBPF_query_TCProgram import eBPF_query_TCProgram
 
-@actuator_implementation("x-TCebpf")
+
+from otupy.actuators.ebpf.response_handler import servererror, badrequest, notimplemented, notfound, ok
+from otupy.types.data.feature import Feature
+from otupy.types.data.nsid import Nsid
+from otupy.types.data.version import Version
+from otupy.types.targets.features import Features
+
+
+""" Supported OpenC2 Version """
+OPENC2VERS = Version(1, 0)
+
+@actuator_implementation("ebpf-TC")
 class TCActuator(BaseEBPFActuator):
     def __init__(self,  **kwargs):
 
@@ -34,12 +47,37 @@ class TCActuator(BaseEBPFActuator):
     def run(self, cmd: Command) -> Response:
         if not validate_command(cmd):
             return Response(status=StatusCode.NOTIMPLEMENTED, status_text='Invalid Action/Target pair')
+        
+        # Check if the Specifiers are actually served by this Actuator
+        try:
+            if not self._BaseEBPFActuator__is_addressed_to_actuator(cmd.actuator.getObj()):
+                return Response(status=StatusCode.NOTFOUND, status_text='Requested Actuator not available')
+        except AttributeError:
+            
+            pass
+        except Exception as e:
+            return Response(status=StatusCode.INTERNALERROR, status_text='Unable to identify actuator')
         match cmd.action:
             case Actions.create: return self.create(cmd)
             case Actions.query: return self.query(cmd)
             case Actions.delete: return self.delete(cmd)
             case _: return self.__notimplemented(cmd)
 
+    def _BaseEBPFActuator__is_addressed_to_actuator(self, actuator) -> bool:
+        """ Checks if this Actuator must run the command """
+        if actuator is None or len(actuator) == 0:
+            
+            return True
+
+        for k,v in actuator.items():		
+            try:
+                # For now, just check if the asset_id matches
+                if(v == self.specifiers['asset_id']):
+                    return True
+            except KeyError:
+                pass
+
+        return False
 
     def create(self, cmd: Command) -> Response:
         obj : eBPF_load_TCprogram  = cmd.target.getObj()
@@ -61,6 +99,25 @@ class TCActuator(BaseEBPFActuator):
             return self.__servererror(cmd, e)
 
     def query(self, cmd: Command) -> Response:
+        self.logger.info(f"Querying action with command: {cmd}")
+        if cmd.args is not None:
+            try:
+                if cmd.args.get("response_requested") is not None:
+                    if not (cmd.args["response_requested"] == ResponseType.complete):
+                        raise KeyError
+            except KeyError:
+                return badrequest("Invalid query argument")
+        
+        
+        
+        if cmd.target.getObj().__class__ == Features:
+            r = self.query_feature(cmd)
+        elif cmd.target.getObj().__class__ == eBPF_query_TCProgram:
+            r = self.query_tc(cmd)
+        else:
+            return badrequest("Target not supported.")
+        return r
+    def query_tc(self,cmd):
         target : eBPF_query_TCProgram= cmd.target.getObj()
         try:
             prog_type = target.attach_type.Name.lower() if target.attach_type else None
@@ -78,7 +135,52 @@ class TCActuator(BaseEBPFActuator):
         except Exception as e:
             self.logger.exception(e)
             return self.__servererror(cmd, e)
+    
+    def query_feature(self,cmd):
+        """
+        Handles the query for supported features, such as OpenC2 versions, profiles, and allowed command targets.
 
+        Implements the 'query features' command, returning the features supported by the OpenC2 actuator.
+        The supported features include OpenC2 versions, profiles, and allowed command targets. If a feature is not
+        implemented, a `notimplemented` response is returned.
+
+        Args:
+            cmd (Command): The `Command` object containing:
+                - `target`: The target of the query, which should be of type `Features`.
+                - `args`: A dictionary of optional arguments.
+
+        Returns:
+            Response: A response indicating the result of the query action:
+                - `ok`: If the query was successful.
+                - `notimplemented`: If a feature is not implemented or invalid feature is requested.
+                - `servererror`: If an error occurs while processing the command, such as a database or internal failure.
+
+        Example:
+            cmd = Command(target=Features(), args={})
+            query_feature(cmd)
+        """
+        self.logger.info(f"Querying features with command: {cmd}")
+        features = {}
+        for f in cmd.target.getObj():
+            match f:
+                case Feature.versions:
+                    features[Feature.versions.name] = ArrayOf(Version)([OPENC2VERS])
+                case Feature.profiles:
+                    pf = ArrayOf(Nsid)()
+                    pf.append(Nsid(ebpf.Profile.nsid))
+                    features[Feature.profiles.name] = pf
+                case Feature.pairs:
+                    features[Feature.pairs.name] = ebpf.AllowedCommandTarget
+                case Feature.rate_limit:
+                    return notimplemented("Feature 'rate_limit' not yet implemented")
+                case _:
+                    return notimplemented("Invalid feature '" + f + "'")
+            res = None
+        try:
+            res = Results(features)
+            return ok("Ok", res=res)
+        except Exception as e:
+            return servererror("Server error while processing command", e)
     def delete(self, cmd: Command) -> Response:
         target : eBPF_remove_TCprogram= cmd.target.getObj()
         if target.file is None or target.direction is None or target.attach_type is None or target.interfaces is None:

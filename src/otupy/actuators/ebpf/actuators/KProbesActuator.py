@@ -17,7 +17,7 @@ from otupy.profiles.ebpf.validation.TCHookValidation import validate_command
 from otupy.profiles.ebpf.targets.KprobeHook import ebpf_load_KPROBEprogram
 
 
-@actuator_implementation("x-Kprobesebpf")
+@actuator_implementation("ebpf-Kprobe")
 class KprobeActuator(BaseEBPFActuator):
     def __init__(self,  **kwargs):
 
