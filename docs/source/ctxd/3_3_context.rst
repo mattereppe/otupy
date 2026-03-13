@@ -21,8 +21,7 @@ Type: Context (Record)
      - links
      - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
-     - List the link names that the command refers to. This does not work, since Links do not have a name.
-		 In future releases, this will be likely removed.
+     - List the link names that the command refers to. This does not work, since Links do not have a name.  In future releases, this will be likely removed.
 
 The Target Context is used when the Producer wants to know the
 information of all active services and links of the Consumer. The
