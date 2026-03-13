@@ -38,7 +38,7 @@ class KprobeActuator(BaseEBPFActuator):
             case _: return self.__notimplemented(cmd)
     
     def create(self, cmd: Command) -> Response:
-        obj : eBPF_load_KprobeProgram  = cmd.target.getObj()
+        obj : ebpf_load_KPROBEprogram  = cmd.target.getObj()
         if obj.file is None or obj.direction is None or obj.attach_type is None or obj.interface:
             return Response(status=StatusCode.BAD_REQUEST, status_text="Missing required eBPF parameters")
 
