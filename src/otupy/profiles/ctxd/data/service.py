@@ -18,6 +18,7 @@ class SId(Record):
 		The service identifier is conceveid to avoid collisions as much as possible; services that
 		are visible in two different scopes (e.g., Kubernetes pods and namespace should create
 		the same identifier in different places (i.e., Kubernets and linux server.
+
 	"""
 	type: str = None
 	"""Main type for this service. This is set according to `ServiceType`. """
@@ -125,6 +126,11 @@ class Service(Record):
 		A `Service` may also be an composition of more elementary subservices. In this case, both the `Service` and
 		its sub`Service`s are described and linked, which allows to expose the system composition and topology
 		with different level of granularity according to the trust level.
+
+		The `domain` and `namespace` field are kept for backward compatibility, but may be removed
+		in future versions because they are already included in the `SId`. Do not rely or use these
+		fields.
+
 	"""
 
 	name: Name = None

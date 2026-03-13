@@ -29,12 +29,12 @@ Type: :py:class:`~otupy.core.results.Results` (:py:class:`~otupy.types.base.map.
      - services_names
      - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
-     - List the names of all services.
+     - List the names of all services. This will likely be removed in future releases.
    * - 2
      - link_names
      - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.ctxd.data.name.Name`)
      - 0
-     - List the names of all links.
+     - List the names of all links. This does not work anymore, because Links do not have a name.
 
 Usage requirements:
 ~~~~~~~~~~~~~~~~~~~
