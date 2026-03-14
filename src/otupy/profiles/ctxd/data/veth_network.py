@@ -3,7 +3,7 @@
 	Abstract a veth link as a sort of point-to-point network	
 """
 
-from otupy import Map, ArrayOf 
+from otupy import Map, ArrayOf , Array
 from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress
 
 class VEthNetwork(Map):
@@ -12,7 +12,7 @@ class VEthNetwork(Map):
 		A flexible container for network characteristics. 
 		Currently expects the network address/prefix as mandatory field.
 	"""
-	fieldtypes = dict(peers= tuple, nets = ArrayOf(IPNetAddress))
+	fieldtypes = dict(peers= ArrayOf(Array), nets = ArrayOf(IPNetAddress))
 	""" Field types
 	
 		This is the definition of the fields beard by the `Mobile` network.

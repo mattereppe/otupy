@@ -35,7 +35,7 @@ import grpc
 
 from containerd.services.containers.v1 import containers_pb2_grpc, containers_pb2
 
-from otupy import ArrayOf, actuator_implementation, Hostname, MACAddr
+from otupy import Array, ArrayOf, actuator_implementation, Hostname, MACAddr
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd import *
@@ -500,7 +500,7 @@ class CTXDHostActuator(CTXDActuator):
 																					ipnetaddrs=ipnetaddrs, 
 																					id=net_id, 
 																					nettype=VEthNetwork,
-																					peers=(peer1, peer2))
+																					peers=ArrayOf(Array)([Array(peer1), Array(peer2)]))
 
 
 									# Save network service name in the connected namespaces (used later to create links)
