@@ -11,7 +11,7 @@ class Firewall(Map):
 		This is only a placeholder to automatically generate valid subtypes for SIds.
 		
 	"""
-	fieldtypes = dict(routes= str)
+	fieldtypes = dict(rules= str)
 	""" Field types
 	
 		This is the definition of the routing table. It must be defined by defining the structure
