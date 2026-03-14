@@ -240,6 +240,13 @@ class CTXDActuator_kubernetes(CTXDActuator):
 				type=ServiceType(k8s), 
 				subservices=k8s_subservices, owner=self.owner, release=None))
 
+	def _create_node_sid(self, node_name):
+		""" Create a node sid for nodes discovered while scanning pods 
+
+			This assumes the actuator has not access to node apis"""
+		return SId(type=ServiceType.get_type_name(ExecutionEnvironment), 
+						subtype=ExecutionEnvironmentType.get_type_name(OS), 
+						name=node_name)
 
 
 	def _discover_k8s_services(self):
@@ -260,7 +267,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		def _update_endpoints(endpoints, ip, port):
 			if len(endpoints) > 0:
 				endpoints = endpoints + ", "
-			return endpoints + ip + "/" + str(port)
+			return endpoints + str(ip) + "/" + str(port)
 
 		k8s_services = ArrayOf(Name)()
 		for service in cloud_services:
@@ -848,6 +855,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 							ips.append(IPInfo(ip=IPAddress(ip)))
 					port_list.append( Port(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
 			
+			
 			node_type = NetworkNode(description="Pod network ports", id=pod.metadata.uid,
 					name=pod.metadata.name, ifaces=port_list)
 			nodename=Name(self._k8s_dns_name(pod.metadata.name, pod.metadata.namespace, "ports"))
@@ -953,6 +961,10 @@ class CTXDActuator_kubernetes(CTXDActuator):
 				controller.subservices.append(pod_sid)
 
 			if pod.spec.node_name != "" and pod.spec.node_name is not None:
+				if pod.spec.node_name not in self._k8s_nodes:
+					# This happens if we do not have access to nodes apis
+					# We generate a simpler sid for the node (and we'll use it again in the following)
+					self._k8s_nodes[pod.spec.node_name] = self._create_node_sid(pod.spec.node_name)
 				self.nodes[str(pod_sid)] = self._k8s_nodes[pod.spec.node_name]
 			else:
 				self.nodes[str(pod_sid)]=None
@@ -1052,9 +1064,11 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		return dnsname
 
 	def _setup_cni(self):
-		if self.cniconfig is None:
-			return
 
+		if self.cniconfig is None:
+			self.cni_cluster_cidr = "0.0.0.0/0"
+			self.cni_service_cidr = "0.0.0.0/0"
+			return
 
 		self.cni_cluster_cidr = None
 		self.cni_service_cidr = None

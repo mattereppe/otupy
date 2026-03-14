@@ -18,13 +18,16 @@ key concepts:
 	are specific to the service type. The current assumption is that 
 	there is only one CTXD actuator that provides the service description
 	through the :py:class:`~otupy.profiles.ctxd.data.service.Service` object,
-	to avoid the risk of having multiple versions to merge. 
+	to avoid the risk of having multiple versions to merge. A Service should be 
+	uniquely identified across different actuators by its :py:class:`~otupy.profiles.ctxd.data.service.SId`,
+	an identifier which has been designed to be compatible with typical
+	BOM references (e.g., Cyclone DX).
 
 -  :py:class:`~otupy.profiles.ctxd.data.link.Link`: 
 	A link is a relationship
 	between two or more services. The :py:class:`~otupy.profiles.ctxd.data.link.Link`
 	object describes the relationship between one 
-	:py:attr:`~otupy.profiles.ctxd.data.link.Link.name` which is always
+	:py:attr:`~otupy.profiles.ctxd.data.service.SId` which is always
 	described by the current actuator and one or more
 	:py:attr:`~otupy.profiles.ctxd.data.link.Link.peers` which might be described
 	by the same actuator or another one. In the last case, the
