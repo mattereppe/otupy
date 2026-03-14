@@ -25,3 +25,9 @@ watchdog==6.0.0
 Werkzeug==3.1.6
 xmltodict==0.14.2
 protobuf==3.20.0
+docker
+azure-mgmt-compute 
+azure-mgmt-storage 
+azure-mgmt-resource
+azure.identity
+azure.mgmt.network
