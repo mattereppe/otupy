@@ -46,11 +46,22 @@ dependencies = [
 "pymongo==4.15.5",
 "xmltodict==0.14.2",
 "kafka_python==2.3.0",
+"azure-common==1.1.28"
 "azure-core==1.37.0",
 "azure-identity==1.25.1",
 "azure-mgmt-network==30.1.0",
 "azure-mgmt-resource==24.0.0",
 "apscheduler==3.11.2"
+"containerd==1.5.3"
+"flask_api==3.1"
+"grpcio==1.78.0"
+"gunicorn==25.1.0"
+"pybrctl==0.1.4"
+"pyroute2==0.9.5"
+"python-dotenv==1.2.2"
+"watchdog==6.0.0"
+"protobuf==3.20.0"
+"docker-py==1.10.6"
 ]
 
 [project.urls]
