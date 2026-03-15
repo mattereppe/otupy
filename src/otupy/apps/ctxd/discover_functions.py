@@ -25,21 +25,25 @@ logger = logging.getLogger(__name__)
 def _log_context(ctx):
 	""" Debug-only function to check what was reported """
 	try:
+		tot_services = 0
+		tot_links = 0
 		for type_ in ctx.keys():
 			for item in ctx[type_]:
-#				logger.info("Found %s: %s", type_, item)
 				if 'service' in item:
 					sub=""
 					if item['service'].subservices is not None:
 						for s in item['service'].subservices:
 							sub+=str(s)+","
-					logger.info("Service: %s [%s] {%s}", item['service'].sid, item['service'].name, sub)
+					logger.debug("Service: %s [%s] {%s}", item['service'].sid, item['service'].name, sub)
+					tot_services = tot_services+1
 				if 'link' in item:
 					if item['link'].peers is not None:
 						peers=""
 						for p in item['link'].peers:
 							peers+=str(p.sid)+"@"+str(p.consumer)+" ["+str(p.role)+"], "
-						logger.info("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
+						logger.debug("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
+						tot_links = tot_links+1
+		logger.info("Found %d service(s), %d link(s)", tot_services, tot_links)
 	except:
 		logger.info("No service/link found!")
 

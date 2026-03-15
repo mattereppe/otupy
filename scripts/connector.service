@@ -1,0 +1,13 @@
+[Unit]
+Description=MIRANDA Connector
+DefaultDependencies=no
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/matteo/connector
+ExecStart=/home/matteo/.venv/bin/python3  -m otupy.apps.connector.connector -c  connector.yaml 
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
