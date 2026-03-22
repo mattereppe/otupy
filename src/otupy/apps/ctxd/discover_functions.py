@@ -136,12 +136,12 @@ def discover(service):
 	arg = ctxd.Args({'name_only': False, 'cached': False})
 	target = ctxd.Context(services=otupy.ArrayOf(Name)(), links=otupy.ArrayOf(Name)())  # expected all services and links
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
-	context = producer.sendcmd(cmd)
-	logger.info("Got context from: %s", context.from_)
-
 	try:
+		context = producer.sendcmd(cmd)
+		logger.info("Got context from: %s", context.from_)
 		return context.content['results']
 	except: 
+		logger.warn("No context available from %s", actuator)
 		return None
 
 
