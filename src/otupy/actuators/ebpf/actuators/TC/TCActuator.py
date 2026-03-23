@@ -35,9 +35,7 @@ class TCActuator():
         self.peers = kwargs['peers'] if 'peers' in kwargs else None
         self.owner = kwargs['owner'] if 'owner' in kwargs else None
         self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
-        self.manager = EBPFProgramManager()
-        self.manager.register_program_type("tc", TCProgram)
-        self.logger = logging.getLogger(__name__)
+
 
     def run(self, cmd: Command) -> Response:
         if not validate_command(cmd):
