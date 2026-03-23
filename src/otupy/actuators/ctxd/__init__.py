@@ -35,3 +35,6 @@
 
 from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
 from otupy.actuators.ctxd.ctxd_actuator_kubernetes import CTXDActuator_kubernetes
+from otupy.actuators.ctxd.ctxd_actuator_open5gs import CTXDActuator_open5gs
+from otupy.actuators.ctxd.ctxd_actuator_file import CTXDActuator_file
+from otupy.actuators.ctxd.ctxd_actuator_host import CTXDHostActuator

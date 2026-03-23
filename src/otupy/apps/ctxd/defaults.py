@@ -45,6 +45,8 @@ defaults = { # Default values for context discovery operation
 				# Default configuration for logger
 				'logger': {
 				   'version': 1, 
+					'disable_existing_loggers': False,
+					'propagate': True,
 				   'formatters': {
 						'otupy': {
 							'()': 'otupy.LogFormatter', 
@@ -62,8 +64,8 @@ defaults = { # Default values for context discovery operation
 					},
 					'root': {
 						'handlers': ['console'], 
-						'level': 'INFO'
-					}
+						'level': 'DEBUG'
+					},
 				}
 }
 """ Defaults value to be used for missing input parameters """
@@ -116,6 +118,7 @@ def parse_and_default(config):
 				config[p] = set_defaults(config, 'ctxd', p)	
 	else:
 		config['services'] = []
+	
 
 	# Database section:
 	if 'publishers' in config:

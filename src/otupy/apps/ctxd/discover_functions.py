@@ -25,11 +25,28 @@ logger = logging.getLogger(__name__)
 def _log_context(ctx):
 	""" Debug-only function to check what was reported """
 	try:
+		tot_services = 0
+		tot_links = 0
 		for type_ in ctx.keys():
 			for item in ctx[type_]:
-				logger.info("Found %s: %s", type_, item)
+				if 'service' in item:
+					sub=""
+					if item['service'].subservices is not None:
+						for s in item['service'].subservices:
+							sub+=str(s)+","
+					logger.debug("Service: %s [%s] {%s}", item['service'].sid, item['service'].name, sub)
+					tot_services = tot_services+1
+				if 'link' in item:
+					if item['link'].peers is not None:
+						peers=""
+						for p in item['link'].peers:
+							peers+=str(p.sid)+"@"+str(p.consumer)+" ["+str(p.role)+"], "
+						logger.debug("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
+						tot_links = tot_links+1
+		logger.info("Found %d service(s), %d link(s)", tot_services, tot_links)
 	except:
 		logger.info("No service/link found!")
+
 
 # The loop "decorator", which cannot be used as decorator
 # because the two arguments are only known at run-time
@@ -119,12 +136,12 @@ def discover(service):
 	arg = ctxd.Args({'name_only': False, 'cached': False})
 	target = ctxd.Context(services=otupy.ArrayOf(Name)(), links=otupy.ArrayOf(Name)())  # expected all services and links
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
-	context = producer.sendcmd(cmd)
-	logger.info("Got context from: %s", context.from_)
-
 	try:
+		context = producer.sendcmd(cmd)
+		logger.info("Got context from: %s", context.from_)
 		return context.content['results']
 	except: 
+		logger.warn("No context available from %s", actuator)
 		return None
 
 

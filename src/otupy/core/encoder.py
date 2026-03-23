@@ -183,7 +183,7 @@ class Encoder:
 		"""
 		logger.debug("Deconding: %s with %s", dic, clstype)
 		try:
-			logging.debug("Trying: %s", clstype.fromdict)
+			logger.debug("Trying: %s", clstype.fromdict)
 			return clstype.fromdict(dic, Encoder)
 		except AttributeError:
 			logger.debug("Falling back: Encoder.objfromdict for %s", clstype)

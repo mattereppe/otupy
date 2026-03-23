@@ -1,0 +1,1704 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "http://mirandaproject.eu/ctxd/v2.0/schema.json",
+	"title": "Context Discovery resources",
+	"description": "Description of digital resources and relationship discovered by OpenC2 x-ctxd profile",
+	"type": "object",
+	"properties": {
+		"creator": {
+			"type": "string"
+		},
+		"jsonschema": {
+			"type": "string",
+			"format": "uri"
+		},
+		"date": {
+			"type": "number"
+		},
+		"services": {
+			"title": "Service list",
+			"description": "List of discovered services managed by the reporting consumer",
+			"type": "array",
+			"items": {
+				"title": "Service",
+				"description": "Description of each individual service",
+				"type": "object",
+				"properties": {
+					"source": {
+						"$ref": "#/$definitions/consumer"
+					},
+					"service": {
+						"$ref": "#/$definitions/service"
+					}
+				},
+				"required": ["source", "service"]
+			}
+		},
+		"links": {
+			"title": "Links",
+			"description": "List of discovered relationships between local and remote services",
+			"type": "array",
+			"items": {
+				"title": "Relationship",
+				"description": "Describe the relationship between the subject service and one or more local or remote peers",
+				"type": "object",
+				"properties": {
+					"source": {
+						"$ref": "#/$definitions/consumer"
+					},
+					"link": {
+						"$ref": "#/$definitions/link"
+					}
+				},
+				"required": ["source", "link"],
+				"additionalProperties": false
+			}
+		}
+	},
+	"required": ["creator", "jsonschema", "date"],
+
+	"$definitions": {
+
+		"consumer": {
+			"title": "Consumer",
+			"type": "object",
+			"description": "OpenC2 endpoint description, including network address and actuator identifier",
+			"properties": {
+				"host": {
+					"anyOf": [
+					{
+						"type": "string",
+						"format": "ipv4"
+					},
+					{
+						"type": "string",
+						"format": "ipv6"
+					},
+					{
+						"type": "string",
+						"format": "hostname"
+					}
+					]
+				},
+				"port": {
+					"type": "number",
+					"minimum": 1,
+					"maximum": 65536
+				},
+				"endpoint": {
+					"type": "string",
+					"pattern": "^/[A-Za-z0-9\\.\\-\\_\\/]*$(\\?[A-Za-z0-9\\.\\-\\_]+)?(\\#[A-Za-z0-9\\.\\-\\_]*)?$"
+				},
+				"encoding": {
+					"type": "string",
+					"enum": ["json", "cbor", "yaml", "xml"]
+				},
+				"transfer": {
+					"type": "string",
+					"enum": ["http", "https", "mqtt"]
+				},
+				"profile": {
+					"type": "string"
+				},
+				"actuator": {
+					"type": "object"
+				}
+			},
+			"required": ["host", "port", "actuator"],
+			"additionalProperties": false
+		},
+
+		"service": {
+			"title": "Service",
+			"type": "object",
+			"description": "Description of the digital service",
+			"properties": {
+				"name": {
+					"title": "Service name",
+					"description": "Identifier of the service",
+					"$ref": "#/$ctxd:datatypes/name"
+				},
+				"sid": {
+					"title": "Service identifier",
+					"description": "Unique identifier for the service",
+					"$ref": "#/$ctxd:datatypes/sid"
+				},
+				"type": {
+					"title": "Service type",
+					"description": "Describe service-specific fields",
+					"$ref": "#/$ctxd:datatypes/servicetype"
+				},
+				"domain": {
+					"title": "Domain name",
+					"description": "A domain name may be used to distinguish service name within the same scope",
+					"type": "string"
+				},
+				"namespace": {
+					"title": "Namespace name",
+					"description": "A namespace is a finer-grained or alternative organization of names",
+					"type": "string"
+				},
+				"subservices": {
+					"title": "Subservice list",
+					"description": "Subservices embedded in main service",
+					"type": "array",
+					"items": {
+						"title": "Subservice",
+						"description": "Name of embedded service (described in a separate service)",
+						"$ref": "#/$ctxd:datatypes/sid"
+					}
+				},
+				"owner": {
+					"title": "Service name",
+					"description": "Identification of the service owner",
+					"type": "string"
+				},
+				"release": {
+					"title": "Release version",
+					"description": "Release or version of the software/hardware",
+					"type": "string"
+				}
+			},
+			"required": ["name", "sid", "type"],
+			"additionalProperties": false
+		},
+
+		"link": {
+			"title": "Link",
+			"description": "Relationship between two or more digital services",
+			"type": "object",
+			"properties": {
+				"name": {
+					"title": "Link name",
+					"description": "Identifier of the service at the origin of the relationship",
+					"$ref": "#/$ctxd:datatypes/name"
+				},
+				"sid": {
+					"title": "Service identifier",
+					"description": "Unique identifier for the service",
+					"$ref": "#/$ctxd:datatypes/sid"
+				},
+				"description": {
+					"title": "Description",
+					"description": "Description of the relationship",
+					"type": "string"
+				},
+				"versions": {
+					"title": "Versions",
+					"description": "Versions of the relationship (not used)",
+					"type": "array",
+					"items": {
+						"title": "Version number",
+						"description": "Version number major.minor",
+						"type": "string",
+						"pattern": "^[0-9]+\\.[0-9]+"
+					}
+				},
+				"link_type": {
+					"title": "Link type",
+					"description": "Describe the type of relationship",
+					"type": "string",
+					"enum": ["api", "hosting", "packet_flow", "controlling", "protecting", "containing"]
+				},
+				"role": {
+					"title": "Role",
+					"description": "Describe the role of the service in the relantionship",
+					"$ref": "#/$ctxd:datatypes/role"
+				},
+				"peers": {
+					"title": "Peers",
+					"description": "List of local and/or remote peers",
+					"type": "array",
+					"items": {
+						"title": "Peer",
+						"description": "Identifies each local or remote peer",
+						"$ref": "#/$ctxd:datatypes/peer"
+					}
+				}
+			},
+			"additionalProperties": false
+		}
+
+
+	},
+
+
+	"$ctxd:datatypes": {
+		
+		"name": {
+			"title": "Resource name",
+			"description": "Identifier of a digital resource",
+			"anyOf": [
+			{
+				"type": "object",
+				"properties": {
+					"local": {
+						"description": "Local identifier of a resource",
+						"type": "string",
+						"format": "hostname"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"uri": {
+						"description": "Unique URI to identify a resource",
+						"type": "string",
+						"format": "uri"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"hostname": {
+						"description": "DNSe name of the resource",
+						"type": "string",
+						"format": "hostname"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"uuid": {
+						"description": "Unique UUID to identify a resource",
+						"type": "string",
+						"format": "uuid"
+					}
+				},
+				"additionalProperties": false
+			}
+			]
+		},
+
+		"sid": {
+			"title": "Service Identifier",
+			"description": "Structured way to describe the service",
+			"type": "object",
+			"properties": {
+				"type": {
+					"description": "Coarse-grained type of service",
+					"type": "string"
+				},
+				"subtype": {
+					"description": "Fine-grained type of service",
+					"type": "string"
+				},
+				"domain": {
+					"description": "Domain name of the service",
+					"type": "string"
+				},
+				"namespace": {
+					"description": "Namespace for service name",
+					"type": "string"
+				},
+				"name": {
+					"description": "Short name of the service",
+					"type": "string"
+				},
+				"version": {
+					"description": "Version or release of the service",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"servicetype": {
+			"title": "Service Type",
+			"description": "Describe specific characteristics based on the resource type",
+			"anyOf": [
+			{
+				"type": "object",
+				"properties": {
+					"app": {
+						"$ref": "#/$ctxd:datatypes/application"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"execenv": {
+						"$ref": "#/$ctxd:datatypes/executionenvironment"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"host": {
+						"$ref": "#/$ctxd:datatypes/host"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"api": {
+						"$ref": "#/$ctxd:datatypes/api"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"cloud": {
+						"$ref": "#/$ctxd:datatypes/cloud"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"network": {
+						"$ref": "#/$ctxd:datatypes/network"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"netfun": {
+						"$ref": "#/$ctxd:datatypes/netfun"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"netnode": {
+						"$ref": "#/$ctxd:datatypes/networknode"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"iot": {
+						"$ref": "#/$ctxd:datatypes/iot"
+					}
+				},
+				"additionalProperties": false
+			}
+			]
+		},
+
+		"peer": {
+			"title": "Service peer",
+			"description": "Identifies the peer of the service in a relationship and the serving consumer in case of remote peers",
+			"properties": {
+				"service_name": {
+					"title": "Service name",
+					"description": "Name of the peer service",
+					"$ref": "#/$ctxd:datatypes/name"
+				},
+				"sid": {
+					"title": "Service identifier",
+					"description": "Unique identifier for the service",
+					"$ref": "#/$ctxd:datatypes/sid"
+				},
+				"role": {
+					"title": "Peer role",
+					"description": "Identifies the role played by the peer within the link type",
+					"$ref": "#/$ctxd:datatypes/role"
+				},
+				"consumer": {
+					"title": "Consumer",
+					"description": "OpenC2 endpoint to retrieve information about the peer service",
+					"$ref": "#/$definitions/consumer"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"role": {
+			"title": "Service role",
+			"description": "Describe the role of a service in a relationship",
+			"type": "string",
+			"enum": ["client", "server", "guest", "host", "ingress", "egress", "both", "control", "controlled","protect", "protected", "contain", "contained", "forwarding", "endpoint"]
+		},
+
+		"executionenvironment": {
+			"title": "Execution Environment",
+			"description": "Describe specific types of execution environments",
+			"properties": {
+				"name": {
+					"title": "Name",
+					"description": "A human-readable identifier",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Machine-readable identifier",
+					"type": "string"
+				},
+				"description": {
+					"title": "Description",
+					"desceription": "Human-readable brief description",
+					"type": "string"
+				},
+				"version": {
+					"title": "Version",
+					"description": "Short label for version or release",
+					"type": "string"
+				},
+				"type": {
+					"title": "Execution Environment type",
+					"description": "Finer-grained identification and properties of the execution environment",
+					"anyOf": [
+					{
+						"type": "object",
+						"properties": {
+							"os": {
+								"$ref": "#/$ctxd:datatypes/os"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"container": {
+								"$ref": "#/$ctxd:datatypes/container"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"netns": {
+								"$ref": "#/$ctxd:datatypes/netns"
+							}
+						},
+						"additionalProperties": false
+					}
+					]
+				},
+				"libs": {
+					"title": "Libraries",
+					"description": "Libraries installed in the execution environment",
+					"type": "array",
+					"items": {
+						"title": "Library",
+						"description": "Software library installed in the execution environment",
+						"$ref": "#/$ctxd:datatypes/library"
+					}
+				},
+				"pkgs": {
+					"title": "Packages",
+					"description": "List of installed packages",
+					"type": "array",
+					"items": {
+						"title": "Package",
+						"description": "Software package",
+						"$ref": "#/$ctxd:datatypes/package"
+					}
+				},
+				"apps": {
+					"title": "Applications",
+					"description": "List of installed applications not provided by packages",
+					"type": "array",
+					"items": {
+						"title": "Application",
+						"description": "Software application",
+						"$ref": "#/$ctxd:datatypes/application"
+					}
+				}
+			}
+		},
+
+		"os": {
+			"title": "Operating System",
+			"description": "Short reference to Operating System family and version",
+			"type": "object",
+			"properties": {
+				"name":{
+				  "title": "Name",
+				  "description": "Main name of the OS",
+				  "type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Machine-readable identifier",
+					"type": "string"
+				},
+				"description": {
+					"title": "Description",
+					"desceription": "Human-readable brief description",
+					"type": "string"
+				},
+				"version":{
+				  "title": "Version",
+				  "description": "Version of the OS",
+				  "type": "string"
+				},
+				"family":{
+				  "title": "Family",
+				  "description": "Family of the OS",
+				  "type": "string"
+				},
+				"release":{
+				  "title": "Release",
+				  "description": "Release of the OS",
+				  "type": "string"
+				},
+				"arch":{
+				  "title": "Architecture",
+				  "description": "Architecture the OS is compiled for",
+				  "type": "string"
+				},
+				"additionalProperties": false
+			}
+		},
+
+		"container": {
+			"title": "Software container",
+			"description": "A lightweight abstraction made of a container",
+			"type": "object",
+	      "properties": {
+				"namespace":{
+					"title": "Namespace",
+					"description": "Namespace where the container is running",
+					"type": "string"
+				},
+	        "image":{
+				 "title": "Image",
+	          "description": "Name and version of the container image",
+	          "type": "string"
+	        },
+				"status": {
+					"title": "Status",
+					"description": "Current status of the container",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"netns": {
+			"title": "Linux network namespace",
+			"description": "A lightweight containerization technology in linux",
+			"type": "object",
+	      "properties": {
+				"inode":{
+					"title": "inode",
+					"description": "Inode number associated to the namespace in the linux file system",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"host": {
+			"title": "Host",
+			"description": "Describe specific types of physical and virtual hosts",
+			"type": "object",
+			"properties": {
+				"name": {
+					"title": "Name",
+					"description": "A human-readable identifier",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Machine-readable identifier",
+					"type": "string"
+				},
+				"description": {
+					"title": "Description",
+					"desceription": "Human-readable brief description",
+					"type": "string"
+				},
+				"vendor": {
+					"title": "Vendor",
+					"description": "Vendor name",
+					"type": "string"
+				},
+				"model": {
+					"title": "Model",
+					"description": "Model name",
+					"type": "string"
+				},
+				"release": {
+					"title": "Release",
+					"description": "Release string",
+					"type": "string"
+				},
+				"serial": {
+					"title": "Serial",
+					"description": "Serial number given as string",
+					"type": "string"
+				},
+				"firmware": {
+					"title": "Firmware",
+					"description": "Name of the firmware (e.g., BIOS, UEFI, iOS)",
+					"type": "string"
+				},
+				"version": {
+					"title": "Version",
+					"description": "Firmware version/release",
+					"type": "string"
+				},
+				"type": {
+					"title": "Host type",
+					"description": "Finer-grained identification and properties of the host",
+					"anyOf": [
+					{
+						"type": "object",
+						"properties": {
+							"vm": {
+								"$ref": "#/$ctxd:datatypes/vm"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"pod": {
+								"$ref": "#/$ctxd:datatypes/pod"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"server": {}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"iot": {
+								"$ref": "#/$ctxd:datatypes/iot"
+							}
+						},
+						"additionalProperties": false
+					}
+					]
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"vm": {
+			"title": "Virtual Machine",
+			"description": "Virtual Machine resource",
+			"type": "object",
+	      "properties": {
+	        "description":{
+				 "title": "Description",
+				 "description": "Description of the Virtual Machine",
+	          "type": "string"
+	        },
+	        "name":{
+				 "title": "Name",
+	          "description": "Canonical name of the Virtual Machine",
+	          "type": "string"
+	        },
+	        "id":{
+				 "title": "Identifier",
+	          "description": "Unique identifier of the Virtual Machine",
+	          "type": "string"
+	        },
+	        "image":{
+				 "title": "Image",
+	          "description": "Name and version of the Virtual Machine",
+	          "type": "string"
+	        }
+			},
+			"hypervisoer": {
+				"title": "Hypervisor",
+				"description": "Hypervisor name",
+				"type": "string"
+			},
+			"hypervisor_type": {
+				"title": "Hypervisor type",
+				"description": "Type of the hypervisor: native (bare-metal) or hosted",
+				"type": "string",
+				"enum": ["native", "hosted"]
+			},
+			"additionalProperties": false
+		},
+
+		"pod": {
+			"title": "Kubernetes pod",
+			"description": "A pod in Kubernetes hosting one or more containers",
+			"type": "object",
+	      "properties": {
+				"namespace":{
+					"title": "Namespace",
+					"description": "Namespace where the pod is running",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"iot": {
+			"title": "IoT",
+			"description": "Internet of Things device",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the IoT device",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the IoT device",
+					"type": "string"
+				},
+				"type":{
+					"title": "IoT type",
+					"description": "IoT device type",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"port": {
+			"title": "Network port",
+			"description": "Network interface",
+			"type": "object",
+			"properties": {
+				"description": {
+					"title": "Description",
+					"description": "Description of the network port",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Local identifier of the interface",
+					"type": "string"
+				},
+				"iface": {
+					"title": "Interface name",
+					"description": "Local name of the interface",
+					"type": "string"
+				},
+				"addresses": {
+					"title": "Addresses",
+					"description": "List of IPv4 addressed assigned to the interface",
+					"type": "array",
+					"items": {
+						"title": "IPv4 Address",
+						"description": "IPv4 address in dotted notation (no netmask)",
+						"type": "string",
+						"format": "ipv4"
+					}
+				},
+				"gateway": {
+					"title": "Gateway",
+					"description": "IPv4 address of the default gateway",
+					"type": "string",
+					"format": "ipv4"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"application": {
+			"title": "Software application",
+			"description": "A software application",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the application",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the application",
+					"type": "string"
+				},
+				"id":{
+					"title": "Identifier",
+					"description": "Unique identifier of the application",
+					"type": "string"
+				},
+				"version":{
+					"title": "Version",
+					"description": "Version of the application, according to its own release numbering scheme",
+					"type": "string"
+				},
+				"owner":{
+					"title": "Owner",
+					"description": "An identification for the owner of the application",
+					"type": "string"
+				},
+				"app_type":{
+					"title": "Application type",
+					"description": "Short identifier of the application type",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"webservice": {
+			"title": "Web Service",
+			"description": "RESTful application with an HTTP interface",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Generic description of the web service",
+					"type": "string"
+				},
+				"server":{
+					"title": "Server",
+					"description": "Hostname or IP address of the server",
+					"$ref": "#/ctxd:datatypes/server"
+				},
+				"port":{
+					"title": "Port",
+					"description": "Network port used to connect to the web service",
+					"type": "number"
+				},
+				"endpoint":{
+					"title": "Endpoint",
+					"description": "The endpoint used to connect to the web service",
+					"type": "string"
+				},
+				"owner":{
+					"title": "Owner",
+					"description": "Owner of the web service",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"cloud": {
+			"title": "Cloud",
+			"description": "Cloud Management Software",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the cloud",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the cloud",
+					"type": "string"
+				},
+				"id":{
+					"title": "Identifier",
+					"description": "Unique identifier of the cloud",
+					"type": "string"
+				},
+				"type":{
+					"title": "Type",
+					"description": "Type of the cloud virtualization model",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"api": {
+			"title": "Application Programming Interface",
+			"description": "API exposed by a software/application",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the cloud",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the cloud",
+					"type": "string"
+				},
+				"id":{
+					"title": "Identifier",
+					"description": "Unique identifier of the cloud",
+					"type": "string"
+				},
+				"type": {
+					"title": "Type",
+					"description": "Type of API (refer to RFC or other standard definition)",
+					"type": "string"
+				},
+				"endpoints": {
+					"title": "Endpoint",
+					"description": "LIst of URLs to contact the API",
+					"type": "array",
+					"items": {
+						"$ref": "#/$ctxd:datatypes/endpoint"
+					}
+				},
+				"provider": {
+					"title": "Provider",
+					"description": "Provider of the API",
+					"type": "string"
+				},
+				"version":{
+					"title": "Version",
+					"description": "Version or release of the network",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"endpoint": {
+			"title": "API Endpoint",
+			"description": "Endpoint to use the API",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "This is a human-friendly description to understand the purpose and location of the service",
+					"type": "string"
+				},
+				"endpoint_type": {
+					"title": "Type",
+					"description": "The architecture or standard followed by this endpoint definition (e.g., REST, SOAP, WSDL)",
+					"type": "string"
+				},
+				"transport": {
+					"title": "Transport",
+					"description": "Transport protocol used to access the endpoint (may be None if a default/mandatory choice is implied by the transfer protocol)",
+					"type": "string"
+				},
+				"transfer": {
+					"title": "Transfer protocol",
+					"description": "The communication protocol used to exchange messages with the endpoint",
+					"type": "string"
+				},
+				"encoding": {
+					"title": "Encoding",
+					"description": "Serialization or other form of data encoding to transfer high-level messages over the wire (e.g., json, xml, ...)",
+					"type": "string"
+				},
+				"uri": {
+					"title": "URI",
+					"description": "Locator of the endpoint",
+					"type": "string",
+					"format": "uri"
+				},
+				"provider": {
+					"title": "Provider",
+					"description": "Owner of the endpoint",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"network": {
+			"title": "Network",
+			"description": "Network infrastructure that deliver packets between hosts",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the network",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the network",
+					"type": "string"
+				},
+				"id":{
+					"title": "Identifier",
+					"description": "Unique identifier of the network",
+					"type": "string"
+				},
+				"version":{
+					"title": "Version",
+					"description": "Version or release of the network",
+					"type": "string"
+				},
+				"type":{
+					"title": "Network type",
+					"description": "Network technology",
+					"anyOf": [
+					{
+						"type": "object",
+						"properties": {
+							"ip": {
+								"$ref": "#/$ctxd:datatypes/ip_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"eth": {
+								"$ref": "#/$ctxd:datatypes/eth_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"vlan": {
+								"$ref": "#/$ctxd:datatypes/vlan_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"tun": {
+								"$ref": "#/$ctxd:datatypes/tun_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"vxlan": {
+								"$ref": "#/$ctxd:datatypes/vxlan_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"veth": {
+								"$ref": "#/$ctxd:datatypes/veth_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"5G": {
+								"$ref": "#/$ctxd:datatypes/5G_network"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"lorawan": {
+								"type": "string"
+							}
+						},
+						"additionalProperties": false
+					}
+					]
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"ip_network": {
+			"title": "IP network",
+			"description": "Generic IP network (no or unknown L2)",
+			"type": "object",
+			"properties": {
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"eth_network": {
+			"title": "Ethernet network",
+			"description": "Ethernet network with IP addresses",
+			"type": "object",
+			"properties": {
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"vlan_network": {
+			"title": "VLAN network",
+			"description": "VLAN network with IP addresses",
+			"type": "object",
+			"properties": {
+				"name": {
+					"title": "Name",
+					"description": "Mnemonic identifier",
+					"type": "string"
+				},
+				"vlan_id": {
+					"title": "VLAN ID",
+					"description": "VLAN number",
+					"type": "string"
+				},
+				"type": {
+					"title": "VLAN type",
+					"description": "VLAN protocol (e.g., 802.1Q)",
+					"type": "string"
+				},
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"vxlan_network": {
+			"title": "VXLAN network",
+			"description": "VXLAN network with IP addresses",
+			"type": "object",
+			"properties": {
+				"vni": {
+					"title": "VLAN Network ID",
+					"description": "VXLAN network identifier",
+					"type": "string"
+				},
+				"port": {
+					"title": "Port",
+					"description": "UDP port to tunnel packets",
+					"type": "string"
+				},
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"tun_network": {
+			"title": "Generic tunnel network",
+			"description": "Tunnel network with IP addresses",
+			"type": "object",
+			"properties": {
+				"server": {
+					"title": "Server",
+					"description": "Name or IP address of the server to connect to",
+					"type": "string"
+				},
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"veth_network": {
+			"title": "Veth network",
+			"description": "Linux veth meta-network",
+			"type": "object",
+			"properties": {
+				"peers": {
+					"title": "Peers",
+					"description": "Interfaces connected by the veth",
+					"type": "array",
+					"items": {
+						"title": "Peer",
+						"description": "An array containing the interface index and the namespace name",
+						"type": "array",
+						"items": {
+							"anyOf": [
+							{
+								"title": "Iface",
+								"description": "Interface index",
+								"type": "integer",
+								"additionalProperties": false
+							},
+							{
+								"title": "Namespace",
+								"description": "Namespace name",
+								"type": "string",
+								"additionalProperties": false
+							}
+							]
+						}
+					}
+				},
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"5G_network": {
+			"title": "Veth network",
+			"description": "Linux veth meta-network",
+			"type": "object",
+			"properties": {
+				"name": {
+					"title": "Name",
+					"description": "Mnemonic identifier",
+					"type": "string"
+				},
+				"mcc": {
+					"title": "MCC",
+					"description": "Mobile Country Code",
+					"type": "string"
+				},
+				"mnc": {
+					"title": "MNC",
+					"description": "Mobile Network Code",
+					"type": "string"
+				},
+				"sst": {
+					"title": "SST",
+					"description": "TODO",
+					"type": "string"
+				},
+				"region": {
+					"title": "Region",
+					"description": "Network region",
+					"type": "string"
+				},
+				"nets": {
+					"title": "Networks",
+					"description": "List of network addresses",
+					"type": "array",
+					"items": {
+						"title": "Address",
+						"description": "IPv4/v6 network address",
+						"$ref": "#/$ctxd:datatypes/ip_net_address"
+					}
+				}
+			}
+		},
+
+		"netfun": {
+			"title": "Network function",
+			"description": "Network function",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the network function",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the network function",
+					"type": "string"
+				},
+				"id":{
+					"title": "Identifier",
+					"description": "Unique identifier of the network function",
+					"type": "string"
+				},
+				"version":{
+					"title": "Version",
+					"description": "Version or release of the network function",
+					"type": "string"
+				},
+				"type":{
+					"title": "Type",
+					"description": "Network function type",
+					"anyOf": [
+					{
+						"type": "object",
+						"properties": {
+							"router": {
+								"$ref": "#/$ctxd:datatypes/network_router"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"bridge": {
+								"$ref": "#/$ctxd:datatypes/network_bridge"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"nat": {
+								"$ref": "#/$ctxd:datatypes/network_nat"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"fw": {
+								"$ref": "#/$ctxd:datatypes/network_firewall"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"vpn": {
+								"type": "string"
+							}
+						},
+						"additionalProperties": false
+					}
+					]
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"network_router": {
+			"title": "Router",
+			"description": "Network router",
+			"type": "object",
+			"properties": {
+				"routes": {
+					"title": "Routes",
+					"description": "Routing table of the router",
+					"type": "string"
+				}
+			}
+		},
+
+		"network_nat": {
+			"title": "NAT",
+			"description": "Network Address Translation",
+			"type": "object",
+			"properties": {
+				"rules": {
+					"title": "Rules",
+					"description": "NAT rules",
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
+		},
+
+		"network_bridge": {
+			"title": "Bridge",
+			"description": "Network bridge or switch",
+			"type": "object",
+			"properties": {
+				"table": {
+					"title": "FIB",
+					"description": "Forwarding table of the bridge",
+					"type": "string"
+				},
+				"ifaces": {
+					"title": "Interfaces",
+					"description": "List of network interfaces",
+					"type": "array",
+					"items": {
+						"$ref": "#/$ctxd:datatypes/network_interface"
+					}
+				}
+			}
+		},
+
+		"network_firewall": {
+			"title": "Firewall",
+			"description": "Network firewall",
+			"type": "object",
+			"properties": {
+				"rules": {
+					"title": "Rules",
+					"description": "Firewall rules",
+					"type": "string"
+				}
+			}
+		},
+
+
+		"library": {
+			"title": "Library",
+			"description": "Software library",
+			"type": "object",
+			"properties": {
+				"name": {
+					"title": "Name",
+					"description": "A human-readable identifier",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Machine-readable identifier",
+					"type": "string"
+				},
+				"description": {
+					"title": "Description",
+					"desceription": "Human-readable brief description",
+					"type": "string"
+				},
+				"version":{
+					"title": "Version",
+					"description": "Version or release of the library",
+					"type": "string"
+				},
+				"source":{
+					"title": "Source",
+					"description": "Website of URI to retrieve the library",
+					"type": "string",
+					"format": "uri"
+				},
+				"lib_type":{
+					"title": "Library type",
+					"description": "More detailed information about the library type (e.g., runtime, headerfile)",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"package": {
+			"title": "Package",
+			"description": "Software package",
+			"type": "object",
+			"properties": {
+				"name": {
+					"title": "Name",
+					"description": "A human-readable identifier",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "Machine-readable identifier",
+					"type": "string"
+				},
+				"description": {
+					"title": "Description",
+					"desceription": "Human-readable brief description",
+					"type": "string"
+				},
+				"version":{
+					"title": "Version",
+					"description": "Version or release of the library",
+					"type": "string"
+				},
+				"arch":{
+					"title": "Architecture",
+					"description": "CPU architecture this package is compiled for",
+					"type": "string"
+				},
+				"source":{
+					"title": "Source",
+					"description": "Website of URI to retrieve the package",
+					"type": "string",
+					"format": "uri"
+				},
+				"pkg_type":{
+					"title": "Package type",
+					"description": "Type of the package (e.g., rpm, deb) ",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"ip_net_address": {
+			"title": "IP Network Address",
+			"description": "Compact representation of IPv4/IPv6 network address",
+			"anyOf": [
+			{
+				"type": "object",
+				"properties": {
+					"ipv4": {
+						"type": "string",
+						"format": "ipv4"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"ipv6": {
+						"type": "string",
+						"format": "ipv6"
+					}
+				},
+				"additionalProperties": false
+			}
+			]
+		},
+
+		"network_interface": {
+			"title": "Network Interface",
+			"description": "Properties of a network interface",
+			"type": "object",
+			"properties": {
+				"iface": {
+					"title": "Name",
+					"description": "The literal name of the interface",
+					"type": "string"
+				},
+				"id": {
+					"title": "Identifier",
+					"description": "The (often) numeric identifier of the interface",
+					"type": "string"
+				},
+				"description": {
+					"title": "Description",
+					"desceription": "Human-readable brief description",
+					"type": "string"
+				},
+				"mac":{
+					"title": "MAC",
+					"description": "MAC address assigned to the interface",
+					"type": "string"
+				},
+				"ips": {
+					"title": "IPs",
+					"description": "List of IP addresses/gateways associated to the interface",
+					"type": "array",
+					"items": {
+						"title": "IP info",
+						"description": "IP addresses and default gateway",
+						"$ref": "#/$ctxd:datatypes/ip_info"
+					}
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"ip_info": {
+			"title": "IP info",
+			"description": "IP configuration of a network interface",
+			"type": "object",
+			"properties": {
+				"ip": {
+					"$ref": "#/$ctxd:datatypes/ip_address"
+				},
+				"prefix": {
+					"type": "integer"
+				},
+				"gw": {
+					"$ref": "#/$ctxd:datatypes/ip_address"
+				}
+			},
+			"additionalProperties": false
+		},
+
+		"ip_address": {
+			"title": "IP address",
+			"description": "IPv4/v6 address",
+			"anyOf": [
+			{
+				"type": "object",
+				"properties": {
+					"ipv4": {
+						"type": "string",
+						"format": "ipv4"
+					}
+				},
+				"additionalProperties": false
+			},
+			{
+				"type": "object",
+				"properties": {
+					"ipv6": {
+						"type": "string",
+						"format": "ipv6"
+					}
+				},
+				"additionalProperties": false
+			}
+			]
+		},
+			
+
+		"networknode": {
+			"title": "Network Node",
+			"description": "A network slice made of interfaces and IP/MAC addresses",
+			"type": "object",
+			"properties": {
+				"description":{
+					"title": "Description",
+					"description": "Description of the cloud",
+					"type": "string"
+				},
+				"name":{
+					"title": "Name",
+					"description": "Canonical name of the cloud",
+					"type": "string"
+				},
+				"id":{
+					"title": "Identifier",
+					"description": "Unique identifier of the cloud",
+					"type": "string"
+				},
+				"ifaces": {
+					"title": "Interfaces",
+					"description": "List of network interfaces",
+					"type": "array",
+					"items": {
+						"title": "Network interface",
+						"description": "IP/MAC info associated to the interface",
+						"$ref": "#/$ctxd:datatypes/network_interface"
+					}
+				}
+			},
+			"additionalProperties": false
+		}
+
+	}
+}

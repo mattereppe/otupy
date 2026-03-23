@@ -11,7 +11,6 @@ import os
 import logging
 import sys
 
-from otupy.core.transfer import Transfer
 from otupy.profiles import slpf
 from otupy.profiles.ctxd.data.application import Application
 from otupy.types.data.ipv4_addr import IPv4Addr
@@ -30,7 +29,6 @@ from otupy.profiles.ctxd.data.network_type import NetworkType
 from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
@@ -55,6 +53,13 @@ MY_IDS = {
 	'asset_id': None
 }
 
+# -------------------------------------------------------------------------------
+# This will be removed when this class will be updated to the newest definitions 
+# -------------------------------------------------------------------------------
+class Server:
+	pass
+# -------------------------------------------------------------------------------
+
 # An implementation of the ctxd profile (it implements my5gtestbed). 
 @actuator_implementation("ctxd-docker")
 class CTXDActuator_docker(CTXDActuator):
@@ -62,8 +67,7 @@ class CTXDActuator_docker(CTXDActuator):
 
 		This class provides an implementation of the CTXD `Actuator`.
 	"""
-	def is_available(self):
-		return True
+
 	my_services: ArrayOf(Service) = None # type: ignore
 	""" Name of the service """
 	my_links: ArrayOf(Link) = None # type: ignore

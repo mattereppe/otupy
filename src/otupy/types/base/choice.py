@@ -102,7 +102,6 @@ class Choice(Openc2Type):
 
 		for k, v in dic.items():
 			# Expected to run one time only!
-			
 			objtype = cls.getClass(k)
 			return cls(e.fromdict(objtype, v))
 

@@ -1,15 +1,10 @@
-import otupy.types.base
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 
-class Application(otupy.types.base.Record):
-	"""Application
-    it is the description of the service - software application
+class Application(CTXDObject):
+	""" Application
+
+		Software application: this should bind to a SBOM.
 	"""
-	description: str = None
-	""" Generic description of the application """
-	id: str = None
-	""" Unique local identifier of the application """
-	name: str = None
-	""" name of the application """
 	version: str = None
 	""" version of the application """
 	owner: str = None
@@ -17,47 +12,26 @@ class Application(otupy.types.base.Record):
 	app_type: str = None
 	""" type of the application """
 
-	def __init__(self, description = None, id = None, name = None, version = None, owner = None, app_type = None):
-		if isinstance(description, Application):
-			self.description = description.description
-			self.id = description.id
-			self.name = description.name
-			self.version = description.version
-			self.owner = description.owner
-			self.app_type = description.app_type
+	def __init__(self, app=None, description = None, id = None, name = None, version = None, owner = None, app_type = None):
+		if isinstance(app, Application):
+			super().__init__(name=app.name, description=app.description, id=app.id)
+			self.version = app.version
+			self.owner = app.owner
+			self.app_type = app.app_type
 		else:	
-			self.description = description if description is not None else None
-			self.id = id if id is not None else None
-			self.name = name if name is not None else None
-			self.version = version if version is not None else None
-			self.owner = owner if owner is not None else None
-			self.app_type = app_type if app_type is not None else None
-		self.validate_fields()
+			super().__init__(name=name, description=description, id=id)
+			self.version = version 
+			self.owner = owner 
+			self.app_type = app_type 
 
+
+	def get_subtype(self):
+		""" Might be replace in the future with a subtype type """
+		return app_type
 
 	def __repr__(self):
-		return (f"Application(description='{self.description}', name={self.name}, "
+		return (f"Application({super().__repr__()},"
 	             f"version='{self.version}', owner={self.owner}, app_type='{self.app_type}')")
 	
 	def __str__(self):
-		return f"Application(" \
-	            f"description={self.description}, " \
-	            f"name={self.name}, " \
-	            f"version={self.version}, " \
-	            f"owner={self.owner}, " \
-	            f"app_type={self.app_type})"
-
-
-	def validate_fields(self):
-		if self.description is not None and not isinstance(self.description, str):
-			raise TypeError(f"Expected 'description' to be of type {str}, but got {type(self.description)}")
-		if self.id is not None and not isinstance(self.id, str):
-			raise TypeError(f"Expected 'id' to be of type {str}, but got {type(self.id)}")
-		if self.name is not None and not isinstance(self.name, str):
-			raise TypeError(f"Expected 'name' to be of type {str}, but got {type(self.name)}")
-		if self.version is not None and not isinstance(self.version, str):
-			raise TypeError(f"Expected 'version' to be of type {str}, but got {type(self.version)}")
-		if self.owner is not None and not isinstance(self.owner, str):
-			raise TypeError(f"Expected 'owner' to be of type {str}, but got {type(self.owner)}")
-		if self.app_type is not None and not isinstance(self.app_type, str):
-			raise TypeError(f"Expected 'app_type' to be of type {str}, but got {type(self.app_type)}")
+		return self.__repr__()

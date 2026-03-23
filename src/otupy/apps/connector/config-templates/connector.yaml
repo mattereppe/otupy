@@ -5,6 +5,8 @@ consumer:										# Communication stack configuration
    endpoint: "/.well-known/openc2"		# Endpoint (should not be changed)
    encoding: "json"							# Serialization format (default to json)
    transfer: "http"							# Transfer protocol (default to https)
+   transfer_options: 						# Transfer-specific options  
+      http_server: "werkzeug"				# HTTP-Transfer only: HTTP server to run (values: "werkzeug", "gunicorn")
 configs: "configs"							# Config folder with actuator-specific configuration files
 
 logger:											# Logging framework configuration. See the documentation
@@ -32,10 +34,10 @@ logger:											# Logging framework configuration. See the documentation
          level: DEBUG
          filters: Null
          filename: "connector.log"
-   root:
+   root:										# Enable all loggers
       handlers: [console, file]
       level: INFO
-   loggers:
-      otupy:                      # This is a better configuration (does not required disabled_existing_loggers: true)
-         handlers: [console]      # because it only enables logging for the otupy modele (DEBUG level in this case)
-         level: DEBUG             # and does not overwhelm the output with useless logs from other modules.
+#   loggers:
+#      otupy:                      # This is a better configuration (does not required disabled_existing_loggers: true)
+#         handlers: [console]      # because it only enables logging for the otupy modele (DEBUG level in this case)
+#         level: DEBUG             # and does not overwhelm the output with useless logs from other modules.

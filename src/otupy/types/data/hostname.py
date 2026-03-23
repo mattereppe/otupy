@@ -19,3 +19,6 @@ class Hostname:
 
 	def __str__(self):
 		return self._hostname
+
+	def __eq__(self, other):
+		return self._hostname == other._hostname if other is not None else False

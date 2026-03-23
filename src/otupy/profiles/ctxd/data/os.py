@@ -1,34 +1,40 @@
-import otupy.types.base
+from otupy.types.base import Record
 
+class OS(Record):
+	""" Operating System
 
-class OS(otupy.types.base.Record):
-	"""OS
-    Operating System
+		The Operating System is one common Execution Environment, which
+		can execute almost any software. It will have a full set of libraries
+		and applications, as well as many subsystems (file systems, etc.).
+
 	"""
-	name: str = None
-	""" Name of the OS """
-	version: str = None
-	""" Version of the OS """
 	family: str = None
 	""" Family of the OS """
-	type: str = None
-	""" type of the OS """
+	version: str = None
+	""" Version of the OS """
+	release: str = None
+	""" Release number/string """
+	arch: str = None
+	""" Supported CPU architecture """
 
 
-	def __init__(self, name = None, version = None, family = None, type = None):
-		self.name = str(name) if name is not None else None
-		self.version = str(version) if version is not None else None
-		self.family = str(family) if family is not None else None
-		self.type = str(type) if type is not None else None
+	def __init__(self, os = None, version = None, family = None, release=None,  arch = None):
+		if os is not None:
+			self.family=os.family
+			self.version=os.version
+			self.release=os.release
+			self.arch=os.family
+		else:
+			self.family = str(family) 
+			self.version = str(version) 
+			self.release = str(release) 
+			self.arch = str(arch)
+
 
 	def __repr__(self):
-		return (f"OS(name={self.name}, "
-	             f"version={self.version}, family={self.family}, type={self.type})")
+		return (f"OS("
+	             f"family={self.family}, version={self.version}, release={self.release}, type={self.arch})")
 	
 	def __str__(self):
-		return f"OS(" \
-	            f"name={self.name}, " \
-				f"version={self.version}, " \
-	            f"family={self.family}, " \
-	            f"type={self.type})"
+		return self.__repr__()
 

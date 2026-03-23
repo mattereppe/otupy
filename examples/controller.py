@@ -38,10 +38,10 @@ logger.addHandler(file_handler)
 def main():
 	logger.info("Creating Producer")
 
-	#p = oc2.Producer("producer.example.net", XMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
+	p = oc2.Producer("producer.example.net", XMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
 #	p = oc2.Producer("producer.example.net", YAMLEncoder(), HTTPTransfer("127.0.0.1", 8080))
 #	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
-	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("172.17.0.11", 8080))
+#	p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("172.17.0.11", 8080))
 
 	pf = slpf.Specifiers({'hostname':'firewall', 'named_group':'firewalls', 'asset_id':'iptables'})
 #	pf = dumb.dumb({'hostname':'mockup', 'named_group':'testing', 'asset_id':'dumb'})

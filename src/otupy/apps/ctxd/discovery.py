@@ -51,7 +51,7 @@ def main() -> None:
 	try:
 		# Parse the configuration file.
 		with open(args.config) as cf:
-			config = safe_load(cf)
+		    config = safe_load(cf)
 	except:
 		config = {}
 

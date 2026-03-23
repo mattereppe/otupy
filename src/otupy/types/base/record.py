@@ -1,4 +1,5 @@
-import inspect
+#import inspect
+import typing
 import logging
 
 from otupy.types.base.openc2_type import Openc2Type
@@ -60,7 +61,8 @@ class Record(Openc2Type):
 		objdic = {}
 		# Retrieve class type for each field in the dictionary
 		logger.debug("Decondig: %s with %s", dic, clstype)
-		fielddesc = inspect.get_annotations(clstype)
+		#fielddesc = inspect.get_annotations(clstype) # Does not give retrieve members of parent classes
+		fielddesc = typing.get_type_hints(clstype)
 		
 		if not isinstance(dic, dict):
 			raise EncoderError("Invalid data type for Record")

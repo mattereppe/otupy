@@ -1,36 +1,39 @@
-import otupy.types.base
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 from otupy.profiles.ctxd.data.network_type import NetworkType
+from otupy.profiles.ctxd.data.ctxd_object import CTXDObject
 
 
-class Network(otupy.types.base.Record):
-	"""Network
-    it is the description of the service - Network
+class Network(CTXDObject):
+	""" Networking service
+
+		A Network is a service able to transfer packets. There are different types of networks,
+		subject to different composition patterns (e.g., physical ethernet, 5G networks, VLAN,
+		etc.).
 	"""
-	description: str = None
-	""" Generic description of the network """
-	name: str = None
-	""" Name of the network provider """
 	type: NetworkType = None
-	""" type of the network service"""
+	""" Type of network (Ethernet, veth link, VLAN, ...) """
+	version: str = None
+	""" Version of the network implementation"""
 
 
-	def __init__(self, description = None, name = None, type = None):
-		if isinstance(description, Network):
-			self.description = description.description
-			self.name = description.name
-			self.type = description.type
+	def __init__(self, network = None, description = None, name = None, id = None, type = None, version=None):
+		if isinstance(network, Network):
+			super().__init__(name=network.name, description=network.description, id=network.id)
+			self.type = network.type
+			self.version=network.version
 		else:
-			self.description = str(description) if description is not None else None
-			self.name = str(name) if name is not None else None
-			self.type = type if type is not None else None
+			super().__init__(name=name, description=description, id=id)
+			self.type = type 
+			self.version=version
+
+
+	def get_subtype(self):
+		return self.type.getName()
 
 	def __repr__(self):
-		return (f"Network(description={self.description}, "
-	             f"name={self.name}, type={self.type})")
+		return (f"Network({super().__repr__()},"
+	             f"type={self.type.getObj()}, version={self.type.getObj()})")
 	
 	def __str__(self):
-		return f"Network(" \
-	            f"description={self.description}, " \
-	            f"name={self.name}, " \
-	            f"type={self.type})"
+		return self.__repr__()
 

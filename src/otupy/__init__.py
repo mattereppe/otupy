@@ -31,7 +31,7 @@ or you can run your own websever with:
 
 
 from otupy.types.base import Binary, Binaryx, Record, Choice, Enumerated, Array, ArrayOf, Map, MapOf
-from otupy.types.data import Port, L4Protocol, DateTime, Duration, TargetEnum, Nsid, ActionTargets, ActionArguments, Version, ResponseType, Feature, Hashes, Payload, Hostname, IDNHostname
+from otupy.types.data import Port, L4Protocol, DateTime, Duration, TargetEnum, Nsid, ActionTargets, ActionArguments, Version, ResponseType, Feature, Hashes, Payload, Hostname, IDNHostname, IPv4Addr, IPv6Addr
 from otupy.types.targets import Artifact, CommandID, Device, DomainName, EmailAddr, Features, File, IDNDomainName, IDNEmailAddr, IPv4Net, IPv6Net, IPv4Connection, IPv6Connection, MACAddr, Process, URI, IRI, Properties
 
 from otupy.core.actions import Actions

@@ -1,28 +1,27 @@
-from otupy.types.base import Choice
-from otupy.types.data.hostname import  Hostname
-from otupy.types.data.ipv4_addr import IPv4Addr
-from otupy.core.register import Register
+from otupy import  Record
 
+class Server(Record):
+	""" Physical server
 
-class Server(Choice):
-	""" Generic computing environment
-
-		A Server is a generic computing environment (no cloud).
-		Probably not used.
-
-		It can be identified by either its hostname or IPv4 address.
+		A ``Serveer`` is a true computing hardware, currently intended for any kind of high-end or low-end
+		computer (namely, it includes laptops and desktops). This might be changed in the future with
+		additional revisions and refinements of the model..
+		It provides real hardware as network interfaces, virtual CPUs, virtual RAM, and storage.
+		Since this model shares most of the components with any other network host, it will inherit from
+		the `Host` abstraction and will extend with additional information. 
 	"""
 
-    #hostname: hostname of the server
-	#ipv4_addr: 32 bit IPv4 address as defined in [RFC0791]
+	def __init__(self, server=None):
+		# Placeholder for future extensions
+		if server is not None:
+			pass
+		else:
+			pass
 
-	register = Register({'hostname': Hostname, 'ipv4_addr': IPv4Addr})
 
-	def __init__(self, name):
-		# The following code infers if the input name is an IPv4Addr,
-		# otherwise defaults to build an hostname
-		try:
-			super().__init__(IPv4Addr(name))
-		except:
-			super().__init__(Hostname(name))
+	def __repr__(self):
+		return f"Server()"
+	
+	def __str__(self):
+		return self.__repr__()
 

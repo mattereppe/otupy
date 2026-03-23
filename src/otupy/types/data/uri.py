@@ -33,3 +33,18 @@ class URI:
 
 	def __str__(self):
 		return self.__uri
+
+	def __eq__(self, other):
+ 		""" Compare two URIs
+
+ 		   The comparison checks the content of a URI.
+
+ 		   :param other: The URI to compare.
+ 		   :return: True if content match.
+ 		"""
+ 		if other == None:
+ 			return False
+
+ 		return self.__uri == other.__uri
+
+

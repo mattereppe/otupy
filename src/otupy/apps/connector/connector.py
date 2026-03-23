@@ -28,10 +28,6 @@ from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
 from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
-from otupy.actuators.ctxd.ctxd_actuator_azure import CTXDActuatorAzure
-from otupy.actuators.ctxd.ctxd_actuator_proxmox import CTXDActuatorProxmox
-from otupy.actuators.ebpf.actuators.TC.TCActuator import TCActuator
-from otupy.actuators.ebpf.actuators.KProbesActuator import KprobeActuator
 
 logger = logging.getLogger(__name__)
 
@@ -43,39 +39,38 @@ default_consumer = {
 }
 
 default_logging = {
-    'version': 1,
-    # The following setting is strictly necessary, because the default value is set to "True"
-    # and disables all modules (already imported only?). If this is not set to False, all
-    # modules not explicitly listed in the "loggers" section will be disabled, and they will
-    # not inherit from the root
-    # 'disable_existing_loggers': False,
-    'formatters': {
-        'otupy': {
-            '()': 'otupy.LogFormatter',
-            'datetime': True,
-            'name': True
-        }
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'otupy',
-            'level': 'DEBUG',
-            'filters': None
-        }
-    },
-    'loggers': {
-        '': {
-            'handlers': ['console'],
-            'level': 'INFO'
-        },
-        'otupy': {
-            'handlers': ['console'],
-            'level': 'INFO'
-        }
-    }
+   'version': 1, 
+	# The following setting is strictly necessary, because the default value is set to "True" 
+	# and disabled all modules (already imported only?). If this is not set to False, all 
+	# modules not explicitly listed in the "loggers" section will be disables, and they will
+	# not inherit from the root
+#  'disable_existing_loggers': False,
+   'formatters': {
+		'otupy': {
+			'()': 'otupy.LogFormatter', 
+			'datetime': True, 
+			'name': True
+		} 
+	},
+	'handlers': {
+		'console': {
+			'class': 'logging.StreamHandler', 
+			'formatter': 'otupy', 
+			'level': 'DEBUG', 
+			'filters': None
+		}
+	},
+	'loggers': {
+		'root': {
+      	'handlers': ['console', 'file'],
+      	'level': 'INFO'
+		},
+		'otupy': {
+			'handlers': ['console'], 
+			'level': 'INFO'
+		}
+	}
 }
-
 
 def parse_and_default(config):
 	""" Parse consumer dictionary and assign default values to mising items
@@ -109,7 +104,7 @@ def main() -> None:
             consumer = config["consumer"]	
             configs = config["configs"]
             connector = config["id"]
-        except Exception as e:
+        except:
             logger.error("Missing configuration item: %s", e)
             exit
 
@@ -154,12 +149,16 @@ def main() -> None:
         encoder = Encoders[consumer['encoding']].value
 
         # Load the transferer (beautiful name, eh?).
+        try:
+            transfer_options = consumer['transfer_options']
+        except:
+            transfer_options= {}
         if consumer['transfer'] not in Transfers:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
         if 'endpoint' in consumer:
-            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'])
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], consumer['endpoint'], **transfer_options)
         else:
-            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'])
+            transferer = Transfers[consumer['transfer']](consumer['host'], consumer['port'], **transfer_options)
 
         consumer = Consumer(connector, actuators, encoder, transferer)
         consumer.run()
