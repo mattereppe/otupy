@@ -7,28 +7,28 @@ metadata:
 data:
   discovery.yaml: |
     name: "test-discovery"
-    frequency: 10 # seconds
+    frequency: 120 # seconds
     loop: -1 # -1: forever, 0: no run, >0: number of runs
     publishers:
       file: 
         name: "onesource.txt"
-    #  kafka:
-    #    host: '172.17.0.11'
-    #    port: 29092
-    #    topic: "demo"
+      kafka:
+        host: 'kafka-broker-0.intra.miranda.onesource.pt'
+        port: 9093
+        topic: "ctxd"
     #  security_protocol: "SSL"
     #    sasl_mechanism: Null
     #    sasl_plain_username: Null
     #    sasl_plain_password: Null
     #    ssl_cafile: 'ca-cert'
     services:
-      - host: '192.168.0.200'
-        port: 8081
+      - host: '10.1.0.63'
+        port: 8080
         endpoint: "/.well-known/openc2"
         encoding: "json"
         transfer: "http"
         actuator:
-          asset_id: "ctxd-kubernetes-tntlab"
+          asset_id: "ctxd-kubernetes-onesource"
     logger:
       version: 1
       disable_existing_loggers: false
