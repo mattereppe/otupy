@@ -1,6 +1,9 @@
 import logging
 import os
 import threading
+
+from typing_extensions import deprecated
+
 from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
 from openc2lib.actuators.rcli.utils.random_name_generator import generate_unique_name
 import otupy.profiles.nfm as nfm
@@ -8,7 +11,7 @@ from otupy.actuators.nfm.utils.bpf_filter_translator import generate_bpf_filter
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
 from otupy.actuators.nfm.handlers.response_handler import badrequest, ok
 from otupy.actuators.nfm.utils.process_utils import run_monitor
-from otupy.actuators.nfm.nfm_flow_monitor import NetworkFlowMonitor
+from otupy.actuators.nfm.nfm_actuator import NFMActuator
 from otupy import Feature
 from otupy.actuators.nfm.configuration.probe_config_loader import ProbeConfigLoader
 
@@ -16,7 +19,8 @@ from otupy.actuators.nfm.configuration.probe_config_loader import ProbeConfigLoa
 logger = logging.getLogger(__name__)
 
 
-class NprobeActuator(NetworkFlowMonitor):
+@deprecated("This actuator is untested with the new version of otupy.")
+class NFMActuatorNProbe(NFMActuator):
     def __init__(self, asset_id):
         super().__init__(asset_id)
         self.config = ProbeConfigLoader()
@@ -25,7 +29,6 @@ class NprobeActuator(NetworkFlowMonitor):
         print("f")
         match f:
             case Feature.information_elements:
-                print("123444")
                 a = self.config.get_info_element(self.asset_id)
                 print(a)
                 return a
@@ -103,7 +106,6 @@ class NprobeActuator(NetworkFlowMonitor):
 
     def _add_exporter_collectors(self, cmd_list, exporter):
         for c in exporter.collectors or []:
-            print("x")
             if c.address:
                 if c.port:
                     cmd_list += ["--collector", f"{c.address.addr()}:{c.port}"]
