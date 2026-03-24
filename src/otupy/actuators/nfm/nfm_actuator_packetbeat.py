@@ -1,11 +1,12 @@
-from otupy.actuators.nfm.nfm_flow_monitor import NetworkFlowMonitor
+from otupy.actuators.nfm.nfm_actuator import NFMActuator
 from otupy.actuators.nfm.handlers.response_handler import ok
 import threading, logging, os
 from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
 from otupy.actuators.nfm.utils.random_name_generator import generate_unique_name
 import otupy.profiles.nfm as nfm
 from otupy.actuators.nfm.utils.bpf_filter_translator import generate_bpf_filter
-from ruamel.yaml import YAML
+
+# from ruamel.yaml import YAML
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
 from otupy import Feature
 from otupy.actuators.nfm.configuration.probe_config_loader import ProbeConfigLoader
@@ -14,7 +15,7 @@ from otupy.actuators.nfm.utils.process_utils import run_monitor
 logger = logging.getLogger(__name__)
 
 
-class PacketbeatActuator(NetworkFlowMonitor):
+class PacketbeatActuator(NFMActuator):
     def __init__(self, asset_id):
         super().__init__(asset_id)
         self.config = ProbeConfigLoader()
@@ -82,11 +83,12 @@ class PacketbeatActuator(NetworkFlowMonitor):
             raise
 
     def _load_yaml_config(self, path):
-        try:
-            with open(path, "r") as f:
-                return YAML().load(f)
-        except FileNotFoundError:
-            return {}
+        pass
+        # try:
+        #    with open(path, "r") as f:
+        #        return YAML().load(f)
+        # except FileNotFoundError:
+        #    return {}
 
     def _update_packetbeat_config(
         self, config, interfaces, information_elements, bpf_filters, output, sampling, monitor_id
@@ -114,8 +116,8 @@ class PacketbeatActuator(NetworkFlowMonitor):
     def _write_yaml_config(self, config, monitor_id):
         file_name = os.path.join(os.getenv("PACKETBEAT_CONFIG_DIR"), f"packetbeat_{monitor_id}.yml")
         try:
-            with open(file_name, "w") as f:
-                YAML().dump(config, f)
+            # with open(file_name, "w") as f:
+            #    YAML().dump(config, f)
             logger.info("Packetbeat configuration updated successfully.")
             return file_name
         except Exception as e:

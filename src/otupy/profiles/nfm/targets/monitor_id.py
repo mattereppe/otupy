@@ -1,4 +1,4 @@
-import openc2lib as oc2
+import otupy as oc2
 from otupy.profiles.nfm.profile import Profile  # Assuming this exists
 
 

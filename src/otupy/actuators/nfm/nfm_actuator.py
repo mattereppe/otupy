@@ -1,10 +1,8 @@
-from abc import abstractmethod
-import threading, logging
-from otupy.profiles.nfm import Profile, AllowedCommandTarget, Results, validate_command, validate_args
-from otupy.actuators.nfm.utils.interfaces_manager import extract_interfaces
-from otupy.actuators.nfm.utils.process_utils import terminate_process_and_children
-from otupy.profiles.nfm.targets.monitor_id import MonitorID
-from otupy.profiles.nfm.targets.monitor import FlowMonitor
+import logging
+import threading
+from abc import abstractmethod, ABC
+
+from otupy import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
 from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
 from otupy.actuators.nfm.handlers.response_handler import (
     badrequest,
@@ -14,7 +12,11 @@ from otupy.actuators.nfm.handlers.response_handler import (
     processing,
     notfound,
 )
-from otupy import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
+from otupy.actuators.nfm.utils.interfaces_manager import extract_interfaces
+from otupy.actuators.nfm.utils.process_utils import terminate_process_and_children
+from otupy.profiles.nfm import Profile, AllowedCommandTarget, Results, validate_command, validate_args
+from otupy.profiles.nfm.targets.monitor import FlowMonitor
+from otupy.profiles.nfm.targets.monitor_id import MonitorID
 
 Feature.extend("interfaces", 5)
 Feature.extend("information_elements", 6)
@@ -26,16 +28,19 @@ logger = logging.getLogger(__name__)
 OPENC2VERS = Version(1, 0)
 
 
-class NetworkFlowMonitor:
+class NFMActuator(ABC):
+    """Base class for the NFM actuators."""
+
     asset_id: str = None
 
-    def __init__(self, asset_id):
-        print("xxxxxxxxxxxxxxxxxx")
+    def __init__(self, asset_id: str, **kwargs):
+        """Initialization of the `NFM Actuator`.
+
+        :param asset_id: NFM Actuator asset id.
+        """
         self.asset_id = asset_id
 
     def run(self, cmd):
-        print("xxxxxxxxxxxxxxx")
-
         logger.info(f"Received command: {cmd}")
         if not validate_command(cmd) or not validate_args(cmd):
             return notimplemented("Invalid command or arguments")
@@ -46,8 +51,6 @@ class NetworkFlowMonitor:
             except Exception as e:
                 return servererror("Failed to evaluate actuator", error=e)
         try:
-            print("xxxxxxxxxxxxxxx")
-
             action_map = {Actions.query: self.query, Actions.start: self.start, Actions.stop: self.stop}
             return action_map.get(cmd.action, lambda _: notimplemented("Action not implemented"))(cmd)
         except Exception as e:
@@ -55,10 +58,10 @@ class NetworkFlowMonitor:
             return servererror("Error processing command", error=e)
 
     def __is_addressed_to_actuator(self, actuator):
+        print(getattr(self, "asset_id", None))
         return not actuator or any(getattr(self, "asset_id", None) == v for k, v in actuator.items())
 
     def query(self, cmd):
-
         args = cmd.args or {}
         if "response_requested" in args and args["response_requested"] != ResponseType.complete:
             return badrequest("Invalid response_requested value")
@@ -67,7 +70,6 @@ class NetworkFlowMonitor:
         return badrequest(f"Query target '{cmd.target.getName()}' not supported")
 
     def _query_feature(self, cmd):
-
         features = {}
         for f in cmd.target.getObj():
             res = self._handle_feature(f)
