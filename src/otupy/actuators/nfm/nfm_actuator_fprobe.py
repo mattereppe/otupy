@@ -2,8 +2,8 @@ import logging
 import threading
 
 import otupy.profiles.nfm as nfm
-from otupy.actuators.rcli.utils.random_name_generator import generate_unique_name
-from otupy import Feature, actuator_implementation
+from openc2lib.actuators.rcli.utils.random_name_generator import generate_unique_name
+from otupy import Feature, actuator_implementation, MapOf, ArrayOf
 from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
 from otupy.actuators.nfm.handlers.response_handler import ok
 from otupy.actuators.nfm.nfm_actuator import NFMActuator
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @actuator_implementation("nfm-fprobe")
 class NFMActuatorFProbe(NFMActuator):
-    __features = {
+    features = {
         "exports": ["collector"],
         "export_options": [
             "buffer",
@@ -24,7 +24,6 @@ class NFMActuatorFProbe(NFMActuator):
         ],
         "flow_format": ["netflow5", "netflow7"],
         "filters": ["source / destination", "ipv4 / ipv6", "port", "protocol"],
-        "info_elements": [],
     }
 
     def __init__(self, *, specifiers, probe, **kwargs):
@@ -33,16 +32,14 @@ class NFMActuatorFProbe(NFMActuator):
 
     def _handle_feature(self, f):
         match f:
-            case Feature.information_elements:
-                return self.__features["info_elements"]
             case Feature.exports:
-                return self.__features["exports"]
+                return self.features["exports"]
             case Feature.export_options:
-                return self.__features["export_options"]
+                return self.features["export_options"]
             case Feature.flow_format:
-                return self.__features["flow_format"]
+                return self.features["flow_format"]
             case Feature.filters:
-                return self.__features["filters"]
+                return self.features["filters"]
             case _:
                 return super()._handle_feature(f)
 

@@ -58,6 +58,7 @@ class NFMActuator(ABC):
             return servererror("Error processing command", error=e)
 
     def __is_addressed_to_actuator(self, actuator):
+        print(getattr(self, "asset_id", None))
         return not actuator or any(getattr(self, "asset_id", None) == v for k, v in actuator.items())
 
     def query(self, cmd):

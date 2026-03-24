@@ -1,10 +1,5 @@
 """
-	Otupy actuators for security functions
-
-	A collection of OpenC2 Actuators built with the otupy framework. Actuators are grouped by the specific profile they implement.
-	It is not recommended to buid actuators for multiple profiles; if a security function falls under the scope of multiple profiles,
-	a different actuator should be created for each profile.
-
+	A collection of OpenC2 Actuators built with the otupy framework.
 """
 #from otupy.actuators.slpf.mockup_slpf_actuator import MockupSlpfActuator
 #from otupy.actuators.slpf.dump_actuator import DumbActuator
@@ -26,3 +21,6 @@ from otupy.actuators.xbom.xbom_actuator_file import XBOMActuator_file
 from otupy.actuators.xbom.xbom_actuator_open5gs import XBOMActuator_open5gs
 from otupy.actuators.xbom.xbom_actuator_file import XBOMActuator_file
 from otupy.actuators.xbom.xbom_actuator_host import XBOMActuator_host
+
+from otupy.actuators.nfm.nfm_actuator_fprobe import NFMActuatorFProbe
+from otupy.actuators.nfm.nfm_actuator_nprobe import NFMActuatorNProbe
