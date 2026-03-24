@@ -8,7 +8,8 @@ class FlowFormat(Enumerated):
     """
 
     netflow5 = 1
-    netflow9 = 2
-    ipfix = 3
-    json = 4
-    csv = 5
+    netflow7 = 2
+    netflow9 = 3
+    ipfix = 4
+    json = 5
+    csv = 6
