@@ -11,8 +11,9 @@ publishers:
     pass: "xxx"
   file: Null
   kafka:
-    host: '127.0.0.1'
-    port: 29092
+    bootstrap:
+      - host: '127.0.0.1'
+        port: 29092
     topic: "demo"
     security_protocol: "SSL"
     sasl_mechanism: Null

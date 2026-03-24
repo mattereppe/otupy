@@ -37,8 +37,11 @@
 
 		- ``kafka``: A dictionary with the configuration to publish to Kafka brokers
 
-			- ``host``: IP address or hostname of the server hosting one bootstrap server
-			- ``port``: Port number where the bootstrap server listens to
+			- ``bootstrap``: a list of bootstrap servers, given as:
+
+				- ``host``: IP address or hostname of the server hosting one bootstrap server
+				- ``port``: Port number where the bootstrap server listens to
+
 			- ``topic``: The topic used to publish data
 			- ``security_protocol``: Security protocol used to connect to Kafka (PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL - see Kafka documentation) 
  			- ``sasl_mechanism``: Username/password authentication mechanism (PLAIN, GSSAPI, OAUTHBEARER, SCRAM-SHA-256, SCRAM-SHA-512). Only valid for security protocols SASL_PLAINTEXT or SASL_SSL
