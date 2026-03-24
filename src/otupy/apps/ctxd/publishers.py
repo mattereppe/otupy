@@ -5,6 +5,7 @@
 """
 
 import json
+import logging
 
 from pymongo import MongoClient
 from kafka import KafkaProducer
@@ -13,6 +14,8 @@ import otupy
 
 JSONSCHEMA = "http://mirandaproject.eu/ctxd/v1.0/schema.json"
 """ Json schema id currently used to log context data """
+
+logger = logging.getLogger(__name__)
 
 def connect_to_publishers(config):
 	""" Connect to the list of publishers
@@ -37,7 +40,10 @@ def connect_to_publishers(config):
 					logger.error("Unable to connect to mongodb: %s", e)
 			case "kafka":
 				try:
-					producer = KafkaProducer(bootstrap_servers = [ conf['host']+":"+str(conf['port']) ],
+					bootstrap_servers = []
+					for server in conf['bootstrap']:
+						bootstrap_servers.append( server['host']+":"+str(server['port']))
+					producer = KafkaProducer(bootstrap_servers = bootstrap_servers ,
 							client_id = config['name'],
                      sasl_plain_username = conf['sasl_plain_username'],
                      sasl_plain_password = conf['sasl_plain_password'],
