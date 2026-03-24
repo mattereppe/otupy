@@ -138,8 +138,11 @@ def discover(service):
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
 	try:
 		context = producer.sendcmd(cmd)
-		logger.info("Got context from: %s", context.from_)
-		return context.content['results']
+		logger.info("Got response from: %s", context.from_)
+		if context.status == otupy.StatusCode.OK:
+			return context.content['results']
+		else:
+			logger.warn("Unable to query %s: %s", actuator, context.content['status_text'])
 	except: 
 		logger.warn("No context available from %s", actuator)
 		return None
