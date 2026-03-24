@@ -63,7 +63,7 @@
 		- ``encoding``
 		- ``transfer``
 		- ``endpoint``
-		- ``actuator`` (x-ctxd py:class:`~otupy.actuators.ctxd.actuator.Specifiers`)
+		- ``actuator`` (x-ctxd py:class:`~otupy.profiles.ctxd.actuator.Specifiers`)
 
 	- ``logger``: The configuration for the `Logging` framework. See the module `documentation <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
 
