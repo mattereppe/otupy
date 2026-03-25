@@ -63,7 +63,7 @@ ies.append(IE("source ip"))
 ies.append(IE("destination ip"))
 
 ipv4_connections = [
-    #   IPv4Connection(src_addr="192.168.1.1/24", dst_addr="130.251.17.2"),
+    IPv4Connection(src_addr="192.168.1.1", dst_addr="130.251.17.2"),
 ]
 command = nfm.FlowMonitor(
     interfaces=interfaces, information_elements=ies, filter_v4=ArrayOf(IPv4Connection)(ipv4_connections)

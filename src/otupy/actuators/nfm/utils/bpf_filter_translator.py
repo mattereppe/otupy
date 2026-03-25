@@ -43,10 +43,12 @@ def generate_bpf_filter(ipv4_connections: ArrayOf(IPv4Connection), ipv6_connecti
 
         return f"({' and '.join(full_parts)})"
 
-    for conn in ipv4_connections:
-        connection_filters.append(build_conn_filter(conn, is_ipv6=False))
+    if ipv4_connections is not None:
+        for conn in ipv4_connections:
+            connection_filters.append(build_conn_filter(conn, is_ipv6=False))
 
-    for conn in ipv6_connections:
-        connection_filters.append(build_conn_filter(conn, is_ipv6=True))
+    if ipv6_connections is not None:
+        for conn in ipv6_connections:
+            connection_filters.append(build_conn_filter(conn, is_ipv6=True))
 
     return " or ".join(connection_filters)
