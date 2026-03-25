@@ -1,4 +1,4 @@
-﻿otupy.utils.media\_types.MediaTypes
+otupy.utils.media\_types.MediaTypes
 ===================================
 
 .. currentmodule:: otupy.utils.media_types

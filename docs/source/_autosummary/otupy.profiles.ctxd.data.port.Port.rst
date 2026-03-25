@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.port.Port
+otupy.profiles.ctxd.data.port.Port
 ==================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.port
@@ -28,10 +28,10 @@
 
    .. autosummary::
    
-      ~Port.addresses
       ~Port.description
-      ~Port.gateway
       ~Port.id
       ~Port.iface
+      ~Port.ips
+      ~Port.mac
    
    

@@ -2,7 +2,7 @@
 ================
 
 To fill the gap left by the OpenC2 specifications, a new Actuator
-Profile has been introduced with the goal to abstract bstract the services that
+Profile has been introduced with the goal to abstract the services that
 are running into the network, the interactions between them and the security
 features that they implement. Identifying a service involves determining its
 type and the specific characteristics of that type, and generating an Extended

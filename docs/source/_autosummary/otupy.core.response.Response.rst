@@ -1,4 +1,4 @@
-﻿otupy.core.response.Response
+otupy.core.response.Response
 ============================
 
 .. currentmodule:: otupy.core.response

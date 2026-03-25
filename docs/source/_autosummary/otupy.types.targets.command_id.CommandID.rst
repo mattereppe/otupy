@@ -1,4 +1,4 @@
-﻿otupy.types.targets.command\_id.CommandID
+otupy.types.targets.command\_id.CommandID
 =========================================
 
 .. currentmodule:: otupy.types.targets.command_id

@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.data.direction.Direction
+otupy.profiles.slpf.data.direction.Direction
 ============================================
 
 .. currentmodule:: otupy.profiles.slpf.data.direction

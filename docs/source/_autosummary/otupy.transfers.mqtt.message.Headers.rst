@@ -1,4 +1,4 @@
-﻿otupy.transfers.mqtt.message.Headers
+otupy.transfers.mqtt.message.Headers
 ====================================
 
 .. currentmodule:: otupy.transfers.mqtt.message

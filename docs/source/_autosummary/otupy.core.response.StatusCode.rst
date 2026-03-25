@@ -1,4 +1,4 @@
-﻿otupy.core.response.StatusCode
+otupy.core.response.StatusCode
 ==============================
 
 .. currentmodule:: otupy.core.response

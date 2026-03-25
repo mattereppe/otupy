@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.xbom.CyclonedxXbom
+otupy.profiles.xbom.data.xbom.CyclonedxXbom
 ===========================================
 
 .. currentmodule:: otupy.profiles.xbom.data.xbom
@@ -20,13 +20,13 @@
       ~CyclonedxXbom.add_dependency
       ~CyclonedxXbom.add_dependency_with_external_ref
       ~CyclonedxXbom.add_external_reference
+      ~CyclonedxXbom.add_link
       ~CyclonedxXbom.deserialize
+      ~CyclonedxXbom.find_ref_by_name
       ~CyclonedxXbom.fromdict
       ~CyclonedxXbom.get_bom_link
-      ~CyclonedxXbom.get_bom_ref
       ~CyclonedxXbom.get_bom_serial_number
       ~CyclonedxXbom.get_bom_version
-      ~CyclonedxXbom.get_main_item
       ~CyclonedxXbom.merge
       ~CyclonedxXbom.serialize
       ~CyclonedxXbom.todict

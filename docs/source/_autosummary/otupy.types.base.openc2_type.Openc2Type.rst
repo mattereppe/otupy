@@ -1,4 +1,4 @@
-﻿otupy.types.base.openc2\_type.Openc2Type
+otupy.types.base.openc2\_type.Openc2Type
 ========================================
 
 .. currentmodule:: otupy.types.base.openc2_type

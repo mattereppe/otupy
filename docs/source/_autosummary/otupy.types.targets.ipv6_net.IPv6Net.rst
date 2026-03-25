@@ -1,4 +1,4 @@
-﻿otupy.types.targets.ipv6\_net.IPv6Net
+otupy.types.targets.ipv6\_net.IPv6Net
 =====================================
 
 .. currentmodule:: otupy.types.targets.ipv6_net

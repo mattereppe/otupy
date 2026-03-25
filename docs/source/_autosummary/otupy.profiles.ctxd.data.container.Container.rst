@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.container.Container
+otupy.profiles.ctxd.data.container.Container
 ============================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.container
@@ -18,7 +18,6 @@
    
       ~Container.fromdict
       ~Container.todict
-      ~Container.validate_fields
    
    
 
@@ -28,10 +27,7 @@
 
    .. autosummary::
    
-      ~Container.description
-      ~Container.id
       ~Container.image
-      ~Container.name
       ~Container.namespace
       ~Container.status
    

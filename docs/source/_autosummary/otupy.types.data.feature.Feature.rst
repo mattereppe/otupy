@@ -1,4 +1,4 @@
-﻿otupy.types.data.feature.Feature
+otupy.types.data.feature.Feature
 ================================
 
 .. currentmodule:: otupy.types.data.feature

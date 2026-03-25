@@ -1,4 +1,4 @@
-﻿otupy.profiles.dumb.profile.Profile
+otupy.profiles.dumb.profile.Profile
 ===================================
 
 .. currentmodule:: otupy.profiles.dumb.profile

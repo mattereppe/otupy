@@ -1,4 +1,4 @@
-﻿otupy.transfers.http.message.OpenC2Content
+otupy.transfers.http.message.OpenC2Content
 ==========================================
 
 .. currentmodule:: otupy.transfers.http.message

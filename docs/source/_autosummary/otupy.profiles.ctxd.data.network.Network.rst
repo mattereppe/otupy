@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.network.Network
+otupy.profiles.ctxd.data.network.Network
 ========================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.network
@@ -17,6 +17,7 @@
       :nosignatures:
    
       ~Network.fromdict
+      ~Network.get_subtype
       ~Network.todict
    
    
@@ -28,7 +29,9 @@
    .. autosummary::
    
       ~Network.description
+      ~Network.id
       ~Network.name
       ~Network.type
+      ~Network.version
    
    

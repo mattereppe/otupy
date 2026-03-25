@@ -1,4 +1,4 @@
-﻿otupy.types.base.enumerated\_id.EnumeratedID
+otupy.types.base.enumerated\_id.EnumeratedID
 ============================================
 
 .. currentmodule:: otupy.types.base.enumerated_id

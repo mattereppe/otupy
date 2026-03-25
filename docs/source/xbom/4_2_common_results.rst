@@ -17,7 +17,7 @@ Type: :py:class:`~otupy.core.results.Results` (:py:class:`~otupy.types.base.reco
      - Description
    * - 1
      - versions
-     - :py:class:`~otupy.types.data.version.Version` 
+     - :py:class:`~otupy.types.data.version.Version`
      - 0
      - List of OpenC2 language versions supported by this Actuator.
    * - 2
@@ -35,9 +35,4 @@ Type: :py:class:`~otupy.core.results.Results` (:py:class:`~otupy.types.base.reco
      - ``int``\{0..*}
      - 0
      - Maximum number of requests per minute supported by design or policy.
-   * - 1
-     - slpf
-     - slpf::py:class:`~otupy.profiles.slpf.results.Results`
-     - 0
-     - Example: Result properties defined in the Stateless Packet Filtering Profile.
 

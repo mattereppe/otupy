@@ -1,4 +1,4 @@
-﻿otupy.types.data.response\_type.ResponseType
+otupy.types.data.response\_type.ResponseType
 ============================================
 
 .. currentmodule:: otupy.types.data.response_type

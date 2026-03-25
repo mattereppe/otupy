@@ -1,4 +1,4 @@
-﻿otupy.encoders.json.JSONEncoder
+otupy.encoders.json.JSONEncoder
 ===============================
 
 .. currentmodule:: otupy.encoders.json

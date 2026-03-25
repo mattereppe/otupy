@@ -1,4 +1,4 @@
-﻿otupy.types.data.action\_arguments.ActionArguments
+otupy.types.data.action\_arguments.ActionArguments
 ==================================================
 
 .. currentmodule:: otupy.types.data.action_arguments

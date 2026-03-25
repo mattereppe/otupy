@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.application.Application
+otupy.profiles.xbom.data.application.Application
 ================================================
 
 .. currentmodule:: otupy.profiles.xbom.data.application
@@ -18,8 +18,8 @@
    
       ~Application.as_cyclonedx
       ~Application.fromdict
+      ~Application.get_subtype
       ~Application.todict
-      ~Application.validate_fields
    
    
 

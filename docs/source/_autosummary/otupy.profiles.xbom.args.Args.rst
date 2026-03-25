@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.args.Args
+otupy.profiles.xbom.args.Args
 =============================
 
 .. currentmodule:: otupy.profiles.xbom.args

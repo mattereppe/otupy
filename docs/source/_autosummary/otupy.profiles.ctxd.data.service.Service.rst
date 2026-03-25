@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.service.Service
+otupy.profiles.ctxd.data.service.Service
 ========================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.service
@@ -18,7 +18,6 @@
    
       ~Service.fromdict
       ~Service.todict
-      ~Service.validate_fields
    
    
 
@@ -28,9 +27,12 @@
 
    .. autosummary::
    
+      ~Service.domain
       ~Service.name
+      ~Service.namespace
       ~Service.owner
       ~Service.release
+      ~Service.sid
       ~Service.subservices
       ~Service.type
    

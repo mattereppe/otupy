@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.results.Results
+otupy.profiles.ctxd.results.Results
 ===================================
 
 .. currentmodule:: otupy.profiles.ctxd.results

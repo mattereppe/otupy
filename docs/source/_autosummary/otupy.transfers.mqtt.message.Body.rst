@@ -1,4 +1,4 @@
-﻿otupy.transfers.mqtt.message.Body
+otupy.transfers.mqtt.message.Body
 =================================
 
 .. currentmodule:: otupy.transfers.mqtt.message

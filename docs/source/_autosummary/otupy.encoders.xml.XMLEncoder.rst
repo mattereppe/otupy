@@ -1,4 +1,4 @@
-﻿otupy.encoders.xml.XMLEncoder
+otupy.encoders.xml.XMLEncoder
 =============================
 
 .. currentmodule:: otupy.encoders.xml

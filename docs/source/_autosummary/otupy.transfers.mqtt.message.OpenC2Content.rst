@@ -1,4 +1,4 @@
-﻿otupy.transfers.mqtt.message.OpenC2Content
+otupy.transfers.mqtt.message.OpenC2Content
 ==========================================
 
 .. currentmodule:: otupy.transfers.mqtt.message

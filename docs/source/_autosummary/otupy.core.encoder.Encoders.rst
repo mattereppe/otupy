@@ -1,4 +1,4 @@
-﻿otupy.core.encoder.Encoders
+otupy.core.encoder.Encoders
 ===========================
 
 .. currentmodule:: otupy.core.encoder

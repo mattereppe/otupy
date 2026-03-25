@@ -1,4 +1,4 @@
-﻿otupy.types.targets.file.File
+otupy.types.targets.file.File
 =============================
 
 .. currentmodule:: otupy.types.targets.file

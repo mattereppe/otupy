@@ -1,4 +1,4 @@
-﻿otupy.types.targets.properties.Properties
+otupy.types.targets.properties.Properties
 =========================================
 
 .. currentmodule:: otupy.types.targets.properties

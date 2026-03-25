@@ -1,4 +1,4 @@
-﻿otupy.types.data.ipv4\_addr.IPv4Addr
+otupy.types.data.ipv4\_addr.IPv4Addr
 ====================================
 
 .. currentmodule:: otupy.types.data.ipv4_addr

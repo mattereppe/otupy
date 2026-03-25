@@ -1,4 +1,4 @@
-﻿otupy.types.targets.device.Device
+otupy.types.targets.device.Device
 =================================
 
 .. currentmodule:: otupy.types.targets.device

@@ -1,4 +1,4 @@
-﻿otupy.core.content.MessageType
+otupy.core.content.MessageType
 ==============================
 
 .. currentmodule:: otupy.core.content

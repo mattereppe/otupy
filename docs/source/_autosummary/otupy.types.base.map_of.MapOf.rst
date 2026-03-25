@@ -1,4 +1,4 @@
-﻿otupy.types.base.map\_of.MapOf
+otupy.types.base.map\_of.MapOf
 ==============================
 
 .. currentmodule:: otupy.types.base.map_of

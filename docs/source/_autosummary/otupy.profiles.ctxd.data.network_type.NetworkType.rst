@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.network\_type.NetworkType
+otupy.profiles.ctxd.data.network\_type.NetworkType
 ==================================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.network_type
@@ -20,6 +20,7 @@
       ~NetworkType.getClass
       ~NetworkType.getName
       ~NetworkType.getObj
+      ~NetworkType.get_type_name
       ~NetworkType.todict
    
    

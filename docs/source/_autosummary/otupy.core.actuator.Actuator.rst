@@ -1,4 +1,4 @@
-﻿otupy.core.actuator.Actuator
+otupy.core.actuator.Actuator
 ============================
 
 .. currentmodule:: otupy.core.actuator

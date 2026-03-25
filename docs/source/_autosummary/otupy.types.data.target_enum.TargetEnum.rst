@@ -1,4 +1,4 @@
-﻿otupy.types.data.target\_enum.TargetEnum
+otupy.types.data.target\_enum.TargetEnum
 ========================================
 
 .. currentmodule:: otupy.types.data.target_enum
@@ -47,8 +47,7 @@
       ~TargetEnum.properties
       ~TargetEnum.x-ctxd:context
       ~TargetEnum.slpf:rule_number
-      ~TargetEnum.x-xbom:context
-      ~TargetEnum.x-xbom:sbom
+      ~TargetEnum.x-xbom:xbom
       ~TargetEnum.command
    
    

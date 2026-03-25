@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.cloud.Cloud
+otupy.profiles.xbom.data.cloud.Cloud
 ====================================
 
 .. currentmodule:: otupy.profiles.xbom.data.cloud
@@ -18,8 +18,8 @@
    
       ~Cloud.as_cyclonedx
       ~Cloud.fromdict
+      ~Cloud.get_subtype
       ~Cloud.todict
-      ~Cloud.validate_fields
    
    
 

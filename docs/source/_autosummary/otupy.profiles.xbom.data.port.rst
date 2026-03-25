@@ -20,6 +20,8 @@ otupy.profiles.xbom.data.port
       :template: custom-class-template.rst
       :nosignatures:
    
+      IPAddress
+      IPInfo
       Port
    
    

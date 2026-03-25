@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.args.Args
+otupy.profiles.slpf.args.Args
 =============================
 
 .. currentmodule:: otupy.profiles.slpf.args

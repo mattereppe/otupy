@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.peer.Peer
+otupy.profiles.xbom.data.peer.Peer
 ==================================
 
 .. currentmodule:: otupy.profiles.xbom.data.peer
@@ -32,5 +32,6 @@
       ~Peer.consumer
       ~Peer.role
       ~Peer.service_name
+      ~Peer.sid
    
    

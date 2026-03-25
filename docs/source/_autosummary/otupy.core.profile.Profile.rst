@@ -1,4 +1,4 @@
-﻿otupy.core.profile.Profile
+otupy.core.profile.Profile
 ==========================
 
 .. currentmodule:: otupy.core.profile

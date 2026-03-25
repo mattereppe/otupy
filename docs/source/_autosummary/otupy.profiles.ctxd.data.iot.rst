@@ -20,7 +20,7 @@ otupy.profiles.ctxd.data.iot
       :template: custom-class-template.rst
       :nosignatures:
    
-      IOT
+      IoT
    
    
 

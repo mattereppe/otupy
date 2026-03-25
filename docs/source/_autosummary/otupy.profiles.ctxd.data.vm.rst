@@ -20,6 +20,7 @@ otupy.profiles.ctxd.data.vm
       :template: custom-class-template.rst
       :nosignatures:
    
+      HyperVisorType
       VM
    
    

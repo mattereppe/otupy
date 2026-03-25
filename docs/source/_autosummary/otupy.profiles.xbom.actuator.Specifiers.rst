@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.actuator.Specifiers
+otupy.profiles.xbom.actuator.Specifiers
 =======================================
 
 .. currentmodule:: otupy.profiles.xbom.actuator

@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.pod.Pod
+otupy.profiles.ctxd.data.pod.Pod
 ================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.pod
@@ -18,7 +18,6 @@
    
       ~Pod.fromdict
       ~Pod.todict
-      ~Pod.validate_fields
    
    
 
@@ -28,10 +27,6 @@
 
    .. autosummary::
    
-      ~Pod.description
-      ~Pod.id
-      ~Pod.name
       ~Pod.namespace
-      ~Pod.ports
    
    

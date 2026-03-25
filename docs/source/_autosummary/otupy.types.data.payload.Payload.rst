@@ -1,4 +1,4 @@
-﻿otupy.types.data.payload.Payload
+otupy.types.data.payload.Payload
 ================================
 
 .. currentmodule:: otupy.types.data.payload

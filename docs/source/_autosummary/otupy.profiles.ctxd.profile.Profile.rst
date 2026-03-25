@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.profile.Profile
+otupy.profiles.ctxd.profile.Profile
 ===================================
 
 .. currentmodule:: otupy.profiles.ctxd.profile

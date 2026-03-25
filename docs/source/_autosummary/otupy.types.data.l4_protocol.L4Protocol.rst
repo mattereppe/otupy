@@ -1,4 +1,4 @@
-﻿otupy.types.data.l4\_protocol.L4Protocol
+otupy.types.data.l4\_protocol.L4Protocol
 ========================================
 
 .. currentmodule:: otupy.types.data.l4_protocol

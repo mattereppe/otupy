@@ -1,4 +1,4 @@
-﻿otupy.profiles
+otupy.profiles
 ==============
 
 .. automodule:: otupy.profiles

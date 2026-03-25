@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.consumer.Consumer
+otupy.profiles.ctxd.data.consumer.Consumer
 ==========================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.consumer

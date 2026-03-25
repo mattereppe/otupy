@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.profile.Profile
+otupy.profiles.xbom.profile.Profile
 ===================================
 
 .. currentmodule:: otupy.profiles.xbom.profile

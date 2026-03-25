@@ -1,7 +1,7 @@
-3.3 Context
-===========
+3.3 Xbom Target
+===============
 
-Type: Context (Record)
+Type: :py:class:`~otupy.profiles.xbom.targets.xbom_ctx.XbomCtx` (:py:class:`~otupy.types.base.map.Map`)
 
 .. list-table::
    :widths: 3 4 4 3 40
@@ -13,20 +13,20 @@ Type: Context (Record)
      - #
      - Description
    * - 1
-     - boms
-     - :py:class:`~otupy.types.base.array_of.ArrayOf`\(:py:class:`~otupy.profiles.xbom.data.name.Name`)
+     - format
+     - :py:class:`~otupy.profiles.xbom.data.xbom_format.XbomFormat`
      - 0
-     - List the bom names that the command refers to.
+     - Specifies the format of the XBOM (e.g., CycloneDX). Defaults to CycloneDX if not specified.
 
-It describes the service environment, its connections and security capabilities.
-Notice that, since the boms usually don't have names, the "boms" field is used to specify the
-names of the components or services that the Producer wants to query.
+The ``XbomCtx`` target defines the arguments used to identify or format
+a Software Bill of Materials. It allows the Producer to specify the
+desired BOM format when querying the Consumer.
 
 Usage requirements
 ------------------
 
--  Producer may send a “query” Command with no fields to the Consumer,
-   which could return a heartbeat to this command.
--  A Producer may send a “query” Command containing an empty list of
-   boms. The Consumer should return all the boms.
+-  A Producer may send a "query xbom" Command with no fields to the
+   Consumer, which will return a BOM in the default format (CycloneDX).
+-  A Producer may send a "query xbom" Command specifying a ``format``
+   to request a specific BOM format.
 

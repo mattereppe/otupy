@@ -1,4 +1,4 @@
-﻿otupy.types.data.nsid.Nsid
+otupy.types.data.nsid.Nsid
 ==========================
 
 .. currentmodule:: otupy.types.data.nsid

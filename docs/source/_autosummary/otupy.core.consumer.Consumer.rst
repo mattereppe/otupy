@@ -1,4 +1,4 @@
-﻿otupy.core.consumer.Consumer
+otupy.core.consumer.Consumer
 ============================
 
 .. currentmodule:: otupy.core.consumer

@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.iot.IOT
+otupy.profiles.xbom.data.iot.IOT
 ================================
 
 .. currentmodule:: otupy.profiles.xbom.data.iot
@@ -19,7 +19,6 @@
       ~IOT.as_cyclonedx
       ~IOT.fromdict
       ~IOT.todict
-      ~IOT.validate_fields
    
    
 
@@ -29,8 +28,6 @@
 
    .. autosummary::
    
-      ~IOT.description
-      ~IOT.name
       ~IOT.type
    
    

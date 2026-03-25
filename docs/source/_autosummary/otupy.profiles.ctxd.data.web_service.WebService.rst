@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.web\_service.WebService
+otupy.profiles.ctxd.data.web\_service.WebService
 ================================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.web_service

@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data
+otupy.profiles.xbom.data
 ========================
 
 .. automodule:: otupy.profiles.xbom.data
@@ -27,28 +27,55 @@
    :recursive:
 
    abstract_xbom
+   api
    application
    bom_ref
    cloud
-   computer
    consumer
    container
+   endpoint
+   ethernet_network
+   execution_environment
+   execution_environment_type
+   host
+   host_type
    iot
+   ip_net_address
+   ip_network
+   library
    link
    link_type
+   linux_netns
+   mobile_network
    name
    network
+   network_bridge
+   network_firewall
+   network_function
+   network_function_type
+   network_interface
+   network_nat
+   network_node
+   network_router
    network_type
    os
+   package
    peer
    peer_role
    pod
    port
-   sbom_format
    server
    service
    service_type
+   tunnel_network
+   veth_link
+   veth_network
+   vlan_link
+   vlan_network
    vm
+   vxlan_network
    web_service
    xbom
+   xbom_format
+   xbom_object
 

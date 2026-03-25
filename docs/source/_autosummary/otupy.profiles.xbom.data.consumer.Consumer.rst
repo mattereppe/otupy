@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.consumer.Consumer
+otupy.profiles.xbom.data.consumer.Consumer
 ==========================================
 
 .. currentmodule:: otupy.profiles.xbom.data.consumer

@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.targets.context.Context
+otupy.profiles.xbom.targets.context.Context
 ===========================================
 
 .. currentmodule:: otupy.profiles.xbom.targets.context
@@ -16,8 +16,21 @@
    .. autosummary::
       :nosignatures:
    
+      ~Context.clear
+      ~Context.copy
       ~Context.fromdict
+      ~Context.fromkeys
+      ~Context.get
+      ~Context.items
+      ~Context.keys
+      ~Context.make_recursive
+      ~Context.pop
+      ~Context.popitem
+      ~Context.setdefault
       ~Context.todict
+      ~Context.update
+      ~Context.validate_fields
+      ~Context.values
    
    
 
@@ -27,6 +40,8 @@
 
    .. autosummary::
    
-      ~Context.boms
+      ~Context.base
+      ~Context.fieldtypes
+      ~Context.register
    
    

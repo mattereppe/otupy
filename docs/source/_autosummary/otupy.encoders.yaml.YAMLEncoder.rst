@@ -1,4 +1,4 @@
-﻿otupy.encoders.yaml.YAMLEncoder
+otupy.encoders.yaml.YAMLEncoder
 ===============================
 
 .. currentmodule:: otupy.encoders.yaml

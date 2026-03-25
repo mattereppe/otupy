@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.application.Application
+otupy.profiles.ctxd.data.application.Application
 ================================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.application
@@ -17,8 +17,8 @@
       :nosignatures:
    
       ~Application.fromdict
+      ~Application.get_subtype
       ~Application.todict
-      ~Application.validate_fields
    
    
 

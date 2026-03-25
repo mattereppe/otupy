@@ -17,31 +17,26 @@ Type: Args (Map)
      - :py:class:`~otupy.types.data.response_type.ResponseType`
      - 0
      - The type of Response required for the Command: none, ack, status, complete.
-   * - 1024
-     - name_only
-     - ``bool``
-     - 0
-     - The response includes either only the name or all the details about the services and the links.
    * - 1025
      - cached
      - ``bool``
      - 0
      - If TRUE, the Consumer may return cached data in the Response.
 
-Command Arguments are optional, and a new one called “name_only” has
-been defined, which is not present in the Language Specification.
+Command Arguments are optional. A new argument called "cached" has been
+defined, which is not present in the Language Specification.
 
 Usage requirements:
 -------------------
 
--  The “response_requested”: “complete” argument can be present in the
-   “query features” Command. (Language specification 4.1)
--  The “query context” Command may include the “response_requested”:
-   “complete” Argument.
--  The “query context” command may include the “name_only” argument:
+-  The "response_requested": "complete" argument can be present in the
+   "query features" Command. (Language specification 4.1)
+-  The "query xbom" Command may include the "response_requested":
+   "complete" Argument.
+-  The "query xbom" Command may include the "cached" argument:
 
-   -  If TRUE, the Consumer must send a Response containing only the
-      names of the services and/or links.
-   -  If FALSE, the Consumer must send a Response containing all the
-      details of the services and/or links.
+   -  If TRUE, the Consumer may return previously cached results to speed
+      up the response.
+   -  If FALSE (default), the Consumer updates its service information
+      before returning the response.
 

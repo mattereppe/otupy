@@ -1,4 +1,4 @@
-﻿otupy.apps.xbom
+otupy.apps.xbom
 ===============
 
 .. automodule:: otupy.apps.xbom
@@ -31,5 +31,7 @@
    discover_functions
    discovery
    graphics
+   mimic_architecture_plot
    publishers
+   test_invisible
 

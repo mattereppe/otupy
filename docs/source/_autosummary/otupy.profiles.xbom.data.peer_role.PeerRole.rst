@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.peer\_role.PeerRole
+otupy.profiles.xbom.data.peer\_role.PeerRole
 ============================================
 
 .. currentmodule:: otupy.profiles.xbom.data.peer_role
@@ -37,5 +37,11 @@
       ~PeerRole.both
       ~PeerRole.control
       ~PeerRole.controlled
+      ~PeerRole.protect
+      ~PeerRole.protected
+      ~PeerRole.contain
+      ~PeerRole.contained
+      ~PeerRole.forwarding
+      ~PeerRole.endpoint
    
    

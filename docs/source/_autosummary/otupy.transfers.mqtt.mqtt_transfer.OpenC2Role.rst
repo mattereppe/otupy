@@ -1,4 +1,4 @@
-﻿otupy.transfers.mqtt.mqtt\_transfer.OpenC2Role
+otupy.transfers.mqtt.mqtt\_transfer.OpenC2Role
 ==============================================
 
 .. currentmodule:: otupy.transfers.mqtt.mqtt_transfer

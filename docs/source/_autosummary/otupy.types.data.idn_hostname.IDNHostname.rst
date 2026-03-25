@@ -1,4 +1,4 @@
-﻿otupy.types.data.idn\_hostname.IDNHostname
+otupy.types.data.idn\_hostname.IDNHostname
 ==========================================
 
 .. currentmodule:: otupy.types.data.idn_hostname

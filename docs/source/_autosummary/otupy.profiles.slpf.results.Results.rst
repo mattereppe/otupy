@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.results.Results
+otupy.profiles.slpf.results.Results
 ===================================
 
 .. currentmodule:: otupy.profiles.slpf.results

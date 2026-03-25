@@ -1,4 +1,4 @@
-﻿otupy.types.targets.mac\_addr.MACAddr
+otupy.types.targets.mac\_addr.MACAddr
 =====================================
 
 .. currentmodule:: otupy.types.targets.mac_addr

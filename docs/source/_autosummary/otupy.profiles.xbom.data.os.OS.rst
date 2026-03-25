@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.os.OS
+otupy.profiles.xbom.data.os.OS
 ==============================
 
 .. currentmodule:: otupy.profiles.xbom.data.os
@@ -28,9 +28,9 @@
 
    .. autosummary::
    
+      ~OS.arch
       ~OS.family
-      ~OS.name
-      ~OS.type
+      ~OS.release
       ~OS.version
    
    

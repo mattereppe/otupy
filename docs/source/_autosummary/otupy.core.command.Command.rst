@@ -1,4 +1,4 @@
-﻿otupy.core.command.Command
+otupy.core.command.Command
 ==========================
 
 .. currentmodule:: otupy.core.command

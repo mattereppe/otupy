@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.link.Link
+otupy.profiles.ctxd.data.link.Link
 ==================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.link
@@ -32,6 +32,7 @@
       ~Link.link_type
       ~Link.name
       ~Link.peers
-      ~Link.versions
+      ~Link.role
+      ~Link.sid
    
    

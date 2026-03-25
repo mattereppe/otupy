@@ -1,4 +1,4 @@
-﻿otupy.types.targets.ipv6\_connection.IPv6Connection
+otupy.types.targets.ipv6\_connection.IPv6Connection
 ===================================================
 
 .. currentmodule:: otupy.types.targets.ipv6_connection

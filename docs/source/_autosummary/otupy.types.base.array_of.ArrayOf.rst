@@ -1,4 +1,4 @@
-﻿otupy.types.base.array\_of.ArrayOf
+otupy.types.base.array\_of.ArrayOf
 ==================================
 
 .. currentmodule:: otupy.types.base.array_of

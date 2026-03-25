@@ -1,4 +1,4 @@
-﻿otupy.core.transfer.Transfer
+otupy.core.transfer.Transfer
 ============================
 
 .. currentmodule:: otupy.core.transfer

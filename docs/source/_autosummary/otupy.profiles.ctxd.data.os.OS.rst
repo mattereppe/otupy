@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.os.OS
+otupy.profiles.ctxd.data.os.OS
 ==============================
 
 .. currentmodule:: otupy.profiles.ctxd.data.os
@@ -27,9 +27,9 @@
 
    .. autosummary::
    
+      ~OS.arch
       ~OS.family
-      ~OS.name
-      ~OS.type
+      ~OS.release
       ~OS.version
    
    

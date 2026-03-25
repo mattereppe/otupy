@@ -1,4 +1,4 @@
-﻿otupy.types.targets.process.Process
+otupy.types.targets.process.Process
 ===================================
 
 .. currentmodule:: otupy.types.targets.process

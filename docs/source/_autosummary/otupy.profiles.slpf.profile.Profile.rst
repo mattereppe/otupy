@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.profile.Profile
+otupy.profiles.slpf.profile.Profile
 ===================================
 
 .. currentmodule:: otupy.profiles.slpf.profile

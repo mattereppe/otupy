@@ -1,4 +1,4 @@
-﻿otupy.types.base.record.Record
+otupy.types.base.record.Record
 ==============================
 
 .. currentmodule:: otupy.types.base.record

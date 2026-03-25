@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.name.Name
+otupy.profiles.xbom.data.name.Name
 ==================================
 
 .. currentmodule:: otupy.profiles.xbom.data.name

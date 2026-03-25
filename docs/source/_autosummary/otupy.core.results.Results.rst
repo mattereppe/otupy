@@ -1,4 +1,4 @@
-﻿otupy.core.results.Results
+otupy.core.results.Results
 ==========================
 
 .. currentmodule:: otupy.core.results

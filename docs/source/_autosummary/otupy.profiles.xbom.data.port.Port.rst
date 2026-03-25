@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.port.Port
+otupy.profiles.xbom.data.port.Port
 ==================================
 
 .. currentmodule:: otupy.profiles.xbom.data.port
@@ -29,10 +29,10 @@
 
    .. autosummary::
    
-      ~Port.addresses
       ~Port.description
-      ~Port.gateway
       ~Port.id
       ~Port.iface
+      ~Port.ips
+      ~Port.mac
    
    

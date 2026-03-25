@@ -1,4 +1,4 @@
-﻿otupy.core.register.Register
+otupy.core.register.Register
 ============================
 
 .. currentmodule:: otupy.core.register

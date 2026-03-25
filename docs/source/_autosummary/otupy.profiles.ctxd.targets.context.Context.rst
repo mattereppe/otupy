@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.targets.context.Context
+otupy.profiles.ctxd.targets.context.Context
 ===========================================
 
 .. currentmodule:: otupy.profiles.ctxd.targets.context

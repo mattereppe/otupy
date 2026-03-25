@@ -1,4 +1,4 @@
-﻿otupy.types.targets.email\_addr.EmailAddr
+otupy.types.targets.email\_addr.EmailAddr
 =========================================
 
 .. currentmodule:: otupy.types.targets.email_addr

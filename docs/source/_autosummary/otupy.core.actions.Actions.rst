@@ -1,4 +1,4 @@
-﻿otupy.core.actions.Actions
+otupy.core.actions.Actions
 ==========================
 
 .. currentmodule:: otupy.core.actions

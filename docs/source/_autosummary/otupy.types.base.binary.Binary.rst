@@ -1,4 +1,4 @@
-﻿otupy.types.base.binary.Binary
+otupy.types.base.binary.Binary
 ==============================
 
 .. currentmodule:: otupy.types.base.binary

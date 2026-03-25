@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.server.Server
+otupy.profiles.xbom.data.server.Server
 ======================================
 
 .. currentmodule:: otupy.profiles.xbom.data.server
@@ -18,21 +18,10 @@
    
       ~Server.as_cyclonedx
       ~Server.fromdict
-      ~Server.getClass
-      ~Server.getName
-      ~Server.getObj
       ~Server.todict
    
    
 
    
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Server.register
-      ~Server.choice
-      ~Server.obj
    
    

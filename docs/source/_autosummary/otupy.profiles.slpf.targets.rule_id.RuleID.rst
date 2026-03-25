@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.targets.rule\_id.RuleID
+otupy.profiles.slpf.targets.rule\_id.RuleID
 ===========================================
 
 .. currentmodule:: otupy.profiles.slpf.targets.rule_id

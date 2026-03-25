@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.peer.Peer
+otupy.profiles.ctxd.data.peer.Peer
 ==================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.peer
@@ -18,7 +18,6 @@
    
       ~Peer.fromdict
       ~Peer.todict
-      ~Peer.validate_fields
    
    
 
@@ -31,5 +30,6 @@
       ~Peer.consumer
       ~Peer.role
       ~Peer.service_name
+      ~Peer.sid
    
    

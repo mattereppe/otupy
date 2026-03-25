@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.vm.VM
+otupy.profiles.ctxd.data.vm.VM
 ==============================
 
 .. currentmodule:: otupy.profiles.ctxd.data.vm
@@ -18,7 +18,6 @@
    
       ~VM.fromdict
       ~VM.todict
-      ~VM.validate_fields
    
    
 
@@ -28,9 +27,8 @@
 
    .. autosummary::
    
-      ~VM.description
-      ~VM.id
+      ~VM.hypervisor
+      ~VM.hypervisor_type
       ~VM.image
-      ~VM.name
    
    

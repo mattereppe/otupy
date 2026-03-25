@@ -27,5 +27,5 @@ otupy.profiles.xbom.targets
    :recursive:
 
    context
-   sbom_ctx
+   xbom_ctx
 

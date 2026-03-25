@@ -1,4 +1,4 @@
-﻿otupy.core.message.Message
+otupy.core.message.Message
 ==========================
 
 .. currentmodule:: otupy.core.message

@@ -1,4 +1,4 @@
-﻿otupy.transfers.http.message.Message
+otupy.transfers.http.message.Message
 ====================================
 
 .. currentmodule:: otupy.transfers.http.message

@@ -1,4 +1,4 @@
-﻿otupy.types.data.hashes.Hashes
+otupy.types.data.hashes.Hashes
 ==============================
 
 .. currentmodule:: otupy.types.data.hashes

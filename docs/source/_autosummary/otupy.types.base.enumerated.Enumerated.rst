@@ -1,4 +1,4 @@
-﻿otupy.types.base.enumerated.Enumerated
+otupy.types.base.enumerated.Enumerated
 ======================================
 
 .. currentmodule:: otupy.types.base.enumerated

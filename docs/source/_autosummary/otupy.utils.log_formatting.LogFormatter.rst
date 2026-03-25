@@ -1,4 +1,4 @@
-﻿otupy.utils.log\_formatting.LogFormatter
+otupy.utils.log\_formatting.LogFormatter
 ========================================
 
 .. currentmodule:: otupy.utils.log_formatting

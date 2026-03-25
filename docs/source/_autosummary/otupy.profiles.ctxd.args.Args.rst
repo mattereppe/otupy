@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.args.Args
+otupy.profiles.ctxd.args.Args
 =============================
 
 .. currentmodule:: otupy.profiles.ctxd.args

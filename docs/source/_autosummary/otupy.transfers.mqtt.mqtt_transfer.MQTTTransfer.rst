@@ -1,4 +1,4 @@
-﻿otupy.transfers.mqtt.mqtt\_transfer.MQTTTransfer
+otupy.transfers.mqtt.mqtt\_transfer.MQTTTransfer
 ================================================
 
 .. currentmodule:: otupy.transfers.mqtt.mqtt_transfer

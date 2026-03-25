@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.actuator.Specifiers
+otupy.profiles.ctxd.actuator.Specifiers
 =======================================
 
 .. currentmodule:: otupy.profiles.ctxd.actuator

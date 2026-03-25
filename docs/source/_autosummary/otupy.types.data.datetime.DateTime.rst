@@ -1,4 +1,4 @@
-﻿otupy.types.data.datetime.DateTime
+otupy.types.data.datetime.DateTime
 ==================================
 
 .. currentmodule:: otupy.types.data.datetime

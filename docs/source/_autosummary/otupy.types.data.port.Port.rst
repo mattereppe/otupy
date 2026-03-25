@@ -1,4 +1,4 @@
-﻿otupy.types.data.port.Port
+otupy.types.data.port.Port
 ==========================
 
 .. currentmodule:: otupy.types.data.port

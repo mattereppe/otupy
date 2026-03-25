@@ -20,6 +20,7 @@ otupy.profiles.xbom.data.service
       :template: custom-class-template.rst
       :nosignatures:
    
+      SId
       Service
    
    

@@ -1,4 +1,4 @@
-﻿otupy.types.base.choice.Choice
+otupy.types.base.choice.Choice
 ==============================
 
 .. currentmodule:: otupy.types.base.choice

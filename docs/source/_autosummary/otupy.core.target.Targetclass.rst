@@ -1,4 +1,4 @@
-﻿otupy.core.target.Target
+otupy.core.target.Target
 ========================
 
 .. currentmodule:: otupy.core.target

@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.server.Server
+otupy.profiles.ctxd.data.server.Server
 ======================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.server
@@ -17,21 +17,10 @@
       :nosignatures:
    
       ~Server.fromdict
-      ~Server.getClass
-      ~Server.getName
-      ~Server.getObj
       ~Server.todict
    
    
 
    
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Server.register
-      ~Server.choice
-      ~Server.obj
    
    

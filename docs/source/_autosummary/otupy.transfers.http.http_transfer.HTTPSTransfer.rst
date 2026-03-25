@@ -1,4 +1,4 @@
-﻿otupy.transfers.http.http\_transfer.HTTPSTransfer
+otupy.transfers.http.http\_transfer.HTTPSTransfer
 =================================================
 
 .. currentmodule:: otupy.transfers.http.http_transfer

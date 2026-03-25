@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.container.Container
+otupy.profiles.xbom.data.container.Container
 ============================================
 
 .. currentmodule:: otupy.profiles.xbom.data.container
@@ -19,7 +19,6 @@
       ~Container.as_cyclonedx
       ~Container.fromdict
       ~Container.todict
-      ~Container.validate_fields
    
    
 
@@ -29,10 +28,7 @@
 
    .. autosummary::
    
-      ~Container.description
-      ~Container.id
       ~Container.image
-      ~Container.name
       ~Container.namespace
       ~Container.status
    

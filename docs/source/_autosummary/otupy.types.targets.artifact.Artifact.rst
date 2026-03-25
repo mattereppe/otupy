@@ -1,4 +1,4 @@
-﻿otupy.types.targets.artifact.Artifact
+otupy.types.targets.artifact.Artifact
 =====================================
 
 .. currentmodule:: otupy.types.targets.artifact

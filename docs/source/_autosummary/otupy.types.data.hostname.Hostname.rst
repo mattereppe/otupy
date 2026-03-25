@@ -1,4 +1,4 @@
-﻿otupy.types.data.hostname.Hostname
+otupy.types.data.hostname.Hostname
 ==================================
 
 .. currentmodule:: otupy.types.data.hostname

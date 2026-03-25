@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.pod.Pod
+otupy.profiles.xbom.data.pod.Pod
 ================================
 
 .. currentmodule:: otupy.profiles.xbom.data.pod
@@ -19,7 +19,6 @@
       ~Pod.as_cyclonedx
       ~Pod.fromdict
       ~Pod.todict
-      ~Pod.validate_fields
    
    
 
@@ -29,10 +28,6 @@
 
    .. autosummary::
    
-      ~Pod.description
-      ~Pod.id
-      ~Pod.name
       ~Pod.namespace
-      ~Pod.ports
    
    

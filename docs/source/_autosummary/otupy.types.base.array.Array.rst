@@ -1,4 +1,4 @@
-﻿otupy.types.base.array.Array
+otupy.types.base.array.Array
 ============================
 
 .. currentmodule:: otupy.types.base.array

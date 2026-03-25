@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.data.drop\_process.DropProcess
+otupy.profiles.slpf.data.drop\_process.DropProcess
 ==================================================
 
 .. currentmodule:: otupy.profiles.slpf.data.drop_process

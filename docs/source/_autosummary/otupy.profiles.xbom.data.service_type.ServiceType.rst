@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.service\_type.ServiceType
+otupy.profiles.xbom.data.service\_type.ServiceType
 ==================================================
 
 .. currentmodule:: otupy.profiles.xbom.data.service_type
@@ -20,6 +20,7 @@
       ~ServiceType.getClass
       ~ServiceType.getName
       ~ServiceType.getObj
+      ~ServiceType.get_type_name
       ~ServiceType.todict
    
    

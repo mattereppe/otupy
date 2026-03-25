@@ -1,4 +1,4 @@
-﻿otupy.types.targets.idn\_email\_addr.IDNEmailAddr
+otupy.types.targets.idn\_email\_addr.IDNEmailAddr
 =================================================
 
 .. currentmodule:: otupy.types.targets.idn_email_addr

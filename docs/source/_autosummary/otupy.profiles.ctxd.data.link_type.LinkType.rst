@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.link\_type.LinkType
+otupy.profiles.ctxd.data.link\_type.LinkType
 ============================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.link_type
@@ -31,7 +31,8 @@
       ~LinkType.api
       ~LinkType.hosting
       ~LinkType.packet_flow
-      ~LinkType.control
-      ~LinkType.protect
+      ~LinkType.controlling
+      ~LinkType.protecting
+      ~LinkType.containing
    
    

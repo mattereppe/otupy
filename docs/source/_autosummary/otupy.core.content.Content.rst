@@ -1,4 +1,4 @@
-﻿otupy.core.content.Content
+otupy.core.content.Content
 ==========================
 
 .. currentmodule:: otupy.core.content

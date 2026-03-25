@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.results.Results
+otupy.profiles.xbom.results.Results
 ===================================
 
 .. currentmodule:: otupy.profiles.xbom.results

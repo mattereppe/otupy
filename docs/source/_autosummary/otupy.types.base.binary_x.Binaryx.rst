@@ -1,4 +1,4 @@
-﻿otupy.types.base.binary\_x.Binaryx
+otupy.types.base.binary\_x.Binaryx
 ==================================
 
 .. currentmodule:: otupy.types.base.binary_x

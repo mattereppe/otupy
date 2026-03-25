@@ -1,4 +1,4 @@
-﻿otupy.core.target.TargetRegister
+otupy.core.target.TargetRegister
 ================================
 
 .. currentmodule:: otupy.core.target

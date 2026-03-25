@@ -1,4 +1,4 @@
-﻿otupy.profiles.ctxd.data.cloud.Cloud
+otupy.profiles.ctxd.data.cloud.Cloud
 ====================================
 
 .. currentmodule:: otupy.profiles.ctxd.data.cloud
@@ -17,8 +17,8 @@
       :nosignatures:
    
       ~Cloud.fromdict
+      ~Cloud.get_subtype
       ~Cloud.todict
-      ~Cloud.validate_fields
    
    
 

@@ -1,4 +1,4 @@
-﻿otupy.core.args.Args
+otupy.core.args.Args
 ====================
 
 .. currentmodule:: otupy.core.args

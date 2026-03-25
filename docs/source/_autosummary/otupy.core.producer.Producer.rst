@@ -1,4 +1,4 @@
-﻿otupy.core.producer.Producer
+otupy.core.producer.Producer
 ============================
 
 .. currentmodule:: otupy.core.producer

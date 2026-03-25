@@ -1,4 +1,4 @@
-﻿otupy.types.data.action\_targets.ActionTargets
+otupy.types.data.action\_targets.ActionTargets
 ==============================================
 
 .. currentmodule:: otupy.types.data.action_targets

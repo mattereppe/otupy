@@ -1,4 +1,4 @@
-﻿otupy.types.data.duration.Duration
+otupy.types.data.duration.Duration
 ==================================
 
 .. currentmodule:: otupy.types.data.duration

@@ -1,4 +1,4 @@
-﻿otupy.types.data.version.Version
+otupy.types.data.version.Version
 ================================
 
 .. currentmodule:: otupy.types.data.version

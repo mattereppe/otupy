@@ -1,4 +1,4 @@
-﻿otupy.profiles.slpf.actuator.Specifiers
+otupy.profiles.slpf.actuator.Specifiers
 =======================================
 
 .. currentmodule:: otupy.profiles.slpf.actuator

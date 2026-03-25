@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.service.Service
+otupy.profiles.xbom.data.service.Service
 ========================================
 
 .. currentmodule:: otupy.profiles.xbom.data.service
@@ -29,9 +29,12 @@
 
    .. autosummary::
    
+      ~Service.domain
       ~Service.name
+      ~Service.namespace
       ~Service.owner
       ~Service.release
+      ~Service.sid
       ~Service.subservices
       ~Service.type
    

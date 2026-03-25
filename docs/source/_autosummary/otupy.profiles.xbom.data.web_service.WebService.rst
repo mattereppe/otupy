@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.web\_service.WebService
+otupy.profiles.xbom.data.web\_service.WebService
 ================================================
 
 .. currentmodule:: otupy.profiles.xbom.data.web_service

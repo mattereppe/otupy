@@ -1,4 +1,4 @@
-﻿otupy.types.targets.uri.URI
+otupy.types.targets.uri.URI
 ===========================
 
 .. currentmodule:: otupy.types.targets.uri

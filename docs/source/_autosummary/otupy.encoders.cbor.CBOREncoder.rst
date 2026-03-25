@@ -1,4 +1,4 @@
-﻿otupy.encoders.cbor.CBOREncoder
+otupy.encoders.cbor.CBOREncoder
 ===============================
 
 .. currentmodule:: otupy.encoders.cbor

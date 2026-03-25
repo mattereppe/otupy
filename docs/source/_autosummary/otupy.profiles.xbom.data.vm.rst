@@ -20,6 +20,7 @@ otupy.profiles.xbom.data.vm
       :template: custom-class-template.rst
       :nosignatures:
    
+      HyperVisorType
       VM
    
    

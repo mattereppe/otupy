@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.link.Link
+otupy.profiles.xbom.data.link.Link
 ==================================
 
 .. currentmodule:: otupy.profiles.xbom.data.link
@@ -33,6 +33,7 @@
       ~Link.link_type
       ~Link.name
       ~Link.peers
-      ~Link.versions
+      ~Link.role
+      ~Link.sid
    
    

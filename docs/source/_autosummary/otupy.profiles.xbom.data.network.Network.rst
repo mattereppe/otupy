@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.network.Network
+otupy.profiles.xbom.data.network.Network
 ========================================
 
 .. currentmodule:: otupy.profiles.xbom.data.network
@@ -18,6 +18,7 @@
    
       ~Network.as_cyclonedx
       ~Network.fromdict
+      ~Network.get_subtype
       ~Network.todict
    
    
@@ -29,7 +30,9 @@
    .. autosummary::
    
       ~Network.description
+      ~Network.id
       ~Network.name
       ~Network.type
+      ~Network.version
    
    

@@ -1,4 +1,4 @@
-﻿otupy.types.targets.features.Features
+otupy.types.targets.features.Features
 =====================================
 
 .. currentmodule:: otupy.types.targets.features

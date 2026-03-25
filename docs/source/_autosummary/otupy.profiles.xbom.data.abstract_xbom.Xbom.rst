@@ -1,4 +1,4 @@
-﻿otupy.profiles.xbom.data.abstract\_xbom.Xbom
+otupy.profiles.xbom.data.abstract\_xbom.Xbom
 ============================================
 
 .. currentmodule:: otupy.profiles.xbom.data.abstract_xbom
@@ -17,7 +17,9 @@
       :nosignatures:
    
       ~Xbom.add
+      ~Xbom.add_dependency
       ~Xbom.add_dependency_with_external_ref
+      ~Xbom.find_ref_by_name
       ~Xbom.fromdict
       ~Xbom.todict
    

@@ -1,4 +1,4 @@
-﻿otupy.types.targets.iri.IRI
+otupy.types.targets.iri.IRI
 ===========================
 
 .. currentmodule:: otupy.types.targets.iri

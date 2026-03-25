@@ -1,4 +1,4 @@
-﻿otupy.types.targets.idn\_domain\_name.IDNDomainName
+otupy.types.targets.idn\_domain\_name.IDNDomainName
 ===================================================
 
 .. currentmodule:: otupy.types.targets.idn_domain_name
