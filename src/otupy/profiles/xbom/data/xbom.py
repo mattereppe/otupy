@@ -364,7 +364,6 @@ class CyclonedxXbom(Xbom):
 			case XbomFormat.cyclonedx:
 				validator = JsonStrictValidator(schema_version=_cyclonedx_schema_version)
 				data = data if isinstance(data, str) else json.dumps(data)
-				validation_result = validator.validate_str(data)
 				if validator.validate_str(data):
 					raise ValueError("Invalid CycloneDX JSON data")
 				self.bom = Bom.from_json(json.loads(data))

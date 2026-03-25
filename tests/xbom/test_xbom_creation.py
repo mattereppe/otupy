@@ -17,6 +17,8 @@ from cyclonedx.model.service import Service as CycloneDXService
 from otupy.types.data.hostname import Hostname
 from otupy.profiles.xbom.data.network_type import NetworkType
 
+import pytest
+
 class TestXBOMCreation:
     """Test cases for XBOM creation and initialization."""
 
@@ -425,3 +427,60 @@ class TestXBOMCreation:
         
         # Validate BOM reference is set
         assert component.bom_ref is not None
+
+    def test_add_none_component_raises_error(self):
+        """Test that adding None to the BOM fails cleanly."""
+        bom = CyclonedxXbom()
+
+        with pytest.raises((TypeError, AttributeError, ValueError)):
+            bom.add(None)
+
+        assert len(bom.bom.services) == 0  # type: ignore
+        assert len(bom.bom.components) == 0  # type: ignore
+
+    def test_add_unsupported_object_raises_error(self):
+        """Test that adding an unsupported object type fails cleanly."""
+        bom = CyclonedxXbom()
+
+        with pytest.raises((TypeError, AttributeError, ValueError)):
+            bom.add({"invalid": "component"})
+
+        assert len(bom.bom.services) == 0  # type: ignore
+        assert len(bom.bom.components) == 0  # type: ignore
+
+    def test_application_insertion_with_empty_version(self):
+        """Test BOM generation with an application that has an empty version."""
+        bom = CyclonedxXbom()
+        app = Application(
+            name="test-application",
+            version=""
+        )
+        bom.add(app)
+
+        assert len(bom.bom.components) == 1  # type: ignore
+        component = list(bom.bom.components)[0]  # type: ignore
+        assert component.name == "test-application"
+        assert component.version in ("", None)
+        assert component.type == ComponentType.APPLICATION
+
+    def test_cloud_insertion_with_empty_description(self):
+        """Test BOM generation with a cloud service that has an empty description."""
+        bom = CyclonedxXbom()
+        cloud = Cloud(
+            description="",
+            id="cloud-123",
+            name="kubernetes",
+            type="lambda"
+        )
+        bom.add(cloud)
+
+        assert len(bom.bom.services) == 1  # type: ignore
+        service = list(bom.bom.services)[0]  # type: ignore
+        assert service.name == "kubernetes"
+        assert service.description in ("", None)
+
+        assert service.properties is not None
+        properties_dict = {prop.name: prop.value for prop in service.properties}
+        assert properties_dict.get("otupy:type") == "cloud"
+        assert properties_dict.get("otupy:cloud:type") == "lambda"
+        assert properties_dict.get("otupy:cloud:id") == "cloud-123"

@@ -12,7 +12,6 @@ class XbomCtx(oc2.Map):
 	The Xbom type defines the arguments used to identify or format a Software Bill of Materials.
 	
 	:param format: Specifies the format of the XBOM (e.g. CycloneDX). Defaults to CycloneDX if not specified.
-	:param names: A list of specific names used to identify components or services.
 	"""
 	fieldtypes = {'format': XbomFormat}
 	

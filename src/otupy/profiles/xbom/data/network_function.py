@@ -47,12 +47,34 @@ class NetworkFunction(XBOMObject):
 	def __str__(self):
 		return self.__repr__()
 
-	def as_cyclonedx(self) -> Service:
+	def as_cyclonedx(self) -> any: # type: ignore
 		"""Convert NetworkFunction to CycloneDX component format.
 		
 		Returns:
 			Component: CycloneDX Component with type PLATFORM.
 		"""
+		if self.type is None:
+			cdx_service = Service(
+				name=self.name or "unknown",
+				bom_ref=generate_bom_ref("network_function"),
+				description=self.description
+			)
+		else:
+			wrapped_function = self.type.getObj()
+			cdx_service = wrapped_function.as_cyclonedx() if hasattr(wrapped_function, 'as_cyclonedx') else None
+			
+			if cdx_service is None:
+				cdx_service = Service(
+					name=self.name or "unknown",
+					bom_ref=generate_bom_ref("network_function"),
+					description=self.description
+				)
+			else:
+				if self.name is not None:
+					cdx_service.name = str(self.name)
+				if getattr(self, "description", None) is not None:
+					cdx_service.description = str(self.description)
+
 		properties = [
 			Property(name="otupy:type", value="network_function")
 		]
@@ -64,9 +86,9 @@ class NetworkFunction(XBOMObject):
 			type_name = self.type.getName() if hasattr(self.type, 'getName') else str(self.type)
 			properties.append(Property(name="otupy:netfunc:type", value=type_name))
 		
-		return Service(
-			name=self.name or "unknown",
-			bom_ref=generate_bom_ref("network_function"),
-			description=self.description,
-			properties=properties
-		)
+		if hasattr(cdx_service, 'properties') and cdx_service.properties is not None:
+			cdx_service.properties.update(properties)
+		else:
+			cdx_service.properties = properties
+		
+		return cdx_service
