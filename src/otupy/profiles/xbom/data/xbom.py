@@ -315,9 +315,6 @@ class CyclonedxXbom(Xbom):
 		if not isinstance(dic, dict):
 			raise TypeError("Expected dictionary")
 		
-		# print(f"DEBUG fromdict - Input dic keys: {dic.keys()}")
-		# print(f"DEBUG fromdict - Full dic: {dic}")
-		
 		fmt = dic.get('format')
 		if fmt:
 			if isinstance(fmt, XbomFormat):
@@ -332,8 +329,6 @@ class CyclonedxXbom(Xbom):
 		instance = cls(format=fmt)
 		
 		bom_data = dic.get('bom')
-		# print(f"DEBUG fromdict - bom_data type: {type(bom_data)}")
-		# print(f"DEBUG fromdict - bom_data: {bom_data}")
 		if bom_data:
 			instance.deserialize(bom_data)
 			
