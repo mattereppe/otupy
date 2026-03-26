@@ -27,6 +27,11 @@ from otupy.transfers.http.message import Message
 logger = logging.getLogger(__name__)
 """ The logging facility in otupy """
 
+POST_TIMEOUT=10
+""" Timeout for port requests
+	This is necessary to not wait forever in case of unresponsive peers
+"""
+
 @oc2.transfer("http")
 class HTTPTransfer(oc2.Transfer):
 	""" HTTP Transfer Protocol
@@ -141,7 +146,11 @@ class HTTPTransfer(oc2.Transfer):
 		# Send the OpenC2 message and get the response
 		if self.scheme == 'https':
 			logger.warning("Certificate validation disabled!")
-		response = requests.post(self.url, data=openc2data, headers=openc2headers, verify=False)
+		try:
+			response = requests.post(self.url, data=openc2data, headers=openc2headers, timeout=POST_TIMEOUT, verify=False)
+		except:
+			logger.warn("Unable to establish a connection to: %s", self.url)
+			return None
 			
 		logger.info("HTTP got response: %s", response)
 		logger.debug("HTTP Response Content:\n%s", response.text)

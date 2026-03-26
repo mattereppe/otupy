@@ -169,7 +169,8 @@ class Consumer:
 			# for a in actuators.items(): 
 			logger.info("Dispatching command to: %s", actuator[0])
 			response_content = actuator[0].run(msg.content) 
-		except IndexError:
+		except (IndexError,AttributeError):
+			logger.warn("Ignoring request for non-existingn actuator: %s", actuator[0])
 			response_content = Response(status=StatusCode.NOTFOUND, status_text='No actuator available')
 		except Exception as e:
 			logger.error("Actuator raised an exception: %s", e)

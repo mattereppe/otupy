@@ -21,7 +21,7 @@ Type: Args (Map)
      - name_only
      - ``bool``
      - 0
-     - The response includes either only the name or all the details about the services and the links.
+     - The response includes either only the name or all the details about the services and the links. (This will likely be remoted or replaced by the :py:class:`~otupy.profiles.ctxd.data.service.SId` in future releases)
    * - 3
      - cached
      - ``bool``

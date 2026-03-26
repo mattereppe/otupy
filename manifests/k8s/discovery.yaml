@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discovery-config
+  labels:
+    role: discovery
+data:
+  discovery.yaml: |
+    name: "test-discovery"
+    frequency: 120 # seconds
+    loop: -1 # -1: forever, 0: no run, >0: number of runs
+    publishers:
+      file: 
+        name: "onesource.txt"
+      kafka:
+        host: 'kafka-broker-0.intra.miranda.onesource.pt'
+        port: 9093
+        topic: "ctxd"
+    #  security_protocol: "SSL"
+    #    sasl_mechanism: Null
+    #    sasl_plain_username: Null
+    #    sasl_plain_password: Null
+    #    ssl_cafile: 'ca-cert'
+    services:
+      - host: '10.1.0.63'
+        port: 8080
+        endpoint: "/.well-known/openc2"
+        encoding: "json"
+        transfer: "http"
+        actuator:
+          asset_id: "ctxd-kubernetes-onesource"
+    logger:
+      version: 1
+      disable_existing_loggers: false
+      propagate: true
+      formatters:
+         otupy:
+            (): otupy.LogFormatter
+            datetime: True
+            name: True
+      handlers:
+         console:
+            class: logging.StreamHandler
+            formatter: otupy
+            level: INFO
+            filters: Null
+      root:
+         handlers: [console]
+         level: INFO
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery
+  labels:
+    role: discovery
+spec:
+  ports:
+  - name: control
+    port: 80
+    protocol: TCP    
+  selector:
+    role: discovery    
+---
+apiVersion: apps/v1 
+kind: StatefulSet
+metadata:
+  name: discovery
+spec:
+  replicas: 1
+  serviceName: "discovery"
+  selector:
+    matchLabels:
+      role: discovery
+  template:
+    metadata:
+      labels:
+        role: discovery
+    spec:
+      containers:
+        - name: discovery
+          image: ghcr.io/mattereppe/discovery:latest
+          imagePullPolicy: Always
+          command: ["python3", "discovery.py", "-c", "/config/discovery.yaml"]
+#          command: ["/bin/bash","-c","sleep 3660"]
+          volumeMounts:
+          - name: discovery-configmap-volume
+            mountPath: /config/
+      volumes:
+        - name: discovery-configmap-volume
+          configMap:
+            name: discovery-config
+

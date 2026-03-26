@@ -1,0 +1,22 @@
+[Unit]
+Description=MIRANDA Connector
+DefaultDependencies=no
+After=multi-user.target
+
+[Service]
+Type=simple
+User=miranda
+Group=miranda
+WorkingDirectory=/run/connector
+PermissionsStartOnly=true
+
+# Commands to run as root
+ExecStartPre=/usr/bin/touch /var/log/connector.log
+ExecStartPre=/usr/bin/chown miranda:miranda /var/log/connector.log
+
+ExecStart=/opt/connector/venv/bin/python3  -m otupy.apps.connector.connector -c  /etc/connector/connector.yaml 
+TimeoutStartSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

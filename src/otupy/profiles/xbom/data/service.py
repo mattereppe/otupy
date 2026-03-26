@@ -19,7 +19,7 @@ class SId(Record):
 		<type>:<subtype>/<domain>/<namespace>/<name>@<version>
 
 		Some fields might not be set; in this case they are not present or equal to `None`.
-		
+
 		The service identifier is conceveid to avoid collisions as much as possible; services that
 		are visible in two different scopes (e.g., Kubernetes pods and namespace should create
 		the same identifier in different places (i.e., Kubernets and linux server.

@@ -78,10 +78,16 @@ class Array(Openc2Type, list):
 			lis.append = e.todict(i)
 		return lis
 
+	@classmethod
 	def fromdict(cls, dic, e):
 		""" !!! WARNING !!!
 			Currently not implemented because there are no examples of usage of this
 			type (only Array/net, which is not clear)
+
+			Update: for a specific use case, I tried this simple setup: blindly take a list and use it to
+			instantiate an Array object. This makes sense until we do not need to check the content of the 
+			Array.
 		"""
+		return cls(dic)
 		raise Exception("Function not implemented")
 

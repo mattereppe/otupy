@@ -63,9 +63,9 @@ class MobileNetwork(Map):
 		if region is not None:
 			properties.append(Property(name="otupy:mobile:region", value=str(region)))
 		
-		set_val = self.get('set')
-		if set_val is not None:
-			properties.append(Property(name="otupy:mobile:set", value=str(set_val)))
+		sst_val = self.get('sst')
+		if sst_val is not None:
+			properties.append(Property(name="otupy:mobile:sst", value=str(sst_val)))
 		
 		netv4addrs = self.get('netv4addrs')
 		if netv4addrs is not None:
