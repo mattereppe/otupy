@@ -1,3 +1,2 @@
-from otupy.actuators.nfm.nfm_actuator_nprobe import NFMActuatorNProbe
 from otupy.actuators.nfm.nfm_actuator_fprobe import NFMActuatorFProbe
-from otupy.actuators.nfm.nfm_actuator_packetbeat import PacketbeatActuator
+from otupy.actuators.nfm.nfm_actuator_packetbeat import NFMActuatorPacketbeat
