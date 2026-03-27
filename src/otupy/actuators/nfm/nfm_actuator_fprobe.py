@@ -24,6 +24,7 @@ class NFMActuatorFProbe(NFMActuator):
         ],
         "flow_format": ["netflow5", "netflow7"],
         "filters": ["source / destination", "ipv4 / ipv6", "port", "protocol"],
+        "info_elements": [],
     }
 
     def __init__(self, *, specifiers, probe, **kwargs):
@@ -32,6 +33,8 @@ class NFMActuatorFProbe(NFMActuator):
 
     def _handle_feature(self, f):
         match f:
+            case Feature.information_elements:
+                return self.__features["info_elements"]
             case Feature.exports:
                 return self.__features["exports"]
             case Feature.export_options:
