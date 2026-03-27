@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @actuator_implementation("nfm-fprobe")
 class NFMActuatorFProbe(NFMActuator):
-    features = {
+    __features = {
         "exports": ["collector"],
         "export_options": [
             "buffer",
@@ -33,13 +33,13 @@ class NFMActuatorFProbe(NFMActuator):
     def _handle_feature(self, f):
         match f:
             case Feature.exports:
-                return self.features["exports"]
+                return self.__features["exports"]
             case Feature.export_options:
-                return self.features["export_options"]
+                return self.__features["export_options"]
             case Feature.flow_format:
-                return self.features["flow_format"]
+                return self.__features["flow_format"]
             case Feature.filters:
-                return self.features["filters"]
+                return self.__features["filters"]
             case _:
                 return super()._handle_feature(f)
 
