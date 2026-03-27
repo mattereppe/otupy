@@ -13,7 +13,6 @@ from otupy.actuators.nfm.handlers.response_handler import badrequest, ok
 from otupy.actuators.nfm.utils.process_utils import run_monitor
 from otupy.actuators.nfm.nfm_actuator import NFMActuator
 from otupy import Feature
-from otupy.actuators.nfm.configuration.probe_config_loader import ProbeConfigLoader
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -23,7 +22,6 @@ logger = logging.getLogger(__name__)
 class NFMActuatorNProbe(NFMActuator):
     def __init__(self, asset_id):
         super().__init__(asset_id)
-        self.config = ProbeConfigLoader()
 
     def _handle_feature(self, f):
         print("f")
