@@ -1,0 +1,9 @@
+nfm-fprobe-example:
+  actuator: "nfm-fprobe"
+  profile: "x-nfm"
+  owner: "acme.com"
+  specifiers:
+    domain: null
+    asset_id: "nfm-fprobe-example"
+  probe:
+    executable: "/sbin/fprobe"
