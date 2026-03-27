@@ -1,3 +1,5 @@
+import yaml
+
 from otupy.actuators.nfm.nfm_actuator import NFMActuator
 from otupy.actuators.nfm.handlers.response_handler import ok
 import threading, logging, os
@@ -6,32 +8,76 @@ from otupy.actuators.nfm.utils.random_name_generator import generate_unique_name
 import otupy.profiles.nfm as nfm
 from otupy.actuators.nfm.utils.bpf_filter_translator import generate_bpf_filter
 
-# from ruamel.yaml import YAML
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
-from otupy import Feature
-from otupy.actuators.nfm.configuration.probe_config_loader import ProbeConfigLoader
+from otupy import Feature, actuator_implementation
 from otupy.actuators.nfm.utils.process_utils import run_monitor
 
 logger = logging.getLogger(__name__)
 
 
-class PacketbeatActuator(NFMActuator):
-    def __init__(self, asset_id):
-        super().__init__(asset_id)
-        self.config = ProbeConfigLoader()
+@actuator_implementation("nfm-packetbeat")
+class NFMActuatorPacketbeat(NFMActuator):
+    __features = {
+        "exports": ["file"],
+        "export_options": ["sampling"],
+        "flow_format": ["json"],
+        "filters": ["source / destination", "ipv4 / ipv6", "port", "protocol"],
+        "info_elements": [
+            "@timestamp",
+            "@metadata.beat",
+            "@metadata.type",
+            "@metadata.version",
+            "type",
+            "ecs.version",
+            "event.start",
+            "event.end",
+            "event.duration",
+            "event.category",
+            "event.action",
+            "host.name",
+            "host.hostname",
+            "host.ip",
+            "host.mac",
+            "host.os",
+            "host.id",
+            "host.containerized",
+            "agent.name",
+            "agent.version",
+            "agent.id",
+            "flow.id",
+            "flow.final",
+            "network.transport",
+            "network.community_id",
+            "network.bytes",
+            "network.packets",
+            "network.type",
+            "source.ip",
+            "source.port",
+            "source.bytes",
+            "source.packets",
+            "destination.ip",
+            "destination.port",
+            "destination.bytes",
+            "destination.packets",
+        ],
+    }
+
+    def __init__(self, *, specifiers, probe, **kwargs):
+        super().__init__(asset_id=specifiers["asset_id"])
+        self.probe = probe
 
     def _handle_feature(self, f):
         match f:
             case Feature.information_elements:
-                return self.config.get_info_element(self.asset_id)
+                return self.__features["info_elements"]
             case Feature.exports:
-                return self.config.get_feature(self.asset_id, "exports")
+                return self.__features["exports"]
             case Feature.export_options:
-                return self.config.get_feature(self.asset_id, "export_options")
+                return self.__features["export_options"]
             case Feature.flow_format:
-                return self.config.get_feature(self.asset_id, "flow_fo.monitorrmat")
+                return self.__features["flow_format"]
             case Feature.filters:
-                return self.config.get_feature(self.asset_id, "filters")
+                return self.__features["filters"]
             case _:
                 return super()._handle_feature(f)
 
@@ -48,7 +94,7 @@ class PacketbeatActuator(NFMActuator):
         config_file_name = self._configure_packetbeat_yaml(
             interfaces, information_elements, bpf_filters, output, sampling, monitor_id
         )
-        cmd_list = [os.getenv("PACKETBEAT_EXECUTABLE"), "-c", config_file_name]
+        cmd_list = [self.probe["executable"], "-c", config_file_name]
         if sleep_time > 0:
             threading.Timer(sleep_time, run_monitor, args=(cmd_list, terminate_time, monitor_id)).start()
             return ok("Monitor will start after delay", nfm.Results(monitor_id=MonitorID(monitor_id)))
@@ -56,7 +102,10 @@ class PacketbeatActuator(NFMActuator):
 
     def _parse_monitor(self, monitor, args):
         interfaces = [iface.name for iface in monitor.get("interfaces", [])]
-        information_elements = self.config.get_info_element(self.asset_id, monitor.get("information_elements"))
+        if self.probe["info_elements"] is not None:
+            information_elements = self.probe["info_elements"]
+        else:
+            information_elements = self.__features["info_elements"]
         bpf_filters = (
             generate_bpf_filter(monitor.filter_v4, monitor.filter_v6)
             if monitor.get("filter_v4") or monitor.get("filter_v6")
@@ -68,12 +117,12 @@ class PacketbeatActuator(NFMActuator):
     def _get_output(self, args):
         exporter = args.get("exporter")
         if exporter and exporter.get("storage"):
-            return (exporter.storage.get("path", ""), exporter.storage.get("name", ""))
+            return exporter.storage.get("path", ""), exporter.storage.get("name", "")
         return None
 
     def _configure_packetbeat_yaml(self, interfaces, information_elements, bpf_filters, output, sampling, monitor_id):
         try:
-            config = self._load_yaml_config(os.getenv("PACKETBEAT_BASE_CONFIG"))
+            config = self._load_yaml_config(self.probe["base_config"])
             self._update_packetbeat_config(
                 config, interfaces, information_elements, bpf_filters, output, sampling, monitor_id
             )
@@ -83,20 +132,18 @@ class PacketbeatActuator(NFMActuator):
             raise
 
     def _load_yaml_config(self, path):
-        pass
-        # try:
-        #    with open(path, "r") as f:
-        #        return YAML().load(f)
-        # except FileNotFoundError:
-        #    return {}
+        try:
+            with open(path, "r") as f:
+                return yaml.safe_load(f)
+        except FileNotFoundError:
+            return {}
 
     def _update_packetbeat_config(
         self, config, interfaces, information_elements, bpf_filters, output, sampling, monitor_id
     ):
         config.setdefault("packetbeat", {})
         if monitor_id:
-            # put all paths in ocnfiguration file
-            data_path = os.path.join(os.getenv("PACKETBEAT_DATA_DIR"), monitor_id)
+            data_path = os.path.join(self.probe["data_directory"], monitor_id)
             config.setdefault("path", {})["data"] = data_path
         if interfaces:
             config["packetbeat"]["interfaces"] = [{"device": iface, "bpf_filter": bpf_filters} for iface in interfaces]
@@ -106,7 +153,7 @@ class PacketbeatActuator(NFMActuator):
         if sampling:
             config["packetbeat"]["flows"] = {"period": f"{sampling}s"}
         if output:
-            log_path = os.path.join(os.getenv("PACKETBEAT_LOG_DIR"), output[0])
+            log_path = os.path.join(self.probe["log_directory"], output[0])
             config["output"] = {
                 "file": {"path": log_path, "filename": output[1], "rotate_every_kb": 3000, "number_of_files": 5}
             }
@@ -114,10 +161,10 @@ class PacketbeatActuator(NFMActuator):
             config["processors"] = [{"include_fields": {"fields": information_elements}}]
 
     def _write_yaml_config(self, config, monitor_id):
-        file_name = os.path.join(os.getenv("PACKETBEAT_CONFIG_DIR"), f"packetbeat_{monitor_id}.yml")
+        file_name = os.path.join(self.probe["config_directory"], f"packetbeat_{monitor_id}.yml")
         try:
-            # with open(file_name, "w") as f:
-            #    YAML().dump(config, f)
+            with open(file_name, "w") as f:
+                yaml.safe_dump(config, f)
             logger.info("Packetbeat configuration updated successfully.")
             return file_name
         except Exception as e:
