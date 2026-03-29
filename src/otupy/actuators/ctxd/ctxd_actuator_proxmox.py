@@ -2,7 +2,14 @@ import logging
 from proxmoxer import ProxmoxAPI
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd.data.service import Service
+from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
+from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
+from otupy.profiles.ctxd.data.host import Host
+from otupy.profiles.ctxd.data.host_type import HostType
+from otupy.profiles.ctxd.data.network_interface import IPInfo, NetworkInterface
+from otupy.profiles.ctxd.data.network_node import NetworkNode
+from otupy.profiles.ctxd.data.os import OS
+from otupy.profiles.ctxd.data.service import SId, Service
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.peer import Peer
@@ -12,6 +19,7 @@ from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service_type import ServiceType
 from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.link_type import LinkType
+from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.l4_protocol import L4Protocol
 from otupy.types.data.hostname import Hostname
 from otupy.types.base.array_of import ArrayOf
@@ -59,120 +67,203 @@ class CTXDActuatorProxmox(CTXDActuator):
             logger.error("Connection to Proxmox failed: %s", e)
             raise
 
+    def discover_context(self):
 
-    def discover_services(self):
-        """
-        Populate self.services with:
-            - Root Proxmox service
-            - VM services
-            - Container services
-        """
-
-        asset_id = self.specifiers.get('asset_id', 'proxmox')
-
-        cloud = Cloud(
-            description="Proxmox Virtual Environment",
-            id=self.proxmox_host,
-            name="Proxmox"
-        )
-
-        # Root service
-        self.services.append(Service(
-            name=Name(asset_id),
-            type=ServiceType(cloud),
-            subservices=ArrayOf(Name)(),
-            owner=self.owner,
-            release=None
-        ))
-
-        try:
-            nodes = self.proxmox.nodes.get()
-
-            for node in nodes:
-                node_name = node['node']
-
-                # LXC Containers
-                for ct in self.proxmox.nodes(node_name).lxc.get():
-                    name = ct.get('name')
-                    if not name:
-                        continue
-
-                    self.services.append(Service(
-                        name=Name(f"{name}-{ct['vmid']}"),
-                        type=ServiceType(cloud),
-                        subservices=ArrayOf(Name)(),
-                        owner=self.owner,
-                        release=None
-                    ))
-
-                # QEMU VMs
-                for vm in self.proxmox.nodes(node_name).qemu.get():
-                    name = vm.get('name')
-                    if not name:
-                        continue
-
-                    self.services.append(Service(
-                        name=Name(f"{name}-{vm['vmid']}"),
-                        type=ServiceType(cloud),
-                        subservices=ArrayOf(Name)(),
-                        owner=self.owner,
-                        release=None
-                    ))
-
-        except Exception as e:
-            logger.error("Service discovery failed: %s", e)
-
-
+        self.nodes = self.get_cluster_nodes()
+        self.discover_services()
+        self.discover_links()
+        
+    
     def discover_links(self):
         """
-        Populate self.links with:
-            - Root -> VM
-            - Root -> Container
+        VMs (qemu) and physical servers (nodes)
+        
         """
 
-        asset_id = self.specifiers.get('asset_id', 'proxmox')
+        self._discover_vms_link_nodes()
+    
 
-        try:
-            nodes = self.proxmox.nodes.get()
 
-            for node in nodes:
-                node_name = node['node']
 
-                # Containers
-                for ct in self.proxmox.nodes(node_name).lxc.get():
-                    name = ct.get('name')
-                    if not name:
-                        continue
 
-                    peer = Peer(
-                        service_name=Name(f"{name}-{ct['vmid']}"),
-                        role=PeerRole.controlled,
-                        consumer=self.get_consumer(Name(f"{name}-{ct['vmid']}"))
+
+    def discover_services(self):
+        """ Discover all services related to Proxmox
+
+        KVM/qemu, containers, storage and networks
+            
+        """
+        self._discover_proxmox_servers()
+        self._discover_proxmox_vm()
+        self._discover_proxmox_lxc()
+        self._discover_networks()
+
+    def _discover_proxmox_servers(self):
+
+         for h in self.nodes:
+            node = ExecutionEnvironment(name=Hostname(h['node']), id=h['node'],
+					 description="Proxmox physical server", type=ExecutionEnvironmentType(OS()) )
+            
+            logger.debug("Found node of proxmox: %s", str(node))
+            
+            self.services.append(Service(name=Name(str(h['node'])), sid=SId.create_from_service_type(node),
+						type=ServiceType(node), 
+						subservices=None, owner=self.owner, release=None))    
+
+    def _discover_proxmox_vm(self):
+
+        for node in self.nodes:
+            vms = self.get_all_vms(node)
+            for vm in vms:
+                
+                config = self.proxmox.nodes(node['node']).qemu(vm['vmid']).config.get()
+                ifaces = ArrayOf(NetworkInterface)()
+
+                try:
+                    # The agent must be installed to retrieve IP Informatio
+                    interfaces = self.proxmox.nodes(node).qemu(vm['vmid']).agent("network-get-interfaces").get()
+                    ips = ArrayOf(IPInfo)()
+                    for iface in interfaces['data']:
+                        gw = None
+                        for route in iface.get('routes',[]):
+                            if route.get('destination') == '0.0.0.0/0':
+                                gw = route.get('gateway')
+                        for a in iface.get('ip-addresses', []):
+                            ip = a.get('ip-address')
+                            prefix = a.get('prefix')
+                            ips.append(IPInfo(ip=ip, prefix=prefix, gw=gw))
+                    ifaces.append(NetworkInterface(description=config['name'], id=vm['vmid'], iface=None, ips=ips))
+
+
+                except Exception as e:
+                    logger.error("Unable to add ip address: ", e)
+
+
+                netnode = NetworkNode(name=vm['name'], description="Promxox interfaces", ifaces=ifaces)
+                server = Host(name= vm['name'],
+                        id= vm['vmid'], 
+                        description=vm['name'],
+                        type=HostType(VM(hypervisor='QEMU',hypervisor_type="native",image=config.get('ostype'))))
+                logger.debug("Found server: %s", str(server))
+
+                name=Name(server.name)
+                netnode_name=Name(server.name+".interfaces")
+                netnode_sid=SId.create_from_service_type(netnode)
+                
+                vm_service = Service(name=name, sid=SId.create_from_service_type(server), 
+                                    type=ServiceType(server),  subservices=ArrayOf(SId)(), owner=self.owner, release=None)
+                self.services.append(vm_service)
+                
+                # Add interfaces as subservice
+                self.services.append(Service(name=netnode_name, sid=netnode_sid,
+						type=ServiceType(netnode),
+						subservices=ArrayOf(SId)(), owner=str(name), release=None))
+                
+                vm_service.subservices.append(netnode_sid)
+
+    def _discover_proxmox_lxc(self):
+        """Discover Proxmox LXC containers and map them to Host and Service objects"""
+        
+        for node in self.nodes:
+            
+            
+            containers = self.get_all_containers(node)
+            
+            for ct in containers:
+                vmid = ct['vmid']
+                
+                #
+                config = self.proxmox.nodes(node['node']).lxc(vmid).config.get()
+
+               
+                server = Host(
+                    name=ct['name'],
+                    id=str(vmid), 
+                    description=f"LXC Container: {config.get('hostname', ct['name'])}",
+                    type=HostType(
+                        
+                        VM(
+                            hypervisor='LXC',
+                            hypervisor_type="native",
+                            image=config.get('ostype', 'linux')
+                        )
                     )
+                )
+                
+                logger.debug("Found container: %s", str(server))
 
-                    self.links.append(Link(
-                        name=Name(asset_id),
-                        link_type=LinkType.hosting,
-                        peers=ArrayOf(Peer)([peer])
-                    ))
+                name = Name(server.name)
+                
+                
+                lxc_service = Service(
+                    name=name, 
+                    sid=SId.create_from_service_type(server), 
+                    type=ServiceType(server),  
+                    subservices=ArrayOf(SId)(), 
+                    owner=self.owner, 
+                    release=None
+                )
+                
+                self.services.append(lxc_service)
 
-                # VMs
-                for vm in self.proxmox.nodes(node_name).qemu.get():
-                    name = vm.get('name')
-                    if not name:
-                        continue
 
-                    peer = Peer(
-                        service_name=Name(f"{name}-{vm['vmid']}"),
-                        role=PeerRole.controlled,
-                        consumer=self.get_consumer(Name(f"{name}-{vm['vmid']}"))
-                    )
+    def _discover_networks(self):
+        "Discover network for each node"
+        
+        for node in self.nodes:
+            networks = self.get_node_networks(node)
 
-                    self.links.append(Link(
-                        name=Name(asset_id),
-                        link_type=LinkType.hosting,
-                        peers=ArrayOf(Peer)([peer])
-                    ))
+    def _discover_vms_link_nodes(self):
+        """ 
+            Add links between qemu and node that host them
 
-        except Exception as e:
-            logger.error("Link discovery failed: %s", e)
+
+        """	
+        
+        proxmox_vms = self.get_services_by_sid(SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM)))
+
+        resources = self.proxmox.cluster.resources.get(type="vm")
+
+        vm_node_map = {r['vmid']: r['node'] for r in resources}
+
+        for v in proxmox_vms:
+            vmid = v.type.getObj().id
+
+            node_name = vm_node_map.get(vmid)
+            if node_name is None:
+                continue
+            description = "Proxmox VM " + str(v.name) + " hosted on " + node_name
+
+            consumer = self.get_consumer(node_name)
+
+            peer = Peer(service_name=Name(node_name), 
+                        sid=SId.create_from_service_type(ExecutionEnvironment(name=node_name, type=ExecutionEnvironmentType(OS()))),
+                        role=PeerRole.host, consumer=consumer)
+            self.links.append(Link(name=v.name, sid=v.sid, description=description, role=PeerRole.guest,
+                            link_type=LinkType.hosting, peers=ArrayOf(Peer)([peer])))
+
+
+    def get_interfaces(self, node):
+        """Return List available networks"""
+        return self.proxmox.nodes(node['node']).network.get()
+    def get_interfaces_vm(self, node,vm):
+        """Execute network-get-interfaces."""
+        return self.proxmox.nodes(node['node']).qemu(vm['vmid']).agent("network-get-interfaces").get()
+    def get_cluster_nodes(self):
+        """Returns a list of all physical hosts in the cluster and their health."""
+        return self.proxmox.nodes.get()
+    def get_all_vms(self, node):
+        """Retrieve all Full Virtual Machines on a specific node."""
+        return self.proxmox.nodes(node['node']).qemu.get()
+    def get_all_containers(self, node):
+        """Retrieve all Linux Containers on a specific node."""
+        return self.proxmox.nodes(node['node']).lxc.get()
+    
+    def get_node_networks(self, node):
+        """Returns bridges, bonds, and physical NIC configurations."""
+        return self.proxmox.nodes(node['node']).network.get()
+        
+
+    def get_node_storage(self, node):
+        """Returns all storage pools visible to this node and their usage."""
+        return self.proxmox.nodes(node['node']).storage.get()

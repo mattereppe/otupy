@@ -10,7 +10,7 @@ services:
     encoding: "json"
     transfer: "http"
     actuator:
-      asset_id: "ctxd-proxmox-example"
+      asset_id: "ctxd-azure-example"
 
 
 logger:

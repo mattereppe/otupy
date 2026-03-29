@@ -17,3 +17,6 @@ __pycache__/
 
 # configs
 configs/
+
+src/otupy/actuators/ctxd/proxmox.py
+src/otupy/actuators/ctxd/ctxd_actuator_proxmox_obsolete.py

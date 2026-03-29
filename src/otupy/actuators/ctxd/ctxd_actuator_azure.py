@@ -5,20 +5,29 @@
     `Service` and `Link` objects compatible with the CTXD profile.
 """
 
+import json
 import subprocess
 import logging
+from types import SimpleNamespace
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
+from otupy.profiles.ctxd.data.application import Application
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.consumer import Consumer
+from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
+from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
+from otupy.profiles.ctxd.data.host import Host
+from otupy.profiles.ctxd.data.host_type import HostType
 from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.name import Name
+from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
 from otupy.profiles.ctxd.data.server import Server
-from otupy.profiles.ctxd.data.service import Service
+from otupy.profiles.ctxd.data.service import SId, Service
 from otupy.profiles.ctxd.data.service_type import ServiceType
+from otupy.profiles.ctxd.data.vm import VM
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
 from otupy.core.transfer import Transfer
@@ -38,7 +47,7 @@ def run(cmd):
         return False, "", str(e)
 
 
-def aks(resource_group, cluster_name, cmd: str) -> str:
+def aks_cmd(resource_group, cluster_name, cmd: str) -> str:
     """ Execute a command on the AKS cluster using Azure CLI """
     full_cmd = [
         "az", "aks", "command", "invoke",
@@ -78,12 +87,14 @@ class CTXDActuatorAzure(CTXDActuator):
         tenant_id = auth['tenant_id'] 
         client_id = auth['client_id'] 
         client_secret = auth['client_secret'] 
-        resource_group = auth['resource_group'] 
-        cluster_name = auth['cluster_name'] 
+        self.resource_group = auth['resource_group'] 
+        self.cluster_name = auth['cluster_name'] 
         self.nodes = set()
         self.namespaces = set()
         self.pods = []
 
+        self._aks_nodes = {} 
+        """
         # Retrieve pods from AKS
         pods_raw = aks(
             resource_group,
@@ -102,65 +113,82 @@ class CTXDActuatorAzure(CTXDActuator):
 
         self.nodes = list(self.nodes)
         self.namespaces = list(self.namespaces)
+        
+        """
+        
 
     def is_available(self):
         """ Return True if the actuator is available """
         return True
 
+    def discover_context(self):
+        """ Discover the context of the AKS cluster """
+
+        self.discover_services()
+        self.discover_links()
+
+
     def discover_services(self):
-        """ Discover all services in the AKS cluster """
 
-        asset_id = None
-        if self.specifiers and 'asset_id' in self.specifiers:
-            asset_id = self.specifiers['asset_id']
-        else:
-            asset_id = "azure-aks"
+        self._discover_Azure_cloud()
+    
 
-        # Root cloud service
-        cloud = Cloud(
-            description="Azure Kubernetes Service",
-            id=None,
-            name="Azure",
-            type="IaaS"
+    def _discover_Azure_cloud(self):
+        # The root service: AKS cluster
+        # --------------------------------------------------
+        # AKS is considered IaaS
+        aks = Cloud(description='Azure cloud', id=None, name="AKS", type='AKS')
+        aks_subservices = ArrayOf(SId)()
+
+
+        raw_output = aks_cmd(
+            self.resource_group, 
+            self.cluster_name, 
+            "kubectl get nodes -o json"
         )
+        if raw_output:
+        
 
-        self.services.append(Service(
-            name=Name(asset_id),
-            type=ServiceType(cloud),
-            subservices=ArrayOf(Name)(),
-            owner=self.owner,
-            release=None
-        ))
+            try:
+                # 2. Parse the wrapper and the nested kubectl JSON
+                wrapper = json.loads(raw_output[raw_output.find('{'):])
+                
+                
+            
+                node_items = wrapper.get("items", [])
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error("Failed to parse AKS JSON: %s", e)
+                return
 
-        # Nodes
-        for node in self.nodes:
-            self.services.append(Service(
-                name=Name(node),
-                type=ServiceType(cloud),
-                subservices=ArrayOf(Name)(),
-                owner=self.owner,
-                release=None
-            ))
+            for n_data in node_items:
 
-        # Namespaces
-        for ns in self.namespaces:
-            self.services.append(Service(
-                name=Name(ns),
-                type=ServiceType(cloud),
-                subservices=ArrayOf(Name)(),
-                owner=self.owner,
-                release=None
-            ))
+                n = json.loads(json.dumps(n_data), object_hook=lambda d: SimpleNamespace(**d))
 
-        # Pods
-        for pod in self.pods:
-            self.services.append(Service(
-                name=Name(pod["name"]),
-                type=ServiceType(cloud),
-                subservices=ArrayOf(Name)(),
-                owner=self.owner,
-                release=None
-            ))
+                
+                
+                # A Kubernetes node is an execution environment and hosts a kubelet
+                node = ExecutionEnvironment(name=n.metadata.name, id=n.metadata.uid, version=n.status.nodeInfo.kernelVersion,
+						description="AKS node "+n.status.nodeInfo.containerRuntimeVersion,
+                  type= ExecutionEnvironmentType( OS(family=n.status.nodeInfo.operatingSystem, arch=n.status.nodeInfo.architecture,
+							version=n.status.nodeInfo.kernelVersion)) )
+                self._aks_nodes[n.metadata.name]=SId.create_from_service_type(node)
+                logger.debug("Found node: %s", str(node))
+
+                kubelet = Application(
+                    name="kubelet", 
+                    description="AKS worker node",
+                    version=n.status.nodeInfo.kubeletVersion, 
+                    owner=self.owner, 
+                    app_type="kubelet"
+                )
+
+                aks_subservices.append(SId.create_from_service_type(kubelet, domain=n.metadata.name))
+            
+
+            self.services.append(Service(name=Name(aks.name),
+            sid=SId.create_from_service_type(aks),
+            type=ServiceType(aks), 
+            subservices=aks_subservices, owner=self.owner, release=None))
 
 
     def discover_links(self):

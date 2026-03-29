@@ -728,7 +728,7 @@ class CTXDActuator_openstack(CTXDActuator):
 	def _format_os_data(self, data):
 			data_list = []
 			for d in data:
-				 data_list.append( {key: value for key, value in d.to_dict().items()} )
+				data_list.append( {key: value for key, value in d.to_dict().items()} )
 			return data_list
 
 
