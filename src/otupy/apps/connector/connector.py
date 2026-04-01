@@ -123,9 +123,9 @@ def main() -> None:
                 for name, values in data.items():
                     # The name of the configuration section is currently not used. 
                     # It may be used in future releases when a better mechanism to
-					# dispatch commands to actuators is implemented in the consumer
-					# (for now, the consumer dispatches to 1 actuator only, based on
-					# its profile and actuator_id).
+                    # dispatch commands to actuators is implemented in the consumer
+                    # (for now, the consumer dispatches to 1 actuator only, based on
+                    # its profile and actuator_id).
                     logger.info("Loading actuator: %s", name)
                     identifier = values["actuator"]
                     if identifier not in Actuators:
@@ -139,8 +139,9 @@ def main() -> None:
                     parameters = dict(values)
                     del parameters["actuator"]
                     del parameters["profile"]
-
+    
                     profile = values["profile"]
+                    logger.info(" - Profile: %s", profile)
                     actuators[(profile, values["specifiers"]["asset_id"])] = clazz(**parameters)
 						  
         # Load the encoder.

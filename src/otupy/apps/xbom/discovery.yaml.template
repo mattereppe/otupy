@@ -1,0 +1,61 @@
+name: "test-discovery"
+frequency: 10 # seconds
+loop: 1 # -1: forever, 0: no run, >0: number of runs
+publishers:
+  mongodb:
+    host: '127.0.0.1'
+    port: 27017
+    db_name: "miranda"
+    collection: "contextdata"
+    user: "xxx"
+    pass: "xxx"
+  file: Null
+  kafka:
+    host: '127.0.0.1'
+    port: 29092
+    topic: "demo"
+    security_protocol: "SSL"
+    sasl_mechanism: Null
+    sasl_plain_username: Null
+    sasl_plain_password: Null
+    ssl_cafile: 'ca-cert'
+services:
+  - host: '127.0.0.1'
+    port: 8080
+    endpoint: "/.well-known/openc2"
+    encoding: "json"
+    transfer: "http"
+    actuator:
+      asset_id: "ctxd-kubernetes-example"
+  - host: '127.0.0.1'
+    port: 8080
+    actuator:
+      asset_id: "ctxd-openstack-example"
+
+logger:
+   version: 1
+   formatters:
+      otupy:
+         (): otupy.LogFormatter
+         datetime: True
+         name: True
+      otupy2file:
+         (): otupy.LogFormatter
+         datetime: True
+         name: True
+         datefmt: "%t"
+   handlers:
+      console:
+         class: logging.StreamHandler
+         formatter: otupy
+         level: INFO
+         filters: Null
+      file:
+         class: logging.FileHandler
+         formatter: otupy2file
+         level: DEBUG
+         filters: Null
+         filename: "connector.log"
+   root:
+      handlers: [console, file]
+      level: INFO
