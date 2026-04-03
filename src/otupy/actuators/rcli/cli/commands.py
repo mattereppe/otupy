@@ -1,7 +1,7 @@
 import re
 import os
 import json
-from openc2lib import ArrayOf, Process
+from otupy import ArrayOf, Process
 
 
 class Commands:

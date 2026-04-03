@@ -5,7 +5,7 @@ import shutil
 import os
 import psutil
 import logging
-from openc2lib import ArrayOf, File
+from otupy import ArrayOf, File
 
 # from openc2lib.profiles.rcli.data.extended_process import Process
 from otupy.profiles.rcli.data.process import Process
