@@ -2,7 +2,7 @@
 
 import logging
 
-from otupy import Producer, Command, Actions, Features, Feature, Args, ResponseType, StatusCode
+from otupy import Producer, Command, Actions, Features, Feature, Args, ResponseType, StatusCode, File
 from otupy.types.data.uri import URI
 from otupy.types.targets.file import File
 from otupy.profiles.nfm import Exporter, Specifiers, MonitorID
@@ -25,6 +25,7 @@ import otupy.profiles.nfm as nfm
 
 producer = Producer("nfm.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 actuator = Specifiers({"asset_id": "nfm-fprobe-example"})
+# actuator = Specifiers({"asset_id": "nfm-packetbeat-example"})
 arg = Args({"response_requested": ResponseType.complete})
 
 # First, we do the query action.
@@ -50,12 +51,20 @@ assert resp.status == StatusCode.OK
 # The we try to start a flow monitor.
 collectors = ArrayOf(Collector)()
 collectors.append(Collector(address=IPv4Net("127.0.0.1"), port=Port(2055)))
+# For fprobe.
 arg = nfm.Args(
     {
         "exporter": Exporter(collectors=collectors),
         "exporter_options": ExportOptions(format=FlowFormat.netflow7),
     }
 )
+# For packetbeat.
+# arg = nfm.Args(
+#    {
+#        "exporter": Exporter(storage=File(name="test", path="/packetbeat-test")),
+#        "exporter_options": ExportOptions(format=FlowFormat.json),
+#    }
+# )
 interfaces = ArrayOf(Interface)()
 interfaces.append(Interface(name="en0"))
 ies = ArrayOf(IE)()
@@ -63,7 +72,7 @@ ies.append(IE("source ip"))
 ies.append(IE("destination ip"))
 
 ipv4_connections = [
-    IPv4Connection(src_addr="192.168.1.1", dst_addr="130.251.17.2"),
+    # IPv4Connection(src_addr="192.168.1.1", dst_addr="130.251.17.2"),
 ]
 command = nfm.FlowMonitor(
     interfaces=interfaces, information_elements=ies, filter_v4=ArrayOf(IPv4Connection)(ipv4_connections)
@@ -71,8 +80,8 @@ command = nfm.FlowMonitor(
 
 cmd = Command(Actions.start, command, arg, actuator=actuator)
 resp = producer.sendcmd(cmd)
+print(resp)
 identifier = resp.content["results"]["monitor_id"]
-print(resp, identifier)
 
 cmd = Command(
     Actions.stop, MonitorID(identifier), Args({"response_requested": ResponseType.complete}), actuator=actuator
