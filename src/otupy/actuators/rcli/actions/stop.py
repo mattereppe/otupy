@@ -4,7 +4,7 @@ from otupy.profiles.rcli.targets.processes import Processes
 from otupy.actuators.rcli.database.SQLDB import db
 from otupy.actuators.rcli.user.config import PRODUCER_ID
 
-from openc2lib import ResponseType, Duration, DateTime
+from otupy import ResponseType, Duration, DateTime
 from otupy.actuators.rcli.handlers.argument_handler import get_sleep_times
 from otupy.actuators.rcli.utils.process_utils import (
     terminate_all_processes,
