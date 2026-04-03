@@ -132,6 +132,8 @@ class NFMActuatorPacketbeat(NFMActuator):
             raise
 
     def _load_yaml_config(self, path):
+        if path is None:
+            return {}
         try:
             with open(path, "r") as f:
                 return yaml.safe_load(f)
