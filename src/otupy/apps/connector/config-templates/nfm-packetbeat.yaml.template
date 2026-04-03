@@ -1,0 +1,14 @@
+nfm-packetbeat-example:
+  actuator: "nfm-packetbeat"
+  profile: "x-nfm"
+  owner: "acme.com"
+  specifiers:
+    domain: null
+    asset_id: "nfm-packetbeat-example"
+  probe:
+    executable: "/sbin/packetbeat"
+    info_elements: null
+    base_config: null
+    data_directory: "./packetbeat-data"
+    log_directory: "./packetbeat-log"
+    config_directory: "./packetbeat-config"
