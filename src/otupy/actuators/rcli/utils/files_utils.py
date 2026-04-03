@@ -2,12 +2,12 @@ import os
 import uuid
 import hashlib
 import requests
-import openc2lib as oc2
+import otupy as oc2
 from pathlib import Path
-from openc2lib.types.data.uri import URI
-from openc2lib.types.targets.file import File
+from otupy.types.data.uri import URI
+from otupy.types.targets.file import File
 
-from openc2lib import Payload, Binary
+from otupy import Payload, Binary
 from otupy.actuators.rcli.database.SQLDB import db
 from otupy.actuators.rcli.user.config import PRODUCER_ID
 
