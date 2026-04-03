@@ -1,11 +1,11 @@
 import os
 import logging
 import otupy.profiles.rcli as rcli
-from openc2lib import ResponseType, Artifact
-from openc2lib.types.targets.file import File
-from openc2lib.types.base.array_of import ArrayOf
-from openc2lib.types.data import Hashes
-from openc2lib.types.base import Binaryx
+from otupy import ResponseType, Artifact
+from otupy.types.targets.file import File
+from otupy.types.base.array_of import ArrayOf
+from otupy.types.data import Hashes
+from otupy.types.base import Binaryx
 from otupy.profiles.rcli.targets import Files
 from otupy.actuators.rcli.database.SQLDB import db
 from otupy.actuators.rcli.user.config import PRODUCER_ID
