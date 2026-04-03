@@ -1,7 +1,7 @@
 import os
 import logging
-from otupy import ResponseType
-from otupy.types.targets.file import File
+from openc2lib import ResponseType
+from openc2lib.types.targets.file import File
 from otupy.actuators.rcli.database.SQLDB import db
 from otupy.actuators.rcli.user.config import PRODUCER_ID
 from otupy.actuators.rcli.utils.files_utils import is_file_authorized

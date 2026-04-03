@@ -5,7 +5,7 @@ It only answers to the request for available features.
 """
 
 import logging
-from otupy import Actions, Feature
+from openc2lib import Actions, Feature
 import otupy.profiles.rcli as rcli
 from otupy.actuators.rcli.actions.copy import copy
 from otupy.actuators.rcli.actions.delete import delete

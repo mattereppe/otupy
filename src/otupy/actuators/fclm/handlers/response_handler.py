@@ -1,4 +1,4 @@
-from otupy import Response, StatusCode
+from openc2lib import Response, StatusCode
 import logging
 
 logger = logging.getLogger(__name__)

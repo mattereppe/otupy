@@ -1,10 +1,10 @@
 import logging
 import otupy.profiles.rcli as rcli
-from otupy.types.data import Hashes
-from otupy.types.base import Binaryx
+from openc2lib.types.data import Hashes
+from openc2lib.types.base import Binaryx
 from otupy.profiles.rcli.targets import Processes, Files
 
-from otupy import ArrayOf, Nsid, Version, Features, ResponseType, Feature, File
+from openc2lib import ArrayOf, Nsid, Version, Features, ResponseType, Feature, File
 from otupy.actuators.rcli.cli.commands import Commands
 from otupy.profiles.rcli.data.state import State
 from otupy.profiles.rcli.data.process import Process

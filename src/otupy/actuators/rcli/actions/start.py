@@ -1,6 +1,6 @@
 import logging
 import threading
-from otupy import ResponseType, Duration, DateTime
+from openc2lib import ResponseType, Duration, DateTime
 from otupy.profiles.rcli.data.process import Process
 
 import otupy.profiles.rcli as rcli

@@ -1,6 +1,6 @@
 import os, json, logging
 from otupy.profiles.fclm.data.ef import EF
-from otupy import ArrayOf
+from openc2lib import ArrayOf
 
 # define Nothing as a string
 from dotenv import load_dotenv
