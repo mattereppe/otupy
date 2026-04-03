@@ -2,8 +2,8 @@ import logging
 import threading
 
 import otupy.profiles.nfm as nfm
-from openc2lib.actuators.rcli.utils.random_name_generator import generate_unique_name
-from otupy import Feature, actuator_implementation, MapOf, ArrayOf
+from otupy.actuators.rcli.utils.random_name_generator import generate_unique_name
+from otupy import Feature, actuator_implementation
 from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
 from otupy.actuators.nfm.handlers.response_handler import ok
 from otupy.actuators.nfm.nfm_actuator import NFMActuator

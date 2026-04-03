@@ -1,6 +1,6 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.fclm.data.file_format import FileFormat
+from otupy.profiles.fclm.data.file_format import FileFormat
 
 
 @parametrize_from_file("parameters/test_file_format.yml", key="valid_formats")
