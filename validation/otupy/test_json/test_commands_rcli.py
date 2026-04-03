@@ -1,5 +1,4 @@
 import pytest
-import os
 import logging
 import ipaddress
 import json
@@ -8,8 +7,6 @@ import json
 from helpers import load_json, load_files, send_raw_command
 from openc2lib import Encoder, Command, Response, Message, StatusCode, EncoderError, Feature
 from openc2lib.core.producer import Producer
-import openc2lib.transfers.http
-from openc2lib.profiles.rcli.data.transfer import Transfer
 from openc2lib.transfers.http.http_transfer import HTTPTransfer
 import openc2lib.transfers.http.message as http
 from openc2lib.encoders.json import JSONEncoder

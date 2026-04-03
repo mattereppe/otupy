@@ -5,7 +5,7 @@ import threading
 from typing_extensions import deprecated
 
 from otupy.actuators.nfm.handlers.argument_handler import get_sleep_times
-from openc2lib.actuators.rcli.utils.random_name_generator import generate_unique_name
+from otupy.actuators.rcli.utils.random_name_generator import generate_unique_name
 import otupy.profiles.nfm as nfm
 from otupy.actuators.nfm.utils.bpf_filter_translator import generate_bpf_filter
 from otupy.profiles.nfm.targets.monitor_id import MonitorID

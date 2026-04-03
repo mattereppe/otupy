@@ -1,10 +1,11 @@
 import pytest
 import parametrize_from_file
-from openc2lib.profiles.fclm.targets.monitor import LogMonitor
+from otupy.profiles.fclm import LogMonitor
 from openc2lib.types.targets import File, URI
-from openc2lib.profiles.fclm.data.socket import Socket
+from otupy.profiles.fclm.data.socket import Socket
 from openc2lib.types.data.hostname import Hostname
 from openc2lib.types.targets.ipv4_connection import IPv4Connection
+
 
 @parametrize_from_file("parameters/test_log_monitor_target.yml")
 def test_log_monitor_target(monitor_type, monitor_value):
@@ -23,6 +24,7 @@ def test_log_monitor_target(monitor_type, monitor_value):
 
     # Assert the object is of type LogMonitor
     assert isinstance(obj, LogMonitor)
+
 
 @parametrize_from_file("parameters/test_log_monitor_target.yml")
 def test_bad_log_monitor_target(bad_monitor_type, bad_monitor_value):
