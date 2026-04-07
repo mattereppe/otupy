@@ -63,9 +63,9 @@
 		- ``encoding``
 		- ``transfer``
 		- ``endpoint``
-		- ``actuator`` (x-ctxd py:class:`~otupy.profiles.ctxd.actuator.Specifiers`)
+		- ``actuator`` (x-ctxd :py:class:`~otupy.profiles.ctxd.actuator.Specifiers`)
 
-	- ``logger``: The configuration for the `Logging` framework. See the module `documentation <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
+	- ``logger``: The configuration for the ``Logging`` framework. See the module `documentation <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
 
 	A template configuration file is available `here <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/ctxd/discovery.yaml.template>`__.
 
@@ -88,7 +88,7 @@
 	- ``/start``: POST request with a config in json format to start discovery, returns the id of started thread
 	- ``/stop``: POST request with a list of thread ids to stop
 	- ``/threads``: GET request which returns the list of active threads (active means not cancelled, they may have terminated their job)
-	- ``/clean``: POST request that clean up all threads
+	- ``/clean``: POST request that cleans up all threads
 
 	All ``POST`` requests MUST have the ``Content-type`` header set to ``application/json``. The configuration of the start request
 	only includes a subset of the parameters described above: ``logger`` is not allowed and is ignored.
