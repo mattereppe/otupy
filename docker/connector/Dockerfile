@@ -31,9 +31,10 @@ RUN cp -a /opt/otupy-venv/lib/python3*/site-packages/otupy/apps/connector/connec
 RUN mkdir /actuators-config
 
 # Install security agents
+export DEBIAN_FRONTEND=noninteractive
 RUN wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch  | gpg --dearmor -o /etc/apt/keyrings/elastic-archive-keyring.pgp  && \
-		 echo "[signed-by=/etc/apt/keyrings/elastic-archive-keyring.pgp] deb https://artifacts.elastic.co/packages/$ELASTIC_VERSION/apt stable main"  | \ 
-		 	tee -a /etc/apt/sources.list.d/elastic-$ELASTIC_VERSION.list # && \
+		 echo "deb [signed-by=/etc/apt/keyrings/elastic-archive-keyring.pgp] https://artifacts.elastic.co/packages/${ELASTIC_VERSION}/apt stable main"  | \ 
+		 	tee -a /etc/apt/sources.list.d/elastic-${ELASTIC_VERSION}.list # && \
 		 apt-get update  && \ 
 		 apt-get install -y filebeat packetbeat metricbeat fprobe iptables
 
