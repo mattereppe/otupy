@@ -83,7 +83,7 @@ if args.start:
     #    }
     # )
     interfaces = ArrayOf(Interface)()
-    interfaces.append(Interface(name="en0"))
+    interfaces.append(Interface(name="net1"))
     ies = ArrayOf(IE)()
     ies.append(IE("source ip"))
     ies.append(IE("destination ip"))
@@ -111,7 +111,9 @@ print("Got: ", resp)
 if args.query:
 	assert resp.status == StatusCode.OK
 
-if args.stop:
+if args.start:
     identifier = resp.content["results"]["monitor_id"]
+    print("------------------------------")
+	 print("Started process: ", identifier)
 
 
