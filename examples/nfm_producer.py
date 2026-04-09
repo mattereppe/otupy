@@ -38,9 +38,9 @@ arguments.add_argument("--probe", default="fprobe", help="Select probe to run [f
 args = arguments.parse_args()
 
 producer = Producer("nfm.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
-actuator = Specifiers({"asset_id": "nfm-"+args.probe})
-# actuator = Specifiers({"asset_id": "nfm-packetbeat-example"})
 arg = Args({"response_requested": ResponseType.complete})
+
+actuator = Specifiers({"asset_id": "nfm-"+args.probe})
 
 # First, we do the query action.
 if args.query:
@@ -114,6 +114,6 @@ if args.query:
 if args.start:
     identifier = resp.content["results"]["monitor_id"]
     print("------------------------------")
-	 print("Started process: ", identifier)
+    print("Started process: ", identifier)
 
 
