@@ -1,6 +1,6 @@
 import threading, logging, os
 from ruamel.yaml import YAML
-from otupy import Feature
+from otupy import Feature, actuator_implementation
 from otupy.types.base import Choice
 from otupy.types.data.duration import Duration
 from otupy.profiles.fclm.targets.monitor_id import MonitorID
@@ -17,7 +17,8 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-class FilebeatActuator(LogCollectionMonitor):
+@actuator_implementation("fclm-filebeat")
+class FCLMActuatorFilebeat(LogCollectionMonitor):
     """
     Actuator class for managing log collection using Filebeat.
 
@@ -26,29 +27,27 @@ class FilebeatActuator(LogCollectionMonitor):
     files, sockets, and URIs, applying import/export controls, and defining custom
     output destinations.
 
-    Attributes:
-        load (LogConfigLoader): Loader for retrieving configuration parameters.
-        filebeat_exe (str): Path to the Filebeat executable.
-        base_config (str): Path to the base Filebeat YAML configuration file.
-        config_dir (str): Directory where generated Filebeat config files are stored.
-        log_dir (str): Directory where log output will be written.
-        data_dir (str): Directory for Filebeat data storage.
     """
 
-    def __init__(self, asset_id):
+    def __init__(self, *, specifiers, probe, **kwargs):
         """
         Initialize the FilebeatActuator.
 
         Args:
-            asset_id (str): The unique identifier for the monitored asset.
+            specifiers: The unique identifier for the monitored asset.
+				probe: Configuration items specific for Filebeat
         """
-        super().__init__(asset_id)
-        self.load = LogConfigLoader()
-        self.filebeat_exe = os.getenv("FILEBEAT_EXECUTABLE")
-        self.base_config = os.getenv("FILEBEAT_BASE_CONFIG")
-        self.config_dir = os.getenv("FILEBEAT_CONFIG_DIR")
-        self.log_dir = os.getenv("FILEBEAT_LOG_DIR")
-        self.data_dir = os.getenv("FILEBEAT_DATA_DIR")
+        super().__init__(asset_id=specifiers["asset_id"])
+
+        # TODO: Take as input, load defaults if not provided
+        self.load = LogConfigLoader(probe.get('capabilities'), probe.get('export_fields'))
+
+        self.filebeat_exe = probe.get('executable', '/sbin/filebeat')
+        self.base_config = probe.get('base_config', './')
+        self.config_dir = probe.get('config_directory', './')
+        self.log_dir = probe.get('log_directory', './')
+        self.data_dir = probe.get('data_directory', './')
+
 
     def _handle_feature(self, f):
         """
@@ -62,9 +61,9 @@ class FilebeatActuator(LogCollectionMonitor):
         """
         match f:
             case Feature.export_fields:
-                return self.load.get_export_fields(self.asset_id)
+                return self.load.get_export_fields()
             case Feature.imports_config | Feature.exports_config | Feature.import_controls:
-                return self.load.get_feature(self.asset_id, f.name)
+                return self.load.get_feature(f.name)
             case _:
                 return super()._handle_feature(f)
 

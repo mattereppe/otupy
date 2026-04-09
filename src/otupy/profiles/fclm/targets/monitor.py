@@ -1,12 +1,12 @@
-import openc2lib as oc2
+import otupy as oc2
 from otupy.profiles.fclm.profile import Profile  # Assuming this exists
-from openc2lib.types.base import ArrayOf, Array
-from openc2lib.types.targets import File, URI
+from otupy.types.base import ArrayOf, Array
+from otupy.types.targets import File, URI
 from otupy.profiles.fclm.data.socket import Socket
-from openc2lib.types.base import Choice
-from openc2lib.types.data.hostname import Hostname
-from openc2lib.types.targets.ipv4_connection import IPv4Connection
-from openc2lib.core.register import Register
+from otupy.types.base import Choice
+from otupy.types.data.hostname import Hostname
+from otupy.types.targets.ipv4_connection import IPv4Connection
+from otupy.core.register import Register
 
 
 # Target for LogMonitor Configuration

@@ -14,6 +14,8 @@ from otupy.actuators.nfm.utils.process_utils import run_monitor
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_COLLECTOR_ADDRESS="127.0.0.1"
+DEFAULT_COLLECTOR_PORT="2055"
 
 @actuator_implementation("nfm-packetbeat")
 class NFMActuatorPacketbeat(NFMActuator):
@@ -90,9 +92,10 @@ class NFMActuatorPacketbeat(NFMActuator):
 
         if args.get("exporter"):
             output = self._get_output(args)
+            collectors = self._get_collectors(args)
         monitor_id = generate_unique_name()
         config_file_name = self._configure_packetbeat_yaml(
-            interfaces, information_elements, bpf_filters, output, sampling, monitor_id
+            interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
         )
         cmd_list = [self.probe["executable"], "-c", config_file_name]
         if sleep_time > 0:
@@ -120,11 +123,19 @@ class NFMActuatorPacketbeat(NFMActuator):
             return exporter.storage.get("path", ""), exporter.storage.get("name", "")
         return None
 
-    def _configure_packetbeat_yaml(self, interfaces, information_elements, bpf_filters, output, sampling, monitor_id):
+    def _get_collectors(self, args):
+        collectors = []
+        exporter = args.get("exporter")
+        if exporter and exporter.get("collector"):
+            for c in exporter.get("collector"):
+                collectors.append( (c.get("address", DEFAULT_COLLECTOR_ADDRESS), c.get("port", DEFAULT_COLLECTOR_PORT)) )
+        return collectors
+
+    def _configure_packetbeat_yaml(self, interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id):
         try:
             config = self._load_yaml_config(self.probe["base_config"])
             self._update_packetbeat_config(
-                config, interfaces, information_elements, bpf_filters, output, sampling, monitor_id
+                config, interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
             )
             return self._write_yaml_config(config, monitor_id)
         except Exception as e:
@@ -141,7 +152,7 @@ class NFMActuatorPacketbeat(NFMActuator):
             return {}
 
     def _update_packetbeat_config(
-        self, config, interfaces, information_elements, bpf_filters, output, sampling, monitor_id
+        self, config, interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
     ):
         config.setdefault("packetbeat", {})
         if monitor_id:
@@ -158,6 +169,13 @@ class NFMActuatorPacketbeat(NFMActuator):
             log_path = os.path.join(self.probe["log_directory"], output[0])
             config["output"] = {
                 "file": {"path": log_path, "filename": output[1], "rotate_every_kb": 3000, "number_of_files": 5}
+            }
+        for c in collectors:
+            # TODO: We currently support logstash only, since additional outputs (Kafka, Redis, Elasticsearch
+            # would require more parameters in the profile (e.g., topic name, index, ...
+            hosts = "[" + c[0] + ":" + c[1] + "]"
+            config["output"] = {
+                "logstash": {"hosts": hosts }
             }
         if information_elements:
             config["processors"] = [{"include_fields": {"fields": information_elements}}]

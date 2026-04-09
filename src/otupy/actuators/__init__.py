@@ -29,3 +29,5 @@ from otupy.actuators.xbom.xbom_actuator_host import XBOMActuator_host
 
 from otupy.actuators.nfm.nfm_actuator_fprobe import NFMActuatorFProbe
 from otupy.actuators.nfm.nfm_actuator_nprobe import NFMActuatorNProbe
+from otupy.actuators.nfm.nfm_actuator_packetbeat import NFMActuatorPacketbeat
+from otupy.actuators.fclm.fclm_actuator_filebeat import FCLMActuatorFilebeat

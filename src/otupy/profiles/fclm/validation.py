@@ -4,7 +4,7 @@ This module defines specific FCLM constraints on the usable `Action`s and `Args`
 
 """
 
-from openc2lib import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
+from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
 
 from otupy.profiles.fclm.profile import Profile
 
@@ -36,7 +36,7 @@ AllowedCommandTarget = ActionTargets()
 	 Command Matrix: valid Command/Target pairs
 """
 
-AllowedCommandTarget[Actions.query] = [TargetEnum.__features]
+AllowedCommandTarget[Actions.query] = [TargetEnum.features]
 AllowedCommandTarget[Actions.start] = [TargetEnum[Profile.nsid + ":monitor"]]
 AllowedCommandTarget[Actions.stop] = [TargetEnum[Profile.nsid + ":monitor_id"]]
 
@@ -56,7 +56,7 @@ def fillin_allowed_command_arguments(AllowedCommandArguments, action, targets, a
 
 # TODO: complete the list (if necessary)
 args = ["response_requested"]
-AllowedCommandArguments[(Actions.query, TargetEnum.__features)] = ["response_requested"]
+AllowedCommandArguments[(Actions.query, TargetEnum.features)] = ["response_requested"]
 AllowedCommandArguments[(Actions.start, TargetEnum[Profile.nsid + ":monitor"])] = [
     "response_requested",
     "start_time",

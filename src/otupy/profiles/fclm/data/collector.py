@@ -1,6 +1,6 @@
-from openc2lib.types.base import Record
-from openc2lib.types.data import Port
-from openc2lib.types.targets import IPv4Net
+from otupy.types.base import Record
+from otupy.types.data import Port
+from otupy.types.targets import IPv4Net
 from otupy.profiles.fclm.data.file_format import FileFormat
 
 

@@ -1,5 +1,5 @@
-from openc2lib.types.base import Map
-from openc2lib.types.data.duration import Duration
+from otupy.types.base import Map
+from otupy.types.data.duration import Duration
 
 
 class ImportOptions(Map):

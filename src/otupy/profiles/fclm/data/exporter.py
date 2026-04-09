@@ -1,5 +1,5 @@
-from openc2lib.types.base import Record, ArrayOf, Array
-from openc2lib.types.targets.file import File
+from otupy.types.base import Record, ArrayOf, Array
+from otupy.types.targets.file import File
 from otupy.profiles.fclm.data.collector import Collector  # Assuming this path
 
 

@@ -2,7 +2,7 @@
 
 This module collects all public definition that are exported as part of the fclm profile.
 All naming follows as much as possible the terminology in the fclm Specification, by
-also applying generic openc2lib conventions.
+also applying generic otupy conventions.
 
 This definition also registers all extensions defined in the fclm profile (`Args`, `Target`, `Profile`, `Results`).
 
@@ -11,7 +11,7 @@ This definition also registers all extensions defined in the fclm profile (`Args
 from otupy.profiles.fclm.profile import Profile
 from otupy.profiles.fclm.actuator import *
 
-from openc2lib import TargetEnum
+from otupy import TargetEnum
 from otupy.profiles.fclm.data import *
 from otupy.profiles.fclm.targets import LogMonitor
 from otupy.profiles.fclm.targets import MonitorID

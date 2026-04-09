@@ -1,21 +1,21 @@
 """FCLM Response extensions"""
 
-import openc2lib as oc2
+import otupy as oc2
 
 from otupy.profiles.fclm.profile import Profile
 from otupy.profiles.fclm.data.ef import EF
 from otupy.profiles.fclm.targets.monitor_id import MonitorID
 
-from openc2lib.types.base.array_of import ArrayOf
+from otupy.types.base.array_of import ArrayOf
 
 
 @oc2.extension(nsid=Profile.nsid)
 class Results(oc2.Results):
     """FCLM Results
 
-    Extensions to the base class `openc2lib.core.response.Results`.
+    Extensions to the base class `otupy.core.response.Results`.
 
-    [Developing extensions](https://github.com/mattereppe/openc2lib/blob/main/docs/developingextensions.md#developing-extensions) Section of the main documentation.
+    [Developing extensions](https://github.com/mattereppe/otupy/blob/main/docs/developingextensions.md#developing-extensions) Section of the main documentation.
 
     """
 

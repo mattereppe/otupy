@@ -14,7 +14,7 @@ from otupy.actuators.fclm.handlers.response_handler import (
     processing,
     notfound,
 )
-from openc2lib import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
+from otupy import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
 
 Feature.extend("export_fields", 11)
 Feature.extend("exports_config", 12)

@@ -3,7 +3,7 @@
 This modules contains the definition of the `fclm` profile.
 """
 
-import openc2lib as oc2
+import otupy as oc2
 
 from otupy.profiles.fclm.profile import Profile
 

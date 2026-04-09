@@ -1,7 +1,7 @@
-from openc2lib.types.base.record import Record
-from openc2lib.types.targets.ipv4_net import IPv4Net
-from openc2lib.types.data.port import Port
-from openc2lib.types.data.l4_protocol import L4Protocol
+from otupy.types.base.record import Record
+from otupy.types.targets.ipv4_net import IPv4Net
+from otupy.types.data.port import Port
+from otupy.types.data.l4_protocol import L4Protocol
 
 
 class Socket(Record):
