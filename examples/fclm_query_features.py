@@ -3,10 +3,10 @@
 #
 import logging
 import sys
-import openc2lib as oc2
-from openc2lib.types.data.feature import Feature
-from openc2lib.encoders.json import JSONEncoder
-from openc2lib.transfers.http import HTTPTransfer
+import otupy as oc2
+from otupy.types.data.feature import Feature
+from otupy.encoders.json import JSONEncoder
+from otupy.transfers.http import HTTPTransfer
 
 import otupy.profiles.fclm as fclm
 
@@ -23,7 +23,7 @@ def main():
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 
     arg = fclm.Args({"response_requested": oc2.ResponseType.complete})
-    pf = fclm.Specifiers({"asset_id": "agent_x"})
+    pf = fclm.Specifiers({"asset_id": "fclm-filebeat"})
 
     cmd = oc2.Command(
         oc2.Actions.query,
