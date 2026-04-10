@@ -6,9 +6,10 @@ nfm-packetbeat-example:
     domain: null
     asset_id: "nfm-packetbeat-example"
   probe:
-    executable: "/sbin/packetbeat"
+    executable: "/usr/share/packetbeat/bin/packetbeat" # WARNING: /usr/bin/packetbeat is a wrapper!!! DO NOT USE
     info_elements: null
-    base_config: null
-    data_directory: "./packetbeat-data"
-    log_directory: "./packetbeat-log"
-    config_directory: "./packetbeat-config"
+#    base_config: null # 'null' disable default config. Use with care (remind to list protocols)
+    path_home: "beatp"
+    path_data: "data"
+    path_log: "log"
+    path_config: "config"
