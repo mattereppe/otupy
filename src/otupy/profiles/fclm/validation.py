@@ -62,7 +62,7 @@ AllowedCommandArguments[(Actions.start, TargetEnum[Profile.nsid + ":monitor"])] 
     "start_time",
     "stop_time",
     "duration",
-    "log_exporter",
+    "exporter",
     "export_fields",
     "import_controls",
 ]

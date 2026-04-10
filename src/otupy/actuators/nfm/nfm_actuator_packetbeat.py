@@ -90,9 +90,8 @@ class NFMActuatorPacketbeat(NFMActuator):
         interfaces, information_elements, output, bpf_filters, sampling = self._parse_monitor(monitor, args)
         sleep_time, terminate_time = get_sleep_times(args)
 
-        if args.get("exporter"):
-            output = self._get_output(args)
-            collectors = self._get_collectors(args)
+        output = self._get_output(args)
+        collectors = self._get_collectors(args)
         monitor_id = generate_unique_name()
         config_file_name = self._configure_packetbeat_yaml(
             interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
@@ -170,13 +169,15 @@ class NFMActuatorPacketbeat(NFMActuator):
             config["output"] = {
                 "file": {"path": log_path, "filename": output[1], "rotate_every_kb": 3000, "number_of_files": 5}
             }
+        hosts = []
         for c in collectors:
             # TODO: We currently support logstash only, since additional outputs (Kafka, Redis, Elasticsearch
             # would require more parameters in the profile (e.g., topic name, index, ...
-            hosts = "[" + c[0] + ":" + c[1] + "]"
+            hosts.append( str(c[0]) + ":" + str(c[1]) )
+        if len(hosts) > 0:
             config["output"] = {
                 "logstash": {"hosts": hosts }
-            }
+        }
         if information_elements:
             config["processors"] = [{"include_fields": {"fields": information_elements}}]
 

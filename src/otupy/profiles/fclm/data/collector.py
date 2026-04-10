@@ -43,3 +43,7 @@ class Collector(Record):
             raise TypeError(f"Expected 'port' to be Port, got {type(self.port)}")
         if self.format is not None and not isinstance(self.format, FileFormat):
             raise TypeError(f"Expected 'format' to be FileFormat, got {type(self.format)}")
+
+    def get(self, key, default=None):
+        """Mimics dictionary get method"""
+        return getattr(self, key, default)
