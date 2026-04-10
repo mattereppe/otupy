@@ -68,7 +68,8 @@ class NFMActuatorPacketbeat(NFMActuator):
         super().__init__(asset_id=specifiers["asset_id"])
 
         self.filebeat_exe = probe.get('executable', '/sbin/filebeat')
-        self.base_config = probe.get('base_config', './')
+        self.base_config = probe.get('base_config', 
+              os.path.join( os.path.dirname(__file__), 'defaults/packetbeat.full.yml') )
         self.home_dir = probe.get('path_home', '.')
         self.config_dir = probe.get('path_config', 'config')
         self.log_dir = probe.get('path_logs', 'logs')
@@ -101,6 +102,7 @@ class NFMActuatorPacketbeat(NFMActuator):
 
         output = self._get_output(args)
         collectors = self._get_collectors(args)
+        print("Chiara Eva Catalano lo piglia nell'ano")
         monitor_id = generate_unique_name()
         config_file_name = self._configure_packetbeat_yaml(
             interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
@@ -134,8 +136,8 @@ class NFMActuatorPacketbeat(NFMActuator):
     def _get_collectors(self, args):
         collectors = []
         exporter = args.get("exporter")
-        if exporter and exporter.get("collector"):
-            for c in exporter.get("collector"):
+        if exporter:
+            for c in exporter.get("collectors", []):
                 collectors.append( (c.get("address", DEFAULT_COLLECTOR_ADDRESS), c.get("port", DEFAULT_COLLECTOR_PORT)) )
         return collectors
 
@@ -153,6 +155,7 @@ class NFMActuatorPacketbeat(NFMActuator):
     def _load_yaml_config(self, path):
         try:
             with open(path, "r") as f:
+                logger.info("Loading default configuration from %s", path)
                 return yaml.safe_load(f)
         except (FileNotFoundError, TypeError):
             logger.warn("No base packetbeat configuration found; using empty configuration")
@@ -173,7 +176,9 @@ class NFMActuatorPacketbeat(NFMActuator):
         if sampling:
             config["packetbeat"]["flows"] = {"period": f"{sampling}s"}
 
-        if output:
+        if output: 
+            # Note: we cannot assign 'output.file', because packetbeat only supports 1 output at a time.
+            # With the following syntax, the "output" is overwritten by logstash, if both are provided.
             config["output"] = {
                 "file": {
                    "path": os.path.join(self.home_dir, f"{monitor_id}/output", output[0]),
@@ -189,9 +194,10 @@ class NFMActuatorPacketbeat(NFMActuator):
             # would require more parameters in the profile (e.g., topic name, index, ...
             hosts.append( str(c[0]) + ":" + str(c[1]) )
         if len(hosts) > 0:
+            # See note above (output.file) about the need to not use "output.logstash"
             config["output"] = {
                 "logstash": {"hosts": hosts }
-        }
+            }
 
         if information_elements:
             config["processors"] = [{"include_fields": {"fields": information_elements}}]
