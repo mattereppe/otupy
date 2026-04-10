@@ -34,3 +34,4 @@ azure-mgmt-network==30.1.0
 azure-mgmt-resource==24.0.0
 cyclonedx-python-lib==11.6.0
 pyyaml==6.0.3
+ruamel.yaml==0.18.17
