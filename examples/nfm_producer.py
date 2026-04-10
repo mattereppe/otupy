@@ -35,9 +35,12 @@ arguments.add_argument("--start", action="store_true", help="Start monitoring")
 arguments.add_argument("--stop", help="Stop monitoring the specified process")
 arguments.add_argument("--query", action="store_true", help="Stop monitoring the specified process")
 arguments.add_argument("--probe", default="fprobe", help="Select probe to run [fprobe|packetbeat]")
+arguments.add_argument("--server", default="127.0.0.1", help="Select IP address of the Consumer")
+arguments.add_argument("--port", default="8080", help="Select TCP port of the Consumer")
+arguments.add_argument("--iface", default="eth0", help="Select interface to monitor")
 args = arguments.parse_args()
 
-producer = Producer("nfm.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
+producer = Producer("nfm.example.net", JSONEncoder(), HTTPTransfer(args.server, args.port))
 arg = Args({"response_requested": ResponseType.complete})
 
 actuator = Specifiers({"asset_id": "nfm-"+args.probe})
@@ -67,23 +70,25 @@ if args.query:
 if args.start:
     print("Starting nfm actuator...")
     collectors = ArrayOf(Collector)()
-    collectors.append(Collector(address=IPv4Net("127.0.0.1"), port=Port(2055)))
+    collectors.append(Collector(address=IPv4Addr("127.0.0.1"), port=Port(2055)))
+    if args.probe == "fprobe":
     # For fprobe.
-    arg = nfm.Args(
-        {
-            "exporter": Exporter(collectors=collectors),
-            "exporter_options": ExportOptions(format=FlowFormat.netflow7),
-        }
-    )
+        arg = nfm.Args(
+            {
+                "exporter": Exporter(collectors=collectors),
+                "exporter_options": ExportOptions(format=FlowFormat.netflow7),
+            }
+        )
+    if args.probe == "packetbeat":
     # For packetbeat.
-    # arg = nfm.Args(
-    #    {
-    #        "exporter": Exporter(storage=File(name="test", path="/packetbeat-test")),
-    #        "exporter_options": ExportOptions(format=FlowFormat.json),
-    #    }
-    # )
+        arg = nfm.Args(
+           {
+               "exporter": Exporter(storage=File(name="test", path="packetbeat-test"), collectors=collectors),
+               "exporter_options": ExportOptions(format=FlowFormat.json),
+           }
+        )
     interfaces = ArrayOf(Interface)()
-    interfaces.append(Interface(name="net1"))
+    interfaces.append(Interface(name=args.iface))
     ies = ArrayOf(IE)()
     ies.append(IE("source ip"))
     ies.append(IE("destination ip"))
