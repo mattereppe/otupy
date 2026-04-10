@@ -1,3 +1,4 @@
+import os
 import subprocess, psutil, threading, logging, time
 from otupy.profiles.fclm import Results
 from otupy.profiles.fclm.targets.monitor_id import MonitorID
@@ -6,8 +7,14 @@ from otupy.actuators.fclm.user.config import PRODUCER_ID
 from otupy.actuators.fclm.handlers.response_handler import ok, servererror, notfound, forbidden
 
 logger = logging.getLogger(__name__)
-db = SQLDatabase()
+db = None
 
+def init_db(name = 'fclmdata.db', path = '.'):
+    global db
+    os.makedirs(path, exist_ok=True)
+    if db is None:
+        db_name = os.path.join(path, name)
+        db = SQLDatabase(db_name)
 
 def stream_output(pipe, log_fn, label, max_lines=10):
     line_count = 0
@@ -37,6 +44,7 @@ def run_monitor(command, terminate_time, monitor_id):
     Returns:
         Response: A standardized response indicating success or failure using the response handler.
     """
+    init_db()
     try:
         logger.info(f"Executing: {' '.join(command)}")
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, text=True)
@@ -76,6 +84,7 @@ def terminate_process_and_children(monitor_id):
     Returns:
         Response: A standardized response indicating success or the type of failure (e.g., not found, forbidden).
     """
+    init_db()
     try:
         if isinstance(monitor_id, int) or str(monitor_id).isdigit():
             print("pid", monitor_id)

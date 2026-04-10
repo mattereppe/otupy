@@ -9,13 +9,15 @@ from otupy.actuators.fclm.utils.random_name_generator import generate_unique_nam
 from otupy.actuators.fclm.fclm_file_monitor import LogCollectionMonitor
 from otupy.actuators.fclm.handlers.response_handler import ok, badrequest
 from otupy.actuators.fclm.utils.log_config_loader import LogConfigLoader
-from otupy.actuators.fclm.utils.process_utils import run_monitor
+from otupy.actuators.fclm.utils.process_utils import run_monitor, init_db
 from dotenv import load_dotenv
 import otupy.profiles.fclm as fclm
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+DEFAULT_COLLECTOR_ADDRESS="127.0.0.1"
+DEFAULT_COLLECTOR_PORT="2055"
 
 @actuator_implementation("fclm-filebeat")
 class FCLMActuatorFilebeat(LogCollectionMonitor):
@@ -42,9 +44,12 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         self.load = LogConfigLoader(probe.get('capabilities'), probe.get('export_fields'))
         self.filebeat_exe = probe.get('executable', '/sbin/filebeat')
         self.base_config = probe.get('base_config', './')
-        self.config_dir = probe.get('config_directory', './')
-        self.log_dir = probe.get('log_directory', './')
-        self.data_dir = probe.get('data_directory', './')
+        self.home_dir = probe.get('path_home', '.')
+        self.config_dir = probe.get('path_config', 'config')
+        self.log_dir = probe.get('path_logs', 'logs')
+        self.data_dir = probe.get('path_data', 'data')
+
+        init_db(path=self.home_dir)
 
 
     def _handle_feature(self, f):
@@ -81,14 +86,15 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         import_controls = args.get("import_controls", {})
         export_fields = args.get("export_fields", [])
         output = self._get_output(args)
+        collectors = self._get_collectors(args)
         sleep_time, terminate_time = get_sleep_times(args)
         monitor_id = generate_unique_name()
 
         config_file = self._configure_filebeat_yaml(
-            files, uri, socket, export_fields, import_controls, output, monitor_id
+            files, uri, socket, export_fields, import_controls, output, collectors, monitor_id
         )
 
-        cmd_list = [self.filebeat_exe, "-c", config_file]
+        cmd_list = [self.filebeat_exe, "-c", config_file, "--path.config", os.path.join(self.home_dir, f"{monitor_id}", self.config_dir)]
         if sleep_time > 0:
             threading.Timer(sleep_time, run_monitor, args=(cmd_list, terminate_time, monitor_id)).start()
             return ok("Monitor will start after delay", fclm.Results(monitor_id=MonitorID(monitor_id)))
@@ -132,12 +138,35 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         Returns:
             tuple or None: A tuple of (path, filename) or None if not defined.
         """
-        exporter = args.get("log_exporter")
+        exporter = args.get("exporter")
         if exporter and (storage := exporter.get("storage")):
             return storage.get("path", ""), storage.get("name", "filebeat_output")
         return None
 
-    def _configure_filebeat_yaml(self, file, uri, socket, export_fields, import_controls, output, monitor_id):
+    def _get_collectors(self, args):
+        """
+            Extract output destination path and file name from arguments.
+            The current implementation assumes the collector is a logstash
+            instance. Future implementations may add support for additional 
+            collectors, by also providing the missing parameters (e.g., topic
+            name, protocol).
+
+        Args:
+            args (dict): Arguments containing log exporter configuration.
+
+        Returns:
+            Array: An array of (ip, port, format) tuples; an empty array if not defined.
+        """
+        collectors = []
+        exporter = args.get("exporter")
+        if exporter:
+            for c in exporter.get("collectors", []):
+                collectors.append( (c.get("address", DEFAULT_COLLECTOR_ADDRESS), 
+                                            c.get("port", DEFAULT_COLLECTOR_PORT), 
+                                            c.get("format")) )
+        return collectors
+
+    def _configure_filebeat_yaml(self, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id):
         """
         Load and modify the base Filebeat configuration with new settings.
 
@@ -148,6 +177,7 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
             export_fields (list): Fields to include in the output.
             import_controls (dict): Controls for input frequency or other parameters.
             output (tuple): Output file path and name.
+            collector (array): Array of tuples of (ip, port, format).
             monitor_id (str): Unique ID for this monitoring instance.
 
         Returns:
@@ -159,13 +189,13 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         try:
             config = self._load_yaml_config(self.base_config)
             export_fields = self.load.get_export_fields(export_fields)
-            self._update_filebeat_config(config, file, uri, socket, export_fields, import_controls, output, monitor_id)
+            self._update_filebeat_config(config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id)
             return self._write_yaml_config(config, monitor_id)
         except Exception as e:
             logger.error(f"Error configuring Filebeat: {e}")
             raise
 
-    def _update_filebeat_config(self, config, file, uri, socket, export_fields, import_controls, output, monitor_id):
+    def _update_filebeat_config(self, config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id):
         """
         Update the YAML config dictionary with monitoring sources and parameters.
 
@@ -177,6 +207,7 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
             export_fields (list): List of fields to include in logs.
             import_controls (dict): Input-related control parameters.
             output (tuple): Output path and filename.
+            collector (array): Array of tuples of (ip, port, format).
             monitor_id (str): Unique identifier for this monitor.
         """
         config["filebeat.inputs"] = []
@@ -211,14 +242,27 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         if output:
             config["output"] = {
                 "file": {
-                    "path": os.path.join(self.log_dir, output[0]),
+                    "path": os.path.join(self.home_dir, f"{monitor_id}/output", output[0]),
                     "filename": output[1],
                     "rotate_every_kb": 3000,
                     "number_of_files": 5,
                 }
             }
 
-        config.setdefault("path", {})["data"] = os.path.join(self.data_dir, monitor_id)
+        hosts = []
+        for c in collectors:
+            # TODO: We currently support logstash only, since additional outputs (Kafka, Redis, Elasticsearch
+            # would require more parameters in the profile (e.g., topic name, index, ...
+            hosts.append( str(c[0]) + ":" + str(c[1]) )
+        if len(hosts) > 0:
+            config["output"] = {
+                "logstash": {"hosts": hosts }
+        }
+
+        config.setdefault("path", {})["home"] = self.home_dir
+        config.setdefault("path", {})["data"] = os.path.join(self.home_dir, monitor_id, self.data_dir)
+        config.setdefault("path", {})["logs"] = os.path.join(self.home_dir, monitor_id, self.log_dir)
+        config.setdefault("path", {})["config"] = os.path.join(self.home_dir, monitor_id, self.config_dir)
 
     def _apply_import_controls(self, input_cfg, import_controls):
         """
@@ -267,12 +311,15 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         Raises:
             RuntimeError: If the file cannot be written.
         """
-        file_path = os.path.join(self.config_dir, f"filebeat_{monitor_id}.yml")
+        config_file="filebeat.yml"
+        config_dir = os.path.join(self.home_dir, f"{monitor_id}", self.config_dir)
+        os.makedirs(config_dir, exist_ok=True)
+        file_path = os.path.join(config_dir, config_file)
         try:
             with open(file_path, "w") as f:
                 YAML().dump(config, f)
             logger.info("Filebeat configuration updated successfully.")
-            return file_path
+            return config_file
         except Exception as e:
             raise RuntimeError(f"Failed to write Filebeat config: {e}")
 

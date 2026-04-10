@@ -24,4 +24,4 @@ class Args(oc2.Args):
 
     """
 
-    fieldtypes = {"log_exporter": Exporter, "export_fields": oc2.ArrayOf(EF), "import_controls": ImportOptions}
+    fieldtypes = {"exporter": Exporter, "export_fields": oc2.ArrayOf(EF), "import_controls": ImportOptions}

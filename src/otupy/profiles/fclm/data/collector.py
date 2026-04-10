@@ -1,6 +1,6 @@
 from otupy.types.base import Record
 from otupy.types.data import Port
-from otupy.types.targets import IPv4Net
+from otupy.types.data import IPv4Addr
 from otupy.profiles.fclm.data.file_format import FileFormat
 
 
@@ -14,7 +14,7 @@ class Collector(Record):
     - `format`: Optional flow export format used by the collector.
     """
 
-    address: IPv4Net = None
+    address: IPv4Addr = None
     """ IP address of the collector """
 
     port: Port = None
@@ -23,7 +23,7 @@ class Collector(Record):
     format: FileFormat = None
     """ Flow export file format (e.g., JSON, YAML, etc.) """
 
-    def __init__(self, address: IPv4Net = None, port: Port = None, format: FileFormat = None):
+    def __init__(self, address: IPv4Addr = None, port: Port = None, format: FileFormat = None):
         super().__init__()
         self.address = address
         self.port = port
@@ -37,9 +37,13 @@ class Collector(Record):
         return f"Collector(address={self.address}, port={self.port}, format={self.format})"
 
     def validate_fields(self):
-        if self.address is not None and not isinstance(self.address, IPv4Net):
+        if self.address is not None and not isinstance(self.address, IPv4Addr):
             raise TypeError(f"Expected 'address' to be IPv4Addr, got {type(self.address)}")
         if self.port is not None and not isinstance(self.port, Port):
             raise TypeError(f"Expected 'port' to be Port, got {type(self.port)}")
         if self.format is not None and not isinstance(self.format, FileFormat):
             raise TypeError(f"Expected 'format' to be FileFormat, got {type(self.format)}")
+
+    def get(self, key, default=None):
+        """Mimics dictionary get method"""
+        return getattr(self, key, default)

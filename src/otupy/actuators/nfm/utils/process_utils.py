@@ -7,7 +7,13 @@ from otupy.actuators.nfm.user.config import PRODUCER_ID
 from otupy.actuators.nfm.handlers.response_handler import ok, servererror, notfound, forbidden, badrequest
 
 logger = logging.getLogger(__name__)
-db = SQLDatabase()
+db = None
+
+def init_db(name = 'nfmdata.db', path = ''):
+    global db
+    if db is None:
+        db_name = os.path.join(path, name)
+        db = SQLDatabase(db_name)
 
 
 def stream_output(pipe, log_fn, label, max_lines=10):
@@ -22,6 +28,7 @@ def stream_output(pipe, log_fn, label, max_lines=10):
 
 
 def run_monitor(command, terminate_time, monitor_id):
+    init_db()
     try:
         logger.info(f"Executing: {' '.join(command)}")
         proc = subprocess.Popen(
@@ -54,6 +61,7 @@ def run_monitor(command, terminate_time, monitor_id):
 
 
 def terminate_process_and_children(monitor_id):
+    init_db()
     try:
         try:
             pid = int(db.get_pid_by_monitor_id(PRODUCER_ID, monitor_id))
