@@ -29,6 +29,7 @@ FROM ghcr.io/mattereppe/otupy:$OTUPY_VERSION
 # Install otupy connector package
 RUN cp -a /opt/otupy-venv/lib/python3*/site-packages/otupy/apps/connector/connector.py  .
 RUN mkdir /actuators-config
+RUN mkdir /data
 
 # Install security agents
 ARG ELASTIC_VERSION
