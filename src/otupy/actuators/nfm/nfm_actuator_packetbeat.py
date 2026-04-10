@@ -10,7 +10,7 @@ from otupy.actuators.nfm.utils.bpf_filter_translator import generate_bpf_filter
 
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
 from otupy import Feature, actuator_implementation
-from otupy.actuators.nfm.utils.process_utils import run_monitor
+from otupy.actuators.nfm.utils.process_utils import run_monitor, init_db
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,16 @@ class NFMActuatorPacketbeat(NFMActuator):
 
     def __init__(self, *, specifiers, probe, **kwargs):
         super().__init__(asset_id=specifiers["asset_id"])
-        self.probe = probe
+
+        self.filebeat_exe = probe.get('executable', '/sbin/filebeat')
+        self.base_config = probe.get('base_config', './')
+        self.home_dir = probe.get('path_home', '.')
+        self.config_dir = probe.get('path_config', 'config')
+        self.log_dir = probe.get('path_logs', 'logs')
+        self.data_dir = probe.get('path_data', 'data')
+        self.info_elements = probe.get('info_elements')
+
+        init_db(path=self.home_dir)
 
     def _handle_feature(self, f):
         match f:
@@ -96,7 +105,7 @@ class NFMActuatorPacketbeat(NFMActuator):
         config_file_name = self._configure_packetbeat_yaml(
             interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
         )
-        cmd_list = [self.probe["executable"], "-c", config_file_name]
+        cmd_list = [self.filebeat_exe, "-c", config_file_name,  "--path.config", os.path.join(self.home_dir, f"{monitor_id}", self.config_dir)]
         if sleep_time > 0:
             threading.Timer(sleep_time, run_monitor, args=(cmd_list, terminate_time, monitor_id)).start()
             return ok("Monitor will start after delay", nfm.Results(monitor_id=MonitorID(monitor_id)))
@@ -104,8 +113,8 @@ class NFMActuatorPacketbeat(NFMActuator):
 
     def _parse_monitor(self, monitor, args):
         interfaces = [iface.name for iface in monitor.get("interfaces", [])]
-        if self.probe["info_elements"] is not None:
-            information_elements = self.probe["info_elements"]
+        if self.info_elements is not None:
+            information_elements = self.info_elements
         else:
             information_elements = self.__features["info_elements"]
         bpf_filters = (
@@ -132,7 +141,7 @@ class NFMActuatorPacketbeat(NFMActuator):
 
     def _configure_packetbeat_yaml(self, interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id):
         try:
-            config = self._load_yaml_config(self.probe["base_config"])
+            config = self._load_yaml_config(self.base_config)
             self._update_packetbeat_config(
                 config, interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
             )
@@ -142,33 +151,38 @@ class NFMActuatorPacketbeat(NFMActuator):
             raise
 
     def _load_yaml_config(self, path):
-        if path is None:
-            return {}
         try:
             with open(path, "r") as f:
                 return yaml.safe_load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
+            logger.warn("No base packetbeat configuration found; using empty configuration")
             return {}
 
     def _update_packetbeat_config(
         self, config, interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
     ):
         config.setdefault("packetbeat", {})
-        if monitor_id:
-            data_path = os.path.join(self.probe["data_directory"], monitor_id)
-            config.setdefault("path", {})["data"] = data_path
+
         if interfaces:
             config["packetbeat"]["interfaces"] = [{"device": iface, "bpf_filter": bpf_filters} for iface in interfaces]
+
         if bpf_filters:
             for iface_config in config["packetbeat"]["interfaces"]:
                 iface_config["bpf_filter"] = bpf_filters
+					 
         if sampling:
             config["packetbeat"]["flows"] = {"period": f"{sampling}s"}
+
         if output:
-            log_path = os.path.join(self.probe["log_directory"], output[0])
             config["output"] = {
-                "file": {"path": log_path, "filename": output[1], "rotate_every_kb": 3000, "number_of_files": 5}
+                "file": {
+                   "path": os.path.join(self.home_dir, f"{monitor_id}/output", output[0]),
+                   "filename": output[1],
+						 "rotate_every_kb": 3000, 
+						 "number_of_files": 5
+					 }
             }
+
         hosts = []
         for c in collectors:
             # TODO: We currently support logstash only, since additional outputs (Kafka, Redis, Elasticsearch
@@ -178,15 +192,24 @@ class NFMActuatorPacketbeat(NFMActuator):
             config["output"] = {
                 "logstash": {"hosts": hosts }
         }
+
         if information_elements:
             config["processors"] = [{"include_fields": {"fields": information_elements}}]
 
+        config.setdefault("path", {})["home"] = self.home_dir
+        config.setdefault("path", {})["data"] = os.path.join(self.home_dir, monitor_id, self.data_dir)
+        config.setdefault("path", {})["logs"] = os.path.join(self.home_dir, monitor_id, self.log_dir)
+        config.setdefault("path", {})["config"] = os.path.join(self.home_dir, monitor_id, self.config_dir)
+
     def _write_yaml_config(self, config, monitor_id):
-        file_name = os.path.join(self.probe["config_directory"], f"packetbeat_{monitor_id}.yml")
+        config_file="packetbeat.yml"
+        config_dir = os.path.join(self.home_dir, f"{monitor_id}", self.config_dir)
+        os.makedirs(config_dir, exist_ok=True)
+        file_path = os.path.join(config_dir, config_file)
         try:
-            with open(file_name, "w") as f:
+            with open(file_path, "w") as f:
                 yaml.safe_dump(config, f)
             logger.info("Packetbeat configuration updated successfully.")
-            return file_name
+            return config_file
         except Exception as e:
             raise Exception(f"Failed to update Packetbeat configuration: {e}")

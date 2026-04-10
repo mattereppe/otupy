@@ -1,4 +1,4 @@
-import subprocess, psutil, threading, logging, time
+import subprocess, psutil, threading, logging, time, os
 from otupy.profiles.nfm import Results
 
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
@@ -9,8 +9,9 @@ from otupy.actuators.nfm.handlers.response_handler import ok, servererror, notfo
 logger = logging.getLogger(__name__)
 db = None
 
-def init_db(name = 'nfmdata.db', path = ''):
+def init_db(name = 'nfmdata.db', path = '.'):
     global db
+    os.makedirs(path, exist_ok=True)
     if db is None:
         db_name = os.path.join(path, name)
         db = SQLDatabase(db_name)
