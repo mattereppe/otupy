@@ -29,8 +29,8 @@ ENV TZ="Europe/Rome"
 RUN if [ -n "$VERSION" ]; then \
 		OTUPY_VERSION="==$VERSION"; \
 	 fi; \
-	echo "Otupy version:  ${VERSION}"; \
-	pip install otupy$VERSION;
+	echo "Otupy version:  ${OTUPY_VERSION}"; \
+	pip install otupy$OTUPY_VERSION;
 
 RUN mkdir -p /config
 
