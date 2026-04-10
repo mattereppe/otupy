@@ -37,3 +37,7 @@ class Collector(Record):
             raise TypeError(f"Expected 'address' to be ipv4_net, got {type(self.address)}")
         if self.port is not None and not isinstance(self.port, Port):
             raise TypeError(f"Expected 'port' to be Port, got {type(self.port)}")
+
+    def get(self, key, default=None):
+        """Mimics dictionary get method"""
+        return getattr(self, key, default)
