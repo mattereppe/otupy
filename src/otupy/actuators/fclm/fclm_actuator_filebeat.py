@@ -8,7 +8,7 @@ from otupy.actuators.fclm.handlers.argument_handler import get_sleep_times
 from otupy.actuators.fclm.utils.random_name_generator import generate_unique_name
 from otupy.actuators.fclm.fclm_file_monitor import LogCollectionMonitor
 from otupy.actuators.fclm.handlers.response_handler import ok, badrequest
-from otupy.actuators.fclm.configuration.log_config_loader import LogConfigLoader
+from otupy.actuators.fclm.utils.log_config_loader import LogConfigLoader
 from otupy.actuators.fclm.utils.process_utils import run_monitor
 from dotenv import load_dotenv
 import otupy.profiles.fclm as fclm
@@ -39,9 +39,7 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         """
         super().__init__(asset_id=specifiers["asset_id"])
 
-        # TODO: Take as input, load defaults if not provided
         self.load = LogConfigLoader(probe.get('capabilities'), probe.get('export_fields'))
-
         self.filebeat_exe = probe.get('executable', '/sbin/filebeat')
         self.base_config = probe.get('base_config', './')
         self.config_dir = probe.get('config_directory', './')
@@ -84,7 +82,6 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         export_fields = args.get("export_fields", [])
         output = self._get_output(args)
         sleep_time, terminate_time = get_sleep_times(args)
-        print(f"Terminate time: {terminate_time}")
         monitor_id = generate_unique_name()
 
         config_file = self._configure_filebeat_yaml(
@@ -161,7 +158,7 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         """
         try:
             config = self._load_yaml_config(self.base_config)
-            export_fields = self.load.get_export_fields(self.asset_id, export_fields)
+            export_fields = self.load.get_export_fields(export_fields)
             self._update_filebeat_config(config, file, uri, socket, export_fields, import_controls, output, monitor_id)
             return self._write_yaml_config(config, monitor_id)
         except Exception as e:
@@ -252,7 +249,8 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         try:
             with open(path, "r") as f:
                 return YAML().load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
+            logger.warn("No base filebeat configuration found; using empty configuration")
             return {}
 
     def _write_yaml_config(self, config, monitor_id):
