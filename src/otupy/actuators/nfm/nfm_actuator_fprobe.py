@@ -91,7 +91,7 @@ class NFMActuatorFProbe(NFMActuator):
         for c in exporter.collectors or []:
             if c.address:
                 if c.port:
-                    cmd_list += [f"{c.address.addr()}:{c.port}"]
+                    cmd_list += [f"{c.address}:{c.port}"]
         return cmd_list
 
     def _add_option(self, cmd_list, opts, opt, flag):
