@@ -199,10 +199,6 @@ class CTXDActuator_open5gs(CTXDActuator):
 								description="Routing function connected to Tunnel Network",
 								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
 								peers=ArrayOf(Peer)([peer])))
-		print(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
-								description="Routing function connected to Tunnel Network",
-								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
-								peers=ArrayOf(Peer)([peer])))
 
 		# Add link between mobile terminals and tunnel network
 		# Note: we do not consider the role of the gNodeB
@@ -221,19 +217,16 @@ class CTXDActuator_open5gs(CTXDActuator):
 			sid = SId(name=k, type="app", subtype="sec", domain=self.k8s_domain,
 										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
 			for p in v['configs']:
-				print("processing; ", p)
 				if self.connector_configs.get(p):
 					for l,u in self.connector_configs.get(p).items():
 						if isinstance(u, dict) and u.get('profile'):
 							v['consumer'].profile = u.get('profile')
-							print("profile: ", u.get('profile'))
 							if isinstance(u, dict) and u.get('specifiers'):
 								v['consumer'].actuator = copy.deepcopy(u.get('specifiers'))
 	
 							peer = Peer(service_name=k, sid=sid,
 										role=PeerRole.protect, # Generic indication
 										consumer=v['consumer'])
-							print("Peer: ", peer)
 							self.links.append(Link(name=v['function'].name, sid=v['function'], 
 										description="MIRANDA Connector",
 										link_type=LinkType.protecting, role=PeerRole.protected,
@@ -317,7 +310,6 @@ class CTXDActuator_open5gs(CTXDActuator):
 											for v in c['spec']['template']['spec']['volumes']:
 												if v.get('configMap'):
 													self.connectors[c['metadata']['name']]['configs'].append(v.get('configMap').get('name'))
-													print(self.connectors)
 								except Exception as e:
 									pass
 						except Exception as e:
@@ -336,7 +328,6 @@ class CTXDActuator_open5gs(CTXDActuator):
 										if not self.connectors.get(c['metadata']['name']):
 											self.connectors[c['metadata']['name']] = {}
 										self.connectors[c['metadata']['name']]['consumer'] = Consumer(host=host, port=port.get('port'))
-#print("found: ", self.connectors)
 						except Exception as e:
 							logger.warning("Unable to retrieve MIRANDA connector endpoint: %s", e)
 									
