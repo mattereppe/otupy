@@ -37,8 +37,11 @@
 
 		- ``kafka``: A dictionary with the configuration to publish to Kafka brokers
 
-			- ``host``: IP address or hostname of the server hosting one bootstrap server
-			- ``port``: Port number where the bootstrap server listens to
+			- ``bootstrap``: a list of bootstrap servers, given as:
+
+				- ``host``: IP address or hostname of the server hosting one bootstrap server
+				- ``port``: Port number where the bootstrap server listens to
+
 			- ``topic``: The topic used to publish data
 			- ``security_protocol``: Security protocol used to connect to Kafka (PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL - see Kafka documentation) 
  			- ``sasl_mechanism``: Username/password authentication mechanism (PLAIN, GSSAPI, OAUTHBEARER, SCRAM-SHA-256, SCRAM-SHA-512). Only valid for security protocols SASL_PLAINTEXT or SASL_SSL
@@ -60,9 +63,9 @@
 		- ``encoding``
 		- ``transfer``
 		- ``endpoint``
-		- ``actuator`` (x-ctxd py:class:`~otupy.actuators.ctxd.actuator.Specifiers`)
+		- ``actuator`` (x-ctxd :py:class:`~otupy.profiles.ctxd.actuator.Specifiers`)
 
-	- ``logger``: The configuration for the `Logging` framework. See the module `documentation <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
+	- ``logger``: The configuration for the ``Logging`` framework. See the module `documentation <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
 
 	A template configuration file is available `here <https://github.com/mattereppe/otupy/blob/main/src/otupy/apps/ctxd/discovery.yaml.template>`__.
 
@@ -85,7 +88,7 @@
 	- ``/start``: POST request with a config in json format to start discovery, returns the id of started thread
 	- ``/stop``: POST request with a list of thread ids to stop
 	- ``/threads``: GET request which returns the list of active threads (active means not cancelled, they may have terminated their job)
-	- ``/clean``: POST request that clean up all threads
+	- ``/clean``: POST request that cleans up all threads
 
 	All ``POST`` requests MUST have the ``Content-type`` header set to ``application/json``. The configuration of the start request
 	only includes a subset of the parameters described above: ``logger`` is not allowed and is ignored.

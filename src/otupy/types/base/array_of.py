@@ -95,7 +95,7 @@ class ArrayOf:
 			# This is the code if I would like to do type checking
 			# when inserting data
 			def __to_fldtype(self, item):
-				return item if type(item)==self.fieldtype else self.fieldtype(item)
+				return item if isinstance(item, self.fieldtype) else self.fieldtype(item)
 
 			def __init__(self, args=[]):
 

@@ -144,6 +144,7 @@ See the full documentation available from [readthedocs.io](https://otupy.readthe
 ## Authors and acknowledgment
 
 - The Context Discovery profile, its actuators and use cases have been developed by Silvio Tanzarella.
+- The Xbom Actuator Profile and its serialization have been developed by Fabio Lorenzato.
 
 ## License
 
