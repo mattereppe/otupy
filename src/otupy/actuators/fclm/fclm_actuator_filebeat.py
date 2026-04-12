@@ -159,8 +159,9 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         """
         collectors = []
         exporter = args.get("exporter")
-        if exporter:
+        if exporter and exporter.get("collectors", []):
             for c in exporter.get("collectors", []):
+                print("   got: ", c)
                 collectors.append( (c.get("address", DEFAULT_COLLECTOR_ADDRESS), 
                                             c.get("port", DEFAULT_COLLECTOR_PORT), 
                                             c.get("format")) )
