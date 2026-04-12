@@ -82,7 +82,8 @@ spec:
         - name: discovery
           image: ghcr.io/mattereppe/discovery:latest
           imagePullPolicy: Always
-          command: ["python3", "discovery.py", "-c", "/config/discovery.yaml"]
+#          command: ["python3", "discovery.py", "-c", "/config/discovery.yaml"]
+          command: ["python3", "discovery.py", "--api", "--host", "0.0.0.0", "--port", "80"]
 #          command: ["/bin/bash","-c","sleep 3660"]
           volumeMounts:
           - name: discovery-configmap-volume
