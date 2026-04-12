@@ -4,14 +4,14 @@
 import logging
 import sys
 import time
-import openc2lib as oc2
-from openc2lib.types.data.uri import URI
-from openc2lib.types.targets.file import File
+import otupy as oc2
+from otupy.types.data.uri import URI
+from otupy.types.targets.file import File
 from otupy.profiles.rcli.data.process import Process
 from otupy.profiles.rcli.targets.processes import Processes
 
-from openc2lib.encoders.json import JSONEncoder
-from openc2lib.transfers.http import HTTPTransfer
+from otupy.encoders.json import JSONEncoder
+from otupy.transfers.http import HTTPTransfer
 
 import otupy.profiles.rcli as rcli
 

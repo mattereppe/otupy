@@ -1,14 +1,14 @@
 """RCLI Response extensions"""
 
-import openc2lib as oc2
+import otupy as oc2
 
 from otupy.profiles.rcli.profile import Profile
 from otupy.profiles.rcli.targets import Processes, Files
-from openc2lib.types.targets.file import File
+from otupy.types.targets.file import File
 
 # from openc2lib.profiles.rcli.data.extended_process import Process
 
-from openc2lib.types.base.array_of import ArrayOf
+from otupy.types.base.array_of import ArrayOf
 
 
 @oc2.extension(nsid=Profile.nsid)

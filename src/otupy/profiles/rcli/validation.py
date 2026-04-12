@@ -4,7 +4,7 @@ This module defines specific RCLI constraints on the usable `Action`s and `Args`
 
 """
 
-from openc2lib import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
+from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
 
 from otupy.profiles.rcli.profile import Profile
 
