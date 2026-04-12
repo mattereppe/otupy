@@ -65,12 +65,13 @@ def main():
             {
                 # "start_time": oc2.DateTime(time.time() * 1000 + 5000),
                 # "stop_time" :  oc2.DateTime(time.time() * 1000 + 10000),
-                "exporter": fclm.Exporter(storage=oc2.File({"path": "test", "name": "fb_out"}), collectors=col),
+                "exporter": fclm.Exporter(storage=oc2.File({"path": "httplogs", "name": "fb_out"})),
+#                "exporter": fclm.Exporter(storage=oc2.File({"path": "test", "name": "fb_out"}), collectors=col),
                 "import_controls": fclm.ImportOptions(scan_frequency=oc2.Duration(10), max_backoff=oc2.Duration(10)),
                 "export_fields": efs,
             }
         )
-        file = fclm.LogMonitor(oc2.File({"path": "/var/log/dpkg*.log"})) # Target (currently used)
+        file = fclm.LogMonitor(oc2.File({"path": "/var/log/http_access.log"})) # Target (currently used)
         socket = fclm.LogMonitor(fclm.Socket("192.118.0.0", 1000, oc2.L4Protocol.tcp)) # Target
         uri = fclm.LogMonitor(oc2.URI("wwww.google.com")) # Target
         cmd = oc2.Command(oc2.Actions.start, file, arg, actuator=pf)
