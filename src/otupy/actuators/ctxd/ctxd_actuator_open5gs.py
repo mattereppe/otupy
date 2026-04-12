@@ -323,6 +323,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 										host = c['metadata']['name']
 										if self.k8s_namespace:
 											host = host + "." + self.k8s_namespace
+										host = host + ".svc"
 										if self.k8s_domain:
 											host = host + "." + self.k8s_domain
 										if not self.connectors.get(c['metadata']['name']):
