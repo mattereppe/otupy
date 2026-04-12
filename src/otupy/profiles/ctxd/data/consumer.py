@@ -66,20 +66,18 @@ class Consumer(otupy.types.base.Record):
 		self.validate_fields()
 
 	def __repr__(self):
-		return (f"Consumer(host={self.host}, port={self.port}, protocol='{self.protocol}'"
-	             f"endpoint={self.endpoint}, transfer={self.transfer}, encoding='{self.encoding}')"
-					 f"profile={self.profile}, actuator={self.actuator}")
-	
-	def __str__(self):
 		return f"Consumer(" \
 	            f"host={self.host}, " \
 	            f"port={self.port}, " \
 	            f"protocol={self.protocol}, " \
 	            f"endpoint={self.endpoint}, " \
 					f"transfer={self.transfer}, " \
-	            f"encoding={self.encoding}), " \
+	            f"encoding={self.encoding}, " \
 					f"profile={self.profile}, " \
-					f"actuator={self.actuator}"
+					f"actuator={self.actuator})"
+	
+	def __str__(self):
+		return self.__repr__()
 
 	def validate_fields(self):
 		if self.host is not None and not isinstance(self.host, str):

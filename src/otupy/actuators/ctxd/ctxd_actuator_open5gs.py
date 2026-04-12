@@ -23,6 +23,7 @@
 from dotenv import dotenv_values
 
 import logging
+import copy
 import yaml
 import ipaddress
 from glob import glob
@@ -40,6 +41,8 @@ import otupy.profiles.ctxd as ctxd
 
 logger = logging.getLogger(__name__)
 
+MIRANDACONNECTOR_NAME="miranda-connector"
+MIRANDACONNECTOR_SERVICE="openc2"
 
 @actuator_implementation("ctxd-open5gs")
 class CTXDActuator_open5gs(CTXDActuator):
@@ -71,6 +74,8 @@ class CTXDActuator_open5gs(CTXDActuator):
 
 		self.mobilenets = []
 		self.mobileterminals_services = []
+		self.connectors = {}
+		self.connector_configs = {}
 		try:
 			self._load_open5gs_config(**kwargs)
 			self.configured = True
@@ -211,6 +216,29 @@ class CTXDActuator_open5gs(CTXDActuator):
 						link_type=LinkType.packet_flow, role=PeerRole.forwarding,
 						peers=ArrayOf(Peer)([peer])))
 
+		# Add links between security functions and network functions
+		for k, v in self.connectors.items():
+			sid = SId(name=k, type="app", subtype="sec", domain=self.k8s_domain,
+										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
+			for p in v['configs']:
+				print("processing; ", p)
+				if self.connector_configs.get(p):
+					for l,u in self.connector_configs.get(p).items():
+						if isinstance(u, dict) and u.get('profile'):
+							v['consumer'].profile = u.get('profile')
+							print("profile: ", u.get('profile'))
+							if isinstance(u, dict) and u.get('specifiers'):
+								v['consumer'].actuator = copy.deepcopy(u.get('specifiers'))
+	
+							peer = Peer(service_name=k, sid=sid,
+										role=PeerRole.protect, # Generic indication
+										consumer=v['consumer'])
+							print("Peer: ", peer)
+							self.links.append(Link(name=v['function'].name, sid=v['function'], 
+										description="MIRANDA Connector",
+										link_type=LinkType.protecting, role=PeerRole.protected,
+										peers=ArrayOf(Peer)([peer])))
+
 	def _load_open5gs_config(self, **kwargs):
 		if kwargs['config']['deployment'] == 'kubernetes' and \
 				kwargs['config']['manager'] == 'cn5t':
@@ -268,6 +296,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 				with open(file) as f:
 					configs = yaml.load_all(f, Loader=yaml.FullLoader)
 					for c in configs:
+						# Looking for the upf function
 						try:
 							if c['kind'] == "StatefulSet" or c['kind'] == "Deployment":
 								sid=SId(name= c['metadata']['name'], type="app", domain=self.k8s_domain, 
@@ -278,10 +307,57 @@ class CTXDActuator_open5gs(CTXDActuator):
 										self.upf=sid
 								except:
 									pass
+								try:
+									for container in c['spec']['template']['spec']['containers']:
+										if container['name'] == MIRANDACONNECTOR_NAME:
+											if not self.connectors.get(c['metadata']['name']):
+												self.connectors[c['metadata']['name']] = {}
+											self.connectors[c['metadata']['name']]['function'] =  sid
+											self.connectors[c['metadata']['name']]['configs'] =  []
+											for v in c['spec']['template']['spec']['volumes']:
+												if v.get('configMap'):
+													self.connectors[c['metadata']['name']]['configs'].append(v.get('configMap').get('name'))
+													print(self.connectors)
+								except Exception as e:
+									pass
 						except Exception as e:
 							logger.warning("Unable to retrieve mobile network service list: %s", e)
+						# Looking for a MIRANDA connector protecting this function
+						try:
+							# Detect the connector port in the Service
+							if c['kind'] == "Service":
+								for port in c['spec']['ports']:
+									if port.get('name') == MIRANDACONNECTOR_SERVICE:
+										host = c['metadata']['name']
+										if self.k8s_namespace:
+											host = host + "." + self.k8s_namespace
+										if self.k8s_domain:
+											host = host + "." + self.k8s_domain
+										if not self.connectors.get(c['metadata']['name']):
+											self.connectors[c['metadata']['name']] = {}
+										self.connectors[c['metadata']['name']]['consumer'] = Consumer(host=host, port=port.get('port'))
+#print("found: ", self.connectors)
+						except Exception as e:
+							logger.warning("Unable to retrieve MIRANDA connector endpoint: %s", e)
+									
 			except Exception as e: 
 				logger.error("Unable to parse %s: %s", file, e)
+
+		for file in glob(kwargs['config']['config_dir']+"/templates/config/25_connector/*.yaml"):
+			try:
+				with open(file) as f:
+					configs = yaml.load_all(f, Loader=yaml.FullLoader)
+					for c in configs:
+						for k,v in c['data'].items():
+							conf = yaml.safe_load(v)
+							for l,u in conf.items():
+								self.connector_configs[c['metadata']['name']] = yaml.safe_load(v)
+								# connector configs have the "consumer" keyword, 
+								# actuator configs have the "actuator" keyword
+			except Exception as e:
+				logger.error("Unabel to parse config file %s: %s", file, e)
+					
+
 	
 
 
