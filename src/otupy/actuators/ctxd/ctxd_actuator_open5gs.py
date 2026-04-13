@@ -257,6 +257,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 		self.mnc=config['OPEN5GS_MNC']
 		self.ssd=config['OPEN5GS_SST']
 		self.net_name=config['OPEN5GS_NETNAME']
+		self.connector_host=config.get('CONNECTOR_HOST')
 		malicious_users=config['DDOS_REPLICAS']
 		licit_users=config['CURL_REPLICAS']
 		self.users = []
@@ -321,15 +322,18 @@ class CTXDActuator_open5gs(CTXDActuator):
 							if c['kind'] == "Service":
 								for port in c['spec']['ports']:
 									if port.get('name') == MIRANDACONNECTOR_SERVICE:
-										host = c['metadata']['name']
-										if self.k8s_namespace:
-											host = host + "." + self.k8s_namespace
-										host = host + ".svc"
-										if self.k8s_domain:
-											host = host + "." + self.k8s_domain
+										if self.connector_host:
+											host = self.connector_host
+										else:
+											host = c['metadata']['name']
+											if self.k8s_namespace:
+												host = host + "." + self.k8s_namespace
+											host = host + ".svc"
+											if self.k8s_domain:
+												host = host + "." + self.k8s_domain
 										if not self.connectors.get(c['metadata']['name']):
 											self.connectors[c['metadata']['name']] = {}
-										self.connectors[c['metadata']['name']]['consumer'] = Consumer(host=host, port=port.get('port'))
+										self.connectors[c['metadata']['name']]['consumer'] = Consumer(host=host, port=port.get('nodePort'))
 						except Exception as e:
 							logger.warning("Unable to retrieve MIRANDA connector endpoint: %s", e)
 									
