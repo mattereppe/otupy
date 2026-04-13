@@ -1,6 +1,7 @@
 name: "test-discovery"
 frequency: 10 # seconds
 loop: 1 # -1: forever, 0: no run, >0: number of runs
+append_threadid: True # Append a trailing thread number to the "name"
 publishers:
   mongodb:
     host: '127.0.0.1'

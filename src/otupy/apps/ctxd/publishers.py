@@ -2,6 +2,14 @@
 
 	This module contains utilities used to save data retrieved by OpenC2 context discovery.
 
+	The output is the ctxd format embedded in a new object with a few more descriptive fields:
+	http://mirandaproject.eu/ctxd/v2.0/schema.json
+	Note: the `creator` field in the main json modifies the discovery app name by prepanding
+	a thread id. This allows notifications from different parallel processes from the same 
+	app to be distinguished if they are published on the same shared topic/channel/file.
+	This behaviour can be disabled by setting `append_threadid` option to `False` in the 
+	configuration file.
+
 """
 
 import json
@@ -12,7 +20,7 @@ from kafka import KafkaProducer
 
 import otupy 
 
-JSONSCHEMA = "http://mirandaproject.eu/ctxd/v1.0/schema.json"
+JSONSCHEMA = "http://mirandaproject.eu/ctxd/v2.0/schema.json"
 """ Json schema id currently used to log context data """
 
 logger = logging.getLogger(__name__)

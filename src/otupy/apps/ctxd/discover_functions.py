@@ -7,7 +7,7 @@
 import logging
 import time
 
-from threading import Event
+from threading import Event, get_ident
 
 import otupy 
 import otupy.encoders  # Do not remove! It is necessary to find the registered encoders.
@@ -153,6 +153,9 @@ def start_discovery(config: dict, event: Event = None):
 
 		Repeats the discovery process according to the configuration
 	"""
+	# Add a trailing id to the name, to distinguish between parallel threads
+	if config.get('append_threadid', True):
+		config['name']=config.get('name', "") + "#" + str(get_ident())
 	# Set loop and frequency of the discovery process
 	repeat_discovery = loop(config['loop'],config['frequency'],event)(discovery)
 	repeat_discovery(config)

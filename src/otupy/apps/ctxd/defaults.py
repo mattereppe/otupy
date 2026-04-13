@@ -11,6 +11,7 @@ defaults = { # Default values for context discovery operation
 				'name': "Discovery",
 				'loop': -1,
 				'frequency': 60,
+				'append_threadid': True,
 				# Default values for OpenC2 communication
 				'openc2': {
 					'host': '127.0.0.1',

@@ -6,6 +6,7 @@
 	"type": "object",
 	"properties": {
 		"creator": {
+			"description": "Name of the discovery service, including a unique identifier in case of parallel process. Format: <name>#<id>",
 			"type": "string"
 		},
 		"jsonschema": {
