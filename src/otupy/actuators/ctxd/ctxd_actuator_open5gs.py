@@ -102,6 +102,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 		"""
 		if not self.configured:
 			return
+		self.mobileterminals_services = []
 
 		# Main 5G composite service
 		mobile = MobileNetwork({'name': self.net_name, 'mcc': self.mcc, 'mnc': self.mnc,
