@@ -3,6 +3,8 @@ from otupy.types.base import Record
 import os
 from typing import Optional, Union
 
+from otupy.types.data.uri import URI
+
 class ProgramFile(Record):
     """
     OpenC2-compliant record representing a source or compiled eBPF program file.
@@ -15,6 +17,7 @@ class ProgramFile(Record):
     # OpenC2 public fields
     # ------------------------
     Name: str
+    isUri: bool = False
     Section: Optional[str]
     @classmethod
     def fromdict(cls, dic, encoder):
@@ -29,7 +32,7 @@ class ProgramFile(Record):
         section = dic.get("Section")
         return cls(Name=name, Section=section)
 
-    def __init__(self, Name: Optional[str] = None, Section: Optional[str] = None, Program: Optional[Union[str, "ProgramFile"]] = None, **kwargs):
+    def __init__(self, Name: Optional[str] = None, Section: Optional[str] = None, isUri: bool = False, Program: Optional[Union[str, "ProgramFile"]] = None, **kwargs):
         """
         Supports:
         - Name / Section (for deserialization)
@@ -41,9 +44,11 @@ class ProgramFile(Record):
         if Program:
             self.Name = Program.strip()
             self.Section = Section
+            self.isUri = isUri
         else:
             self.Name = Name
             self.Section = Section
+            self.isUri = isUri
 
         # Validation and section detection
         self.validate_fields()

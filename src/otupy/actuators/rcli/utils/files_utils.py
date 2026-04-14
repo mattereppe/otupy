@@ -80,8 +80,14 @@ def download_or_save_file(is_uri, payload, file_path):
             f.write(response.content)
         file_content = response.content
     else:  # If the payload is binary data, save it
-        Path(file_path).write_text(payload.decode())
-        file_content = payload
+        try:
+
+            Path(file_path).write_text(payload.decode())
+            file_content = payload
+        except UnicodeDecodeError:
+            Path(file_path).write_bytes(payload)
+            file_content = payload
+        
     # Calculate MD5 hash of the file content
     file_hash = hashlib.md5(file_content).digest()
 

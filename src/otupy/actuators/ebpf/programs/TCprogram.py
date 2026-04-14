@@ -6,19 +6,55 @@ from otupy.actuators.ebpf.base.ebpf_base import BaseEBPFProgram
 from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
 import re
 
+
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+
+
+import otupy as oc2
+from otupy.actuators.rcli.actions.copy import copy as copy_rcli
+from otupy.profiles import rcli
+from otupy.types.targets.file import File
+from otupy.types.data.uri import URI
+import hashlib
 
 class TCProgram(BaseEBPFProgram):
     def __init__(
             self,
             prog_path: str | None = None,
             section: str | None = None,
-            direction: str | None = None
+            direction: str | None = None,
+            storage: File | None = None
         ):
             self.prog_path = prog_path
             self.section = section
             self.direction = direction
+            self.storage = storage
             self.executor = TCCommandExecutor() 
+
+    def copy(self):
+        pf = rcli.Specifiers({})
+
+        arg = rcli.Args(
+            {
+                "storage": File({"path": self.storage.path, "name": self.storage.name}),
+            }
+        )
+
+        #bcontent = b"My binary payssssload"
+        uri = "file:///home/abba/ebpf/program.o"
+
+        #h = oc2.Hashes({"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())})
+        a = oc2.Artifact(
+            mime_type="application/json",
+            payload=oc2.Payload(URI(uri)),
+            # payload=oc2.Binary(bcontent),
+            # hashes= h
+        )
+
+        cmd = oc2.Command(oc2.Actions.copy, a, arg, actuator=None)
+
+        copy_rcli(cmd)
+        
 
     def load(self, ifaces: Interfaces = None):
         iface_mgr = InterfaceManager(self.executor)
@@ -26,6 +62,7 @@ class TCProgram(BaseEBPFProgram):
 
             if iface_mgr.ensure_clsact(iface):
 
+                self.copy()
                 
                 self.executor.run_cmd([
                     "tc", "filter", "add", "dev", iface, self.direction,

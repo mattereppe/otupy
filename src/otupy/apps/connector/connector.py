@@ -30,6 +30,8 @@ from otupy import Consumer, LogFormatter
 from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
 from otupy.actuators.ctxd.ctxd_actuator_proxmox import CTXDActuatorProxmox
 from otupy.actuators.ctxd.ctxd_actuator_azure import CTXDActuatorAzure
+from otupy.actuators.ebpf.actuators.TC import TCActuator    
+
 logger = logging.getLogger(__name__)
 
 default_consumer = {

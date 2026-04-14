@@ -1,16 +1,15 @@
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
-import hashlib
 import logging
 import otupy as oc2
 from otupy.types.data.uri import URI
 from otupy.types.targets.file import File
+
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
 
-import otupy.profiles.rcli as rcli
-
+import otupy.profiles.ebpf as ebpf
 
 # logging.basicConfig(filename='openc2.log',level=logging.DEBUG)
 """logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -27,36 +26,22 @@ hdls = [stdout_handler]
 # Add both handlers to the logger
 logger.addHandler(stdout_handler)
 # Add file logger
-file_handler = logging.FileHandler("controller_rcli_copy_artifact.log")
+file_handler = logging.FileHandler("controller_rcli_query_features.log")
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(oc2.LogFormatter(datetime=True, name=True, datefmt="%t"))
 logger.addHandler(file_handler)
+
+oc2.Feature.extend("clicommands", 5)
 
 
 def main():
     logger.info("Creating Producer")
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 
-    pf = rcli.Specifiers({})
+    pf = ebpf.Specifiers({})
+    #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
 
-    arg = rcli.Args(
-        {
-            "storage": File({"path": "tmacp/fcd/a", "name": "acxzcsxs.txt"}),
-        }
-    )
-
-    bcontent = b"My binary payssssload"
-    uri = "https://www.w3.org/TR/png/iso_8859-1.txt"
-
-    #h = oc2.Hashes({"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())})
-    a = oc2.Artifact(
-        mime_type="application/json",
-        payload=oc2.Payload(URI(uri)),
-        # payload=oc2.Binary(bcontent),
-        # hashes= h
-    )
-
-    cmd = oc2.Command(oc2.Actions.copy, a, arg, actuator=pf)
+    cmd = oc2.Command(oc2.Actions.query, oc2.Features([oc2.Feature.versions, oc2.Feature.profiles, oc2.Feature.pairs]), actuator=pf)
 
     logger.info("Sending command: %s", cmd)
     resp = p.sendcmd(cmd)

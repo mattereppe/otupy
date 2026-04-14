@@ -1,16 +1,21 @@
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
-import hashlib
 import logging
 import otupy as oc2
+from otupy.profiles.ebpf.data.direction_ebpf import Direction
+from otupy.profiles.ebpf.data.hook_program import AttachType
+from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+from otupy.profiles.ebpf.data.source_file import ProgramFile
+
+from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 from otupy.types.data.uri import URI
 from otupy.types.targets.file import File
+
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
 
-import otupy.profiles.rcli as rcli
-
+import otupy.profiles.ebpf as ebpf
 
 # logging.basicConfig(filename='openc2.log',level=logging.DEBUG)
 """logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -27,36 +32,33 @@ hdls = [stdout_handler]
 # Add both handlers to the logger
 logger.addHandler(stdout_handler)
 # Add file logger
-file_handler = logging.FileHandler("controller_rcli_copy_artifact.log")
+file_handler = logging.FileHandler("controller_rcli_query_features.log")
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(oc2.LogFormatter(datetime=True, name=True, datefmt="%t"))
 logger.addHandler(file_handler)
+
+oc2.Feature.extend("clicommands", 5)
 
 
 def main():
     logger.info("Creating Producer")
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 
-    pf = rcli.Specifiers({})
-
-    arg = rcli.Args(
-        {
-            "storage": File({"path": "tmacp/fcd/a", "name": "acxzcsxs.txt"}),
-        }
-    )
-
-    bcontent = b"My binary payssssload"
-    uri = "https://www.w3.org/TR/png/iso_8859-1.txt"
-
-    #h = oc2.Hashes({"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())})
-    a = oc2.Artifact(
-        mime_type="application/json",
-        payload=oc2.Payload(URI(uri)),
-        # payload=oc2.Binary(bcontent),
-        # hashes= h
-    )
-
-    cmd = oc2.Command(oc2.Actions.copy, a, arg, actuator=pf)
+    pf = ebpf.Specifiers({})
+    #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
+    full_path = "/home/abba/ebpf/program.o"
+    direction = "ingress"
+    attach_type = "tc"
+    iface = "wlp7s0"
+    section = "main"
+    prog = ProgramFile(full_path, Section=section,isUri=False) 
+    direction_obj = Direction(direction)
+    attach_obj = AttachType(attach_type)
+    interfaces = Interfaces(iface)
+    target_features = eBPF_program(file=prog)
+    storage= File({"path": "tmacp/fcd/a", "name": "allow.o"})
+    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces, "storage": storage})
+    cmd = oc2.Command(oc2.Actions.create,target=target_features,args=args, actuator=pf)
 
     logger.info("Sending command: %s", cmd)
     resp = p.sendcmd(cmd)

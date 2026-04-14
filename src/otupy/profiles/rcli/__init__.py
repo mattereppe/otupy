@@ -11,7 +11,7 @@ This definition also registers all extensions defined in the RCLI profile (`Args
 from otupy.profiles.rcli.profile import Profile
 from otupy.profiles.rcli.actuator import *
 
-from openc2lib import TargetEnum
+from otupy import TargetEnum
 from otupy.profiles.rcli.data import *
 from otupy.profiles.rcli.targets import Processes
 from otupy.profiles.rcli.targets import Files

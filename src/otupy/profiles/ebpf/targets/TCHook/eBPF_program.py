@@ -16,35 +16,25 @@ class eBPF_program(Record):
     # OpenC2 public fields
     # ------------------------
     file: ProgramFile = None
-    direction: Direction = None
-    attach_type: AttachType = None
-    interfaces: Interfaces = None
-    def __init__(self, file: ProgramFile = None, direction: Direction = None, 
-                 attach_type: AttachType = None, interfaces: Interfaces = None):
+    def __init__(self, file: ProgramFile = None):
         super().__init__()
 
         
         self.file = file
-        self.direction = direction
-        self.attach_type = attach_type
-        self.interfaces = interfaces
 
     # ------------------------
     # Representation
     # ------------------------
     def __repr__(self):
-        return f"eBPF_Programs(file={self.file}, hook={self.attach_type}, direction={self.direction})"
+        return f"eBPF_Programs(file={self.file})"
 
     def __str__(self):
-        return f"eBPF_Programs(file={self.file}, hook={self.attach_type}, direction={self.direction})"
+        return f"eBPF_Programs(file={self.file})"
 
     # ------------------------
     # Serialization for OpenC2 JSON
     # ------------------------
     def to_dict(self):
         return {
-            "file": self.file.to_dict() if self.file else None,
-            "direction": self.direction.to_dict() if self.direction else None,
-            "attach_type": self.attach_type.to_dict() if self.attach_type else None,
-            "interfaces": self.interfaces.to_dict() if self.interfaces else None
+            "file": self.file.to_dict() if self.file else None
         }
