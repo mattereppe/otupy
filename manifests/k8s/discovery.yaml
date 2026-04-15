@@ -6,7 +6,7 @@ metadata:
     role: discovery
 data:
   discovery.yaml: |
-    name: "test-discovery"
+    name: "miranda-discovery"
     frequency: 120 # seconds
     loop: -1 # -1: forever, 0: no run, >0: number of runs
     publishers:
@@ -21,14 +21,6 @@ data:
     #    sasl_plain_username: Null
     #    sasl_plain_password: Null
     #    ssl_cafile: 'ca-cert'
-    services:
-      - host: '10.1.0.63'
-        port: 8080
-        endpoint: "/.well-known/openc2"
-        encoding: "json"
-        transfer: "http"
-        actuator:
-          asset_id: "ctxd-kubernetes-onesource"
     logger:
       version: 1
       disable_existing_loggers: false
