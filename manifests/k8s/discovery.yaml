@@ -13,8 +13,9 @@ data:
       file: 
         name: "onesource.txt"
       kafka:
-        host: 'kafka-broker-0.intra.miranda.onesource.pt'
-        port: 9093
+        bootstrap:
+          - host: 'kafka-broker-0.intra.miranda.onesource.pt'
+            port: 9093
         topic: "ctxd"
     #  security_protocol: "SSL"
     #    sasl_mechanism: Null
@@ -56,10 +57,12 @@ metadata:
   labels:
     role: discovery
 spec:
+  type: NodePort
   ports:
   - name: control
     port: 80
     protocol: TCP    
+    nodePort: 30980
   selector:
     role: discovery    
 ---
