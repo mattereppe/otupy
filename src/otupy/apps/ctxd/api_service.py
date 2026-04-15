@@ -23,7 +23,7 @@ from flask import Flask, request, make_response
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
 
 from otupy.apps.ctxd.discover_functions import start_discovery
-from otupy.apps.ctxd.defaults import parse_and_default, set_defaults
+from otupy.apps.ctxd.defaults import parse_and_default
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,11 @@ def api_listen(config: dict) -> None:
 		try:
 			req_conf = json.loads(request.data)
 		except:
+			logger.warn("Invalid configuration: ", request.data)
 			req_conf = {}
-		logger.info("Got start request with config: %s", req_conf)
 		sanitize_config(req_conf)
 		logger.debug("Sanitized input data: %s", req_conf)
+		logger.info("Got start request with config: %s", req_conf)
 		# Generate a configuration by merging the default values with requested config
 		myconf = config | req_conf
 		myconf = parse_and_default(myconf)

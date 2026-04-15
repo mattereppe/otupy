@@ -18,7 +18,6 @@ from otupy.profiles.ctxd.data.name import Name
 #from otupy.transfers.http.message import Message
 
 from otupy.apps.ctxd.publishers import *
-from otupy.apps.ctxd.defaults import set_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +112,7 @@ def discover(service):
 	try:
 		encoder = otupy.Encoders[service['encoding']].value
 	except:
-		service['encoding'] = set_defaults(service, 'openc2', 'encoding')
+		service.setdefault('encoding', defaults['openc2']['encoding'])
 		logger.error("No valid encoder: %s", service['encoding'])
 		logger.info("Using default encoder: %s", )
 		encoder = otupy.Encoders[service['encoding']].value
@@ -123,7 +122,7 @@ def discover(service):
 		transferer = otupy.Transfers[service['transfer']](service['host'], 
 				service['port'], service['endpoint'])
 	except:
-		service['transfer'] = set_defaults(service, 'openc2', 'transfer')
+		service.setdefault('transfer',  defaults['openc2']['transfer'])
 		logger.error("No valid transfer: %s", service['transfer'])
 		logger.info("Using default transfer: %s", service['transfer'])
 		transferer = otupy.Transfers[service['transfer']](service['host'], 
