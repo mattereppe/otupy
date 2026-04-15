@@ -71,29 +71,29 @@ defaults = { # Default values for context discovery operation
 }
 """ Defaults value to be used for missing input parameters """
 
-def set_defaults(config, type_, param):
-	""" Sets default values
-
-		Checks if input parameters have value, and assign a default value in case no value was provided.
-
-		:param config: The dictionary with input config parameter.
-		:param type_: The group to which the parameter belongs (check `defaults`). There might be parameters with the same name under different stanzas.
-		:param param: The name of the parameter.
-		:return: The value to be assigned to the parameter.
-	"""
-
-	try:
-		if config[param] is not None:
-			return config[param]
-	except:
-		pass
-
-	try:
-		logger.info("Using default value %s for %s", defaults[type_][param], param)
-		return defaults[type_][param]
-	except:
-		logger.warn("No default value for: %s/%s", type_, param)
-		return None
+#def set_defaults(config, type_, param):
+#	""" Sets default values
+#
+#		Checks if input parameters have value, and assign a default value in case no value was provided.
+#
+#		:param config: The dictionary with input config parameter.
+#		:param type_: The group to which the parameter belongs (check `defaults`). There might be parameters with the same name under different stanzas.
+#		:param param: The name of the parameter.
+#		:return: The value to be assigned to the parameter.
+#	"""
+#
+#	try:
+#		if config[param] is not None:
+#			return config[param]
+#	except:
+#		pass
+#
+#	try:
+#		logger.info("Using default value %s for %s", defaults[type_][param], param)
+#		return defaults[type_][param]
+#	except:
+#		logger.warn("No default value for: %s/%s", type_, param)
+#		return None
 
 	
 
@@ -103,8 +103,9 @@ def parse_and_default(config):
 
 	# Logging framework and base service parameters
 	for c in ['name', 'logger', 'loop', 'frequency']:
-		if c not in config:
-			config[c]=defaults[c]
+#		if c not in config:
+#			config[c]=defaults[c]
+		config.setdefault(c, defaults[c])
 
 	# Service section (ctxd actuators)
 	if 'services' in config and config['services'] is not None:
@@ -112,11 +113,13 @@ def parse_and_default(config):
 			
 			# Load default values for missing parameters
 			for p in defaults['openc2'].keys():
-				service[p] = set_defaults(service,'openc2',p)
+#				service[p] = set_defaults(service,'openc2',p)
+				service.setdefault(p, defaults['openc2'][p])
 
-			# Check discovery params
-			for p in 'loop', 'frequency':
-				config[p] = set_defaults(config, 'ctxd', p)	
+#			# Check discovery params
+#			for p in 'loop', 'frequency':
+##				config[p] = set_defaults(config, 'ctxd', p)	
+#				config.setdefault(p, defaults['ctxd'][p])
 	else:
 		config['services'] = []
 	
@@ -127,7 +130,8 @@ def parse_and_default(config):
 			if config['publishers'][name] is None:
 				config['publishers'][name]={}
 			for p in defaults[name].keys():
-				config['publishers'][name][p] = set_defaults(config['publishers'][name], name,  p)
+#				config['publishers'][name][p] = set_defaults(config['publishers'][name], name,  p)
+				config['publishers'][name].setdefault(p, defaults[name][p])
 	else:
 		config['publishers']={}
 
