@@ -41,7 +41,7 @@ class NFMActuator(ABC):
         :param asset_id: NFM Actuator asset id.
         """
         self.asset_id = asset_id
-        self.allowed_interfaces = allowed_interfaces
+        self.allowed_interfaces = cls.allowed_interfaces
 
     def run(self, cmd):
         logger.info(f"Received command: {cmd}")
