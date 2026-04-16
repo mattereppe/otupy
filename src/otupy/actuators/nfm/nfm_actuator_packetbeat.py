@@ -20,7 +20,7 @@ DEFAULT_COLLECTOR_PORT="2055"
 @actuator_implementation("nfm-packetbeat")
 class NFMActuatorPacketbeat(NFMActuator):
     __features = {
-        "exports": ["file"],
+        "exports": ["file", "collector"],
         "export_options": ["sampling"],
         "flow_format": ["json"],
         "filters": ["source / destination", "ipv4 / ipv6", "port", "protocol"],
@@ -75,6 +75,7 @@ class NFMActuatorPacketbeat(NFMActuator):
         self.log_dir = probe.get('path_logs', 'logs')
         self.data_dir = probe.get('path_data', 'data')
         self.info_elements = probe.get('info_elements')
+        self.allowed_interfaces = self.probe.get('allowed_interfaces', [])
 
         init_db(path=self.home_dir)
 

@@ -8,8 +8,8 @@ from otupy.profiles.nfm.data.iface_type import IfaceType
 from otupy import ArrayOf
 
 
-allowed_interfaces_str = os.getenv("ALLOWED_INTERFACES", "")
-ALLOWED_INTERFACES = [iface.strip() for iface in allowed_interfaces_str.split(",") if iface.strip()]
+#allowed_interfaces_str = os.getenv("ALLOWED_INTERFACES", "")
+#ALLOWED_INTERFACES = [iface.strip() for iface in allowed_interfaces_str.split(",") if iface.strip()]
 
 
 def get_iface_status(iface_name: str):
@@ -48,7 +48,7 @@ def get_iface_type(link_info):
     return KIND_TO_IFACE_TYPE.get(kind, IfaceType.ether)
 
 
-def extract_interfaces() -> ArrayOf(Interface):  # type: ignore
+def extract_interfaces(allowed_interfaces: []) -> ArrayOf(Interface):  # type: ignore
     interfaces = []
     ip = IPRoute()
     for link in ip.get_links():
@@ -57,7 +57,7 @@ def extract_interfaces() -> ArrayOf(Interface):  # type: ignore
         if not name:
             continue
         # Only include interfaces from the allowed list
-        if name not in ALLOWED_INTERFACES:
+        if name not in allowed_interfaces:
             continue
         flags = link.get("flags", 0)
         iface_type = get_iface_type(link)
