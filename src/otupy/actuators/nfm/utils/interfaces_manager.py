@@ -1,4 +1,4 @@
-import psutil, os
+import psutil, os, ipaddress
 from pyroute2 import IPRoute
 from otupy.profiles.nfm.data.interface import Interface
 from otupy.types.targets.ipv4_net import IPv4Net
@@ -7,9 +7,6 @@ from otupy.types.targets import MACAddr
 from otupy.profiles.nfm.data.iface_type import IfaceType
 from otupy import ArrayOf
 
-
-#allowed_interfaces_str = os.getenv("ALLOWED_INTERFACES", "")
-#ALLOWED_INTERFACES = [iface.strip() for iface in allowed_interfaces_str.split(",") if iface.strip()]
 
 
 def get_iface_status(iface_name: str):
@@ -48,7 +45,7 @@ def get_iface_type(link_info):
     return KIND_TO_IFACE_TYPE.get(kind, IfaceType.ether)
 
 
-def extract_interfaces(allowed_interfaces: []) -> ArrayOf(Interface):  # type: ignore
+def extract_interfaces(allowed_interfaces: list = []) -> ArrayOf(Interface):  # type: ignore
     interfaces = []
     ip = IPRoute()
     for link in ip.get_links():
@@ -72,10 +69,9 @@ def extract_interfaces(allowed_interfaces: []) -> ArrayOf(Interface):  # type: i
             prefixlen = addr["prefixlen"]
             ip_addr = addr.get_attr("IFA_ADDRESS")
             if family == 2:  # IPv4
-                net = IPv4Net("127.0.0.1", 8)
-                ipv4_addrs.append(IPv4Net(ip_addr, prefixlen))
+                ipv4_addrs.append(IPv4Net(ipaddress.ip_network(ip_addr+"/"+str(prefixlen), strict=False).network_address.exploded, prefixlen))
             elif family == 10:  # IPv6
-                ipv6_addrs.append(IPv6Net(ip_addr, prefixlen))
+                ipv6_addrs.append(IPv6Net(ipaddress.ip_network(ip_addr+"/"+str(prefixlen),strict=False).network_address.exploded, prefixlen))
 
         iface = Interface(
             name=name,
@@ -89,5 +85,6 @@ def extract_interfaces(allowed_interfaces: []) -> ArrayOf(Interface):  # type: i
         )
 
         interfaces.append(iface)
+
 
     return ArrayOf(Interface)(interfaces)
