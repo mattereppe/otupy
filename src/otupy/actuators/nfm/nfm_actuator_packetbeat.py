@@ -75,7 +75,7 @@ class NFMActuatorPacketbeat(NFMActuator):
         self.log_dir = probe.get('path_logs', 'logs')
         self.data_dir = probe.get('path_data', 'data')
         self.info_elements = probe.get('info_elements')
-        self.allowed_interfaces = self.probe.get('allowed_interfaces', [])
+        self.allowed_interfaces = probe.get('allowed_interfaces', [])
 
         init_db(path=self.home_dir)
 

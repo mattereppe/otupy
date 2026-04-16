@@ -30,7 +30,7 @@ class NFMActuatorFProbe(NFMActuator):
     def __init__(self, *, specifiers, probe, **kwargs):
         super().__init__(asset_id=specifiers["asset_id"])
         self.probe = probe
-        self.allowed_interfaces = self.probe.get('allowed_interfaces', [])
+        self.allowed_interfaces = probe.get('allowed_interfaces', [])
 
     def _handle_feature(self, f):
         match f:
