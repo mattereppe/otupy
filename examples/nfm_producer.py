@@ -59,6 +59,8 @@ if args.query:
                 Feature.export_options,
                 Feature.flow_format,
                 Feature.filters,
+                Feature.interfaces,
+                Feature.information_elements
             ]
         ),
         arg,
@@ -114,7 +116,19 @@ resp = producer.sendcmd(cmd)
 print("Got: ", resp)
 
 if args.query:
-	assert resp.status == StatusCode.OK
+    assert resp.status == StatusCode.OK
+    print("------------------------------")
+    print("Supported features:")
+    for k,v in resp.content["results"].items():
+        print(k, ":")
+        if isinstance(v, list):
+            for e in v:
+                print("\t- ", e)
+        elif isinstance(v, dict):
+            for l,u in v.items():
+               print("\t- ", l, ":", u)
+        else:
+            print("\t - ", v)
 
 if args.start:
     identifier = resp.content["results"]["monitor_id"]
