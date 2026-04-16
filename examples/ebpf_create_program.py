@@ -50,7 +50,7 @@ def main():
     direction = "ingress"
     attach_type = "tc"
     iface = "wlp7s0"
-    section = "main"
+    section = "tc"
     prog = ProgramFile(full_path, Section=section,isUri=False) 
     direction_obj = Direction(direction)
     attach_obj = AttachType(attach_type)

@@ -53,7 +53,7 @@ class TCProgram(BaseEBPFProgram):
 
         cmd = oc2.Command(oc2.Actions.copy, a, arg, actuator=None)
 
-        copy_rcli(cmd)
+        return copy_rcli(cmd)
         
 
     def load(self, ifaces: Interfaces = None):

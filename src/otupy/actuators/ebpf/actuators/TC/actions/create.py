@@ -21,8 +21,9 @@ from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
 import re
 
 from otupy import Response, StatusCode
+from otupy.actuators.rcli.user.config import PRODUCER_ID
 
-
+from otupy.actuators.ebpf.actuators.TC.database.SQLDB import db
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 
 
@@ -115,12 +116,18 @@ def load(ifaces: Interfaces = None, storage: File = None,prog_path: str = None, 
                 r: Response=copy(storage=storage, isUri=isUri, prog_path=prog_path)
                 if r.get("status") != StatusCode.OK:
                     raise Exception("Error copying file to target location")
-                full_path = os.path.join(storage.get("path"), storage.get("name"))
+                results = r.get("results").get("file_status")
+                full_path = os.path.join(results[0].get("path"), results[0].get("name"))
+                
                 
                 executor.run_cmd([
                     "tc", "filter", "add", "dev", iface, direction,
                     "bpf", "da", "obj", full_path, "sec", section
                 ], check=True)
+
+                db.add_hookpoint(uid=PRODUCER_ID, file_path=full_path, file_name=os.path.basename(full_path), 
+                            calculated_hash=str(results[0].get("hashes").get("md5")), attach_type="TC",
+                             direction=direction, Section=section)
             else:
                 raise Exception("Cannot ensure clasct")
     except Exception as e:

@@ -11,6 +11,10 @@ __pycache__/
 # Logs
 *.log
 
+
+# db
+*.db
+
 # OS-specific files
 .DS_Store
 
