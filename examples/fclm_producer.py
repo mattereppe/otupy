@@ -42,6 +42,9 @@ def main():
             oc2.Actions.query,
             oc2.Features(
                 [
+                    oc2.Feature.versions,
+                    oc2.Feature.profiles,
+                    oc2.Feature.pairs,
                     oc2.Feature.export_fields,
                     oc2.Feature.exports_config,
                     oc2.Feature.import_controls,
@@ -90,6 +93,21 @@ def main():
         identifier = resp.content["results"]["monitor_id"]
         print("------------------------------")
         print("Started process: ", identifier)
+
+    if args.query:
+        print("------------------------------")
+        print("Supported features:")
+        for k,v in resp.content["results"].items():
+            print(k, ":")
+            if isinstance(v, list):
+                for e in v:
+                    print("\t- ", e)
+            elif isinstance(v, dict):
+                for l,u in v.items():
+                   print("\t- ", l, ":", u)
+            else:
+                print("\t - ", v)
+
 
 if __name__ == "__main__":
     main()
