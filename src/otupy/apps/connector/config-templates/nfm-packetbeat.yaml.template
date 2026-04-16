@@ -13,3 +13,5 @@ nfm-packetbeat-example:
     path_data: "data"
     path_log: "log"
     path_config: "config"
+    allowed_interfaces:
+    - ens18

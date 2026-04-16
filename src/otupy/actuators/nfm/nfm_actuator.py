@@ -32,13 +32,16 @@ class NFMActuator(ABC):
     """Base class for the NFM actuators."""
 
     asset_id: str = None
+    allowed_interfaces: list = []
 
     def __init__(self, asset_id: str, **kwargs):
         """Initialization of the `NFM Actuator`.
+			  Assign default values; always call this before any specific initialization of derived classes.
 
         :param asset_id: NFM Actuator asset id.
         """
         self.asset_id = asset_id
+        self.allowed_interfaces = allowed_interfaces
 
     def run(self, cmd):
         logger.info(f"Received command: {cmd}")
@@ -88,7 +91,7 @@ class NFMActuator(ABC):
             case Feature.pairs:
                 return AllowedCommandTarget
             case Feature.interfaces:
-                return extract_interfaces()
+                return extract_interfaces(self.allowed_interfaces)
             case _:
                 return None
 

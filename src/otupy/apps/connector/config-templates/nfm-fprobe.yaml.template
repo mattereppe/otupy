@@ -7,3 +7,5 @@ nfm-fprobe-example:
     asset_id: "nfm-fprobe-example"
   probe:
     executable: "/sbin/fprobe"
+    allowed_interfaces:
+    - ens18
