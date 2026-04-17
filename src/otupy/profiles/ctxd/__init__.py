@@ -40,7 +40,7 @@ from otupy.profiles.ctxd.data.pod import Pod
 from otupy.profiles.ctxd.data.iot import IoT
 from otupy.profiles.ctxd.data.network import Network
 from otupy.profiles.ctxd.data.network_node import NetworkNode
-from otupy.profiles.ctxd.data.network_interface import NetworkInterface
+from otupy.profiles.ctxd.data.network_interface import NetworkInterface, IPInfo, IPAddress
 from otupy.profiles.ctxd.data.network_router import Router
 from otupy.profiles.ctxd.data.network_bridge import Bridge
 from otupy.profiles.ctxd.data.network_nat import NAT
