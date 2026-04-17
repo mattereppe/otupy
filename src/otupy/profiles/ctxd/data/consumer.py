@@ -79,15 +79,15 @@ class Consumer(otupy.types.base.Record):
 	def __str__(self):
 		return self.__repr__()
 
-	def __eq__(self, other):
-		""" Equality operator
-
-			We define two actuators to be equal, if the same specifiers serves
-			the same profiles on the same host/port pair. We deliberately do not
-			consider protocol, endpoint, and transfer, because the same actuator might
-			serve multiple of them
-		"""
-		return self.host == other.host and self.port == other.port and self.profile == other.profile and self.specifiers == other.specifiers
+#	def __eq__(self, other):
+#		""" Equality operator
+#
+#			We define two actuators to be equal, if the same specifiers serves
+#			the same profiles on the same host/port pair. We deliberately do not
+#			consider protocol, endpoint, and transfer, because the same actuator might
+#			serve multiple of them
+#		"""
+#		return self.host == other.host and self.port == other.port and self.profile == other.profile and self.specifiers == other.specifiers
 
 	def validate_fields(self):
 		if self.host is not None and not isinstance(self.host, str):

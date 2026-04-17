@@ -207,5 +207,5 @@ def get_consumer_short(consumer: dict):
 		:return: compact string.
 	"""
 
-	return f"[{consumer['profile']}]{consumer['actuator'].get('asset_id')}.{consumer['actuator'].get('domain')}@{consumer.get('host')}:{consumer.get('port')}"
+	return f"[{consumer['actuator'].get('asset_id')}.{consumer['actuator'].get('domain')}@{consumer.get('host')}:{consumer.get('port')}"
 
