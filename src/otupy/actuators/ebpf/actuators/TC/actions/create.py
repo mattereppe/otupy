@@ -1,4 +1,6 @@
 
+import subprocess
+
 from otupy import    Command, Response
 import logging
 
@@ -9,16 +11,10 @@ from otupy.actuators.ebpf.response_handler import servererror, badrequest, notim
 
 from otupy.types.data.version import Version
 
-
-from otupy.actuators.ebpf.programs.TCprogram import TCProgram
-
 import os
-from typing import List, Optional
 
 from otupy.actuators.ebpf.managers.interface_manager import InterfaceManager
-from otupy.actuators.ebpf.base.ebpf_base import BaseEBPFProgram
 from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
-import re
 
 from otupy import Response, StatusCode
 from otupy.actuators.rcli.user.config import PRODUCER_ID
@@ -42,94 +38,166 @@ OPENC2VERS = Version(1, 0)
 
 
 def create(cmd: Command) -> Response:
-    target : eBPF_program= cmd.target.getObj()
-    if target.file is None:
-        return badrequest(status_text="Missing required eBPF parameters")
-    
-    arguments = cmd.args
-    
-    if arguments is None or "Direction" not in arguments or "AttachType" not in arguments or "Interfaces" not in arguments:
-        return badrequest(status_text="Missing required eBPF parameters")
-    """
-    manager = TCProgram(
-        prog_path=target.file.Name if target.file else None,
-        section=target.file.Section if target.file else None,
-        direction=target.direction.Name.lower() if target.direction else None
-    )
-    """
     try:
-        #manager.load(ifaces=target.interfaces)
-        
-        load(ifaces=arguments.get("Interfaces"), prog_path=target.file.Name if target.file else None,
-            section=target.file.Section if target.file else None,
-            direction=arguments.get("Direction").Name,
-            storage=arguments.get("storage"),
-            isUri=target.file.isUri if target.file else False
+        target: eBPF_program = cmd.target.getObj()
+
+        if not target.file:
+            return badrequest(status_text="Missing required eBPF file")
+
+        arguments = cmd.args or {}
+
+        required = ["Direction", "AttachType", "Interfaces"]
+        missing = [k for k in required if k not in arguments]
+
+        if missing:
+            return badrequest(
+                status_text=f"Missing required parameters: {', '.join(missing)}"
             )
-            
+
+        load(
+            ifaces=arguments["Interfaces"],
+            prog_path=target.file.Name,
+            section=target.file.Section,
+            direction=arguments["Direction"].Name,
+            storage=arguments.get("storage"),
+            isUri=target.file.isUri,
+            attach_type=arguments["AttachType"].Name,
+        )
+
         return ok("Program loaded successfully")
+
+    except ValueError as e:
+        return badrequest(status_text=str(e))
+
     except Exception as e:
-        
-        return servererror("Server error while processing command", e)
-    
-def copy(storage: File = None,isUri: bool = False, prog_path: str = None):
-    pf = rcli.Specifiers({})
+        logger.exception("Unhandled error in create()")
+        return servererror("Internal server error")
 
-    arg = rcli.Args(
-        {
-            "storage": File({"path": storage.get("path"), "name": storage.get("name")})
-        }
-    )
-    if isUri:
-        uri = prog_path 
-        a = oc2.Artifact(
-            mime_type="application/json",
-            payload=oc2.Payload(URI(uri)),
-        )
-    else:
-        try:          
-            with open(prog_path, "rb") as f:
-                bcontent = f.read()
-        except Exception as e:
-            raise Exception("Cannot load binary content from file")
-        
-        h = oc2.Hashes({"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())})
-        a = oc2.Artifact(
-            mime_type="application/json",
-            payload=oc2.Binary(bcontent),
-            hashes= h
+def copy(storage: File = None, isUri: bool = False, prog_path: str = None):
+    try:
+        pf = rcli.Specifiers({})
+
+        arg = rcli.Args(
+            {
+                "storage": File(
+                    {
+                        "path": storage.get("path"),
+                        "name": storage.get("name"),
+                    }
+                )
+            }
         )
 
-    cmd = oc2.Command(oc2.Actions.copy, a, arg, actuator=None)
+        if isUri:
+            artifact = oc2.Artifact(
+                mime_type="application/json",
+                payload=oc2.Payload(URI(prog_path)),
+            )
 
-    return copy_rcli(cmd)
+        else:
+            if not prog_path:
+                raise ValueError("prog_path is required when isUri=False")
 
+            try:
+                with open(prog_path, "rb") as f:
+                    bcontent = f.read()
+            except FileNotFoundError as e:
+                raise FileNotFoundError(f"File not found: {prog_path}") from e
+            except IOError as e:
+                raise IOError(f"Error reading file: {prog_path}") from e
 
-def load(ifaces: Interfaces = None, storage: File = None,prog_path: str = None, section: str = None, direction: str = None, isUri: bool = False):
-    executor = TCCommandExecutor() 
+            hashes = oc2.Hashes(
+                {"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())}
+            )
+
+            artifact = oc2.Artifact(
+                mime_type="application/json",
+                payload=oc2.Binary(bcontent),
+                hashes=hashes,
+            )
+
+        cmd = oc2.Command(oc2.Actions.copy, artifact, arg, actuator=None)
+
+        return copy_rcli(cmd)
+
+    except Exception as e:
+        raise RuntimeError("Copy operation failed") from e
+
+def load(
+    ifaces: Interfaces = None,
+    storage: File = None,
+    prog_path: str = None,
+    section: str = None,
+    direction: str = None,
+    isUri: bool = False,
+    attach_type: str = None,
+):
+    executor = TCCommandExecutor()
     iface_mgr = InterfaceManager(executor)
+
+    if not ifaces or not ifaces.Names:
+        raise ValueError("No interfaces provided")
+
     try:
         for iface in ifaces.Names:
 
-            if iface_mgr.ensure_clsact(iface):
+            # Ensure clsact
+            if not iface_mgr.ensure_clsact(iface):
+                raise RuntimeError(f"Cannot ensure clsact on interface {iface}")
 
-                r: Response=copy(storage=storage, isUri=isUri, prog_path=prog_path)
-                if r.get("status") != StatusCode.OK:
-                    raise Exception("Error copying file to target location")
-                results = r.get("results").get("file_status")
-                full_path = os.path.join(results[0].get("path"), results[0].get("name"))
-                
-                
-                executor.run_cmd([
-                    "tc", "filter", "add", "dev", iface, direction,
-                    "bpf", "da", "obj", full_path, "sec", section
-                ], check=True)
+            # Copy file
+            response: Response = copy(
+                storage=storage,
+                isUri=isUri,
+                prog_path=prog_path,
+            )
 
-                db.add_hookpoint(uid=PRODUCER_ID, file_path=full_path, file_name=os.path.basename(full_path), 
-                            calculated_hash=str(results[0].get("hashes").get("md5")), attach_type="TC",
-                             direction=direction, Section=section)
-            else:
-                raise Exception("Cannot ensure clasct")
+            if response.get("status") != StatusCode.OK:
+                raise RuntimeError("Error copying file to target location")
+
+            results = response["results"]["file_status"][0]
+
+            full_path = os.path.join(
+                results.get("path"),
+                results.get("name"),
+            )
+
+            # Run tc command
+            try:
+                executor.run_cmd(
+                    [
+                        "tc",
+                        "filter",
+                        "add",
+                        "dev",
+                        iface,
+                        direction,
+                        "bpf",
+                        "da",
+                        "obj",
+                        full_path,
+                        "sec",
+                        section,
+                    ],
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(
+                    f"tc command failed on interface {iface}"
+                ) from e
+
+            # Store metadata
+            db.add_hookpoint(
+                uid=PRODUCER_ID,
+                file_path=full_path,
+                file_name=os.path.basename(full_path),
+                calculated_hash=str(results["hashes"]["md5"]),
+                attach_type=attach_type,
+                direction=direction,
+                Section=section,
+                interface=iface,
+            )
+
     except Exception as e:
-        raise Exception("Error during program loading: " + str(e))
+        raise RuntimeError("Error during program loading") from e
         

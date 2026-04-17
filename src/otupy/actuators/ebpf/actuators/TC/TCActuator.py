@@ -1,10 +1,7 @@
 from imaplib import Commands
-import logging
-from otupy import StatusCode
+
 from otupy import   Actions, Command, Response
 
-from otupy.actuators.ebpf.programs.TCprogram import TCProgram
-from otupy.actuators.ebpf.managers.ebpf_program_manager import EBPFProgramManager
 from otupy.core.actuator import actuator_implementation
 
 from otupy.profiles.ebpf.validation.TCHookValidation import validate_command

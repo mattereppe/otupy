@@ -1,7 +1,7 @@
 
 from otupy import    Command, Response
 import logging
-
+import os
 from otupy.profiles import ebpf
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
@@ -13,7 +13,8 @@ from otupy.types.base.array_of import ArrayOf
 
 from otupy import ResponseType, Results
 from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
-
+from otupy.actuators.ebpf.actuators.TC.database.SQLDB import db
+from otupy.actuators.rcli.user.config import PRODUCER_ID
 
 from otupy.actuators.ebpf.response_handler import servererror, badrequest, notimplemented, notfound, ok
 from otupy.types.data.feature import Feature
@@ -21,7 +22,6 @@ from otupy.types.data.nsid import Nsid
 from otupy.types.data.version import Version
 from otupy.types.targets.features import Features
 
-from otupy.actuators.ebpf.programs.TCprogram import TCProgram
 
 logger = logging.getLogger(__name__)
 
@@ -56,28 +56,52 @@ def query(cmd: Command) -> Response:
 def query_tc(cmd):
 
 
-    target : eBPF_program  = cmd.target.getObj()
-    
-    
-    prog_type = target.attach_type.Name.lower()
-    manager = TCProgram(
-        prog_path=target.file.Name if target.file else None,
-        section=target.file.Section if target.file else None,
-        direction=target.direction.Name.lower() if target.direction else None
-    )
     try:
-       
-        programs = manager.query(attach_type = prog_type)
-        
+        target: eBPF_program = cmd.target.getObj()
 
-        program_files = [ProgramFile(Program=p["file"], Section=p.get("section")) for p in programs]
+
+        arguments = cmd.args or {}
+
+        required = ["Direction", "AttachType", "Interfaces"]
+        
+        
+        results = db.retrieve_hookpoints(
+            uid=PRODUCER_ID,
+            file_path=target.file.Name if target.file else None,
+            file_name=os.path.basename(target.file.Name) if target.file else None,
+            attach_type=arguments.get("AttachType").Name if arguments.get("AttachType") else None,
+            direction=arguments.get("Direction").Name if arguments.get("Direction") else None,
+            Section=target.file.Section if target.file else None,
+            interface=(
+                arguments.get("Interfaces").Names[0]
+                if arguments.get("Interfaces") and arguments.get("Interfaces").Names
+                else None
+            ))
+        attach_obj = ArrayOf(AttachType)()
+        direction_obj = ArrayOf(Direction)()
+        interfaces_obj = ArrayOf(Interfaces)()
+        program_files = ArrayOf(ProgramFile)()
+        for row in results:
+            uid = row[0]
+            file_path = row[1]
+            file_name = row[2]
+            hash = row[3]
+            attach_type = row[4]
+            direction = row[5]
+            section = row[6]
+            interface = row[7]
+            program_files.append(ProgramFile(file_path, Section=section))
+            direction_obj.append(Direction(direction))
+            attach_obj.append(AttachType(attach_type))
+            interfaces_obj.append(Interfaces(interface))
+        
         results = QueryResults(
             Program=ArrayOf(ProgramFile)(program_files),
-            hook_point=ArrayOf(AttachType)([p["attach_type"] for p in programs]),
-            Direction=ArrayOf(Direction)([p["direction"] for p in programs]),
-            Interfaces=ArrayOf(Interfaces)([p["interface"] for p in programs])
+            hook_point=ArrayOf(AttachType)(attach_obj),
+            Direction=ArrayOf(Direction)(direction_obj),
+            Interfaces=ArrayOf(Interfaces)(interfaces_obj)
         )
-        return ok("{len(programs)} programs loaded",res=results)
+        return ok(f"Programs loaded: {len(results)}",res=results)
         
     except Exception as e:
         
