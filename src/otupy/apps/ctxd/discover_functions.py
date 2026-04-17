@@ -107,7 +107,8 @@ def discovery(config):
 					logger.warning("No services returned for %s", get_consumer_short(consumer))
 				try:
 					ctx['links'] = add_resource(ctx['links'], consumer, 'link', resources['links'])
-					consumers += get_consumers(resources['links'])
+					if config['recursive']:
+						consumers += get_consumers(resources['links'])
 				except:
 					logger.warning("No links returned for %s", get_consumer_short(consumer))
 
@@ -188,7 +189,7 @@ def start_discovery(config: dict, event: Event = None):
 		Repeats the discovery process according to the configuration
 	"""
 	# Add a trailing id to the name, to distinguish between parallel threads
-	if config.get('append_threadid', True):
+	if config.get('append_thread_id', True):
 		config['name']=config.get('name', "") + "#" + str(get_ident())
 	# Set loop and frequency of the discovery process
 	repeat_discovery = loop(config['loop'],config['frequency'],event)(discovery)

@@ -1,7 +1,8 @@
 name: "test-discovery"
 frequency: 10 # seconds
 loop: 1 # -1: forever, 0: no run, >0: number of runs
-append_threadid: True # Append a trailing thread number to the "name"
+append_thread_id: True # Append a trailing thread number to the "name"
+recursive: True # Recursively inspect service chains from one or more root services
 publishers:
   mongodb:
     host: '127.0.0.1'

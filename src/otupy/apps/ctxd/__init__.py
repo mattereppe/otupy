@@ -22,8 +22,10 @@
 	parameters:
 	
 	- ``name``: An identifier used to distinguish context originated by different ``discovery``s
+	- ``append_thread_id``: Append internal process identifier to the name of this discovery (boolean value). Default to False
 	- ``frequency``: The time interval before starting a new round of queries (the real interval will be longer because the timer starts after receving the last answer). Run one-shot if sets to 0.
 	- ``loop``: Number of times to repeat the discovery. Loops forever if set to -1, does not run if set to 0.
+	- ``recursive``: True if the service chain must be inspected recursively, False if only the provided services must be retrieved. Defaults to False.
 	- ``publishers``: a dictionary of places where the context data are published after each round. The configuration changes according to the specific publisher:
 
 		- ``mongodb``: A dictionary with configuration to write data to MongoDB
