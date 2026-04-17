@@ -66,7 +66,7 @@ from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnviron
 from otupy.profiles.ctxd.data.host_type import HostType
 from otupy.profiles.ctxd.data.host import  Host
 from otupy.profiles.ctxd.data.network_node import NetworkNode
-from otupy.profiles.ctxd.data.network_interface import NetworkInterface
+from otupy.profiles.ctxd.data.network_interface import NetworkInterface, IPInfo, IPAddress
 from otupy.profiles.ctxd.data.ip_network import IPNetwork
 
 logger = logging.getLogger(__name__)
@@ -853,7 +853,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 					if 'ips' in p:
 						for ip in p['ips']:
 							ips.append(IPInfo(ip=IPAddress(ip)))
-					port_list.append( Port(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
+					port_list.append( NetworkInterface(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
 			
 			
 			node_type = NetworkNode(description="Pod network ports", id=pod.metadata.uid,

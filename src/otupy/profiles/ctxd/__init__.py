@@ -28,7 +28,6 @@ from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.consumer import Consumer
-from otupy.profiles.ctxd.data.port import Port, IPAddress, IPInfo
 from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
 from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
 from otupy.profiles.ctxd.data.os import OS
