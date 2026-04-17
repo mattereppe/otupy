@@ -17,6 +17,7 @@ defaults = { # Default values for context discovery operation
 					'host': '127.0.0.1',
 					'port': 443,
 					'endpoint': "/.well-known/openc2",
+					'profile': 'x-ctxd',
 					'encoding': 'json',
 					'transfer': 'http'},
 				# Default values for Mongodb connection
@@ -70,6 +71,20 @@ defaults = { # Default values for context discovery operation
 				}
 }
 """ Defaults value to be used for missing input parameters """
+
+def set_consumer_defaults(consumer):
+	""" Set missing values for ctxd consumer
+		
+		Assign default values to keys which value is None
+		:param consumer: A consumer dict
+		:return: The modified dict with default values
+	"""
+	for key,value in defaults['openc2'].items():
+		if not consumer.get(key):
+		  	consumer[key]=value
+
+	return consumer
+
 
 #def set_defaults(config, type_, param):
 #	""" Sets default values

@@ -18,6 +18,7 @@ from otupy.profiles.ctxd.data.name import Name
 #from otupy.transfers.http.message import Message
 
 from otupy.apps.ctxd.publishers import *
+from otupy.apps.ctxd.defaults import defaults, set_consumer_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -85,53 +86,86 @@ def discovery(config):
 		:return: None. Data are directly inserted in the output sinks.
 	"""
 	ctx = {'services': None, 'links': None}
+	queried_consumers = []
 
-	# Start recursive discovery
+	# We allow more root services to be present in the configuration
 	for root in config['services']:
-		resources = discover(root)
-		try:
-			ctx['services'] = add_resource(ctx['services'], root, 'service', resources['services'])
-		except:
-			logger.warning("No services returned for %s", root)
-		try:
-			ctx['links'] = add_resource(ctx['links'], root, 'link', resources['links'])
-		except:
-			logger.warning("No links returned for %s", root)
-		# TODO: recursive discovery of peers with valid actuators in links
+		consumers = [root]
+
+		# Start recursive discovery
+		while len(consumers) > 0: 
+			consumer = consumers.pop()
+			if consumer in queried_consumers:
+				logger.info("Skipping %s: already queried", get_consumer_short(consumer))
+			else:
+				logger.info("Now discovering services and links from %s", get_consumer_short(consumer))
+			
+				resources = discover(consumer)
+				try:
+					ctx['services'] = add_resource(ctx['services'], consumer, 'service', resources['services'])
+				except:
+					logger.warning("No services returned for %s", get_consumer_short(consumer))
+				try:
+					ctx['links'] = add_resource(ctx['links'], consumer, 'link', resources['links'])
+					consumers += get_consumers(resources['links'])
+				except:
+					logger.warning("No links returned for %s", get_consumer_short(consumer))
+
+				queried_consumers.append(consumer)
 
 	_log_context(ctx)
 	publish_data(config, ctx)
 
-def discover(service):
-	""" Query an OpenC2 discovery service
+def get_consumers(links):
+	""" Retrieve additional consumers from links 
+
+		:param links: An array of links, as discovered by the `discover` function.
+		:return: A list of consumers found in the links' peers
+	"""
+	consumers = []
+	for l in links:
+		if l.peers:
+			for p in l.peers:
+				if p.consumer:
+					if not p.consumer.profile or p.consumer.profile == ctxd.Profile.nsid:
+						new_consumer=set_consumer_defaults(vars(p.consumer))
+						if new_consumer not in consumers:
+							logger.info("Found new context actuator: %s", get_consumer_short(new_consumer))
+							consumers.append(new_consumer)
+				
+	return consumers
+
+def discover(consumer):
+	""" Query an OpenC2 discovery consumer
 
 		Get the list of services and links from a context discovery actuator.
-		:param service: The endpoint to query from the configuration file.
+		:param consumer: The endpoint to query from the configuration file.
 		:return: service and link lists
 	"""
 	try:
-		encoder = otupy.Encoders[service['encoding']].value
+		consumer.setdefault('encoding', defaults['openc2']['encoding'])
+		encoder = otupy.Encoders[consumer['encoding']].value
 	except:
-		service.setdefault('encoding', defaults['openc2']['encoding'])
-		logger.error("No valid encoder: %s", service['encoding'])
-		logger.info("Using default encoder: %s", )
-		encoder = otupy.Encoders[service['encoding']].value
+		logger.error("No valid encoder: %s", consumer['encoding'])
+		logger.info("Using default encoder: %s", defaults['openc2']['encoding'])
+		consumer['encoding']= defaults['openc2']['encoding']
+		encoder = otupy.Encoders[consumer['encoding']].value
 
-	# Load the transferer (beautiful name, eh?).
 	try:
-		transferer = otupy.Transfers[service['transfer']](service['host'], 
-				service['port'], service['endpoint'])
+		consumer.setdefault('transfer',  defaults['openc2']['transfer'])
+		transferer = otupy.Transfers[consumer['transfer']](consumer['host'], 
+				consumer['port'], consumer['endpoint'])
 	except:
-		service.setdefault('transfer',  defaults['openc2']['transfer'])
-		logger.error("No valid transfer: %s", service['transfer'])
-		logger.info("Using default transfer: %s", service['transfer'])
-		transferer = otupy.Transfers[service['transfer']](service['host'], 
-				service['port'], service['endpoint'])
+		logger.error("No valid transfer: %s", consumer['transfer'])
+		logger.info("Using default transfer: %s", defaults['openc2']['transfer'])
+		consumer['transfer'] = defaults['openc2']['transfer']
+		transferer = otupy.Transfers[consumer['transfer']](consumer['host'], 
+				consumer['port'], consumer['endpoint'])
 
 
 	producer = otupy.Producer("ctxd-discovery.mirandaproject.eu", encoder, transferer)
                                                              
-	actuator = ctxd.Specifiers({'asset_id': service['actuator']['asset_id']})
+	actuator = ctxd.Specifiers({'asset_id': consumer['actuator']['asset_id']})
 	arg = ctxd.Args({'name_only': False, 'cached': False})
 	target = ctxd.Context(services=otupy.ArrayOf(Name)(), links=otupy.ArrayOf(Name)())  # expected all services and links
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
@@ -142,8 +176,9 @@ def discover(service):
 			return context.content['results']
 		else:
 			logger.warn("Unable to query %s: %s", actuator, context.content['status_text'])
-	except: 
+	except Exception as e: 
 		logger.warn("No context available from %s", actuator)
+		logger.warn("Reason: %s", e)
 		return None
 
 
@@ -158,3 +193,18 @@ def start_discovery(config: dict, event: Event = None):
 	# Set loop and frequency of the discovery process
 	repeat_discovery = loop(config['loop'],config['frequency'],event)(discovery)
 	repeat_discovery(config)
+
+def get_consumer_short(consumer: dict):
+	""" Return a short id for the consumer
+	
+		Returns a short string identifier for a consumer,
+		using a compact notation that does not include communication
+		details (transfer, encoding, ...):
+			<asset_id>.<domain>@<host>:<port>
+
+		:param consumer: Dictionary representation of the consumer
+		:return: compact string.
+	"""
+
+	return f"[{consumer['profile']}]{consumer['actuator'].get('asset_id')}.{consumer['actuator'].get('domain')}@{consumer.get('host')}:{consumer.get('port')}"
+
