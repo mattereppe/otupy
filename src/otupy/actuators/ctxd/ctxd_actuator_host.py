@@ -23,7 +23,16 @@
 			
 			
 		- ``host``: The service identifier (`sid`) of the ``Host`` that host
-			this execution environment.
+			this execution environment. It can be specified in the compact form
+			as string(`sid: type:subtype/domain/namespace/name@version`) or 
+			by its parameters (type, subtype, name, domain, namespace, version).
+			Examples:
+				host:
+					sid: "host:vm/Default/tenant1/vm0@None"
+				host:
+					type: host
+					subtype: vm
+					...
 """	
 
 import logging
@@ -474,7 +483,10 @@ class CTXDHostActuator(CTXDActuator):
 							case 'veth':
 								netnsid2=link.get_attrs('IFLA_LINK_NETNSID')
 								if len(netnsid2) > 0:
-									ns2=self._namespaces[ns]['netnsmap'][netnsid2[0]]
+									try:
+										ns2=self._namespaces[ns]['netnsmap'][netnsid2[0]]
+									except:
+										continue
 								else: # Same namespace
 									ns2=ns
 								peer2=(link.get_attrs('IFLA_LINK')[0], self._namespaces[ns2]['name'])
@@ -693,7 +705,9 @@ class CTXDHostActuator(CTXDActuator):
 			This includes routers and bridges implemented by the Linux kernel
 			and external software (e.g., openvswitch).
 		"""
-		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
+#		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
+# The following is better, because namespaces may have changed in the meanwhile (new namespace added)
+		for ns in self._namespaces.keys():
 			self._discover_routers(ns)
 			self._discover_bridges(ns)
 
@@ -806,12 +820,15 @@ class CTXDHostActuator(CTXDActuator):
 			expose this further detail.
 		"""
 		if self.host:
-			sid = SId(**self.host)
+			if 'sid' in self.host:
+				sid=SId.from_str(self.host['sid'])
+			else:
+				sid = SId(**self.host)
 			
 			peer=Peer(service_name=sid.name, sid=sid, role=PeerRole.host, 
 					consumer=self.get_consumer(sid=sid))
-			self.links.append( Links(name=self.platform.name, sid=self.platform.sid,
-										description"Platform hosted on "+(str(sid)),
+			self.links.append( Link(name=self.platform.name, sid=self.platform.sid,
+										description="Platform hosted on "+(str(sid)),
 										link_type=LinkType.hosting, role=PeerRole.guest,
 										peers=ArrayOf(Peer)([peer])))
 

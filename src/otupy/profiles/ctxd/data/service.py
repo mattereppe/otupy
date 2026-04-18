@@ -33,7 +33,7 @@ class SId(Record):
 	version: str = None
 	""" Used to identify specific versions (this is mostly used for software """
 
-	def __init__(self, sid:str = None, type:str = None, subtype:str = None,
+	def __init__(self, sid:dict = None, type:str = None, subtype:str = None,
 			domain: str = None, namespace:str = None, name: str = None, version:str=None):
 		""" Initialize a Sid
 
