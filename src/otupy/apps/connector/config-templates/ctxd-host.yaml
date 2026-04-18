@@ -11,3 +11,22 @@ ctxd-host-vm:
     kubelet_config: '/var/lib/kubelet/config.yaml'
     namespaces:
       - my5gtestbed
+  host:
+#    sid: "host:vm/Default/astrid/kube0@None"
+    type: host
+    subtype: vm
+    name: kube0
+    domain: Default
+    namespace: astrid
+  peers:
+    - service_sid:
+        type: host
+        subtype: vm
+        name: kube0
+        domain: Default
+        namespace: astrid
+      consumer:
+        host: "127.0.0.1"
+        port: 8080
+        actuator:
+          asset_id: "ctxd-openstack-tntlab"
