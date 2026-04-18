@@ -1,7 +1,8 @@
 """ Host CTXD Actuator
 	
     The Host actuaotr is intended to discover the host hardware and its 
-    operating system. It it designed to run in the execution environment 
+    operating system. Despite of the name, this actuator is concieved to 
+	 describe the execution environment 
     itself, because there is no other way to query the OS's APIs.
 
     The current implementation is for demonstration purposes only and makes
@@ -13,11 +14,16 @@
 
 	The actuator-specific configuration includes:
 
-		- ``services``: A list of service definitions, given as yaml descriptions
-			of the corresponding data components in the ``Service`` class.
+		- ``kubernetes``: Kubernetes-related configuration to link local
+			components with kubernetes resources. Specific fields are:
+
+			- ``use_suffix``: Use kubernetes suffix when reporting names.
+			- ``kubelet_config``: Config file uselet by the kubelet daemon.
+			- ``namespaces``: List of namespaces to be reported
 			
-		- ``links``: A list of link definitions, given as yaml descriptions
-			of the correponsing data component in the ``Links`` class.
+			
+		- ``host``: The service identifier (`sid`) of the ``Host`` that host
+			this execution environment.
 """	
 
 import logging
@@ -71,6 +77,7 @@ class CTXDHostActuator(CTXDActuator):
 			self.kube_suffix = kwargs['kubernetes']['suffix'] if 'kubernetes' in kwargs and 'suffix' in kwargs['kubernetes'] else self._get_kube_suffix(kube_kubelet_config)
 		else:
 			self.kube_suffix = ""
+		self.host = kwargs.get('host')
 
 		# Ensure the platform service is always available
 		self.services = ArrayOf(Service)()
@@ -144,6 +151,7 @@ class CTXDHostActuator(CTXDActuator):
 		self._discover_network_namespaces()
 		self._discover_networks()
 		self._discover_network_functions()
+		self._discover_link_host()
 		self._discover_links_networks()
 		self._discover_links_net_functions()
 
@@ -789,6 +797,25 @@ class CTXDHostActuator(CTXDActuator):
 						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
 
 
+	def _discover_link_host(self):
+		""" Discover host hosting this ExecEnv
+
+			Since there is no way from an ExecEnv to discover its hosting hardware,
+			we create this fictius link with the information provided by configuration.
+			Providing this information is optional, and the owner will decide whether to
+			expose this further detail.
+		"""
+		if self.host:
+			sid = SId(**self.host)
+			
+			peer=Peer(service_name=sid.name, sid=sid, role=PeerRole.host, 
+					consumer=self.get_consumer(sid=sid))
+			self.links.append( Links(name=self.platform.name, sid=self.platform.sid,
+										description"Platform hosted on "+(str(sid)),
+										link_type=LinkType.hosting, role=PeerRole.guest,
+										peers=ArrayOf(Peer)([peer])))
+
+	
 
 	def _discover_links_networks(self):
 		self._discover_links_networks_to_namespaces()
