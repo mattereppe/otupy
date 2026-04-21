@@ -44,6 +44,7 @@ class ExecutionEnvironment(CTXDObject):
 			version:str = None,
 			type:ExecutionEnvironmentType = None,
 			libs: ArrayOf(Library)=None,
+			pkgs: ArrayOf(Package)=None,
 			apps: ArrayOf(Application)=None,
 			**kwargs):
 
@@ -52,6 +53,7 @@ class ExecutionEnvironment(CTXDObject):
 			self.version = execenv.version
 			self.type = execenv.type
 			self.apps = execenv.apps
+			self.pkgs = execenv.pkgs
 			self.libs = execenv.libs
 		else:
 			super().__init__(name=name, id=id, description=description)
@@ -61,6 +63,10 @@ class ExecutionEnvironment(CTXDObject):
 				self.apps = ArrayOf(Application)()
 				for app in apps:
 					self.apps.append(Application(app))
+			if pkgs is not None:
+				self.pkgs = ArrayOf(Application)()
+				for pkg in pkgs:
+					self.pkgs.append(Application(pkg))
 			if libs is not None:
 				self.libs = ArrayOf(Library)()
 				for lib in libs:
