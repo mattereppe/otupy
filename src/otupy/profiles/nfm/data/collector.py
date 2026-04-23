@@ -1,16 +1,16 @@
 from otupy.types.base import Record, Choice
-from otupy.types.data import Port, IPv4Addr, IPv6Addr
+from otupy.types.data import Port, IPv4Addr, IPv6Addr, Hostname
 from otupy.core.extensions import Register
 
 class Host(Choice):
-	""" 	Collector host identifier
-
-		A container for different types of identifiers.
-		Currently supported: IP, hostname.
-		
-		For internal use only, not intended to be exposed
-		to other classes
-	"""
+    """ 	Collector host identifier
+    
+    	A container for different types of identifiers.
+    	Currently supported: IP, hostname.
+    	
+    	For internal use only, not intended to be exposed
+    	to other classes
+    """
     register = Register({'hostname': Hostname, 'ipv4': IPv4Addr, 'ipv6': IPv6Addr})
 
     def __init__(self, host):
@@ -21,21 +21,21 @@ class Host(Choice):
           :param host: The identifier of the host (could be a Host, IPv4Addr, IPv6Addr, Hostname, str)
         """
         if(isinstance(host, Host)):
-            super().__init__(host.obj)
+            super().__init__(host.getObj())
         elif (isinstance(host, str)):
 			# Use as hostname, the safest option
-            host = Hostname(host)
+            super().__init__(Hostname(host))
         else:
             # Will fail if a wrong input type is provided
             super().__init__(host)
 
-   def __repr__(self):
-      """ Return the internal object value """
-      return self.getObj()
+    def __repr__(self):
+        """ Return the internal object value """
+        return str(self.getObj())
 
-   def __str__(self):
-      """ Return the internal representation"""
-      return self.__repr__()
+    def __str__(self):
+        """ Return the internal representation"""
+        return self.__repr__()
 
 
 class Collector(Record):
@@ -54,9 +54,11 @@ class Collector(Record):
     port: Port = None
     """ Port of the exporter """
 
-    def __init__(self, host: Host = "127.0.0.1", port: Port = 2055):
+    def __init__(self, host: Host = Hostname("127.0.0.1"), port: Port = 2055):
         super().__init__()
-        self.host = host
+        self.host = Host(host)
+        print("type: ", type(self.host))
+        print("obj: ", self.host.getObj())
         self.port = port
         self.validate_fields()
 
@@ -68,7 +70,7 @@ class Collector(Record):
 
     def validate_fields(self):
         if self.host is not None and not isinstance(self.host, Host):
-            raise TypeError(f"Expected 'Host' to be Host, got {type(self.Host)}")
+            raise TypeError(f"Expected 'Host' to be Host, got {type(self.host)}")
         if self.port is not None and not isinstance(self.port, Port):
             raise TypeError(f"Expected 'port' to be Port, got {type(self.port)}")
 
