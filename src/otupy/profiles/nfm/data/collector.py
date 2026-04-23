@@ -57,8 +57,6 @@ class Collector(Record):
     def __init__(self, host: Host = Hostname("127.0.0.1"), port: Port = 2055):
         super().__init__()
         self.host = Host(host)
-        print("type: ", type(self.host))
-        print("obj: ", self.host.getObj())
         self.port = port
         self.validate_fields()
 

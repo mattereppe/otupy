@@ -161,10 +161,10 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         exporter = args.get("exporter")
         if exporter and exporter.get("collectors", []):
             for c in exporter.get("collectors", []):
-                print("   got: ", c)
-                collectors.append( (c.get("address", DEFAULT_COLLECTOR_ADDRESS), 
-                                            c.get("port", DEFAULT_COLLECTOR_PORT), 
-                                            c.get("format")) )
+                host = c['host'].getObj() if 'host' in c else DEFAULT_COLLECTOR_ADDRESS
+                collectors.append( host,
+                                   c.get("port", DEFAULT_COLLECTOR_PORT), 
+                                   c.get("format") )
         return collectors
 
     def _configure_filebeat_yaml(self, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id):
