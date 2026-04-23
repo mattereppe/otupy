@@ -103,7 +103,6 @@ class NFMActuatorPacketbeat(NFMActuator):
 
         output = self._get_output(args)
         collectors = self._get_collectors(args)
-        print("Chiara Eva Catalano lo piglia nell'ano")
         monitor_id = generate_unique_name()
         config_file_name = self._configure_packetbeat_yaml(
             interfaces, information_elements, bpf_filters, output, collectors, sampling, monitor_id
