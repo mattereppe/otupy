@@ -1,11 +1,15 @@
 
+import json
+import ast
 from otupy import    Command, Response
 import logging
 import os
+from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
 from otupy.profiles import ebpf
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
+from otupy.profiles.ebpf.data.map_ebpf import MapeBPF
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.query_results import QueryResults
 from otupy.types.base.array_of import ArrayOf
@@ -17,6 +21,7 @@ from otupy.actuators.ebpf.actuators.TC.database.SQLDB import db
 from otupy.actuators.rcli.user.config import PRODUCER_ID
 
 from otupy.actuators.ebpf.response_handler import servererror, badrequest, notimplemented, notfound, ok
+from otupy.types.base.map_of import MapOf
 from otupy.types.data.feature import Feature
 from otupy.types.data.nsid import Nsid
 from otupy.types.data.version import Version
@@ -52,19 +57,15 @@ def query(cmd: Command) -> Response:
         return badrequest("Target not supported.")
     return r
 
+
 @staticmethod
 def query_tc(cmd):
-
-
+    executor = TCCommandExecutor()
     try:
         target: eBPF_program = cmd.target.getObj()
-
-
         arguments = cmd.args or {}
-
-        required = ["Direction", "AttachType", "Interfaces"]
         
-        
+        # 1. Database Retrieval
         results = db.retrieve_hookpoints(
             uid=PRODUCER_ID,
             file_path=target.file.Name if target.file else None,
@@ -76,35 +77,61 @@ def query_tc(cmd):
                 arguments.get("Interfaces").Names[0]
                 if arguments.get("Interfaces") and arguments.get("Interfaces").Names
                 else None
-            ))
-        attach_obj = ArrayOf(AttachType)()
-        direction_obj = ArrayOf(Direction)()
-        interfaces_obj = ArrayOf(Interfaces)()
-        program_files = ArrayOf(ProgramFile)()
-        for row in results:
-            uid = row[0]
-            file_path = row[1]
-            file_name = row[2]
-            hash = row[3]
-            attach_type = row[4]
-            direction = row[5]
-            section = row[6]
-            interface = row[7]
-            program_files.append(ProgramFile(file_path, Section=section))
-            direction_obj.append(Direction(direction))
-            attach_obj.append(AttachType(attach_type))
-            interfaces_obj.append(Interfaces(interface))
-        
-        results = QueryResults(
-            Program=ArrayOf(ProgramFile)(program_files),
-            hook_point=ArrayOf(AttachType)(attach_obj),
-            Direction=ArrayOf(Direction)(direction_obj),
-            Interfaces=ArrayOf(Interfaces)(interfaces_obj)
+            )
         )
-        return ok(f"Programs loaded: {len(results)}",res=results)
+
+        program_files = ArrayOf(ProgramFile)()
+        direction_obj = ArrayOf(Direction)()
+        attach_obj = ArrayOf(AttachType)()
+        interfaces_obj = ArrayOf(Interfaces)()
+        found_maps = ArrayOf(MapeBPF)()
+        
+        all_required_names = set()
+
+        for row in results:
+            # Using tuple unpacking for readability
+            uid, f_path, f_name, h_val, a_type, d_rect, sect, iface, m_str = row
+            
+            program_files.append(ProgramFile(f_path, Section=sect))
+            direction_obj.append(Direction(d_rect))
+            attach_obj.append(AttachType(a_type))
+            interfaces_obj.append(Interfaces(iface))
+            
+            # Collect all unique map names found in DB rows
+            if m_str:
+                try:
+                    # Safely parse the map string (handle list or string format)
+                    names = ast.literal_eval(m_str) if isinstance(m_str, str) else m_str
+                    all_required_names.update(names)
+                except (ValueError, SyntaxError):
+                    logger.error(f"Failed to parse map string: {m_str}")
+
+        # 2. BPFtool Lookup (Only if maps are required and found in DB)
+        if arguments.get("maps_required") and all_required_names:
+            result_cli = executor.run_cmd(["sudo", "bpftool", "map", "show", "-j"], capture_output=True, check=True)
+            kernel_maps = json.loads(result_cli.stdout)
+            
+            # Build lookup dict: name -> id
+            id_map = {m['name']: m['id'] for m in kernel_maps if 'name' in m}
+            
+            for name in all_required_names:
+                if name in id_map:
+                    found_maps.append(MapeBPF(name=name, id=id_map[name]))
+                else:
+                    logger.warning(f"Map '{name}' defined in DB but not found in kernel.")
+
+        res_data = QueryResults(
+            Program=program_files,
+            hook_point=attach_obj,
+            Direction=direction_obj,
+            Interfaces=interfaces_obj,
+            maps=found_maps
+        )
+        
+        return ok(f"Programs found: {len(results)}", res=res_data)
         
     except Exception as e:
-        
+        logger.exception("Error in query_tc") # Logs the full stack trace
         return servererror("Server error while processing command", e)
 
 @staticmethod

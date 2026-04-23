@@ -9,6 +9,7 @@ from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 
 from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
+from otupy.types.base.array_of import ArrayOf
 from otupy.types.data.uri import URI
 from otupy.types.targets.file import File
 
@@ -46,18 +47,22 @@ def main():
 
     pf = ebpf.Specifiers({})
     #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
-    full_path = "/home/abba/ebpf/program.o"
+
+    full_path = "/home/abba/ebpf/eBPF_scripts-master/tc_fl_kern.o"
     direction = "ingress"
     attach_type = "tc"
     iface = "wlp7s0"
-    section = "tc"
+    section = "tc_flowlabel_stats"
     prog = ProgramFile(full_path, Section=section,isUri=False) 
     direction_obj = Direction(direction)
     attach_obj = AttachType(attach_type)
     interfaces = Interfaces(iface)
     target_features = eBPF_program(file=prog)
-    storage= File({"path": "tmacp/fcd/a", "name": "allow.o"})
-    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces, "storage": storage})
+    maps = ArrayOf(str)()
+    maps.append("fl_stats")
+    #storage= File({"path": "tmacp/fcd/a", "name":
+    storage= File({"path": "tmacp/fcd/a", "name": "tc_fl_kernel.o"})
+    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces,"maps":maps, "storage": storage})
     cmd = oc2.Command(oc2.Actions.create,target=target_features,args=args, actuator=pf)
 
     logger.info("Sending command: %s", cmd)

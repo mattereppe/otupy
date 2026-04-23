@@ -121,25 +121,24 @@ class CTXDActuatorProxmox(CTXDActuator):
 
                 try:
                     # The agent must be installed to retrieve IP Informatio
-                    interfaces = self.proxmox.nodes(node).qemu(vm['vmid']).agent("network-get-interfaces").get()
-                    ips = ArrayOf(IPInfo)()
-                    for iface in interfaces['data']:
-                        gw = None
-                        for route in iface.get('routes',[]):
-                            if route.get('destination') == '0.0.0.0/0':
-                                gw = route.get('gateway')
-                        for a in iface.get('ip-addresses', []):
-                            ip = a.get('ip-address')
-                            prefix = a.get('prefix')
+                    #vm_details = config_response['result']
+                    vm_details = self.proxmox.nodes(node['node']).qemu(vm['vmid']).agent("network-get-interfaces").get()
+                    
+                    for iface in vm_details["result"]:
+                        ips = ArrayOf(IPInfo)()
+                        for ip_info in iface["ip-addresses"]:
+                            ip = ip_info["ip-address"]
+                            prefix = ip_info["prefix"]
+                            gw = None
                             ips.append(IPInfo(ip=ip, prefix=prefix, gw=gw))
-                    ifaces.append(NetworkInterface(description=config['name'], id=vm['vmid'], iface=None, ips=ips))
+                        ifaces.append(NetworkInterface(description=vm['name'], id=f"{vm['vmid']}.{iface['name']}", iface=iface["name"], ips=ips))
 
 
                 except Exception as e:
                     logger.error("Unable to add ip address: ", e)
 
 
-                netnode = NetworkNode(name=vm['name'], description="Promxox interfaces", ifaces=ifaces)
+                netnode = NetworkNode(name=vm['name'], description=f"Proxmox interfaces for id: {vm['vmid']}", ifaces=ifaces)
                 server = Host(name= vm['name'],
                         id= vm['vmid'], 
                         description=vm['name'],

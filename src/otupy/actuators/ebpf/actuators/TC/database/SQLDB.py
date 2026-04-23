@@ -35,13 +35,14 @@ class SQLDatabase:
                     direction TEXT,
                     section TEXT,
                     interface TEXT,
+                    maps TEXT,
                     UNIQUE(uid, file_path, file_name, attach_type, direction, section, interface)
                 )
             """
             )
 
             conn.commit()
-    def add_hookpoint(self, uid, file_path, file_name, calculated_hash, attach_type, direction, Section, interface):
+    def add_hookpoint(self, uid, file_path, file_name, calculated_hash, attach_type, direction, Section, interface, maps):
         """
         Inserts a file record for a given UID, file path, file name, and hash. Throws an error if the file already exists.
 
@@ -58,10 +59,10 @@ class SQLDatabase:
             c = conn.cursor()
             c.execute(
                 """
-                INSERT INTO hooks (uid, file_path, file_name, calculated_hash, attach_type, direction, section, interface)
-                VALUES (?, ?, ?, ?, ?, ?, ?,?)
+                INSERT INTO hooks (uid, file_path, file_name, calculated_hash, attach_type, direction, section, interface, maps)
+                VALUES (?, ?, ?, ?, ?, ?, ?,?,?)
                 """,
-                (uid, file_path, file_name, calculated_hash, attach_type, direction, Section, interface)
+                (uid, file_path, file_name, calculated_hash, attach_type, direction, Section, interface, maps)
             )
             conn.commit()
     def exists_file(self, uid, file_path=None, file_name=None, attach_type=None, direction=None, Section=None, interface=None) -> bool :

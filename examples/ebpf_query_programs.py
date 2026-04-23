@@ -57,8 +57,8 @@ def main():
     interfaces = Interfaces(iface)
     target_features = eBPF_program(file=None)
     #storage= File({"path": "tmacp/fcd/a", "name": "allow.o"})
-    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces})
-    cmd = oc2.Command(oc2.Actions.query,target=target_features,args=None, actuator=pf)
+    args = ebpf.Args({"maps_required": True})
+    cmd = oc2.Command(oc2.Actions.query,target=target_features,args=args, actuator=pf)
 
     logger.info("Sending command: %s", cmd)
     resp = p.sendcmd(cmd)

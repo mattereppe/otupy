@@ -1,5 +1,6 @@
 import otupy as oc2
 from otupy.profiles.ebpf.profile import Profile
+from otupy.types.base.array_of import ArrayOf
 from otupy.types.base.record import Record
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
@@ -18,4 +19,4 @@ class Args(oc2.Args):
 
     """
 
-    fieldtypes = {"Direction": Direction, "AttachType": AttachType, "Interfaces": Interfaces, "storage": File}
+    fieldtypes = {"Direction": Direction, "AttachType": AttachType, "Interfaces": Interfaces, "storage": File, "maps":ArrayOf(str),"maps_required": bool}

@@ -9,6 +9,7 @@ from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 
 from otupy.actuators.ebpf.response_handler import servererror, badrequest, notimplemented, notfound, ok
 
+from otupy.types.base.array_of import ArrayOf
 from otupy.types.data.version import Version
 
 import os
@@ -46,7 +47,7 @@ def create(cmd: Command) -> Response:
 
         arguments = cmd.args or {}
 
-        required = ["Direction", "AttachType", "Interfaces"]
+        required = ["Direction", "AttachType", "Interfaces", "maps"]
         missing = [k for k in required if k not in arguments]
 
         if missing:
@@ -62,6 +63,7 @@ def create(cmd: Command) -> Response:
             storage=arguments.get("storage"),
             isUri=target.file.isUri,
             attach_type=arguments["AttachType"].Name,
+            maps=arguments.get("maps")
         )
 
         return ok("Program loaded successfully")
@@ -131,6 +133,7 @@ def load(
     direction: str = None,
     isUri: bool = False,
     attach_type: str = None,
+    maps= None
 ):
     executor = TCCommandExecutor()
     iface_mgr = InterfaceManager(executor)
@@ -196,6 +199,7 @@ def load(
                 direction=direction,
                 Section=section,
                 interface=iface,
+                maps=str(maps)
             )
 
     except Exception as e:

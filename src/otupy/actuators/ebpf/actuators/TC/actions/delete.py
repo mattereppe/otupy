@@ -1,27 +1,50 @@
 
 import subprocess
 import os
-
+import otupy as oc2
 from otupy import    Command, Response
 import logging
 
 from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
 from otupy.actuators.rcli.user.config import PRODUCER_ID
+from otupy.profiles import rcli
 from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 
 
 from otupy.actuators.ebpf.response_handler import servererror, badrequest, notimplemented, notfound, ok
 
+from otupy.profiles.rcli.targets.files import Files
 from otupy.types.data.version import Version
-
+from otupy.actuators.rcli.actions.delete import delete as delete_rcli
 from otupy.actuators.ebpf.actuators.TC.database.SQLDB import db
 import re
+
+from otupy import Response, StatusCode
+from otupy.types.targets.file import File
 
 
 logger = logging.getLogger(__name__)
 
 """ Supported OpenC2 Version """
 OPENC2VERS = Version(1, 0)
+
+def delete_from_rcli(path: str = None, name_file: str = None):
+    try:
+        pf = rcli.Specifiers({})
+
+  
+        files = Files()
+        files.append(File({"path": path, "name": name_file}))
+
+        cmd = oc2.Command(oc2.Actions.delete, files, None, actuator=pf)
+        return delete_rcli(cmd)
+    except ValueError as e:
+        return badrequest(status_text=str(e))
+
+    except Exception:
+        logger.exception("Unhandled error in delete()")
+        return servererror("Internal server error")
+        
 
 
 def delete(cmd: Command) -> Response:
@@ -145,10 +168,20 @@ def remove(
                 Section=section,
                 interface=iface,
             )
-
             logger.info(
                 f"Deleted hookpoint for {prog_name} on {iface} ({direction})"
             )
+            
+            response = delete_from_rcli(
+                path=os.path.dirname(prog_path),
+                name_file=prog_name,)
+            
+            if response.get("status") != StatusCode.OK:
+                raise RuntimeError("Error deleting file from target location")
+            logger.info(
+                f"Deleted file from the filesystem"
+            )
+            
 
     except Exception as e:
         raise RuntimeError("Error during program deletion") from e

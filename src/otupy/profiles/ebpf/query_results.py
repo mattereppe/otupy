@@ -3,8 +3,10 @@
 """
 import otupy as oc2
 
+from otupy.profiles.ebpf.data.map_ebpf import MapeBPF
 from otupy.profiles.ebpf.profile import Profile
 from otupy.types.base.array_of import ArrayOf
+from otupy.types.base.map_of import MapOf
 from otupy.types.base.record import Record
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
@@ -15,5 +17,7 @@ from otupy.profiles.ebpf.data.source_file import ProgramFile
 class QueryResults(oc2.Results):
 
 	fieldtypes = {'Program': ArrayOf(ProgramFile), 'Direction': ArrayOf(Direction), 'hook_point': ArrayOf(AttachType), 
-			   'Interfaces': ArrayOf(Interfaces)}
+			   'Interfaces': ArrayOf(Interfaces),
+			   'maps': ArrayOf(MapeBPF)
+			   }
 

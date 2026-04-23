@@ -46,11 +46,11 @@ def main():
 
     pf = ebpf.Specifiers({})
     #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
-    full_path = "/opt/abba/tmacp/fcd/a/allow.o"
+    full_path = "/opt/abba/tmacp/fcd/a/tc_fl_kernel.o"
     direction = "ingress"
     attach_type = "tc"
     iface = "wlp7s0"
-    section = "tc"
+    section = "tc_flowlabel_stats"
     prog = ProgramFile(full_path, Section=section,isUri=False) 
     direction_obj = Direction(direction)
     attach_obj = AttachType(attach_type)
