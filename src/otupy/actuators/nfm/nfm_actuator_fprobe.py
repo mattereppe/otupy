@@ -18,10 +18,7 @@ logger = logging.getLogger(__name__)
 class NFMActuatorFProbe(NFMActuator):
     __features = {
         "exports": ["collector"],
-        "export_options": [
-            "buffer",
-            "format",
-        ],
+        "export_options": ["buffer", "format", "timeout"],
         "flow_format": ["netflow5", "netflow7"],
         "filters": ["source / destination", "ipv4 / ipv6", "port", "protocol"],
         "info_elements": [],
@@ -30,7 +27,7 @@ class NFMActuatorFProbe(NFMActuator):
     def __init__(self, *, specifiers, probe, **kwargs):
         super().__init__(asset_id=specifiers["asset_id"])
         self.probe = probe
-        self.allowed_interfaces = probe.get('allowed_interfaces', [])
+        self.allowed_interfaces = probe.get("allowed_interfaces", [])
 
     def _handle_feature(self, f):
         match f:
@@ -83,6 +80,7 @@ class NFMActuatorFProbe(NFMActuator):
         opts = args.get("exporter_options", {})
         cmd_list = self._add_option(cmd_list, opts, "buffer", "-B")
         cmd_list = self._add_option(cmd_list, opts, "format", "-n")
+        cmd_list = self._add_option(cmd_list, opts, "timeout", "-e")
         if exporter:
             cmd_list = self._add_exporter_collectors(cmd_list, exporter)
 
