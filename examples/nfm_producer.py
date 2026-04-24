@@ -1,8 +1,8 @@
-""" This is a simple producer that can be used to test any NFM actuator.
+"""This is a simple producer that can be used to test any NFM actuator.
 
-	Usage: <nfm_producer> [--start | --stop <id> | --query ]
+Usage: <nfm_producer> [--start | --stop <id> | --query ]
 
-	--start returns the id of the nfm process. Take note of it and use it to stop the process later.
+--start returns the id of the nfm process. Take note of it and use it to stop the process later.
 
 """
 
@@ -15,7 +15,7 @@ from otupy.types.data.uri import URI
 from otupy.types.targets.file import File
 from otupy.profiles.nfm import Exporter, Specifiers, MonitorID
 from otupy.profiles.nfm import ExportOptions
-from otupy.profiles.nfm.data.collector import Collector
+from otupy.profiles.nfm.data.collector import Collector, Host
 from otupy.profiles.nfm import FlowFormat
 from otupy.types.base import Record, ArrayOf, Array
 from otupy.types.data import IPv4Addr, IPv6Addr, Port
@@ -43,7 +43,8 @@ args = arguments.parse_args()
 producer = Producer("nfm.example.net", JSONEncoder(), HTTPTransfer(args.server, args.port))
 arg = Args({"response_requested": ResponseType.complete})
 
-actuator = Specifiers({"asset_id": "nfm-"+args.probe})
+actuator = Specifiers({"asset_id": "nfm-" + args.probe})
+cmd = None
 
 # First, we do the query action.
 if args.query:
@@ -60,7 +61,7 @@ if args.query:
                 Feature.flow_format,
                 Feature.filters,
                 Feature.interfaces,
-                Feature.information_elements
+                Feature.information_elements,
             ]
         ),
         arg,
@@ -68,40 +69,40 @@ if args.query:
     )
 
 
-# The we try to start a flow monitor.
+# Then we try to start a flow monitor.
 if args.start:
     print("Starting nfm actuator...")
     collectors = ArrayOf(Collector)()
-    collectors.append(Collector(address=IPv4Addr("127.0.0.1"), port=Port(2055)))
+    collectors.append(Collector(host=Host("127.0.0.1"), port=Port(2055)))
     if args.probe == "fprobe":
-    # For fprobe.
+        # For fprobe.
         arg = nfm.Args(
             {
                 "exporter": Exporter(collectors=collectors),
-                "exporter_options": ExportOptions(format=FlowFormat.netflow7),
+                "exporter_options": ExportOptions(format=FlowFormat.netflow5, timeout=60),
             }
         )
     if args.probe == "packetbeat":
-    # For packetbeat.
+        # For packetbeat.
         arg = nfm.Args(
-           {
-               "exporter": Exporter(storage=File(name="test", path="packetbeat-test"), collectors=collectors),
-               "exporter_options": ExportOptions(format=FlowFormat.json),
-           }
+            {
+                "exporter": Exporter(storage=File(name="test", path="packetbeat-test"), collectors=collectors),
+                "exporter_options": ExportOptions(format=FlowFormat.json, timeout=60),
+            }
         )
     interfaces = ArrayOf(Interface)()
     interfaces.append(Interface(name=args.iface))
     ies = ArrayOf(IE)()
     ies.append(IE("source ip"))
     ies.append(IE("destination ip"))
-    
+
     ipv4_connections = [
         # IPv4Connection(src_addr="192.168.1.1", dst_addr="130.251.17.2"),
     ]
     command = nfm.FlowMonitor(
         interfaces=interfaces, information_elements=ies, filter_v4=ArrayOf(IPv4Connection)(ipv4_connections)
     )
-    
+
     cmd = Command(Actions.start, command, arg, actuator=actuator)
 
 
@@ -111,22 +112,23 @@ if args.stop:
         Actions.stop, MonitorID(identifier), Args({"response_requested": ResponseType.complete}), actuator=actuator
     )
 
-print("Command: ", cmd)
-resp = producer.sendcmd(cmd)
-print("Got: ", resp)
+if cmd is not None:
+    print("Command: ", cmd)
+    resp = producer.sendcmd(cmd)
+    print("Got: ", resp)
 
 if args.query:
     assert resp.status == StatusCode.OK
     print("------------------------------")
     print("Supported features:")
-    for k,v in resp.content["results"].items():
+    for k, v in resp.content["results"].items():
         print(k, ":")
         if isinstance(v, list):
             for e in v:
                 print("\t- ", e)
         elif isinstance(v, dict):
-            for l,u in v.items():
-               print("\t- ", l, ":", u)
+            for l, u in v.items():
+                print("\t- ", l, ":", u)
         else:
             print("\t - ", v)
 
@@ -134,5 +136,3 @@ if args.start:
     identifier = resp.content["results"]["monitor_id"]
     print("------------------------------")
     print("Started process: ", identifier)
-
-
