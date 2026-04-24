@@ -16,8 +16,9 @@ import otupy.profiles.fclm as fclm
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-DEFAULT_COLLECTOR_ADDRESS="127.0.0.1"
-DEFAULT_COLLECTOR_PORT="2055"
+DEFAULT_COLLECTOR_ADDRESS = "127.0.0.1"
+DEFAULT_COLLECTOR_PORT = "2055"
+
 
 @actuator_implementation("fclm-filebeat")
 class FCLMActuatorFilebeat(LogCollectionMonitor):
@@ -37,20 +38,19 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
 
         Args:
             specifiers: The unique identifier for the monitored asset.
-				probe: Configuration items specific for Filebeat
+                                probe: Configuration items specific for Filebeat
         """
         super().__init__(asset_id=specifiers["asset_id"])
 
-        self.load = LogConfigLoader(probe.get('capabilities'), probe.get('export_fields'))
-        self.filebeat_exe = probe.get('executable', '/sbin/filebeat')
-        self.base_config = probe.get('base_config', './')
-        self.home_dir = probe.get('path_home', '.')
-        self.config_dir = probe.get('path_config', 'config')
-        self.log_dir = probe.get('path_logs', 'logs')
-        self.data_dir = probe.get('path_data', 'data')
+        self.load = LogConfigLoader(probe.get("capabilities"), probe.get("export_fields"))
+        self.filebeat_exe = probe.get("executable", "/sbin/filebeat")
+        self.base_config = probe.get("base_config", "./")
+        self.home_dir = probe.get("path_home", ".")
+        self.config_dir = probe.get("path_config", "config")
+        self.log_dir = probe.get("path_logs", "logs")
+        self.data_dir = probe.get("path_data", "data")
 
         init_db(path=self.home_dir)
-
 
     def _handle_feature(self, f):
         """
@@ -94,7 +94,13 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
             files, uri, socket, export_fields, import_controls, output, collectors, monitor_id
         )
 
-        cmd_list = [self.filebeat_exe, "-c", config_file, "--path.config", os.path.join(self.home_dir, f"{monitor_id}", self.config_dir)]
+        cmd_list = [
+            self.filebeat_exe,
+            "-c",
+            config_file,
+            "--path.config",
+            os.path.join(self.home_dir, f"{monitor_id}", self.config_dir),
+        ]
         if sleep_time > 0:
             threading.Timer(sleep_time, run_monitor, args=(cmd_list, terminate_time, monitor_id)).start()
             return ok("Monitor will start after delay", fclm.Results(monitor_id=MonitorID(monitor_id)))
@@ -147,7 +153,7 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         """
             Extract output destination path and file name from arguments.
             The current implementation assumes the collector is a logstash
-            instance. Future implementations may add support for additional 
+            instance. Future implementations may add support for additional
             collectors, by also providing the missing parameters (e.g., topic
             name, protocol).
 
@@ -161,13 +167,13 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         exporter = args.get("exporter")
         if exporter and exporter.get("collectors", []):
             for c in exporter.get("collectors", []):
-                host = c['host'].getObj() if 'host' in c else DEFAULT_COLLECTOR_ADDRESS
-                collectors.append( host,
-                                   c.get("port", DEFAULT_COLLECTOR_PORT), 
-                                   c.get("format") )
+                host = c["host"].getObj() if "host" in c else DEFAULT_COLLECTOR_ADDRESS
+                collectors.append(host, c.get("port", DEFAULT_COLLECTOR_PORT), c.get("format"))
         return collectors
 
-    def _configure_filebeat_yaml(self, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id):
+    def _configure_filebeat_yaml(
+        self, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id
+    ):
         """
         Load and modify the base Filebeat configuration with new settings.
 
@@ -190,13 +196,19 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         try:
             config = self._load_yaml_config(self.base_config)
             export_fields = self.load.get_export_fields(export_fields)
-            self._update_filebeat_config(config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id)
+            self._update_filebeat_config(
+                config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id
+            )
+            print(config)
+            exit(-1)
             return self._write_yaml_config(config, monitor_id)
         except Exception as e:
             logger.error(f"Error configuring Filebeat: {e}")
             raise
 
-    def _update_filebeat_config(self, config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id):
+    def _update_filebeat_config(
+        self, config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id
+    ):
         """
         Update the YAML config dictionary with monitoring sources and parameters.
 
@@ -254,11 +266,9 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         for c in collectors:
             # TODO: We currently support logstash only, since additional outputs (Kafka, Redis, Elasticsearch
             # would require more parameters in the profile (e.g., topic name, index, ...
-            hosts.append( str(c[0]) + ":" + str(c[1]) )
+            hosts.append(str(c[0]) + ":" + str(c[1]))
         if len(hosts) > 0:
-            config["output"] = {
-                "logstash": {"hosts": hosts }
-        }
+            config["output"] = {"logstash": {"hosts": hosts}}
 
         config.setdefault("path", {})["home"] = self.home_dir
         config.setdefault("path", {})["data"] = os.path.join(self.home_dir, monitor_id, self.data_dir)
@@ -312,7 +322,7 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         Raises:
             RuntimeError: If the file cannot be written.
         """
-        config_file="filebeat.yml"
+        config_file = "filebeat.yml"
         config_dir = os.path.join(self.home_dir, f"{monitor_id}", self.config_dir)
         os.makedirs(config_dir, exist_ok=True)
         file_path = os.path.join(config_dir, config_file)

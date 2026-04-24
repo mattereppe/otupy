@@ -6,6 +6,7 @@ import sys
 from argparse import ArgumentParser
 
 import otupy as oc2
+from otupy.profiles.fclm.data.collector import Host
 from otupy.types.data.feature import Feature
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
@@ -61,27 +62,28 @@ def main():
         efs.append(fclm.EF("message"))
         efs.append(fclm.EF("log.file.path"))
         efs.append(fclm.EF("input.type"))
-        a = fclm.Collector(address=oc2.IPv4Addr("192.1.1.6"), port=oc2.Port(1234), format=fclm.FileFormat.json)
+        a = fclm.Collector(host=Host("127.0.0.1"), port=oc2.Port(1234), format=fclm.FileFormat.json)
         col = oc2.ArrayOf(fclm.Collector)()
         col.append(a)
         arg = fclm.Args(
             {
                 # "start_time": oc2.DateTime(time.time() * 1000 + 5000),
                 # "stop_time" :  oc2.DateTime(time.time() * 1000 + 10000),
-                "exporter": fclm.Exporter(storage=oc2.File({"path": "httplogs", "name": "fb_out"})),
-#                "exporter": fclm.Exporter(storage=oc2.File({"path": "test", "name": "fb_out"}), collectors=col),
+                # "exporter": fclm.Exporter(storage=oc2.File({"path": "httplogs", "name": "fb_out"})),
+                #                "exporter": fclm.Exporter(storage=oc2.File({"path": "test", "name": "fb_out"}), collectors=col),
+                "exporter": fclm.Exporter(collectors=col),
                 "import_controls": fclm.ImportOptions(scan_frequency=oc2.Duration(10), max_backoff=oc2.Duration(10)),
                 "export_fields": efs,
             }
         )
-        file = fclm.LogMonitor(oc2.File({"path": "/var/log/http_access.log"})) # Target (currently used)
-        socket = fclm.LogMonitor(fclm.Socket("192.118.0.0", 1000, oc2.L4Protocol.tcp)) # Target
-        uri = fclm.LogMonitor(oc2.URI("wwww.google.com")) # Target
+        file = fclm.LogMonitor(oc2.File({"path": "/var/log/http_access.log"}))  # Target (currently used)
+        socket = fclm.LogMonitor(fclm.Socket("192.118.0.0", 1000, oc2.L4Protocol.tcp))  # Target
+        uri = fclm.LogMonitor(oc2.URI("wwww.google.com"))  # Target
         cmd = oc2.Command(oc2.Actions.start, file, arg, actuator=pf)
 
     elif args.stop:
-      identifier = args.stop
-      cmd = oc2.Command(oc2.Actions.stop, fclm.MonitorID(identifier), arg, actuator=pf)
+        identifier = args.stop
+        cmd = oc2.Command(oc2.Actions.stop, fclm.MonitorID(identifier), arg, actuator=pf)
     else:
         raise ValueError("Unsupported command")
 
@@ -97,14 +99,14 @@ def main():
     if args.query:
         print("------------------------------")
         print("Supported features:")
-        for k,v in resp.content["results"].items():
+        for k, v in resp.content["results"].items():
             print(k, ":")
             if isinstance(v, list):
                 for e in v:
                     print("\t- ", e)
             elif isinstance(v, dict):
-                for l,u in v.items():
-                   print("\t- ", l, ":", u)
+                for l, u in v.items():
+                    print("\t- ", l, ":", u)
             else:
                 print("\t - ", v)
 
