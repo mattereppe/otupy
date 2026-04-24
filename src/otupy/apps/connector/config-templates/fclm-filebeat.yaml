@@ -1,4 +1,4 @@
-nfm-packetbeat-example:
+fclm-packetbeat-example:
   actuator: "fclm-filebeat"
   profile: "x-fclm"
   owner: "acme.com"
