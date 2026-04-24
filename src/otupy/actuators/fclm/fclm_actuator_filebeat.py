@@ -199,8 +199,6 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
             self._update_filebeat_config(
                 config, file, uri, socket, export_fields, import_controls, output, collectors, monitor_id
             )
-            print(config)
-            exit(-1)
             return self._write_yaml_config(config, monitor_id)
         except Exception as e:
             logger.error(f"Error configuring Filebeat: {e}")
