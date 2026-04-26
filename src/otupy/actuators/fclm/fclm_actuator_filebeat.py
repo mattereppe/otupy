@@ -1,6 +1,7 @@
 import threading, logging, os
 from ruamel.yaml import YAML
 from otupy import Feature, actuator_implementation
+from otupy.profiles.fclm import Collector
 from otupy.types.base import Choice
 from otupy.types.data.duration import Duration
 from otupy.profiles.fclm.targets.monitor_id import MonitorID
@@ -167,8 +168,9 @@ class FCLMActuatorFilebeat(LogCollectionMonitor):
         exporter = args.get("exporter")
         if exporter and exporter.get("collectors", []):
             for c in exporter.get("collectors", []):
-                host = c["host"].getObj() if "host" in c else DEFAULT_COLLECTOR_ADDRESS
-                collectors.append(host, c.get("port", DEFAULT_COLLECTOR_PORT), c.get("format"))
+                host = c.get("host", DEFAULT_COLLECTOR_ADDRESS).getObj()
+                port = c.get("port", DEFAULT_COLLECTOR_PORT)
+                collectors.append((host, port, c.get("format")))
         return collectors
 
     def _configure_filebeat_yaml(
