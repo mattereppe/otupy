@@ -19,4 +19,4 @@ class Args(oc2.Args):
 
     """
 
-    fieldtypes = {"Direction": Direction, "AttachType": AttachType, "Interfaces": Interfaces, "storage": File, "maps":ArrayOf(str),"maps_required": bool}
+    fieldtypes = {"Direction": Direction, "AttachType": AttachType, "Interfaces": Interfaces, "maps":ArrayOf(str),"maps_required": bool}

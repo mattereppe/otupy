@@ -45,13 +45,13 @@ def main():
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
 
     pf = ebpf.Specifiers({})
-    #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
-    full_path = "/opt/abba/tmacp/fcd/a/tc_fl_kernel.o"
+    file_path = "/opt/abba/tmacp/fcd/a"
+    file_name = "tc_fl_kernel.o"
     direction = "ingress"
     attach_type = "tc"
     iface = "wlp7s0"
     section = "tc_flowlabel_stats"
-    prog = ProgramFile(full_path, Section=section,isUri=False) 
+    prog = ProgramFile(file_name=file_name, file_path=file_path, Section=section)
     direction_obj = Direction(direction)
     attach_obj = AttachType(attach_type)
     interfaces = Interfaces(iface)

@@ -21,7 +21,7 @@ AllowedStatusCode = [
     StatusCode.SERVICEUNAVAILABLE,
 ]
 """ List of allowed status code in `Response` """
-AllowedActions = [ Actions.create, Actions.delete, Actions.query]
+AllowedActions = [ Actions.create, Actions.delete, Actions.query, Actions.copy]
 AllowedCommandTarget = ActionTargets()
 """ List of allowed `Target` for each `Action`
 
@@ -29,9 +29,20 @@ AllowedCommandTarget = ActionTargets()
 """
 
 
-AllowedCommandTarget[Actions.query] = [TargetEnum.features,TargetEnum[Profile.nsid+':eBPF_program']]
+AllowedCommandTarget[Actions.query] = [TargetEnum.features,TargetEnum.artifact,TargetEnum[Profile.nsid+':eBPF_program']]
+
 AllowedCommandTarget[Actions.create] = [TargetEnum[Profile.nsid+':eBPF_program']]
 AllowedCommandTarget[Actions.delete] = [TargetEnum[Profile.nsid+':eBPF_program']]
+AllowedCommandTarget[Actions.copy] = [TargetEnum.artifact]
+
+
+AllowedCommandArguments = ActionArguments()
+AllowedCommandArguments[(Actions.copy, TargetEnum.artifact)] = ["response_requested", "storage"]
+AllowedCommandArguments[(Actions.create, TargetEnum[Profile.nsid+':eBPF_program'])] = ["Direction", "AttachType", "Interfaces", "maps"]
+AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid+':eBPF_program'])] = ["Direction", "AttachType", "Interfaces", "maps","maps_required"]
+AllowedCommandArguments[(Actions.delete, TargetEnum[Profile.nsid+':eBPF_program'])] = ["Direction", "AttachType", "Interfaces"]
+
+
 def validate_command(cmd):
 	""" Validate a `Command` 
 
@@ -48,3 +59,20 @@ def validate_command(cmd):
 			return False
 	except:
 		return False
+	
+def validate_args(cmd):
+    """Validate a `Command`
+
+    Helper function to check the `Args` in a `Command` are valid for the `Action` and `Target`  according
+    to the eBPF profile.
+    :param cmd: The `Command` class to validate.
+    """
+    try:
+        if cmd.args is None:
+            return True
+        for k, v in cmd.args.items():
+            if k not in AllowedCommandArguments[cmd.action, TargetEnum[cmd.target.getName()]]:
+                return False
+        return True
+    except:
+        return False

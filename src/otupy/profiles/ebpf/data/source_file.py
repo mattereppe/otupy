@@ -16,7 +16,8 @@ class ProgramFile(Record):
     # ------------------------
     # OpenC2 public fields
     # ------------------------
-    Name: str
+    file_name: str
+    file_path: str
     isUri: bool = False
     Section: Optional[str]
     @classmethod
@@ -28,11 +29,12 @@ class ProgramFile(Record):
         if not isinstance(dic, dict):
             raise TypeError(f"Expected dict to build {cls.__name__}, got {type(dic).__name__}")
 
-        name = dic.get("Name")
+        name = dic.get("file_name")
+        path = dic.get("file_path")
         section = dic.get("Section")
-        return cls(Name=name, Section=section)
+        return cls(file_name=name, file_path=path, Section=section)
 
-    def __init__(self, Name: Optional[str] = None, Section: Optional[str] = None, isUri: bool = False, Program: Optional[Union[str, "ProgramFile"]] = None, **kwargs):
+    def __init__(self, file_name: Optional[str] = None, file_path: Optional[str] = None, Section: Optional[str] = None, isUri: bool = False, Program: Optional[Union[str, "ProgramFile"]] = None, **kwargs):
         """
         Supports:
         - Name / Section (for deserialization)
@@ -42,11 +44,13 @@ class ProgramFile(Record):
 
         # Legacy constructor with 'Program'
         if Program:
-            self.Name = Program.strip()
+            self.file_name = Program.strip()
+            self.file_path = file_path
             self.Section = Section
             self.isUri = isUri
         else:
-            self.Name = Name
+            self.file_name = file_name
+            self.file_path = file_path
             self.Section = Section
             self.isUri = isUri
 
@@ -59,13 +63,16 @@ class ProgramFile(Record):
     # Validation
     # ------------------------
     def validate_fields(self):
-        if not self.Name:
+        if not self.file_name:
             raise ValueError("Program file name cannot be None or empty.")
+        if not self.file_path:
+            raise ValueError("Program file path cannot be None or empty.")
+        if not isinstance(self.file_name, str):
+            raise TypeError(f"Expected 'file_name' to be str, got {type(self.file_name).__name__}")
+        if not isinstance(self.file_path, str):
+            raise TypeError(f"Expected 'file_path' to be str, got {type(self.file_path).__name__}")
 
-        if not isinstance(self.Name, str):
-            raise TypeError(f"Expected 'Name' to be str, got {type(self.Name).__name__}")
-
-        _, ext = os.path.splitext(self.Name)
+        _, ext = os.path.splitext(self.file_name)
         if ext.lower() not in self.VALID_EBPF_EXTENSIONS:
             valid_list = ", ".join(self.VALID_EBPF_EXTENSIONS)
             raise ValueError(f"Invalid eBPF file extension '{ext}'. Expected one of: {valid_list}")
@@ -77,37 +84,37 @@ class ProgramFile(Record):
         if self.Section:
             return  # already set
 
-        _, ext = os.path.splitext(self.Name)
+        _, ext = os.path.splitext(self.file_name)
 
         if ext.lower() == ".c":
             # parse SEC("…") macro from source file
             try:
-                with open(self.Name, "r") as f:
+                with open(self.file_name, "r") as f:
                     for line in f:
                         line = line.strip()
                         if line.startswith('SEC("') and line.endswith('")'):
                             self.Section = line[5:-2]
                             return
             except Exception as e:
-                raise RuntimeError(f"Failed to read source file '{self.Name}': {e}")
+                raise RuntimeError(f"Failed to read source file '{self.file_name}': {e}")
 
         elif ext.lower() in {".o", ".bpf", ".ebpf"}:
             self.Section = None  # cannot auto-detect section in compiled files
 
         if not self.Section:
-            raise ValueError(f"eBPF section (SEC) not found in file '{self.Name}'.")
+            raise ValueError(f"eBPF section (SEC) not found in file '{self.file_name}'.")
 
     # ------------------------
     # Representation
     # ------------------------
     def __repr__(self):
-        return f"ProgramFile(Name={self.Name}, Section={self.Section})"
+        return f"ProgramFile(file_name={self.file_name}, file_path={self.file_path}, Section={self.Section})"
 
     def __str__(self):
-        return f"ProgramFile(Name={self.Name}, Section={self.Section})"
+        return f"ProgramFile(file_name={self.file_name}, file_path={self.file_path}, Section={self.Section})"
 
     # ------------------------
     # OpenC2 JSON support
     # ------------------------
     def to_dict(self):
-        return {"Name": self.Name, "Section": self.Section}
+        return {"file_name": self.file_name,"file_path": self.file_path, "Section": self.Section}

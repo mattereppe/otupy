@@ -4,6 +4,7 @@ import subprocess
 from otupy import    Command, Response
 import logging
 
+from otupy.core import results
 from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 
 
@@ -21,6 +22,7 @@ from otupy import Response, StatusCode
 from otupy.actuators.rcli.user.config import PRODUCER_ID
 
 from otupy.actuators.ebpf.actuators.TC.database.SQLDB import db
+from otupy.actuators.rcli.database.SQLDB import db as rcli_db
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 
 
@@ -47,24 +49,35 @@ def create(cmd: Command) -> Response:
 
         arguments = cmd.args or {}
 
-        required = ["Direction", "AttachType", "Interfaces", "maps"]
+        required = ["Direction", "AttachType", "Interfaces"]
         missing = [k for k in required if k not in arguments]
 
         if missing:
             return badrequest(
                 status_text=f"Missing required parameters: {', '.join(missing)}"
             )
+ 
 
-        load(
-            ifaces=arguments["Interfaces"],
-            prog_path=target.file.Name,
-            section=target.file.Section,
-            direction=arguments["Direction"].Name,
-            storage=arguments.get("storage"),
-            isUri=target.file.isUri,
-            attach_type=arguments["AttachType"].Name,
-            maps=arguments.get("maps")
-        )
+        result = rcli_db.retrieve_file(PRODUCER_ID, target.file.file_path,target.file.file_name)
+        if not result:
+            return notfound(status_text="eBPF file not found in database ")
+        for row in result:
+   
+            uid, f_path, f_name, calculated_hash = row
+            load(
+                file_path=f_path,
+                file_name=f_name,
+                section=target.file.Section if target.file else None,
+                direction=arguments.get("Direction").Name if arguments.get("Direction") else None,
+                attach_type=arguments.get("AttachType").Name if arguments.get("AttachType") else None,
+                maps=arguments.get("maps") if arguments.get("maps") else None,
+                hash=calculated_hash,
+                ifaces=(
+                arguments.get("Interfaces")
+                if arguments.get("Interfaces")
+                else None
+            )
+            )
 
         return ok("Program loaded successfully")
 
@@ -75,64 +88,14 @@ def create(cmd: Command) -> Response:
         logger.exception("Unhandled error in create()")
         return servererror("Internal server error")
 
-def copy(storage: File = None, isUri: bool = False, prog_path: str = None):
-    try:
-        pf = rcli.Specifiers({})
-
-        arg = rcli.Args(
-            {
-                "storage": File(
-                    {
-                        "path": storage.get("path"),
-                        "name": storage.get("name"),
-                    }
-                )
-            }
-        )
-
-        if isUri:
-            artifact = oc2.Artifact(
-                mime_type="application/json",
-                payload=oc2.Payload(URI(prog_path)),
-            )
-
-        else:
-            if not prog_path:
-                raise ValueError("prog_path is required when isUri=False")
-
-            try:
-                with open(prog_path, "rb") as f:
-                    bcontent = f.read()
-            except FileNotFoundError as e:
-                raise FileNotFoundError(f"File not found: {prog_path}") from e
-            except IOError as e:
-                raise IOError(f"Error reading file: {prog_path}") from e
-
-            hashes = oc2.Hashes(
-                {"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())}
-            )
-
-            artifact = oc2.Artifact(
-                mime_type="application/json",
-                payload=oc2.Binary(bcontent),
-                hashes=hashes,
-            )
-
-        cmd = oc2.Command(oc2.Actions.copy, artifact, arg, actuator=None)
-
-        return copy_rcli(cmd)
-
-    except Exception as e:
-        raise RuntimeError("Copy operation failed") from e
-
 def load(
     ifaces: Interfaces = None,
-    storage: File = None,
-    prog_path: str = None,
+    file_path: str = None,
+    file_name: str = None,
     section: str = None,
     direction: str = None,
-    isUri: bool = False,
     attach_type: str = None,
+    hash:str = None,
     maps= None
 ):
     executor = TCCommandExecutor()
@@ -148,22 +111,6 @@ def load(
             if not iface_mgr.ensure_clsact(iface):
                 raise RuntimeError(f"Cannot ensure clsact on interface {iface}")
 
-            # Copy file
-            response: Response = copy(
-                storage=storage,
-                isUri=isUri,
-                prog_path=prog_path,
-            )
-
-            if response.get("status") != StatusCode.OK:
-                raise RuntimeError("Error copying file to target location")
-
-            results = response["results"]["file_status"][0]
-
-            full_path = os.path.join(
-                results.get("path"),
-                results.get("name"),
-            )
 
             # Run tc command
             try:
@@ -178,7 +125,7 @@ def load(
                         "bpf",
                         "da",
                         "obj",
-                        full_path,
+                        os.path.join(file_path, file_name),
                         "sec",
                         section,
                     ],
@@ -192,9 +139,9 @@ def load(
             # Store metadata
             db.add_hookpoint(
                 uid=PRODUCER_ID,
-                file_path=full_path,
-                file_name=os.path.basename(full_path),
-                calculated_hash=str(results["hashes"]["md5"]),
+                file_path=file_path,
+                file_name=file_name,
+                calculated_hash=hash,  # Hash calculation can be added here if needed
                 attach_type=attach_type,
                 direction=direction,
                 Section=section,

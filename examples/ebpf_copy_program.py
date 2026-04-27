@@ -1,8 +1,11 @@
 #!../.oc2-env/bin/python3
 # Example to use the OpenC2 library
 #
+import hashlib
 import logging
 import otupy as oc2
+from otupy.core import target
+from otupy.profiles import rcli
 from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
@@ -47,24 +50,20 @@ def main():
 
     pf = ebpf.Specifiers({})
     #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
+    prog_path = "/home/abba/ebpf/eBPF_scripts-master/tc_fl_kern.o"
 
-    file_path = "/opt/abba/tmacp/fcd/a"
-    file_name = "tc_fl_kernel.o"
-    direction = "ingress"
-    attach_type = "tc"
-    iface = "wlp7s0"
-    section = "tc_flowlabel_stats"
-    prog = ProgramFile(file_name=file_name, file_path=file_path, Section=section)
-    direction_obj = Direction(direction)
-    attach_obj = AttachType(attach_type)
-    interfaces = Interfaces(iface)
-    target_features = eBPF_program(file=prog)
-    maps = ArrayOf(str)()
-    maps.append("fl_stats")
-    #storage= File({"path": "tmacp/fcd/a", "name":
-    
-    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces,"maps":maps, })
-    cmd = oc2.Command(oc2.Actions.create,target=target_features,args=args, actuator=pf)
+    try:
+        with open(prog_path, "rb") as f:
+            bcontent = f.read()
+    except Exception as e:
+        logger.error(f"Error reading file {prog_path}: {e}")
+        return
+
+    hashes =  oc2.Hashes({"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())})
+    artifact = oc2.Artifact(mime_type="application/json",payload=oc2.Binary(bcontent), hashes=hashes)
+    storage= File({"path": "tmacp/fcd/a", "name": "tc_fl_kernel.o"})
+    args = rcli.Args({"storage":storage})
+    cmd = oc2.Command(oc2.Actions.copy,artifact,args=args, actuator=pf)
 
     logger.info("Sending command: %s", cmd)
     resp = p.sendcmd(cmd)

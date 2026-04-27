@@ -10,17 +10,13 @@ from otupy.profiles.ctxd.data.network_interface import IPInfo, NetworkInterface
 from otupy.profiles.ctxd.data.network_node import NetworkNode
 from otupy.profiles.ctxd.data.os import OS
 from otupy.profiles.ctxd.data.service import SId, Service
-from otupy.profiles.ctxd.data.cloud import Cloud
 from otupy.profiles.ctxd.data.link import Link
 from otupy.profiles.ctxd.data.peer import Peer
 from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.server import Server
 from otupy.profiles.ctxd.data.name import Name
 from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.consumer import Consumer
 from otupy.profiles.ctxd.data.link_type import LinkType
 from otupy.profiles.ctxd.data.vm import VM
-from otupy.types.data.l4_protocol import L4Protocol
 from otupy.types.data.hostname import Hostname
 from otupy.types.base.array_of import ArrayOf
 from otupy import actuator_implementation
@@ -49,6 +45,7 @@ class CTXDActuatorProxmox(CTXDActuator):
         self.verify_ssl = auth.get('verify_ssl', False)
 
         self.proxmox = None
+        self.networks=None
         self._connect()
 
     def is_available(self):
@@ -152,13 +149,13 @@ class CTXDActuatorProxmox(CTXDActuator):
                 vm_service = Service(name=name, sid=SId.create_from_service_type(server), 
                                     type=ServiceType(server),  subservices=ArrayOf(SId)(), owner=self.owner, release=None)
                 self.services.append(vm_service)
-                
-                # Add interfaces as subservice
-                self.services.append(Service(name=netnode_name, sid=netnode_sid,
-						type=ServiceType(netnode),
-						subservices=ArrayOf(SId)(), owner=str(name), release=None))
-                
                 vm_service.subservices.append(netnode_sid)
+                # Add interfaces as subservice
+                #self.services.append(Service(name=netnode_name, sid=netnode_sid,
+				#		type=ServiceType(netnode),
+				#		subservices=ArrayOf(SId)(), owner=str(name), release=None))
+                
+                #vm_service.subservices.append(netnode_sid)
 
     def _discover_proxmox_lxc(self):
         """Discover Proxmox LXC containers and map them to Host and Service objects"""
@@ -210,8 +207,9 @@ class CTXDActuatorProxmox(CTXDActuator):
         "Discover network for each node"
         
         for node in self.nodes:
-            networks = self.get_node_networks(node)
-
+            self.networks = self.get_node_bridges(node)
+            logger.debug("Found networks %s",self.networks)
+       
     def _discover_vms_link_nodes(self):
         """ 
             Add links between qemu and node that host them
@@ -261,7 +259,9 @@ class CTXDActuatorProxmox(CTXDActuator):
     def get_node_networks(self, node):
         """Returns bridges, bonds, and physical NIC configurations."""
         return self.proxmox.nodes(node['node']).network.get()
-        
+    def get_node_bridges(self, node):
+        """Returns all network bridges visible to this node and their usage."""
+        return self.proxmox.nodes(node['node']).network.get(type="bridge")
 
     def get_node_storage(self, node):
         """Returns all storage pools visible to this node and their usage."""

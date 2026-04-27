@@ -164,6 +164,21 @@ class SQLDatabase:
                 "DELETE FROM files WHERE uid = ? AND file_path = ? AND file_name = ?", (uid, file_path, file_name)
             )
             conn.commit()
+    def retrieve_file(self, uid, file_path, file_name):
+        """
+        Retrieves a file for a given UID, file path, and file name.
+
+        Args:
+            uid (str): User identifier.
+            file_path (str): The path where the file is stored.
+            file_name (str): The name of the file.
+        """
+        with sqlite3.connect(self.db_name) as conn:
+            c = conn.cursor()
+            c.execute(
+                "SELECT * FROM files WHERE uid = ? AND file_path = ? AND file_name = ?", (uid, file_path, file_name)
+            )
+            return c.fetchall()
 
     def delete_pid(self, pid):
         """

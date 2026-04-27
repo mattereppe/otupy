@@ -66,7 +66,8 @@ def delete(cmd: Command) -> Response:
 
         remove(
             ifaces=arguments["Interfaces"],
-            prog_path=target.file.Name,
+            file_path=target.file.file_path,
+            file_name=target.file.file_name,
             section=target.file.Section,
             direction=arguments["Direction"].Name,
             attach_type=arguments["AttachType"].Name,
@@ -83,7 +84,8 @@ def delete(cmd: Command) -> Response:
 
 def remove(
     ifaces,
-    prog_path=None,
+    file_path=None,
+    file_name=None,
     direction=None,
     section=None,
     attach_type=None,
@@ -93,10 +95,7 @@ def remove(
     if not ifaces or not ifaces.Names:
         raise ValueError("No interfaces provided")
 
-    if not prog_path:
-        raise ValueError("prog_path is required")
-
-    prog_name = os.path.basename(prog_path)
+  
 
     try:
         for iface in ifaces.Names:
@@ -104,8 +103,8 @@ def remove(
             # Check if exists in DB
             exists = db.exists_file(
                 uid=PRODUCER_ID,
-                file_path=prog_path,
-                file_name=prog_name,
+                file_path=file_path,
+                file_name=file_name,
                 attach_type=attach_type,
                 direction=direction,
                 Section=section,
@@ -114,7 +113,7 @@ def remove(
 
             if not exists:
                 logger.warning(
-                    f"No hookpoint found for {prog_name} on {iface}"
+                    f"No hookpoint found for {file_name} on {iface}"
                 )
                 continue
 
@@ -131,7 +130,7 @@ def remove(
 
             # Find and delete matching filters
             for line in cp.stdout.splitlines():
-                if prog_name in line:
+                if file_name in line:
                     match = re.search(r"pref\s+(\d+)", line)
                     if match:
                         pref = match.group(1)
@@ -161,20 +160,20 @@ def remove(
             # Remove from DB
             db.delete_hookpoint(
                 uid=PRODUCER_ID,
-                file_path=prog_path,
-                file_name=prog_name,
+                file_path=file_path,
+                file_name=file_name,
                 attach_type=attach_type,
                 direction=direction,
                 Section=section,
                 interface=iface,
             )
             logger.info(
-                f"Deleted hookpoint for {prog_name} on {iface} ({direction})"
+                f"Deleted hookpoint for {file_name} on {iface} ({direction})"
             )
             
             response = delete_from_rcli(
-                path=os.path.dirname(prog_path),
-                name_file=prog_name,)
+                path=file_path,
+                name_file=file_name,)
             
             if response.get("status") != StatusCode.OK:
                 raise RuntimeError("Error deleting file from target location")

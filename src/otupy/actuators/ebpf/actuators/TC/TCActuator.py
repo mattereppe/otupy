@@ -4,7 +4,7 @@ from otupy import   Actions, Command, Response
 
 from otupy.core.actuator import actuator_implementation
 
-from otupy.profiles.ebpf.validation.TCHookValidation import validate_command
+from otupy.profiles.ebpf.validation.TCHookValidation import validate_command, validate_args
 
 
 
@@ -18,7 +18,7 @@ from otupy.types.data.version import Version
 from otupy.actuators.ebpf.actuators.TC.actions.query import query
 from otupy.actuators.ebpf.actuators.TC.actions.delete import delete
 from otupy.actuators.ebpf.actuators.TC.actions.create import create
-
+from otupy.actuators.ebpf.actuators.TC.actions.copy import copy
 
 """ Supported OpenC2 Version """
 OPENC2VERS = Version(1, 0)
@@ -37,7 +37,8 @@ class TCActuator():
     def run(self, cmd: Command) -> Response:
         if not validate_command(cmd):
             return notimplemented( status_text='Invalid Action/Target pair')
-        
+        if not validate_args(cmd):
+            return badrequest(status_text='Invalid or missing arguments for the given Action/Target pair')
         try:
             if not self._is_addressed_to_actuator(cmd.actuator.getObj()):
                 return notfound(status_text='Requested Actuator not available')
@@ -47,6 +48,7 @@ class TCActuator():
         except Exception as e:
             return servererror(status_text='Unable to identify actuator')
         match cmd.action:
+            case Actions.copy: return copy(cmd)
             case Actions.create: return create(cmd)
             case Actions.query: return query(cmd)
             case Actions.delete: return delete(cmd)
