@@ -40,9 +40,8 @@ class ProgramFile(Record):
         - Name / Section (for deserialization)
         - Program + Section 
         """
-        super().__init__()  # Must call first for OpenC2 Record
+        super().__init__()  
 
-        # Legacy constructor with 'Program'
         if Program:
             self.file_name = Program.strip()
             self.file_path = file_path
@@ -87,7 +86,7 @@ class ProgramFile(Record):
         _, ext = os.path.splitext(self.file_name)
 
         if ext.lower() == ".c":
-            # parse SEC("…") macro from source file
+            
             try:
                 with open(self.file_name, "r") as f:
                     for line in f:

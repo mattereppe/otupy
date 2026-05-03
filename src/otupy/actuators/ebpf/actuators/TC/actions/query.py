@@ -10,6 +10,7 @@ from otupy.profiles.ebpf.data.direction_ebpf import Direction
 from otupy.profiles.ebpf.data.hook_program import AttachType
 from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.profiles.ebpf.data.map_ebpf import MapeBPF
+from otupy.profiles.ebpf.data.program_status import ProgramStatus
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 from otupy.profiles.ebpf.query_results import QueryResults
 from otupy.types.base.array_of import ArrayOf
@@ -80,10 +81,7 @@ def query_tc(cmd):
             )
         )
 
-        program_files = ArrayOf(ProgramFile)()
-        direction_obj = ArrayOf(Direction)()
-        attach_obj = ArrayOf(AttachType)()
-        interfaces_obj = ArrayOf(Interfaces)()
+        prog_status = ArrayOf(ProgramStatus)()
         found_maps = ArrayOf(MapeBPF)()
         
         all_required_names = set()
@@ -92,10 +90,7 @@ def query_tc(cmd):
             # Using tuple unpacking for readability
             uid, f_path, f_name, h_val, a_type, d_rect, sect, iface, m_str = row
             
-            program_files.append(ProgramFile(f_path, Section=sect))
-            direction_obj.append(Direction(d_rect))
-            attach_obj.append(AttachType(a_type))
-            interfaces_obj.append(Interfaces(iface))
+
             
             # Collect all unique map names found in DB rows
             if m_str:
@@ -106,26 +101,29 @@ def query_tc(cmd):
                 except (ValueError, SyntaxError):
                     logger.error(f"Failed to parse map string: {m_str}")
 
-        # 2. BPFtool Lookup (Only if maps are required and found in DB)
-        if arguments.get("maps_required") and all_required_names:
-            result_cli = executor.run_cmd(["sudo", "bpftool", "map", "show", "-j"], capture_output=True, check=True)
-            kernel_maps = json.loads(result_cli.stdout)
-            
-            # Build lookup dict: name -> id
-            id_map = {m['name']: m['id'] for m in kernel_maps if 'name' in m}
-            
-            for name in all_required_names:
-                if name in id_map:
-                    found_maps.append(MapeBPF(name=name, id=id_map[name]))
-                else:
-                    logger.warning(f"Map '{name}' defined in DB but not found in kernel.")
-
+            # 2. BPFtool Lookup (Only if maps are required and found in DB)
+            if arguments.get("maps_required") and all_required_names:
+                result_cli = executor.run_cmd(["sudo", "bpftool", "map", "show", "-j"], capture_output=True, check=True)
+                kernel_maps = json.loads(result_cli.stdout)
+                
+                # Build lookup dict: name -> id
+                id_map = {m['name']: m['id'] for m in kernel_maps if 'name' in m}
+                
+                for name in all_required_names:
+                    if name in id_map:
+                        found_maps.append(MapeBPF(name=name, id=id_map[name]))
+                    else:
+                        logger.warning(f"Map '{name}' defined in DB but not found in kernel.")
+            # 3. Build ProgramStatus for each DB row
+            prog_status.append(ProgramStatus(
+                Program=ProgramFile(file_path=f_path, file_name=f_name, Section=sect),
+                Direction=Direction(d_rect),
+                hook_point=AttachType(a_type),
+                Interfaces=Interfaces(Names=[iface] if iface else []),
+                maps=ArrayOf(MapeBPF)([m for m in found_maps if m.name in all_required_names]) if arguments.get("maps_required") else ArrayOf(MapeBPF)()
+            ))
         res_data = QueryResults(
-            Program=program_files,
-            hook_point=attach_obj,
-            Direction=direction_obj,
-            Interfaces=interfaces_obj,
-            maps=found_maps
+            program_status=prog_status
         )
         
         return ok(f"Programs found: {len(results)}", res=res_data)

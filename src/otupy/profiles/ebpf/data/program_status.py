@@ -1,9 +1,7 @@
-""" eBPF Response extensions
-
+""" eBPF Program Status
 """
 import otupy as oc2
 
-from otupy.profiles.ebpf.data import program_status
 from otupy.profiles.ebpf.data.map_ebpf import MapeBPF
 from otupy.profiles.ebpf.profile import Profile
 from otupy.types.base.array_of import ArrayOf
@@ -15,7 +13,9 @@ from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.profiles.ebpf.data.source_file import ProgramFile
 
 @oc2.extension(nsid=Profile.nsid)
-class QueryResults(oc2.Results):
+class ProgramStatus(oc2.Results):
 
-	fieldtypes = {'program_status': ArrayOf(program_status)}
-
+	fieldtypes = {'Program': ProgramFile, 'Direction': Direction, 'hook_point': AttachType, 
+			   'Interfaces': Interfaces,
+			   'maps': ArrayOf(MapeBPF)
+			   }

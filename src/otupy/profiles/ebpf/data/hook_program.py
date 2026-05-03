@@ -7,7 +7,7 @@ class AttachType(Record):
     """
 
     Name: str  # public OpenC2 field
-    VALID_ATTACH_TYPES = {"tc", "xdp","kprobe"}
+    VALID_ATTACH_TYPES = {"tc"}
 
     # ------------------------
     # Constructor
