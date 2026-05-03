@@ -29,15 +29,13 @@ import ipaddress
 from glob import glob
 
 from otupy.profiles import slpf
-from otupy.profiles.ctxd.data.application import Application
 from otupy import IPv4Addr, IPv4Net
 
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd import *
+from otupy.models.ctxd import *
 
 from otupy import ArrayOf, actuator_implementation
-import otupy.profiles.ctxd as ctxd
 
 logger = logging.getLogger(__name__)
 

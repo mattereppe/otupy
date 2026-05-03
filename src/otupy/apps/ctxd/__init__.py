@@ -57,7 +57,7 @@
 			- ``name``: Filename (created if does not exist)
 		  	- ``path``: Filesystem path to the file (current directory if not given) 	
 
-	- ``services``: A list of "root services" to query, indicated as their :py:class:`~otupy.profiles.ctxd.data.consumer.Consumer` endpoints:
+	- ``services``: A list of "root services" to query, indicated as their :py:class:`~otupy.models.ctxd.consumer.Consumer` endpoints:
 
 		- ``host``
 		- ``port``

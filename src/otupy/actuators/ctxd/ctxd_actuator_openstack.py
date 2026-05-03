@@ -42,26 +42,11 @@ import otupy.profiles
 from otupy import Extensions
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service, SId
-from otupy.profiles.ctxd.data.link import Link
-from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
-from otupy.profiles.ctxd.data.host_type import HostType
-from otupy.profiles.ctxd.data.host import  Host
-from otupy.profiles.ctxd.data.vlan_network import VLANNetwork
-from otupy.profiles.ctxd.data.network_node import NetworkNode
-from otupy.profiles.ctxd.data.network_firewall import Firewall
-from otupy.profiles.ctxd.data.network_interface import NetworkInterface
-from otupy.profiles.ctxd.data.vm import VM
-from otupy.profiles.ctxd.data.ip_net_address import IPNetAddress
+from otupy.models.ctxd import Service, SId, Link, Name, ExecutionEnvironmentType, HostType, Host, VLANNetwork, NetworkNode, Firewall, NetworkInterface, VM, IPNetAddress
 
 from otupy.profiles.ctxd import *
 
-from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
-
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, IPv4Net, IPv6Net
-from otupy.types.data import IPv4Addr, IPv6Addr
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, IPv4Net, IPv6Net, Hostname, L4Protocol, IPv4Addr, IPv6Addr
 import otupy.profiles.ctxd as ctxd
 
 

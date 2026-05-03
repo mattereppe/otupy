@@ -38,9 +38,6 @@ import ipaddress
 import uuid
 
 from otupy.profiles import slpf
-from otupy.profiles.ctxd.data.application import Application
-from otupy.types.data.ipv4_addr import IPv4Addr
-from otupy.types.data.uri  import URI
 
 from kubernetes import config, client
 from kubernetes.client.rest import ApiException
@@ -49,25 +46,9 @@ from urllib.parse import urlparse
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 
-from otupy.profiles.ctxd import *
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, Hostname, L4Protocol, IPv4Addr, URI
 
-from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
-
-
-
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
-import otupy.profiles.ctxd as ctxd
-
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service, SId
-from otupy.profiles.ctxd.data.link import Link
-from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
-from otupy.profiles.ctxd.data.host_type import HostType
-from otupy.profiles.ctxd.data.host import  Host
-from otupy.profiles.ctxd.data.network_node import NetworkNode
-from otupy.profiles.ctxd.data.network_interface import NetworkInterface, IPInfo, IPAddress
-from otupy.profiles.ctxd.data.ip_network import IPNetwork
+from otupy.models.ctxd import *
 
 logger = logging.getLogger(__name__)
 

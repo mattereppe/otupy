@@ -53,7 +53,7 @@ from containerd.services.containers.v1 import containers_pb2_grpc, containers_pb
 from otupy import Array, ArrayOf, actuator_implementation, Hostname, MACAddr
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd import *
+from otupy.models.ctxd import *
 
 
 

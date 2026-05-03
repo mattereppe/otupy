@@ -14,8 +14,6 @@ import otupy.encoders  # Do not remove! It is necessary to find the registered e
 import otupy.actuators  # Do not remove! It is necessary to find the registered actuators.
 
 import otupy.profiles.ctxd as ctxd
-from otupy.profiles.ctxd.data.name import Name
-#from otupy.transfers.http.message import Message
 
 from otupy.apps.ctxd.publishers import *
 from otupy.apps.ctxd.defaults import defaults, set_consumer_defaults
@@ -168,7 +166,8 @@ def discover(consumer):
                                                              
 	actuator = ctxd.Specifiers({'asset_id': consumer['actuator']['asset_id']})
 	arg = ctxd.Args({'name_only': False, 'cached': False})
-	target = ctxd.Context(services=otupy.ArrayOf(Name)(), links=otupy.ArrayOf(Name)())  # expected all services and links
+#	target = ctxd.Context(services=otupy.ArrayOf(Name)(), links=otupy.ArrayOf(Name)())  # expected all services and links
+	target = ctxd.Context()  # expected all services and links
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
 	try:
 		context = producer.sendcmd(cmd)

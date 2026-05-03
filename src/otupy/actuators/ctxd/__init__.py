@@ -20,8 +20,9 @@
 		- ``config``: Additional configuration (e.g., CA certificates) that may be needed by the context APIs.
 		- ``peers``: A list of external services and the consumers where to get their description. Each element of this list includes:
 
-			- ``service_name``: a :py:class:`~otupy.profiles.ctxd.data.name.Name` with the identifier of the service.
-			- ``consumer``: a :py:class:`~otupy.profiles.ctxd.data.consumer.Consumer` dictionary that identifies how to connect to the remote consumer, including the actuator specifiers.
+			- ``service_name``: a :py:class:`~otupy.models.ctxd.name.Name` with the identifier of the service (deprecated).
+			- ``sid``: a :py:class:`~otupy.models.ctxd.service.sid` with the service identifier (alternative and preferred to `Name`)
+			- ``consumer``: a :py:class:`~otupy.models.ctxd.consumer.Consumer` dictionary that identifies how to connect to the remote consumer, including the actuator specifiers.
 
 				- ``host``
 				- ``port``

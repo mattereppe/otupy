@@ -17,12 +17,7 @@ import sys
 from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
 import otupy.profiles.ctxd as ctxd
 
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service, SId
-from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.link_type import LinkType
-from otupy.profiles.ctxd.data.link import Link
-from otupy.profiles.ctxd.data.consumer import Consumer
+from otupy.models.ctxd import Service, SId, Link, Name, ServiceType, LinkType, Consumer
 
 logger = logging.getLogger(__name__)
 

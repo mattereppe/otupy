@@ -12,7 +12,6 @@ import logging
 import sys
 
 from otupy.profiles import slpf
-from otupy.profiles.ctxd.data.application import Application
 from otupy.types.data.ipv4_addr import IPv4Addr
 
 import requests
@@ -20,28 +19,11 @@ from kubernetes import config, client
 from kubernetes.client.rest import ApiException
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.profiles.ctxd.data.cloud import Cloud
-from otupy.profiles.ctxd.data.consumer import Consumer
-from otupy.profiles.ctxd.data.container import Container
-from otupy.profiles.ctxd.data.link_type import LinkType
-from otupy.profiles.ctxd.data.network import Network
-from otupy.profiles.ctxd.data.network_type import NetworkType
-from otupy.profiles.ctxd.data.os import OS
-from otupy.profiles.ctxd.data.peer import Peer
-from otupy.profiles.ctxd.data.peer_role import PeerRole
-from otupy.profiles.ctxd.data.service_type import ServiceType
-from otupy.profiles.ctxd.data.vm import VM
-from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
+from otupy.models.ctxd import *
 
 
 
 from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
-import otupy.profiles.ctxd as ctxd
-
-from otupy.profiles.ctxd.data.name import Name
-from otupy.profiles.ctxd.data.service import Service
-from otupy.profiles.ctxd.data.link import Link
 
 logger = logging.getLogger(__name__)
 
