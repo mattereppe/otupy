@@ -6,7 +6,6 @@ import otupy.encoders
 from otupy import Transfer, Transfers, Encoder, Encoders, Map, Extensions
 from otupy.types.data.hostname import Hostname
 from otupy.types.data.l4_protocol import L4Protocol
-from otupy.profiles.ctxd.profile import nsid
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class Consumer(otupy.types.base.Record):
 
 	def __init__(self, host:str = None, port:int = None, protocol:int = None, endpoint:str = None, 
 			transfer:str = None, encoding:str = None,
-			profile:str = nsid, actuator = None):
+			profile:str = None, actuator = None):
 		if isinstance(host, Consumer):
 			self.host = host.host
 			self.port = host.port

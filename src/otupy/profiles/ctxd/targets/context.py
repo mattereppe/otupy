@@ -2,7 +2,7 @@ from otupy.profiles.ctxd.profile import Profile
 from otupy import Record, ArrayOf, target
 from otupy.models.ctxd import SId
 
-@oc2.target(name='context', nsid=Profile.nsid)
+@target(name='context', nsid=Profile.nsid)
 class Context(Record):
 	""" Context
 		

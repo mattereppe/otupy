@@ -109,6 +109,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 		"""
 		self.discover_services()
 		self.discover_links()
+		logger.debug("Returning context")
 
 
 	def discover_services(self):
@@ -120,6 +121,7 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			- Nodes
 			- Namespaces available
 		"""
+		logger.debug("Discovering services...")
 		self._discover_k8s_cloud()
 		self._discover_k8s_services()
 		self._discover_k8s_pods()
@@ -137,15 +139,25 @@ class CTXDActuator_kubernetes(CTXDActuator):
 			- Pods and containers
 			- Network Policy firewall and pods
 		"""
+		logger.debug("Discovering links...")
 		self._discover_k8s_links_nodes()
+		logger.debug("Got link to nodes")
 		self._discover_k8s_links_pods()
+		logger.debug("Got link to pods")
 		self._discover_networkfunctions_links_nodes()
+		logger.debug("Got link network functions to nodes")
 		self._discover_pod_links_nodes()
+		logger.debug("Got link pod to nodes")
 		self._discover_network_links_nodes()
+		logger.debug("Got link network to nodes")
 		self._discover_pod_links_containers()
+		logger.debug("Got link pod to contaienrs")
 		self._discover_pod_links_networks()
+		logger.debug("Got link pod to networks")
 		self._discover_k8s_links_np()
+		logger.debug("Got link to network policies")
 		self._discover_np_links_pods()
+		logger.debug("Got link network policies to pods")
 
 
 	def _discover_k8s_namespaces(self):

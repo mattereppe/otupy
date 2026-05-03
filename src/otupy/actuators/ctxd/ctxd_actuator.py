@@ -260,8 +260,11 @@ class CTXDActuator:
 			Updates the list of services/links (if necessary) and returns them. The main task is to build the expected response
 			(names only or full description), while the concrete discovery is managed by the `_udpdate()` method.
 		"""
-		services = cmd.target.obj.services
-		links = cmd.target.obj.links
+		# The following feature was removed
+#		services = cmd.target.obj.services
+#		links = cmd.target.obj.links
+		services = []
+		links = []
 		res = {}
 
 		try:
@@ -285,6 +288,7 @@ class CTXDActuator:
 							res['service_names'].append(i.name)
 						else:
 							res['services'].append(i)
+						logger.debug("Found service: %s", i)
 		if(links is not None):
 			if(cmd.args.get('name_only') == True):
 				res['link_names'] = ArrayOf(Name)()
@@ -297,8 +301,10 @@ class CTXDActuator:
 							res['link_names'].append(i.name)
 						else:
 							res['links'].append(i)
+						logger.debug("Found link: %s", i)
 
 		if len(res) > 0:
+			logger.info("Returning %d services, %d links", len(res['services']), len(res['links']))
 			return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(**res))
 		else:
 			return Response(status=StatusCode.OK, status_text="Command received: heartbeat")
