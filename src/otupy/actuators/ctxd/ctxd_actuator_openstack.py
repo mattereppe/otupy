@@ -42,7 +42,7 @@ import otupy.profiles
 from otupy import Extensions
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
-from otupy.models.ctxd import Service, SId, Link, Name, ExecutionEnvironmentType, HostType, Host, VLANNetwork, NetworkNode, Firewall, NetworkInterface, VM, IPNetAddress
+from otupy.models.ctxd import *
 
 from otupy.profiles.ctxd import *
 
@@ -118,10 +118,15 @@ class CTXDActuator_openstack(CTXDActuator):
 			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
 			including VMs, networks, image repositories.
 		"""
+		logger.debug("Discovering services...")
 		self._discover_os_services()
+		logger.debug("Discovering servers...")
 		self._discover_os_servers()
+		logger.debug("Discovering hypervisors...")
 		self._discover_os_hypervisors()		
+		logger.debug("Discovering networks...")
 		self._discover_os_networks()
+		logger.debug("Discovering routers...")
 		self._discover_os_routers()
 		# TODO: Discover:
 		# - images
@@ -136,15 +141,25 @@ class CTXDActuator_openstack(CTXDActuator):
 			- SLPF firewall (iptables) and VMs (servers)
 			- VMs (servers) and ExecutionEnvironment (System and application software), only from a configuration file
 		"""
+		logger.debug("Discovering OpenStack links to servers...")
 		self._discover_os_link_vms()
+		logger.debug("Discovering OpenStack links to security group...")
 		self._discover_os_link_sg()
+		logger.debug("Discovering OpenStack links to networks...")
 		self._discover_os_link_networks()
+		logger.debug("Discovering OpenStack links to network functions...")
 		self._discover_os_link_networkfunctions()
+		logger.debug("Discovering OpenStack links to hypervisors...")
 		self._discover_vms_link_hypervisors()
+		logger.debug("Discovering server links to networks...")
 		self._discover_vms_link_networks()
+		logger.debug("Discovering routers links to controllers and networks...")
 		self._discover_routers_link_controllers_and_networks()
+		logger.debug("Discovering networks links to controllers...")
 		self._discover_networks_link_controllers()
+		logger.debug("Discovering execenvs links to servers...")
 		self._discover_execenvs_link_vms()
+		logger.debug("Discovering security group links to servers...")
 		self._discover_sg_link_vms()
 
 
