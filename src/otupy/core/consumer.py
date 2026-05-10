@@ -165,13 +165,14 @@ class Consumer:
 		# Run the command and collect the response
 		# TODO: Define how to manage concurrent execution from more than one actuator
 		try:
+			logger.info("Dispatching command to: %s", actuator[0])
+		except (IndexError,AttributeError):
+			logger.warn("Ignoring request for non-existing actuator: %s", actuator[0])
+			response_content = Response(status=StatusCode.NOTFOUND, status_text='No actuator available')
+		try:
 			# TODO: How to merge multiple responses?
 			# for a in actuators.items(): 
-			logger.info("Dispatching command to: %s", actuator[0])
 			response_content = actuator[0].run(msg.content) 
-		except (IndexError,AttributeError):
-			logger.warn("Ignoring request for non-existingn actuator: %s", actuator[0])
-			response_content = Response(status=StatusCode.NOTFOUND, status_text='No actuator available')
 		except Exception as e:
 			logger.error("Actuator raised an exception: %s", e)
 			response_content = Response(status=StatusCode.INTERNALERROR, status_text=str(e))
