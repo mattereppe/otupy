@@ -50,8 +50,8 @@ class Consumer(otupy.types.base.Record):
 			self.port = port if port is not None else None
 			self.protocol = L4Protocol[protocol] if protocol is not None else None
 			self.endpoint = endpoint if endpoint is not None else None
-			self.transfer = Transfers[transfer] if transfer is not None else None
-			self.encoding = Encoders[encoding].value if encoding is not None else None
+			self.transfer = transfer if transfer is not None else None
+			self.encoding = Encoders[encoding].name if encoding is not None else None
 			self.profile = profile # Default value assigned in function declaration
 			specifiers = None
 			if actuator is not None:
@@ -62,7 +62,6 @@ class Consumer(otupy.types.base.Record):
 					logger.error("Cannot instantiate %s profile for consumer: %s", profile, host)
 			self.actuator=specifiers
 
-		self.validate_fields()
 
 	def __repr__(self):
 		return f"Consumer(" \
@@ -88,20 +87,5 @@ class Consumer(otupy.types.base.Record):
 #		"""
 #		return self.host == other.host and self.port == other.port and self.profile == other.profile and self.specifiers == other.specifiers
 
-	def validate_fields(self):
-		if self.host is not None and not isinstance(self.host, str):
-			raise TypeError(f"Expected 'host' to be of type {str}, but got {type(self.host)}")
-		if self.port is not None and not isinstance(self.port, int):
-			raise TypeError(f"Expected 'port' to be of type {int}, but got {type(self.port)}")		
-		if self.protocol is not None and not isinstance(self.protocol, L4Protocol):
-			raise TypeError(f"Expected 'protocol' to be of type {L4Protocol}, but got {type(self.protocol)}")
-		if self.endpoint is not None and not isinstance(self.endpoint, str):
-			raise TypeError(f"Expected 'endpoint' to be of type {str}, but got {type(self.endpoint)}")
-		if self.transfer is not None and not issubclass(self.transfer, Transfer):
-			raise TypeError(f"Expected 'transfer' to be of type {Transfer}, but got {type(self.transfer)}")
-		if self.encoding is not None and not issubclass(self.encoding, Encoder):
-			raise TypeError(f"Expected 'encoding' to be of type {Encoding}, but got {type(self.encoding)}")
-		if self.actuator is not None and not isinstance(self.actuator, dict):
-			raise TypeError(f"Expected 'actuator' to be of type {dict}, but got {type(self.actuator)}")
 
 
