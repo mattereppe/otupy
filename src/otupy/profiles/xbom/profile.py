@@ -1,4 +1,4 @@
-""" Context Discovery namespace
+""" XBOM namespace
 
 	This module defines the nsid and unique name for the XBOM profile.
 	No explicit values are used anywhere in the rest of the code.
@@ -15,4 +15,4 @@ class Profile(oc2.Profile):
 		Defines the namespace identifier and the name of the SLPF Profile.
 	"""
 	nsid = nsid
-	name = 'x Bill of Materials'
+	name = 'eXtended Bill of Materials'

@@ -41,37 +41,22 @@ from urllib.parse import urlparse, urlsplit
 import otupy.profiles
 from otupy import Extensions
 
-from otupy.actuators.xbom.xbom_actuator import XBOMActuator
-from otupy.profiles.xbom.data.name import Name
-from otupy.profiles.xbom.data.service import Service, SId
-from otupy.profiles.xbom.data.link import Link
-from otupy.profiles.xbom.data.execution_environment_type import ExecutionEnvironmentType
-from otupy.profiles.xbom.data.host_type import HostType
-from otupy.profiles.xbom.data.host import Host
-from otupy.profiles.xbom.data.vlan_network import VLANNetwork
-from otupy.profiles.xbom.data.network_node import NetworkNode
-from otupy.profiles.xbom.data.network_firewall import Firewall
-from otupy.profiles.xbom.data.network_interface import NetworkInterface
-from otupy.profiles.xbom.data.vm import VM
-from otupy.profiles.xbom.data.ip_net_address import IPNetAddress
+from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
+from otupy.models.ctxd import *
 
-from otupy.profiles.xbom import *
+from otupy.profiles.ctxd import *
 
-from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
-
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, IPv4Net, IPv6Net
-from otupy.types.data import IPv4Addr, IPv6Addr
-import otupy.profiles.xbom as xbom
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, IPv4Net, IPv6Net, Hostname, L4Protocol, IPv4Addr, IPv6Addr
+import otupy.profiles.ctxd as ctxd
 
 
 logger = logging.getLogger(__name__)
 
 @actuator_implementation("xbom-openstack")
-class XBOMActuator_openstack(XBOMActuator):
+class XBOMOpenStackActuator(XBOMActuator):
 	""" Openstack Actuator Manager
 
-		Extend the base `CTDXActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
+		Extend the base `XBOMActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
 		hypervisors, and OpenStack sw components. It should be extended in future releases with additional resources (e.g., networks, ports).
 
 
@@ -133,10 +118,15 @@ class XBOMActuator_openstack(XBOMActuator):
 			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
 			including VMs, networks, image repositories.
 		"""
+		logger.debug("Discovering services...")
 		self._discover_os_services()
+		logger.debug("Discovering servers...")
 		self._discover_os_servers()
+		logger.debug("Discovering hypervisors...")
 		self._discover_os_hypervisors()		
+		logger.debug("Discovering networks...")
 		self._discover_os_networks()
+		logger.debug("Discovering routers...")
 		self._discover_os_routers()
 		# TODO: Discover:
 		# - images
@@ -151,15 +141,25 @@ class XBOMActuator_openstack(XBOMActuator):
 			- SLPF firewall (iptables) and VMs (servers)
 			- VMs (servers) and ExecutionEnvironment (System and application software), only from a configuration file
 		"""
+		logger.debug("Discovering OpenStack links to servers...")
 		self._discover_os_link_vms()
+		logger.debug("Discovering OpenStack links to security group...")
 		self._discover_os_link_sg()
+		logger.debug("Discovering OpenStack links to networks...")
 		self._discover_os_link_networks()
+		logger.debug("Discovering OpenStack links to network functions...")
 		self._discover_os_link_networkfunctions()
+		logger.debug("Discovering OpenStack links to hypervisors...")
 		self._discover_vms_link_hypervisors()
+		logger.debug("Discovering server links to networks...")
 		self._discover_vms_link_networks()
+		logger.debug("Discovering routers links to controllers and networks...")
 		self._discover_routers_link_controllers_and_networks()
+		logger.debug("Discovering networks links to controllers...")
 		self._discover_networks_link_controllers()
+		logger.debug("Discovering execenvs links to servers...")
 		self._discover_execenvs_link_vms()
+		logger.debug("Discovering security group links to servers...")
 		self._discover_sg_link_vms()
 
 
@@ -222,7 +222,7 @@ class XBOMActuator_openstack(XBOMActuator):
 					try:
 						ips.append( IPInfo(ip=a['ip_address'], prefix=prefix, gw=gw))
 					except Exception as e:
-						logger.error("Unable to add ip address: %s", e)
+						logger.error("Unable to add ip address: ", e)
 
 
 				ifaces.append(NetworkInterface(description=p['description'], id=p['id'], iface=None, ips=ips))
@@ -360,7 +360,7 @@ class XBOMActuator_openstack(XBOMActuator):
 					try:
 						ips.append( IPInfo(ip=a['ip_address'], prefix=prefix, gw=gw))
 					except Exception as e:
-						logger.error("Unable to add ip address for router: %s", e)
+						logger.error("Unable to add ip address for router: ", e)
 				ifaces.append(NetworkInterface(description=p['description'], id=p['id'], iface=None, ips=ips))
 
 			node = NetworkNode(name=r['name'],

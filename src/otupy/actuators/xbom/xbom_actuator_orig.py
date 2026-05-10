@@ -1,9 +1,9 @@
-""" Skeleton `Actuator` for CTXD profile
+""" Skeleton `Actuator` for x-xbom profile
 
-	This module implements an `Actuator` for the CTXD profile.
+	This module implements an `Actuator` for the x-xbom profile.
 	It manages common operations (like answering the `query` command and the interface to implement 
-	specific sofware for different environments. It should be used alone, because it does not return
-	`Services` or `Links`.
+	specific sofware for different environments. It should be used alone, because it does not create
+	any xbom. This class and all derived class must discovery bom components using the ctxd data model.
 
 	Concrete implementation of this interface should implement the following methods:
 	- discover_context(): Must fill in the internal `services` member with `Service` instances and
@@ -15,7 +15,7 @@ import sys
 
 
 from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
-import otupy.profiles.ctxd as ctxd
+import otupy.profiles.xbom as xbom
 
 from otupy.models.ctxd import Service, SId, Link, Name, ServiceType, LinkType, Consumer
 
@@ -24,17 +24,18 @@ logger = logging.getLogger(__name__)
 OPENC2VERS=Version(1,0)
 """ Supported OpenC2 Version """
 
-# An implementation of the ctxd profile. 
-class CTXDActuator:
-	""" Context Discovery actuator for the ctxd profile.
+# An implementation of the xbom profile. 
+class XBOMActuator:
+	""" Context Discovery actuator for the x-xbom profile.
 
-		This class provides the base implementation of the CTXD `Actuator`.
+		This class provides the base implementation of the xbom `Actuator`.
 	"""
 
-	services: ArrayOf(Service) = None # type: ignore
-	""" Name of the service """
-	links: ArrayOf(Link) = None # type: ignore
-	"""It identifies the type of the service"""
+	bom: Xbom | None = None
+	""" Discovered BOM for this actuator """
+	
+	xbom_format: XbomFormat = XbomFormat.cyclonedx
+	""" The XBOM format to use for BOM creation (set from target) """
 	
 	def __init__(self, **kwargs):
 		""" Initialization
@@ -54,8 +55,124 @@ class CTXDActuator:
 		self.peers = kwargs['peers'] if 'peers' in kwargs else None
 		self.owner = kwargs['owner'] if 'owner' in kwargs else None
 		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
+		self.xbom_format = XbomFormat.cyclonedx
+		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
+
+	def create_bom(self) -> Xbom:
+		""" Factory method to create a BOM instance based on the current sbom_format
+		
+			This method should be used by actuators instead of directly instantiating Xbom().
+			It creates the appropriate BOM type based on the format requested in the target.
+		
+			:return: A new BOM instance of the appropriate type
+			:raises NotImplementedError: If the requested format is not supported
+		"""
+		bom_class = _BOM_REGISTRY.get(self.xbom_format)
+		if bom_class is None:
+			raise NotImplementedError(f"SBOM format {self.xbom_format} is not supported")
+		return bom_class()
+
+	def _build_bom(self) -> None:
+		""" Convert all services and links into a single BOM for this actuator
+
+			This method:
+			1. Creates a single BOM and adds all discovered services/components to it
+			2. Establishes dependency relationships from the subservice structure
+			3. Adds link properties to the matching services/components
+
+			This centralizes all BOM creation so that concrete actuators only need
+			to populate self.services and self.links.
+		"""
+		self.bom = self.create_bom()
+		# TODO: Create a lookup table for the names
+
+		# Add all services to the single BOM
+		for service in self.services:
+			if service.type is None:
+				logger.warning("Service %s has no type, skipping", service.name)
+				continue
+			try:
+				self.bom.add(service)
+			except Exception as e:
+				logger.error("Faulty service infos: %s", service)
+				logger.error("Error adding service %s to BOM: %s", service.name, e)
+
+		# Create dependency relationships based on subservices
+		# for service in self.services:
+		# 	if service.subservices is not None and len(service.subservices) > 0:
+		# 		parent_name = service.name.getObj() if hasattr(service.name, 'getObj') else str(service.name)
+				
+		# 		for subservice in service.subservices:
+		# 			# Skip None values in subservices
+		# 			if subservice is None:
+		# 				logger.warning("Skipping None value in subservices for service %s", parent_name)
+		# 				continue
+					
+		# 			child_name = None
+		# 			for s in self.services:
+		# 				if s.name == subservice:
+		# 					child_name = s.name.getObj() if hasattr(s.name, 'getObj') else str(s.name)
+		# 					break
+
+		# 			if child_name is None:
+		# 				logger.warning("Could not find matching service for subservice %s in service %s, skipping dependency", subservice, parent_name)
+		# 				continue
+					
+		# 			logger.debug("Adding dependency from %s to subservice %s", parent_name, child_name)
+		# 			parent_ref = self.bom.find_ref_by_name(str(parent_name))
+		# 			child_ref = self.bom.find_ref_by_name(str(child_name))
+					
+		# 			if parent_ref is None:
+		# 				logger.warning("Could not find parent '%s' in BOM, skipping dependency", parent_name)
+		# 				continue
+		# 			if child_ref is None:
+		# 				logger.warning("Could not find child '%s' (BOM name: '%s') in BOM, skipping dependency", otupy_name, subservice_str)
+		# 				continue
+						
+		# 			self.bom.add_dependency(parent_ref=parent_ref, child_ref=child_ref)
+		for service in self.services:
+			if service.subservices is not None and len(service.subservices) > 0:
+				for subservice in service.subservices:
+					if subservice is not None:
+						logger.debug("Adding dependency from %s to subservice %s", service.name, subservice)
+						try:
+							self.bom.add_dependency(parent_ref=str(service.sid), child_ref=str(subservice))
+						except ValueError as e:
+							logger.warning("Skipping dependency: %s", e)
+
+		# # Add links as properties to the matching services/components
+		logger.info("Adding %d links to the BOM", len(self.links))
+		for link in self.links:
+			self._add_link_to_bom(link)
+
+	def _add_link_to_bom(self, link: Link) -> None:
+		""" Add a link as properties to the matching service/component in the BOM
+
+			:param link: The Link object to add.
+		"""
+		if self.bom is None or self.bom.bom is None:
+			logger.warning("No BOM available to add link %s", link.name)
+			return
+		# Try matching by name first, then fall back to sid
+		for service in self.services:
+			if service.name == link.name:
+				try:
+					self.bom.add_link(item_ref=str(service.sid), link=link)
+				except Exception as e:
+					logger.error("Error adding link %s to service %s: %s", link.name, service.name, e)
+				return
+		# Fallback: match by sid (name may differ, e.g. short name vs full DNS hostname)
+		if link.sid is not None:
+			for service in self.services:
+				if service.sid is not None and str(service.sid) == str(link.sid):
+					try:
+						self.bom.add_link(item_ref=str(service.sid), link=link)
+					except Exception as e:
+						logger.error("Error adding link %s to service %s: %s", link.name, service.name, e)
+					return
+		logger.warning("Could not find service/component '%s' to add link", link.name)
 
 
 	def run(self, cmd):
@@ -66,10 +183,11 @@ class CTXDActuator:
 			:param cmd: A `Command` in the format of the otupy framework.
 			:return: `Response` to the provided command.
 		"""
-		if not ctxd.validate_command(cmd):
+		if not xbom.validate_command(cmd):
 			return Response(status=StatusCode.NOTIMPLEMENTED, status_text='Invalid Action/Target pair')
-		if not ctxd.validate_args(cmd):
+		if not xbom.validate_args(cmd):
 			return Response(status=StatusCode.NOTIMPLEMENTED, status_text='Option not supported')
+		logger.debug("Command validation passed")
 
 		# Check if the Specifiers are actually served by this Actuator
 		try:
@@ -80,6 +198,7 @@ class CTXDActuator:
 			pass
 		except Exception as e:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Unable to identify actuator')
+		logger.debug("Command is addressed to this actuator")
 
 #		try:
 		match cmd.action:
@@ -116,9 +235,11 @@ class CTXDActuator:
 			:param cmd: The `Command` including `Target` and optional `Args`.
 			:return: A `Response` including the result of the query and appropriate status code and messages.
 		"""
+		logger.debug("Serving query request")
 		if ( type(cmd.target.getObj()) == Features): 
 			r = self._query_feature(cmd)
-		elif (type(cmd.target.getObj()) == ctxd.Context): #Discovery Context can accept also "context" as a target
+		elif (isinstance(cmd.target.getObj(), xbom.XbomTarget)):
+			# SBOM target with format and names fields
 			r = self._query_context(cmd)
 		else:
 			return Response(status=StatusCode.BADREQUEST, status_text="Querying " + cmd.target.getName() + " not supported")
@@ -140,10 +261,10 @@ class CTXDActuator:
 					features[Feature.versions.name]=ArrayOf(Version)([OPENC2VERS])	
 				case Feature.profiles:
 					pf = ArrayOf(Nsid)()
-					pf.append(Nsid(ctxd.Profile.nsid))
+					pf.append(Nsid(xbom.Profile.nsid))
 					features[Feature.profiles.name]=pf
 				case Feature.pairs:
-					features[Feature.pairs.name]=ctxd.AllowedCommandTarget
+					features[Feature.pairs.name]=xbom.AllowedCommandTarget
 				case Feature.rate_limit:
 					return Response(status=StatusCode.NOTIMPLEMENTED, status_text="Feature 'rate_limit' not yet implemented")
 				case _:
@@ -151,28 +272,30 @@ class CTXDActuator:
 
 		res = None
 		try:
-			res = ctxd.Results(features)
+			res = xbom.Results(features)
 		except Exception as e:
 			return self.__servererror(cmd, e)
 
 		return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=res)
 
-	def get_services(self, name: Name = None, filter: ServiceType = None, 
-			namespace: str = None, domain: str = None) -> [] :
+	def get_services(self, name: Name | None = None, filter: ServiceType | None = None,
+				  domain: str | None = None, namespace: str | None = None) -> list:
 		""" Returns the list of current services
 
-			Returns the list of discovered services. Filter by name and type.
+			Returns the list of discovered services. Filter by name, type, domain and namespace.
 
 			:param name: The name of the service to retrieve (all if not set).
 			:param filter: The type of service (given by a void instance of `ServiceType`).
+			:param domain: The domain of the service (all if not set).
+			:param namespace: The tenant/namespace of the service (all if not set).
 			:return: A list of services that match the searching criteria.
 		"""
 		service_list= []
 		for s in self.services:
 			if filter == None or ( type(s.type.getObj()) == filter ):
 				if name == None or ( s.name == name ):
-					if namespace == None or namespace == s.namespace:
-						if domain == None or domain == s.domain:
+					if domain == None or ( getattr(s, 'domain', None) == domain ):
+						if namespace == None or ( getattr(s, 'namespace', None) == namespace ):
 							service_list.append(s)
 
 		return service_list
@@ -253,76 +376,58 @@ class CTXDActuator:
 
 		return consumer
 
+	def _query_sbom(self, cmd):
+		""" Query SBOM - returns the single BOM for this actuator
 
-	def _query_context(self, cmd):
-		""" Returns the current context (services and links)
+			Handles the XbomCtx target which allows specifying the SBOM format
+			and a list of component/service names to filter the returned names.
 
-			Updates the list of services/links (if necessary) and returns them. The main task is to build the expected response
-			(names only or full description), while the concrete discovery is managed by the `_udpdate()` method.
+			:param cmd: The `Command` including `Target` and optional `Args`.
+			:return: A `Response` including the actuator's BOM.
 		"""
-		# The following feature was removed
-#		services = cmd.target.obj.services
-#		links = cmd.target.obj.links
-		services = []
-		links = []
+		sbom_target = cmd.target.getObj()
 		res = {}
 
-		try:
-			if not (cmd.args.get('cached') == True):
-				self._update()
-		except Exception as e:
-			logger.error("Unable to update context: %s", str(e))
-			return Response (status=StatusCode.INTERNALERROR, 
-					status_text=StatusCodeDescription[StatusCode.INTERNALERROR], 
-					results="")
+		# Get format if specified and set it for BOM creation
+		if sbom_target.get('format') is not None:
+			self.xbom_format = sbom_target.get('format')
 
-		if(services is not None):
-			if(cmd.args.get('name_only') == True):
-				res['service_names'] = ArrayOf(Name)()
-			else:
-				res['services'] = ArrayOf(Service)()
-			if self.services is not None:
-				for i in self.services:
-					if (len(services) == 0) or i.name in services:
-						if(cmd.args.get('name_only') == True):
-							res['service_names'].append(i.name)
-						else:
-							res['services'].append(i)
-						logger.debug("Found service: %s", i)
-		if(links is not None):
-			if(cmd.args.get('name_only') == True):
-				res['link_names'] = ArrayOf(Name)()
-			else:
-				res['links'] = ArrayOf(Link)()
-			if self.links is not None:
-				for i in self.links:
-					if(len(links) == 0) or i.name in links:
-						if(cmd.args.get('name_only') == True):
-							res['link_names'].append(i.name)
-						else:
-							res['links'].append(i)
-						logger.debug("Found link: %s", i)
+		if not (cmd.args.get('cached') == True):
+			self._update()
+
+		if self.bom is None:
+			return Response(status=StatusCode.OK, status_text="No BOM available")
+
+		# Get names filter if specified (used to filter bom_names, not the BOM itself)
+		names_filter = sbom_target.get('names')
+
+		if cmd.args.get('name_only') == True:
+			pass
+		else:
+			res['bom'] = self.bom
 
 		if len(res) > 0:
-			logger.info("Returning %d services, %d links", len(res['services']), len(res['links']))
-			return  Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results= ctxd.Results(**res))
+			# logger.debug("Returning SBOM: %s", res)
+			return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=xbom.Results(**res))
 		else:
-			return Response(status=StatusCode.OK, status_text="Command received: heartbeat")
-			
-	def _update(self):
-		""" Update services and links
+			return Response(status=StatusCode.OK, status_text="No matching BOMs found")
 
-			This method should be run before getting links and services
-			Every concrete implementation of actuators must implement the `discover_context()` method.
+	def _update(self):
+		""" Update boms
+
+			This method should be run before getting the list of boms.
+			Every concrete implementation of actuators must implement the `discover_services()` and `discover_links()` methods.
 			Does not return anything, just update the internal members `services` and `links`.
 
 			:return: None
 		"""
+		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
 		# Reset everything at the beginning, because links might be updated during the
 		# discovery of services for optimization purposes
 		self.discover_context()
+		self._build_bom()
 		
 	def __notimplemented(self, cmd):
 		""" Default response

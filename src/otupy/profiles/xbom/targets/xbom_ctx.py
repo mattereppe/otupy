@@ -1,34 +1,22 @@
-import otupy as oc2
+from otupy import ArrayOf, target
 
 from otupy.profiles.xbom.profile import Profile
-from otupy.types.base.array_of import ArrayOf
-from otupy.profiles.xbom.data.xbom_format import XbomFormat
 
 
-@oc2.target(name='xbom', nsid=Profile.nsid)
-class XbomCtx(oc2.Map):
+@target(name='boms', nsid=Profile.nsid)
+class XbomTarget(ArrayOf(str)):
 	""" Xbom-ctx
 		
-	The Xbom type defines the arguments used to identify or format a Software Bill of Materials.
+		The Xbom target is used to request Bills of Materials. 
+		This target may include a list of component identifiers.
+		If no identifier is provided, all BOMs are returned.
+		Otherwise, only the BOMs of the specified components are returned.
+
+		This target is currently only used with the query action to return the BOMs.
+		In the future, the profile may be extended to use both the ``query`` and ``scan``
+		actions. The former will ask for the list of components, the latter will ask
+		to build and return the BOM of one or more components.
 	
-	:param format: Specifies the format of the XBOM (e.g. CycloneDX). Defaults to CycloneDX if not specified.
 	"""
-	fieldtypes = {'format': XbomFormat}
+	pass
 	
-	def __init__(self, dic=None, **kwargs):
-		""" Initialize the Xbom-ctx target
-		
-		The target can be initialized by passing a dictionary or keyword arguments.
-		
-		:param dic: A dictionary with 'format' and/or 'names' fields
-		:param kwargs: Keyword arguments for 'format' and/or 'names'
-		"""
-		if dic is None:
-			dic = kwargs
-		oc2.Map.__init__(self, dic)
-	
-	def __repr__(self):
-		return f"XbomCtx(format={self.get('format')})"
-	
-	def __str__(self):
-		return f"XbomCtx(format={self.get('format')})"
