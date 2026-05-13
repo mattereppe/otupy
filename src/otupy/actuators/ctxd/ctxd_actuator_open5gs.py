@@ -220,11 +220,9 @@ class CTXDActuator_open5gs(CTXDActuator):
 						link_type=LinkType.packet_flow, role=PeerRole.forwarding,
 						peers=ArrayOf(Peer)([peer])))
 
-		# Add links between security functions and network functions
+		# Add links for security functions 
 		for k, v in self.connectors.items():
-			print("**** Adding connnector: ", k)
-			sid = SId(name=MIRANDACONNECTOR_NAME, type="app", subtype="sec", domain=self.k8s_domain,
-										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
+			# Add links between security functions and network functions
 			for p in v['configs']:
 				if self.connector_configs.get(p):
 					for l,u in self.connector_configs.get(p).items():
@@ -232,14 +230,36 @@ class CTXDActuator_open5gs(CTXDActuator):
 							v['consumer'].profile = u.get('profile')
 							if isinstance(u, dict) and u.get('specifiers'):
 								v['consumer'].actuator = copy.deepcopy(u.get('specifiers'))
+								connector_name=v['consumer'].actuator['asset_id']
+							else:
+							 	connector_name=MIRANDACONNECTOR_NAME
+
+							sid = SId(name=connector_name, type="app", subtype="sec", domain=MIRANDACONNECTOR_NAME,
+														namespace=None, version=None) # Don't use version: not visible in Kubernetes!
 	
 							peer = Peer(service_name=k, sid=sid,
 										role=PeerRole.protect, # Generic indication
 										consumer=v['consumer'])
-							self.links.append(Link(name=v['function'].name, sid=v['function'], 
-										description="MIRANDA Connector",
+							for c in v['protected_containers']:
+								protected_sid = copy.deepcopy(v['function'])
+								protected_sid.name = c
+								protected_sid.type = "execenv"
+								protected_sid.subtype = "container"
+#self.links.append(Link(name=v['function'].name, sid=protected_sid,
+								self.links.append(Link(name=protected_sid.name, sid=protected_sid,
+										description="MIRANDA Connector protects " + protected_sid.name,
 										link_type=LinkType.protecting, role=PeerRole.protected,
 										peers=ArrayOf(Peer)([peer])))
+
+							# Add links between security functions and hosting containers
+							host_sid=SId(name=v['host'], type="execenv", subtype="container", 
+								domain=self.k8s_domain, namespace=self.k8s_namespace, version=None)
+							peer = Peer(service_name=v['host'], sid=host_sid,
+								role=PeerRole.host, consumer=self.get_consumer(sid=host_sid))
+							self.links.append(Link(name=sid.name, sid=sid,
+								description="MIRANDA Connector hosted on " + host_sid.name,
+								link_type=LinkType.hosting, role=PeerRole.guest,
+								peers=ArrayOf(Peer)([peer])))
 
 	def _load_open5gs_config(self, **kwargs):
 		if kwargs['config']['deployment'] == 'kubernetes' and \
@@ -298,6 +318,8 @@ class CTXDActuator_open5gs(CTXDActuator):
 			try:
 				with open(file) as f:
 					configs = yaml.load_all(f, Loader=yaml.FullLoader)
+					connector_name=None
+					connector_consumer=None
 					for c in configs:
 						# Looking for the upf function
 						try:
@@ -311,15 +333,33 @@ class CTXDActuator_open5gs(CTXDActuator):
 								except:
 									pass
 								try:
+									protected_containers = []
 									for container in c['spec']['template']['spec']['containers']:
 										if container['name'] == MIRANDACONNECTOR_NAME:
-											if not self.connectors.get(c['metadata']['name']):
-												self.connectors[container['name']] = {}
-											self.connectors[c['metadata']['name']]['function'] =  sid
-											self.connectors[c['metadata']['name']]['configs'] =  []
+											connector_name=c['metadata']['name']+"."+container['name']
+											if not self.connectors.get(connector_name):
+												self.connectors[connector_name] = {}
+											# This is a trick, but I have not got any way to retrieve the container
+											self.connectors[connector_name]['host'] = container['name'] + "." + c['metadata']['name'] + "-0"
+											self.connectors[connector_name]['function'] =  sid
+											self.connectors[connector_name]['configs'] =  []
 											for v in c['spec']['template']['spec']['volumes']:
 												if v.get('configMap'):
-													self.connectors[c['metadata']['name']]['configs'].append(v.get('configMap').get('name'))
+													self.connectors[connector_name]['configs'].append(v.get('configMap').get('name'))
+											# We assume only one miranda container to be present in each pod
+											# (makes sense, because it all actuators)
+											self.connectors[connector_name]['protected_containers'] = copy.deepcopy(protected_containers)
+											protected_containers.clear()
+											if connector_consumer:
+												self.connectors[connector_name]['consumer'] = connector_consumer 
+										else:
+											# This is a trick, but I have not got any way to retrieve the container
+											protected_containers.append(container['name'] + "." + c['metadata']['name'] + "-0")
+											if connector_name:
+												if	not self.connectors[connector_name].get('protected_containers'):
+														self.connectors[connector_name]['protected_containers'] = []
+												self.connectors['protected']= self.connectors['protected'] + copy.deepcopy(protected_containers)
+												protected_containers.clear()
 								except Exception as e:
 									pass
 						except Exception as e:
@@ -339,9 +379,11 @@ class CTXDActuator_open5gs(CTXDActuator):
 											host = host + ".svc"
 											if self.k8s_domain:
 												host = host + "." + self.k8s_domain
-										if not self.connectors.get(c['metadata']['name']):
-											self.connectors[c['metadata']['name']] = {}
-										self.connectors[c['metadata']['name']]['consumer'] = Consumer(host=host, port=port.get('nodePort'))
+										connector_consumer = Consumer(host=host, port=port.get('nodePort'))
+										if connector_name:
+											if	not self.connectors.get(connector_name):
+												self.connectors[connector_name] = {}
+											self.connectors[connector_name]['consumer'] = connector_consumer
 						except Exception as e:
 							logger.warning("Unable to retrieve MIRANDA connector endpoint: %s", e)
 									
@@ -362,8 +404,6 @@ class CTXDActuator_open5gs(CTXDActuator):
 			except Exception as e:
 				logger.error("Unabel to parse config file %s: %s", file, e)
 					
-
-	
 	# The following two methods are a duplication of what implemented by the
 	# file actuator, but for now it is simpler and cleaner to copy them
 	# instead of creating common code

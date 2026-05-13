@@ -44,8 +44,8 @@ def _log_context(ctx):
 						logger.debug("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
 						tot_links = tot_links+1
 		logger.info("Found %d service(s), %d link(s)", tot_services, tot_links)
-	except:
-		logger.info("No service/link found!")
+	except Exception as e:
+		logger.info("No service/link found! Reason: %s", e)
 
 
 # The loop "decorator", which cannot be used as decorator
@@ -95,6 +95,7 @@ def discovery(config):
 		# Start recursive discovery
 		while len(consumers) > 0: 
 			consumer = consumers.pop()
+			logger.debug("Querying: %s", consumer)
 			if consumer in queried_consumers:
 				logger.info("Skipping %s: already queried", get_consumer_short(consumer))
 			else:
