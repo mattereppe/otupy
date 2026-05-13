@@ -75,7 +75,7 @@ class Name(Choice):
 
 			  This method assumes the conversion to string is managed by the object type.
         """
-        return str(self.getObj())
+        return self.__repr__()
 
     def __repr__(self):
         """ Return the internal object

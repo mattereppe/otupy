@@ -36,7 +36,7 @@ from otupy import IPv4Addr, IPv4Net
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
 from otupy.profiles.ctxd import *
 
-from otupy import ArrayOf, actuator_implementation
+from otupy import ArrayOf, actuator_implementation, Encoder
 import otupy.profiles.ctxd as ctxd
 
 logger = logging.getLogger(__name__)
@@ -89,10 +89,17 @@ class CTXDActuator_open5gs(CTXDActuator):
 			logger.error("Unable to get open5gs service name: %s", e)
 			self.service_name="open5gs"
 
+		# Get additional services and links corresponding to manual configurations
+		self._services = self._create_services(kwargs.get('services', []))
+		self._links = self._create_links(kwargs.get('links', []))
 
 	def discover_context(self):
 		self.discover_services()
+		for s in self._services:
+			self.services.append(s)
 		self.discover_links()
+		for l in self._links:
+			self.links.append(l)
 
 	def discover_services(self):
 		""" Mobile network + data network 
@@ -215,7 +222,8 @@ class CTXDActuator_open5gs(CTXDActuator):
 
 		# Add links between security functions and network functions
 		for k, v in self.connectors.items():
-			sid = SId(name=k, type="app", subtype="sec", domain=self.k8s_domain,
+			print("**** Adding connnector: ", k)
+			sid = SId(name=MIRANDACONNECTOR_NAME, type="app", subtype="sec", domain=self.k8s_domain,
 										namespace=self.k8s_namespace, version=None) # Don't use version: not visible in Kubernetes!
 			for p in v['configs']:
 				if self.connector_configs.get(p):
@@ -306,7 +314,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 									for container in c['spec']['template']['spec']['containers']:
 										if container['name'] == MIRANDACONNECTOR_NAME:
 											if not self.connectors.get(c['metadata']['name']):
-												self.connectors[c['metadata']['name']] = {}
+												self.connectors[container['name']] = {}
 											self.connectors[c['metadata']['name']]['function'] =  sid
 											self.connectors[c['metadata']['name']]['configs'] =  []
 											for v in c['spec']['template']['spec']['volumes']:
@@ -356,6 +364,24 @@ class CTXDActuator_open5gs(CTXDActuator):
 					
 
 	
+	# The following two methods are a duplication of what implemented by the
+	# file actuator, but for now it is simpler and cleaner to copy them
+	# instead of creating common code
+	def _create_services(self, services):
+
+		service_list = []
+		for s in services:
+			service_list.append(Encoder.decode(Service, s))
+
+		return service_list
+	
+	def _create_links(self, links):
+
+		link_list = []
+		for l in links:
+			link_list.append(Encoder.decode(Link, l))
+
+		return link_list
 
 
 

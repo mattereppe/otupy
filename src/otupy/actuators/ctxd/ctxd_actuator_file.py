@@ -39,7 +39,7 @@ class CTXDActuator_file(CTXDActuator):
 
 	"""
 
-	def __init__(self, services: list = None, links: list = None, **kwargs):
+	def __init__(self, services: list = [], links: list = [], **kwargs):
 		""" Initialize the actuator
 
 			:param services: List of services
@@ -58,9 +58,6 @@ class CTXDActuator_file(CTXDActuator):
 	
 	def _create_services(self, services):
 
-		if services is None:
-			return []
-
 		service_list = []
 		for s in services:
 			service_list.append(Encoder.decode(Service, s))
@@ -68,9 +65,6 @@ class CTXDActuator_file(CTXDActuator):
 		return service_list
 	
 	def _create_links(self, links):
-
-		if links is None:
-			return []
 
 		link_list = []
 		for l in links:
