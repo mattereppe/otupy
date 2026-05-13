@@ -110,10 +110,12 @@ class Consumer:
 			profile = None
 			# TODO: how to mix responses from multiple actuators?
 			# Workaround: strictly require a profile to be present
+			logger.error("Ignoring request with missing profile: %s", profile)
 			response = Response(status=StatusCode.BADREQUEST, status_text='Missing profile')
 			return self.__respmsg(msg, response)
 
 		try:
+			# TODO: `asset_id` might not be avaialble/used for all profiles
 			asset_id = msg.content.actuator.getObj()['asset_id']
 		except KeyError:
 			# assed_id = None means the default actuator that implements the required profile
@@ -130,6 +132,7 @@ class Consumer:
 				# Only one instance is expected to be present in this case
 				actuator = [self.actuators[(profile,asset_id)]]
 		except KeyError:
+			logger.warn("Ignoring request for non-existing actuator: %s", asset_id)
 			response = Response(status=StatusCode.NOTFOUND, status_text='No actuator available')
 			return self.__respmsg(msg, response)
 
