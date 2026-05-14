@@ -286,6 +286,7 @@ class CTXDActuator_open5gs(CTXDActuator):
 		self.ssd=config['OPEN5GS_SST']
 		self.net_name=config['OPEN5GS_NETNAME']
 		self.connector_host=config.get('CONNECTOR_HOST')
+		self.connector_port=int(config.get('CONNECTOR_PORT'))
 		malicious_users=config['DDOS_REPLICAS']
 		licit_users=config['CURL_REPLICAS']
 		self.users = []
@@ -379,7 +380,11 @@ class CTXDActuator_open5gs(CTXDActuator):
 											host = host + ".svc"
 											if self.k8s_domain:
 												host = host + "." + self.k8s_domain
-										connector_consumer = Consumer(host=host, port=port.get('nodePort'))
+										if self.connector_port:
+											connector_port = self.connector_port
+										else:
+											connector_port=port.get('nodePort')
+										connector_consumer = Consumer(host=host, port=connector_port)
 										if connector_name:
 											if	not self.connectors.get(connector_name):
 												self.connectors[connector_name] = {}
