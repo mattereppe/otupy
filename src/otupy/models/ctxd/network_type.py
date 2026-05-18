@@ -15,7 +15,7 @@ class NetworkType(Choice):
 		The network type carries different configuration parameters, depending on the specific network 
 		technology.
 
-		WARNING: This definition is currently partially, since it does not include network paramters for
+		WARNING: This definition is currently partial, since it does not include network parameters for
 		most of network types. When the network is defined as str, it returns something like: "ethernet": "ethernet".
 	"""
 

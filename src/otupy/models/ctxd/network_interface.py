@@ -37,7 +37,7 @@ class IPAddress(Choice):
 class IPInfo(Record):
 	""" IP address and gateway information
 
-		Packs together IP addressing informatin, including netmask and gateway
+		Packs together IP addressing information, including netmask and gateway
 	"""
 	ip: IPAddress = None
 	""" IP address """
@@ -97,7 +97,7 @@ class NetworkInterface(Record):
 			self.ips = ips 
 
 	def __repr__(self):
-		return (f"Port(description={self.description}, id={self.id}, mac={self.mac}, iface={self.iface}, ips={self.ips})") 
+		return (f"NetworkInterface(description={self.description}, id={self.id}, mac={self.mac}, iface={self.iface}, ips={self.ips})") 
 	
 	def __str__(self):
 		return self.__repr__()

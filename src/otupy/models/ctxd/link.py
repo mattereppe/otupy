@@ -30,7 +30,7 @@ class Link(otupy.types.base.Record):
 	link_type: LinkType = None
 	""" Type of the link"""
 	role: PeerRole = None
-	""" Role of service  in the link relationship """
+	""" Role of service in the link relationship """
 	peers: ArrayOf(Peer) = None # type: ignore
 	""" Services connected on the link """
 

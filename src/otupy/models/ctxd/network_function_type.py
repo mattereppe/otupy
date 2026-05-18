@@ -11,7 +11,7 @@ class NetworkFunctionType(Choice):
 		The network function type carries different configuration parameters, depending on the specific network 
 		function.
 
-		WARNING: This definition is currently partially, since it does not include all possible functions.
+		WARNING: This definition is currently partial, since it does not include all possible functions.
 	"""
 
 	register = Register({'router': Router, 'vpn': str, 'nat': NAT, 'bridge': Bridge, 'fw': Firewall})

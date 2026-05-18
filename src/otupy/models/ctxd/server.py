@@ -3,7 +3,7 @@ from otupy import  Record
 class Server(Record):
 	""" Physical server
 
-		A ``Serveer`` is a true computing hardware, currently intended for any kind of high-end or low-end
+		A ``Server`` is a true computing hardware, currently intended for any kind of high-end or low-end
 		computer (namely, it includes laptops and desktops). This might be changed in the future with
 		additional revisions and refinements of the model..
 		It provides real hardware as network interfaces, virtual CPUs, virtual RAM, and storage.

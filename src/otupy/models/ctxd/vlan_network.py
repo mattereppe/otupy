@@ -18,12 +18,12 @@ class VLANNetwork(Map):
 			nets = ArrayOf(IPNetAddress))
 	""" Field types
 	
-		This is the definition of the fields beard by the `Mobile` network.
+		This is the definition of the fields beard by the VLAN network.
 		:param name: mnemonic identifier for the network
 		:param vlan_id: Identifier for this VLAN segment
 		:param type: VLAN protocol (e.g., 802.1Q)
-		:param netv4nets: Network addesses used in this network
-		:param netv6nets: Network IPv6 addresses used in this network
+		:param nets: Network addresses used in this network
+
 	"""
 
 	def getNets(self):

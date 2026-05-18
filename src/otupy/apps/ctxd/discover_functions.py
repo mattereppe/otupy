@@ -102,7 +102,9 @@ def discovery(config):
 			else:
 				logger.info("Now discovering services and links from %s", get_consumer_short(consumer))
 			
-				res = discover(consumer, producer_name)
+				res = discover(consumer, producer_name, 
+							config.get("xbom_format", xbom.XbomFormat.ctxd.name), 
+							config.get("xbom_encoding", xbom.XbomEncoding.json))
 				if res is not None:
 					boms = res['boms']
 					xbom_encoding = res['encoding']
@@ -112,15 +114,15 @@ def discovery(config):
 
 					try:
 						for b in boms:
-							xbom = Xbom.get(xbom_format)()
-							xbom_data = xbom.deserialize(b, xbom_encoding)
-							xboms.append(xbom)
-							logger.debug("Bom data:\n%s", xbom.summary())
+							xbom_raw = Xbom.get(xbom_format)()
+							xbom_data = xbom_raw.deserialize(b, xbom_encoding)
+							xboms.append(xbom_raw)
+							logger.debug("Bom data:\n%s", xbom_raw.summary())
 							publish_data(config, b)
 
 
 						if config['recursive']:
-							consumers += xbom.get_consumers()
+							consumers += xbom_raw.get_consumers()
 					except Exception as e:
 						logger.error("Unable to retrieve consumers for external bom refs: %s", e)
 				else:
@@ -148,7 +150,7 @@ def get_consumers(links):
 				
 	return consumers
 
-def discover(consumer, producer_name):
+def discover(consumer, producer_name, xbom_format, xbom_encoding):
 	""" Query an OpenC2 discovery consumer
 
 		Get the list of services and links from a context discovery actuator.
@@ -179,7 +181,9 @@ def discover(consumer, producer_name):
 	producer = otupy.Producer(producer_name, encoder, transferer)
                                                              
 	actuator = xbom.Specifiers({'asset_id': consumer['actuator']['asset_id']})
-	arg = xbom.Args({'cached': False, 'format': xbom.XbomFormat.ctxd, 'encoding': xbom.XbomEncoding.json})
+	arg = xbom.Args({'cached': False, 
+							'format': xbom.XbomFormat[xbom_format], 
+							'encoding': xbom.XbomEncoding[xbom_encoding]})
 	target = xbom.XbomTarget() # Retrieve all BOMs 
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
 	try:
