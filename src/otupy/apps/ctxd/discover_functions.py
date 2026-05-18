@@ -108,10 +108,10 @@ def discovery(config):
 					logger.warning("No services returned for %s", get_consumer_short(consumer))
 				try:
 					ctx['links'] = add_resource(ctx['links'], consumer, 'link', resources['links'])
-					if config['recursive']:
+					if config.get('recursive', False):
 						consumers += get_consumers(resources['links'])
-				except:
-					logger.warning("No links returned for %s", get_consumer_short(consumer))
+				except Exception as e:
+					logger.warning("No links returned for %s, reason:", get_consumer_short(consumer), e)
 
 				queried_consumers.append(consumer)
 
