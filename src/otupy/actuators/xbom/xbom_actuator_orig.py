@@ -60,119 +60,6 @@ class XBOMActuator:
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
 
-	def create_bom(self) -> Xbom:
-		""" Factory method to create a BOM instance based on the current sbom_format
-		
-			This method should be used by actuators instead of directly instantiating Xbom().
-			It creates the appropriate BOM type based on the format requested in the target.
-		
-			:return: A new BOM instance of the appropriate type
-			:raises NotImplementedError: If the requested format is not supported
-		"""
-		bom_class = _BOM_REGISTRY.get(self.xbom_format)
-		if bom_class is None:
-			raise NotImplementedError(f"SBOM format {self.xbom_format} is not supported")
-		return bom_class()
-
-	def _build_bom(self) -> None:
-		""" Convert all services and links into a single BOM for this actuator
-
-			This method:
-			1. Creates a single BOM and adds all discovered services/components to it
-			2. Establishes dependency relationships from the subservice structure
-			3. Adds link properties to the matching services/components
-
-			This centralizes all BOM creation so that concrete actuators only need
-			to populate self.services and self.links.
-		"""
-		self.bom = self.create_bom()
-		# TODO: Create a lookup table for the names
-
-		# Add all services to the single BOM
-		for service in self.services:
-			if service.type is None:
-				logger.warning("Service %s has no type, skipping", service.name)
-				continue
-			try:
-				self.bom.add(service)
-			except Exception as e:
-				logger.error("Faulty service infos: %s", service)
-				logger.error("Error adding service %s to BOM: %s", service.name, e)
-
-		# Create dependency relationships based on subservices
-		# for service in self.services:
-		# 	if service.subservices is not None and len(service.subservices) > 0:
-		# 		parent_name = service.name.getObj() if hasattr(service.name, 'getObj') else str(service.name)
-				
-		# 		for subservice in service.subservices:
-		# 			# Skip None values in subservices
-		# 			if subservice is None:
-		# 				logger.warning("Skipping None value in subservices for service %s", parent_name)
-		# 				continue
-					
-		# 			child_name = None
-		# 			for s in self.services:
-		# 				if s.name == subservice:
-		# 					child_name = s.name.getObj() if hasattr(s.name, 'getObj') else str(s.name)
-		# 					break
-
-		# 			if child_name is None:
-		# 				logger.warning("Could not find matching service for subservice %s in service %s, skipping dependency", subservice, parent_name)
-		# 				continue
-					
-		# 			logger.debug("Adding dependency from %s to subservice %s", parent_name, child_name)
-		# 			parent_ref = self.bom.find_ref_by_name(str(parent_name))
-		# 			child_ref = self.bom.find_ref_by_name(str(child_name))
-					
-		# 			if parent_ref is None:
-		# 				logger.warning("Could not find parent '%s' in BOM, skipping dependency", parent_name)
-		# 				continue
-		# 			if child_ref is None:
-		# 				logger.warning("Could not find child '%s' (BOM name: '%s') in BOM, skipping dependency", otupy_name, subservice_str)
-		# 				continue
-						
-		# 			self.bom.add_dependency(parent_ref=parent_ref, child_ref=child_ref)
-		for service in self.services:
-			if service.subservices is not None and len(service.subservices) > 0:
-				for subservice in service.subservices:
-					if subservice is not None:
-						logger.debug("Adding dependency from %s to subservice %s", service.name, subservice)
-						try:
-							self.bom.add_dependency(parent_ref=str(service.sid), child_ref=str(subservice))
-						except ValueError as e:
-							logger.warning("Skipping dependency: %s", e)
-
-		# # Add links as properties to the matching services/components
-		logger.info("Adding %d links to the BOM", len(self.links))
-		for link in self.links:
-			self._add_link_to_bom(link)
-
-	def _add_link_to_bom(self, link: Link) -> None:
-		""" Add a link as properties to the matching service/component in the BOM
-
-			:param link: The Link object to add.
-		"""
-		if self.bom is None or self.bom.bom is None:
-			logger.warning("No BOM available to add link %s", link.name)
-			return
-		# Try matching by name first, then fall back to sid
-		for service in self.services:
-			if service.name == link.name:
-				try:
-					self.bom.add_link(item_ref=str(service.sid), link=link)
-				except Exception as e:
-					logger.error("Error adding link %s to service %s: %s", link.name, service.name, e)
-				return
-		# Fallback: match by sid (name may differ, e.g. short name vs full DNS hostname)
-		if link.sid is not None:
-			for service in self.services:
-				if service.sid is not None and str(service.sid) == str(link.sid):
-					try:
-						self.bom.add_link(item_ref=str(service.sid), link=link)
-					except Exception as e:
-						logger.error("Error adding link %s to service %s: %s", link.name, service.name, e)
-					return
-		logger.warning("Could not find service/component '%s' to add link", link.name)
 
 
 	def run(self, cmd):
@@ -427,7 +314,6 @@ class XBOMActuator:
 		# Reset everything at the beginning, because links might be updated during the
 		# discovery of services for optimization purposes
 		self.discover_context()
-		self._build_bom()
 		
 	def __notimplemented(self, cmd):
 		""" Default response
