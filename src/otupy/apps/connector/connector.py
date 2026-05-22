@@ -129,6 +129,8 @@ def main() -> None:
                     logger.info("Loading actuator: %s", name)
                     identifier = values["actuator"]
                     if identifier not in Actuators:
+                        logger.error(f"No actuator: {identifier}")
+                        logger.error(f"Available actuators: {Actuators}")
                         raise RuntimeError(f"{identifier} is not a registered actuator")
 
                     # By default, we give the actuator this consumer, if the configuration file
