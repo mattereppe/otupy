@@ -41,18 +41,11 @@ class Endpoint(Record):
 
 	def __repr__(self):
 		return (f"Endpoint(description={self.description}, endpoint_type={self.endpoint_type}, "
-	             f"transport={self.transport}, transfer={self.transfer}, encoding={self.provider}, "
+	             f"transport={self.transport}, transfer={self.transfer}, encoding={self.encoding}, "
 	             f"uri={self.uri},provider={self.provider})")
 	
 	def __str__(self):
-		return f"Endpoint(" \
-	            f"description={self.description}, " \
-	            f"endpoint_type={self.endpoint_type}, " \
-	            f"transport={self.transport}, " \
-	            f"transfer={self.transfer}, " \
-					f"encoding={self.encoding}, " \
-				f"uri={self.uri}, " \
-	            f"provider={self.provider})"
+		return self.__repr__()
 
 	def validate_fields(self):
 		if self.description is not None and not isinstance(self.description, str):

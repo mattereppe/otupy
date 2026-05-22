@@ -9,7 +9,7 @@ from otupy import Map, ArrayOf
 from otupy.models.ctxd.ip_net_address import IPNetAddress
 
 class IPNetwork(Map):
-	""" Ethernet Network
+	""" IP Network
 
 		A flexible container for network characteristics. 
 		Currently expects the network address/prefix as mandatory field.
@@ -17,7 +17,7 @@ class IPNetwork(Map):
 	fieldtypes = dict(nets = ArrayOf(IPNetAddress))
 	""" Field types
 	
-		This is the definition of the fields beard by the  IP network.
+		This is the definition of the fields beard by the IP network.
 	"""
 
 	def getNets(self):

@@ -30,7 +30,7 @@ class Link(otupy.types.base.Record):
 	link_type: LinkType = None
 	""" Type of the link"""
 	role: PeerRole = None
-	""" Role of service  in the link relationship """
+	""" Role of service in the link relationship """
 	peers: ArrayOf(Peer) = None # type: ignore
 	""" Services connected on the link """
 
@@ -67,16 +67,11 @@ class Link(otupy.types.base.Record):
 			self.peers = None
 
 	def __repr__(self):
-		return (f"Link(name={self.name.getObj()}, sid={self.sid}, "
+		return (f"Link(name={self.name}, sid={self.sid}, "
                  f"description={self.description}, role={self.role}, link_type={self.link_type}, peers={self.peers}")
 	
 	def __str__(self):
-		return f"Link(" \
-	            f"name={self.name.getObj()}, " \
-	            f"description={self.description}, " \
-					f"role={self.role}, " \
-					f"link_type={self.link_type}, " \
-					f"peers={self.peers}" 
+		return self.__repr__()
 
 	def validate_fields(self):
 		if self.name is not None and not isinstance(self.name, Name):

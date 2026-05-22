@@ -1,6 +1,6 @@
-""" File XBOM Actuator
+""" File xbom Actuator
 	
-	The File actuator is a generic actuator that reads BOM data from a 
+	The File actuator is a generic actuator that reads context data from a 
 	configuration file. It is mostly conceived for those components that do
 	not have an API or a configuration file to grasp information from, and
 	so need a manual configuration of their characteristics. 
@@ -21,17 +21,14 @@ import logging
 
 from otupy import Encoder, actuator_implementation
 
-from otupy.actuators.xbom.xbom_actuator import XBOMActuator
-from otupy.profiles.xbom.data.service import Service, SId
-from otupy.profiles.xbom.data.service_type import ServiceType
-from otupy.profiles.xbom.data.link import Link 
-
+from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
+from otupy.models.ctxd import Service, SId, Link, ServiceType
 
 
 logger = logging.getLogger(__name__)
 
 @actuator_implementation("xbom-file")
-class XBOMActuator_file(XBOMActuator):
+class XBOMFileActuator(XBOMActuator):
 	""" File Actuator Manager
 
 		Extend the base `XBOMActuator` to retrieve services and links from a file
@@ -46,6 +43,8 @@ class XBOMActuator_file(XBOMActuator):
 			:param services: List of services
 			:param links: List of links
 		"""
+		super().__init__(**kwargs)
+
 		self._services = self._create_services(services)
 		self._links = self._create_links(links)
 

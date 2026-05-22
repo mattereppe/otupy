@@ -27,8 +27,6 @@ import otupy.transfers  # Do not remove! It is necessary to find the registered 
 from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
-from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
-
 logger = logging.getLogger(__name__)
 
 default_consumer = {
@@ -140,7 +138,7 @@ def main() -> None:
                     clazz = Actuators[identifier]
                     parameters = dict(values)
                     del parameters["actuator"]
-                    del parameters["profile"]
+#         del parameters["profile"]
     
                     profile = values["profile"]
                     logger.info(" - Profile: %s", profile)

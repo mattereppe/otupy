@@ -8,24 +8,17 @@
 """
 #from otupy.actuators.slpf.mockup_slpf_actuator import MockupSlpfActuator
 #from otupy.actuators.slpf.dump_actuator import DumbActuator
-from otupy.actuators.ctxd.ctxd_actuator_kubernetes import CTXDActuator_kubernetes
-from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
-from otupy.actuators.ctxd.ctxd_actuator_host import CTXDHostActuator
-from otupy.actuators.ctxd.ctxd_actuator_file import CTXDActuator_file
-from otupy.actuators.ctxd.ctxd_actuator_docker import CTXDActuator_docker
+from otupy.actuators.xbom.xbom_actuator_kubernetes import XBOMKubernetesActuator
+from otupy.actuators.xbom.xbom_actuator_openstack import XBOMOpenStackActuator
+from otupy.actuators.xbom.xbom_actuator_host import XBOMHostActuator
+from otupy.actuators.xbom.xbom_actuator_file import XBOMFileActuator
+from otupy.actuators.xbom.xbom_actuator_docker import XBOMDockerActuator
+from otupy.actuators.xbom.xbom_actuator_open5gs import XBOMOpen5gsActuator
 
 from otupy.actuators.slpf.slpf_actuator_openstack import SLPFOpenStackActuator
 from otupy.actuators.slpf.slpf_actuator_kubernetes import SLPFActuatorKubernetes
 from otupy.actuators.slpf.slpf_actuator_iptables import SLPFActuatorIPTables
 from otupy.actuators.slpf.slpf_actuator_azure import SLPFActuatorAzure
-
-#from otupy.actuators.xbom.xbom_actuator_kubernetes import XBOMActuator_kubernetes
-#from otupy.actuators.xbom.xbom_actuator_openstack import XBOMActuator_openstack
-#from otupy.actuators.xbom.xbom_actuator_docker import XBOMActuator_docker
-#from otupy.actuators.xbom.xbom_actuator_file import XBOMActuator_file
-#from otupy.actuators.xbom.xbom_actuator_open5gs import XBOMActuator_open5gs
-#from otupy.actuators.xbom.xbom_actuator_file import XBOMActuator_file
-#from otupy.actuators.xbom.xbom_actuator_host import XBOMActuator_host
 
 from otupy.actuators.nfm.nfm_actuator_fprobe import NFMActuatorFProbe
 from otupy.actuators.nfm.nfm_actuator_nprobe import NFMActuatorNProbe

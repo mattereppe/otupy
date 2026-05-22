@@ -32,8 +32,6 @@ class Network(CTXDObject):
 
 	def __repr__(self):
 		return (f"Network({super().__repr__()},"
-	             f"type={self.type.getObj()}, version={self.type.getObj()})")
-	
-	def __str__(self):
+                     f"type={self.type.getObj()}, version={self.version})")
 		return self.__repr__()
 

@@ -1,7 +1,8 @@
-""" Host XBOM Actuator
+""" Host xbom Actuator
 	
     The Host actuaotr is intended to discover the host hardware and its 
-    operating system. It it designed to run in the execution environment 
+    operating system. Despite of the name, this actuator is concieved to 
+	 describe the execution environment 
     itself, because there is no other way to query the OS's APIs.
 
     The current implementation is for demonstration purposes only and makes
@@ -13,11 +14,25 @@
 
 	The actuator-specific configuration includes:
 
-		- ``services``: A list of service definitions, given as yaml descriptions
-			of the corresponding data components in the ``Service`` class.
+		- ``kubernetes``: Kubernetes-related configuration to link local
+			components with kubernetes resources. Specific fields are:
+
+			- ``use_suffix``: Use kubernetes suffix when reporting names.
+			- ``kubelet_config``: Config file uselet by the kubelet daemon.
+			- ``namespaces``: List of namespaces to be reported
 			
-		- ``links``: A list of link definitions, given as yaml descriptions
-			of the correponsing data component in the ``Links`` class.
+			
+		- ``host``: The service identifier (`sid`) of the ``Host`` that host
+			this execution environment. It can be specified in the compact form
+			as string(`sid: type:subtype/domain/namespace/name@version`) or 
+			by its parameters (type, subtype, name, domain, namespace, version).
+			Examples:
+				host:
+					sid: "host:vm/Default/tenant1/vm0@None"
+				host:
+					type: host
+					subtype: vm
+					...
 """	
 
 import logging
@@ -35,10 +50,10 @@ import grpc
 
 from containerd.services.containers.v1 import containers_pb2_grpc, containers_pb2
 
-from otupy import ArrayOf, actuator_implementation, Hostname, MACAddr
+from otupy import Array, ArrayOf, actuator_implementation, Hostname, MACAddr
 
-from otupy.actuators.xbom.xbom_actuator import XBOMActuator
-from otupy.profiles.ctxd import *
+from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
+from otupy.models.ctxd import *
 
 
 
@@ -48,10 +63,10 @@ DPKG_LIST=['dpkg','--list']
 KUBELET_CONFIG_FILE='/var/lib/kubelet/config.yaml'
 
 @actuator_implementation("xbom-host")
-class XBOMActuator_host(XBOMActuator):
+class XBOMHostActuator(XBOMActuator):
 	""" Host Actuator Manager
 
-		Extend the base `CTDXActuator` to retrieve the description of the Operating System
+		Extend the base `XBOMActuator` to retrieve the description of the Operating System
         environment. This includes the connections between its (network) namespaces
 
 
@@ -71,6 +86,7 @@ class XBOMActuator_host(XBOMActuator):
 			self.kube_suffix = kwargs['kubernetes']['suffix'] if 'kubernetes' in kwargs and 'suffix' in kwargs['kubernetes'] else self._get_kube_suffix(kube_kubelet_config)
 		else:
 			self.kube_suffix = ""
+		self.host = kwargs.get('host')
 
 		# Ensure the platform service is always available
 		self.services = ArrayOf(Service)()
@@ -144,6 +160,7 @@ class XBOMActuator_host(XBOMActuator):
 		self._discover_network_namespaces()
 		self._discover_networks()
 		self._discover_network_functions()
+		self._discover_link_host()
 		self._discover_links_networks()
 		self._discover_links_net_functions()
 
@@ -466,7 +483,10 @@ class XBOMActuator_host(XBOMActuator):
 							case 'veth':
 								netnsid2=link.get_attrs('IFLA_LINK_NETNSID')
 								if len(netnsid2) > 0:
-									ns2=self._namespaces[ns]['netnsmap'][netnsid2[0]]
+									try:
+										ns2=self._namespaces[ns]['netnsmap'][netnsid2[0]]
+									except:
+										continue
 								else: # Same namespace
 									ns2=ns
 								peer2=(link.get_attrs('IFLA_LINK')[0], self._namespaces[ns2]['name'])
@@ -500,7 +520,7 @@ class XBOMActuator_host(XBOMActuator):
 																					ipnetaddrs=ipnetaddrs, 
 																					id=net_id, 
 																					nettype=VEthNetwork,
-																					peers=(peer1, peer2))
+																					peers=ArrayOf(Array)([Array(peer1), Array(peer2)]))
 
 
 									# Save network service name in the connected namespaces (used later to create links)
@@ -685,7 +705,9 @@ class XBOMActuator_host(XBOMActuator):
 			This includes routers and bridges implemented by the Linux kernel
 			and external software (e.g., openvswitch).
 		"""
-		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
+#		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
+# The following is better, because namespaces may have changed in the meanwhile (new namespace added)
+		for ns in self._namespaces.keys():
 			self._discover_routers(ns)
 			self._discover_bridges(ns)
 
@@ -789,6 +811,28 @@ class XBOMActuator_host(XBOMActuator):
 						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
 
 
+	def _discover_link_host(self):
+		""" Discover host hosting this ExecEnv
+
+			Since there is no way from an ExecEnv to discover its hosting hardware,
+			we create this fictius link with the information provided by configuration.
+			Providing this information is optional, and the owner will decide whether to
+			expose this further detail.
+		"""
+		if self.host:
+			if 'sid' in self.host:
+				sid=SId.from_str(self.host['sid'])
+			else:
+				sid = SId(**self.host)
+			
+			peer=Peer(service_name=sid.name, sid=sid, role=PeerRole.host, 
+					consumer=self.get_consumer(sid=sid))
+			self.links.append( Link(name=self.platform.name, sid=self.platform.sid,
+										description="Platform hosted on "+(str(sid)),
+										link_type=LinkType.hosting, role=PeerRole.guest,
+										peers=ArrayOf(Peer)([peer])))
+
+	
 
 	def _discover_links_networks(self):
 		self._discover_links_networks_to_namespaces()

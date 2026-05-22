@@ -33,7 +33,7 @@ class ExecutionEnvironment(CTXDObject):
 	libs: ArrayOf(Library) = None
 	""" List of libraries installed in this ExecutionEnvironment """
 	pkgs: ArrayOf(Package) = None
-	""" List of packages instsalled (for package-based systems) """
+	""" List of packages installed (for package-based systems) """
 	apps: ArrayOf(Application) = None
 	""" List of applications installed on this ExecutionEnvironment """
 
@@ -64,9 +64,9 @@ class ExecutionEnvironment(CTXDObject):
 				for app in apps:
 					self.apps.append(Application(app))
 			if pkgs is not None:
-				self.pkgs = ArrayOf(Application)()
+				self.pkgs = ArrayOf(Package)()
 				for pkg in pkgs:
-					self.pkgs.append(Application(pkg))
+					self.pkgs.append(Package(pkg))
 			if libs is not None:
 				self.libs = ArrayOf(Library)()
 				for lib in libs:

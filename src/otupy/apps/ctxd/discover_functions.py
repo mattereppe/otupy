@@ -13,38 +13,41 @@ import otupy
 import otupy.encoders  # Do not remove! It is necessary to find the registered encoders.
 import otupy.actuators  # Do not remove! It is necessary to find the registered actuators.
 
-import otupy.profiles.ctxd as ctxd
+#import otupy.profiles.ctxd as ctxd
+import otupy.profiles.xbom as xbom
+from otupy.models.xbom import Xbom
+import otupy.models.xbom
 
 from otupy.apps.ctxd.publishers import *
 from otupy.apps.ctxd.defaults import defaults, set_consumer_defaults
 
 logger = logging.getLogger(__name__)
 
-def _log_context(ctx):
-	""" Debug-only function to check what was reported """
-	try:
-		tot_services = 0
-		tot_links = 0
-		for type_ in ctx.keys():
-			for item in ctx[type_]:
-				if 'service' in item:
-					sub=""
-					if item['service'].subservices is not None:
-						for s in item['service'].subservices:
-							sub+=str(s)+","
-					logger.debug("Service: %s [%s] {%s}", item['service'].sid, item['service'].name, sub)
-					tot_services = tot_services+1
-				if 'link' in item:
-					if item['link'].peers is not None:
-						peers=""
-						for p in item['link'].peers:
-							peers+=str(p.sid)+"@"+str(p.consumer)+" ["+str(p.role)+"], "
-						logger.debug("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
-						tot_links = tot_links+1
-		logger.info("Found %d service(s), %d link(s)", tot_services, tot_links)
-	except:
-		logger.info("No service/link found!")
-
+#def _log_context(xboms):
+#	""" Debug-only function to check what was reported """
+#	try:
+#		tot_services = 0
+#		tot_links = 0
+#		for type_ in ctx.keys():
+#			for item in ctx[type_]:
+#				if 'service' in item:
+#					sub=""
+#					if item['service'].subservices is not None:
+#						for s in item['service'].subservices:
+#							sub+=str(s)+","
+#					logger.debug("Service: %s [%s] {%s}", item['service'].sid, item['service'].name, sub)
+#					tot_services = tot_services+1
+#				if 'link' in item:
+#					if item['link'].peers is not None:
+#						peers=""
+#						for p in item['link'].peers:
+#							peers+=str(p.sid)+"@"+str(p.consumer)+" ["+str(p.role)+"], "
+#						logger.debug("Link: %s [%s] -- (%s) --> {%s} ", item['link'].sid, item['link'].role, item['link'].link_type, peers)
+#						tot_links = tot_links+1
+#		logger.info("Found %d service(s), %d link(s)", tot_services, tot_links)
+#	except:
+#		logger.info("No service/link found!")
+#
 
 # The loop "decorator", which cannot be used as decorator
 # because the two arguments are only known at run-time
@@ -83,8 +86,9 @@ def discovery(config):
 		:param config: A dictionary reporting the known list of services to discover.
 		:return: None. Data are directly inserted in the output sinks.
 	"""
-	ctx = {'services': None, 'links': None}
+	xboms = []
 	queried_consumers = []
+	producer_name=config.get('name','Discovery')
 
 	# We allow more root services to be present in the configuration
 	for root in config['services']:
@@ -98,22 +102,34 @@ def discovery(config):
 			else:
 				logger.info("Now discovering services and links from %s", get_consumer_short(consumer))
 			
-				resources = discover(consumer)
-				try:
-					ctx['services'] = add_resource(ctx['services'], consumer, 'service', resources['services'])
-				except:
-					logger.warning("No services returned for %s", get_consumer_short(consumer))
-				try:
-					ctx['links'] = add_resource(ctx['links'], consumer, 'link', resources['links'])
-					if config['recursive']:
-						consumers += get_consumers(resources['links'])
-				except:
+				res = discover(consumer, producer_name, 
+							config.get("xbom_format", xbom.XbomFormat.ctxd.name), 
+							config.get("xbom_encoding", xbom.XbomEncoding.json.name))
+				if res is not None:
+					boms = res['boms']
+					xbom_encoding = res['encoding']
+					xbom_format = res['format']
+					logger.info("Got %d %s bom(s) (encoded as %s)", len(boms), xbom_format, xbom_encoding)
+					logger.debug("%s", boms)
+
+					try:
+						for b in boms:
+							xbom_raw = Xbom.get(xbom_format)()
+							xbom_data = xbom_raw.deserialize(b, xbom_encoding)
+							xboms.append(xbom_raw)
+							logger.debug("Bom data:\n%s", xbom_raw.summary())
+							publish_data(config, b)
+
+
+						if config['recursive']:
+							consumers += xbom_raw.get_consumers()
+					except Exception as e:
+						logger.error("Unable to retrieve consumers for external bom refs: %s", e)
+				else:
 					logger.warning("No links returned for %s", get_consumer_short(consumer))
 
 				queried_consumers.append(consumer)
 
-	_log_context(ctx)
-	publish_data(config, ctx)
 
 def get_consumers(links):
 	""" Retrieve additional consumers from links 
@@ -126,7 +142,7 @@ def get_consumers(links):
 		if l.peers:
 			for p in l.peers:
 				if p.consumer:
-					if not p.consumer.profile or p.consumer.profile == ctxd.Profile.nsid:
+					if not p.consumer.profile or p.consumer.profile == xbom.Profile.nsid:
 						new_consumer=set_consumer_defaults(vars(p.consumer))
 						if new_consumer not in consumers:
 							logger.info("Found new context actuator: %s", get_consumer_short(new_consumer))
@@ -134,7 +150,7 @@ def get_consumers(links):
 				
 	return consumers
 
-def discover(consumer):
+def discover(consumer, producer_name, xbom_format, xbom_encoding):
 	""" Query an OpenC2 discovery consumer
 
 		Get the list of services and links from a context discovery actuator.
@@ -162,12 +178,13 @@ def discover(consumer):
 				consumer['port'], consumer['endpoint'])
 
 
-	producer = otupy.Producer("ctxd-discovery.mirandaproject.eu", encoder, transferer)
+	producer = otupy.Producer(producer_name, encoder, transferer)
                                                              
-	actuator = ctxd.Specifiers({'asset_id': consumer['actuator']['asset_id']})
-	arg = ctxd.Args({'name_only': False, 'cached': False})
-#	target = ctxd.Context(services=otupy.ArrayOf(Name)(), links=otupy.ArrayOf(Name)())  # expected all services and links
-	target = ctxd.Context()  # expected all services and links
+	actuator = xbom.Specifiers({'asset_id': consumer['actuator']['asset_id']})
+	arg = xbom.Args({'cached': False, 
+							'format': xbom.XbomFormat[xbom_format], 
+							'encoding': xbom.XbomEncoding[xbom_encoding]})
+	target = xbom.XbomTarget() # Retrieve all BOMs 
 	cmd = otupy.Command(action=otupy.Actions.query, target=target, args=arg, actuator=actuator)
 	try:
 		context = producer.sendcmd(cmd)
@@ -176,8 +193,9 @@ def discover(consumer):
 			return context.content['results']
 		else:
 			logger.warn("Unable to query %s: %s", actuator, context.content['status_text'])
+			return None
 	except Exception as e: 
-		logger.warn("No context available from %s", actuator)
+		logger.warn("No bom available from %s", actuator)
 		logger.warn("Reason: %s", e)
 		return None
 

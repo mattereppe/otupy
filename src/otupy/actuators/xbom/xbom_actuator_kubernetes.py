@@ -38,38 +38,17 @@ import ipaddress
 import uuid
 
 from otupy.profiles import slpf
-from otupy.profiles.xbom.data.application import Application
-from otupy.types.data.ipv4_addr import IPv4Addr
-from otupy.types.data.uri  import URI
 
 from kubernetes import config, client
 from kubernetes.client.rest import ApiException
 
 from urllib.parse import urlparse
 
-from otupy.actuators.xbom.xbom_actuator import XBOMActuator
+from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
 
-from otupy.profiles.xbom import *
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, Hostname, L4Protocol, IPv4Addr, URI
 
-from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
-
-
-
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation
-import otupy.profiles.xbom as xbom
-
-from otupy.profiles.xbom.data.name import Name
-from otupy.profiles.xbom.data.service import Service, SId
-from otupy.profiles.xbom.data.link import Link
-from otupy.profiles.xbom.data.execution_environment_type import ExecutionEnvironmentType
-from otupy.profiles.xbom.data.host_type import HostType
-from otupy.profiles.xbom.data.host import Host
-from otupy.profiles.xbom.data.network_node import NetworkNode
-from otupy.profiles.xbom.data.network_interface import NetworkInterface
-from otupy.profiles.xbom.data.ip_network import IPNetwork
-from otupy.profiles.xbom.data.network_function import NetworkFunction, NetworkFunctionType
-from otupy.profiles.xbom.data.network import Network, NetworkType
+from otupy.models.ctxd import *
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +59,10 @@ K8S_CLUSTER_NETWORK="k8s-pod-network"
 K8S_ADVERTISE_ADDRESS='advertise-address'
 
 @actuator_implementation("xbom-kubernetes")
-class XBOMActuator_kubernetes(XBOMActuator):
+class XBOMKubernetesActuator(XBOMActuator):
 	""" Kubernetes Actuator Manager
 
-		Extend the base `CTDXActuator` to retrieve services and links for a Kubernetes cluster. Currently discovery is mostly limited to pods,
+		Extend the base `XBOMActuator` to retrieve services and links for a Kubernetes cluster. Currently discovery is mostly limited to pods,
 		nodes, and containers. It should be extended in future releases with additional resources (e.g., services and file systems).
 
 	"""
@@ -130,6 +109,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		"""
 		self.discover_services()
 		self.discover_links()
+		logger.debug("Returning context")
 
 
 	def discover_services(self):
@@ -141,6 +121,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			- Nodes
 			- Namespaces available
 		"""
+		logger.debug("Discovering services...")
 		self._discover_k8s_cloud()
 		self._discover_k8s_services()
 		self._discover_k8s_pods()
@@ -158,15 +139,25 @@ class XBOMActuator_kubernetes(XBOMActuator):
 			- Pods and containers
 			- Network Policy firewall and pods
 		"""
+		logger.debug("Discovering links...")
 		self._discover_k8s_links_nodes()
+		logger.debug("Got link to nodes")
 		self._discover_k8s_links_pods()
+		logger.debug("Got link to pods")
 		self._discover_networkfunctions_links_nodes()
+		logger.debug("Got link network functions to nodes")
 		self._discover_pod_links_nodes()
+		logger.debug("Got link pod to nodes")
 		self._discover_network_links_nodes()
+		logger.debug("Got link network to nodes")
 		self._discover_pod_links_containers()
+		logger.debug("Got link pod to contaienrs")
 		self._discover_pod_links_networks()
+		logger.debug("Got link pod to networks")
 		self._discover_k8s_links_np()
+		logger.debug("Got link to network policies")
 		self._discover_np_links_pods()
+		logger.debug("Got link network policies to pods")
 
 
 	def _discover_k8s_namespaces(self):
@@ -242,6 +233,13 @@ class XBOMActuator_kubernetes(XBOMActuator):
 				type=ServiceType(k8s), 
 				subservices=k8s_subservices, owner=self.owner, release=None))
 
+	def _create_node_sid(self, node_name):
+		""" Create a node sid for nodes discovered while scanning pods 
+
+			This assumes the actuator has not access to node apis"""
+		return SId(type=ServiceType.get_type_name(ExecutionEnvironment), 
+						subtype=ExecutionEnvironmentType.get_type_name(OS), 
+						name=node_name)
 
 
 	def _discover_k8s_services(self):
@@ -262,7 +260,7 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		def _update_endpoints(endpoints, ip, port):
 			if len(endpoints) > 0:
 				endpoints = endpoints + ", "
-			return endpoints + ip + "/" + str(port)
+			return endpoints + str(ip) + "/" + str(port)
 
 		k8s_services = ArrayOf(Name)()
 		for service in cloud_services:
@@ -848,7 +846,8 @@ class XBOMActuator_kubernetes(XBOMActuator):
 					if 'ips' in p:
 						for ip in p['ips']:
 							ips.append(IPInfo(ip=IPAddress(ip)))
-					port_list.append( Port(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
+					port_list.append( NetworkInterface(id=name, description="Pod network interfaces",  iface=iface, ips=ips) )
+			
 			
 			node_type = NetworkNode(description="Pod network ports", id=pod.metadata.uid,
 					name=pod.metadata.name, ifaces=port_list)
@@ -955,6 +954,10 @@ class XBOMActuator_kubernetes(XBOMActuator):
 				controller.subservices.append(pod_sid)
 
 			if pod.spec.node_name != "" and pod.spec.node_name is not None:
+				if pod.spec.node_name not in self._k8s_nodes:
+					# This happens if we do not have access to nodes apis
+					# We generate a simpler sid for the node (and we'll use it again in the following)
+					self._k8s_nodes[pod.spec.node_name] = self._create_node_sid(pod.spec.node_name)
 				self.nodes[str(pod_sid)] = self._k8s_nodes[pod.spec.node_name]
 			else:
 				self.nodes[str(pod_sid)]=None
@@ -1054,9 +1057,11 @@ class XBOMActuator_kubernetes(XBOMActuator):
 		return dnsname
 
 	def _setup_cni(self):
-		if self.cniconfig is None:
-			return
 
+		if self.cniconfig is None:
+			self.cni_cluster_cidr = "0.0.0.0/0"
+			self.cni_service_cidr = "0.0.0.0/0"
+			return
 
 		self.cni_cluster_cidr = None
 		self.cni_service_cidr = None

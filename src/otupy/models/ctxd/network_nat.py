@@ -6,9 +6,9 @@
 from otupy import Map, ArrayOf, IPv4Net, IPv6Net
 
 class NAT(Map):
-	""" Router
+	""" NAT
 
-		A flexible container for routing configurations.
+		A flexible container for NAT configurations.
 		To be implemented
 	"""
 	fieldtypes = dict(rules= ArrayOf(str))
@@ -22,5 +22,5 @@ class NAT(Map):
 		return self.__repr__()
 
 	def __repr__(self):
-		return f"NAT({self['rules']})"
+		return f"NAT({self['rules'] if 'rules' in self else None})"
 
