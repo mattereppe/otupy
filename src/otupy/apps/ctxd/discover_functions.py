@@ -104,7 +104,7 @@ def discovery(config):
 			
 				res = discover(consumer, producer_name, 
 							config.get("xbom_format", xbom.XbomFormat.ctxd.name), 
-							config.get("xbom_encoding", xbom.XbomEncoding.json))
+							config.get("xbom_encoding", xbom.XbomEncoding.json.name))
 				if res is not None:
 					boms = res['boms']
 					xbom_encoding = res['encoding']

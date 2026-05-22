@@ -15,14 +15,21 @@ import sys
 
 
 from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature
-import otupy.profiles.xbom as xbom
-
 from otupy.models.ctxd import Service, SId, Link, Name, ServiceType, LinkType, Consumer
+import otupy.profiles.xbom as xbom
+import otupy.models.xbom
+
+
+
 
 logger = logging.getLogger(__name__)
 
 OPENC2VERS=Version(1,0)
 """ Supported OpenC2 Version """
+DEFAULT_XBOM_FORMAT=xbom.XbomFormat.ctxd
+""" Default Xbom format to use if not included in the Command """
+DEFAULT_XBOM_ENCODING=xbom.XbomEncoding.json
+""" Default Xbom encoding to use if not included in the Command """
 
 # An implementation of the xbom profile. 
 class XBOMActuator:
@@ -31,11 +38,10 @@ class XBOMActuator:
 		This class provides the base implementation of the xbom `Actuator`.
 	"""
 
-	bom: Xbom | None = None
-	""" Discovered BOM for this actuator """
-	
-	xbom_format: XbomFormat = XbomFormat.cyclonedx
-	""" The XBOM format to use for BOM creation (set from target) """
+	services: ArrayOf(Service) = None # type: ignore
+	""" Name of the service """
+	links: ArrayOf(Link) = None # type: ignore
+	"""It identifies the type of the service"""
 	
 	def __init__(self, **kwargs):
 		""" Initialization
@@ -50,16 +56,15 @@ class XBOMActuator:
 			- specifiers: This is the description of the actuator (e.g., its identifiers).
 
 		"""
-		self.auth = kwargs['auth'] if 'auth' in kwargs else None
-		self.config = kwargs['config'] if 'config' in kwargs else None
-		self.peers = kwargs['peers'] if 'peers' in kwargs else None
-		self.owner = kwargs['owner'] if 'owner' in kwargs else None
-		self.specifiers = kwargs['specifiers'] if 'specifiers' in kwargs else None
-		self.xbom_format = XbomFormat.cyclonedx
-		self.bom = None
+		self.auth = kwargs.get('auth',None)
+		self.config = kwargs.get('config', None)
+		self.peers = kwargs.get('peers', None)
+		self.owner = kwargs.get('owner', None)
+		self.specifiers = kwargs.get('specifiers', None)
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
-
+		self.consumer = kwargs.get('consumer', {})
+		self.profile = kwargs.get('profile', xbom.Profile.nsid)
 
 
 	def run(self, cmd):
@@ -263,52 +268,70 @@ class XBOMActuator:
 
 		return consumer
 
-	def _query_sbom(self, cmd):
-		""" Query SBOM - returns the single BOM for this actuator
 
-			Handles the XbomCtx target which allows specifying the SBOM format
-			and a list of component/service names to filter the returned names.
+	def _query_context(self, cmd):
+		""" Returns the current context (services and links)
 
-			:param cmd: The `Command` including `Target` and optional `Args`.
-			:return: A `Response` including the actuator's BOM.
+			Updates the list of services/links (if necessary) and returns them. The main task is to build the expected response
+			(names only or full description), while the concrete discovery is managed by the `_udpdate()` method.
 		"""
-		sbom_target = cmd.target.getObj()
-		res = {}
+		bom = None
+		num_services=0
+		num_links=0
 
-		# Get format if specified and set it for BOM creation
-		if sbom_target.get('format') is not None:
-			self.xbom_format = sbom_target.get('format')
+		logger.debug("Looking for current context")
+		try:
+			if not (cmd.args.get('cached') == True):
+				self._update()
+		except Exception as e:
+			logger.error("Unable to update context: %s", str(e))
+			return Response (status=StatusCode.INTERNALERROR, 
+					status_text=StatusCodeDescription[StatusCode.INTERNALERROR], 
+					results="")
 
-		if not (cmd.args.get('cached') == True):
-			self._update()
+		for s in self.services:
+			logger.debug("Found service: %s", s)
+			num_services = num_services+1
+		for l in self.links:
+			logger.debug("Found link: %s", l)
+			num_links = num_links+1
+		logger.info("Found %d services, %d links", num_services, num_links)
 
-		if self.bom is None:
-			return Response(status=StatusCode.OK, status_text="No BOM available")
+		# Create the xbom
+		format = cmd.args.get('format', DEFAULT_XBOM_FORMAT.name)
+		logger.debug("Creating xbom %s", format)
+		bom = otupy.models.xbom.Xbom.get(format)()
+		logger.debug("Creating xbom with %s", type(bom))
+		if not bom:
+			logger.error("Unsupported xbom format: %s", format)
+			return Response(status=StatusCode.BADREQUEST, status_text=f"Unsupported xbom format: {format}")
 
-		# Get names filter if specified (used to filter bom_names, not the BOM itself)
-		names_filter = sbom_target.get('names')
+		consumer = Consumer(**self.consumer, profile=self.profile, actuator=self.specifiers)
+		bom.create(services=self.services, links=self.links, consumer=consumer)
 
-		if cmd.args.get('name_only') == True:
-			pass
-		else:
-			res['bom'] = self.bom
-
-		if len(res) > 0:
-			# logger.debug("Returning SBOM: %s", res)
-			return Response(status=StatusCode.OK, status_text=StatusCodeDescription[StatusCode.OK], results=xbom.Results(**res))
-		else:
-			return Response(status=StatusCode.OK, status_text="No matching BOMs found")
-
+		encoding = cmd.args.get('encoding', DEFAULT_XBOM_ENCODING)
+		logger.debug("Encoding xbom as %s", encoding)
+		try:
+			logger.debug("Serializing xbom as %s", encoding)
+			serialized_bom = bom.serialize(encoding)
+			return  Response(status=StatusCode.OK, 
+								status_text=StatusCodeDescription[StatusCode.OK], 
+								results= xbom.Results(format=format, encoding=encoding, boms=[serialized_bom]))
+		except Exception as e:
+			logger.error("Unable to serialize: %s", e)
+			return Response(status=StatusCode.INTERNALERROR, 
+								status_text='Unable to serialize bom with '+encoding.name+": "+str(e))
+			
+			
 	def _update(self):
-		""" Update boms
+		""" Update services and links
 
-			This method should be run before getting the list of boms.
-			Every concrete implementation of actuators must implement the `discover_services()` and `discover_links()` methods.
+			This method should be run before getting links and services
+			Every concrete implementation of actuators must implement the `discover_context()` method.
 			Does not return anything, just update the internal members `services` and `links`.
 
 			:return: None
 		"""
-		self.bom = None
 		self.services = ArrayOf(Service)()
 		self.links = ArrayOf(Link)()
 		# Reset everything at the beginning, because links might be updated during the
@@ -342,3 +365,4 @@ class XBOMActuator:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error: ' + str(e))
 		else:
 			return Response(status=StatusCode.INTERNALERROR, status_text='Internal server error')
+

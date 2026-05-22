@@ -130,6 +130,7 @@ class Consumer:
 				# Only one instance is expected to be present in this case
 				actuator = [self.actuators[(profile,asset_id)]]
 		except KeyError:
+			logger.warn("Ignoring request for non-existing actuator: %s:%s", profile, asset_id)
 			response = Response(status=StatusCode.NOTFOUND, status_text='No actuator available')
 			return self.__respmsg(msg, response)
 
@@ -167,7 +168,6 @@ class Consumer:
 		try:
 			logger.info("Dispatching command to: %s", actuator[0])
 		except (IndexError,AttributeError):
-			logger.warn("Ignoring request for non-existing actuator: %s", actuator[0])
 			response_content = Response(status=StatusCode.NOTFOUND, status_text='No actuator available')
 		try:
 			# TODO: How to merge multiple responses?
