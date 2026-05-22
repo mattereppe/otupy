@@ -35,7 +35,9 @@ class Consumer(otupy.types.base.Record):
 
 	def __init__(self, host:str = None, port:int = None, protocol:int = None, endpoint:str = None, 
 			transfer:str = None, encoding:str = None,
-			profile:str = None, actuator = None):
+			profile:str = None, actuator = None, **kwargs):
+			# kwargs are additional configurations used by external components that must not be
+			# exposed in the ctxd model (e.g., connector options)
 		if isinstance(host, Consumer):
 			self.host = host.host
 			self.port = host.port

@@ -150,10 +150,7 @@ def main() -> None:
         encoder = Encoders[consumer['encoding']].value
 
         # Load the transferer (beautiful name, eh?).
-        try:
-            transfer_options = consumer['transfer_options']
-        except:
-            transfer_options= {}
+        transfer_options = consumer.get('transfer_options', {})
         if consumer['transfer'] not in Transfers:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
         if 'endpoint' in consumer:
