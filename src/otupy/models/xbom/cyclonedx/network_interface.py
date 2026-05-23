@@ -50,4 +50,4 @@ def to_cyclonedx(self, prefix: str = "otupy:iface") -> list:
 	
 	return properties
 
-NetworkInterface.to_cylonedx = to_cyclonedx
+NetworkInterface.to_cyclonedx = to_cyclonedx
