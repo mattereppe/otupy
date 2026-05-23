@@ -14,7 +14,7 @@ def to_cyclonedx(self) -> Component:
 		Property(name="otupy:type", value="execution_environment")
 	]
 	if self.id is not None:
-		properties.append(Property(name="otupy:execenv:id", value=self.id))
+		properties.append(Property(name="otupy:execenv:id", value=str(self.id)))
 	if self.version is not None:
 		properties.append(Property(name="otupy:execenv:version", value=self.version))
 	
