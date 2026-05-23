@@ -111,8 +111,9 @@ class CyclonedxXbom(Xbom):
 		match encoding:
 			case XbomEncoding.json:
 				validator = JsonStrictValidator(schema_version=_cyclonedx_schema_version)
-				if validator.validate_str(xbom):
-					raise ValueError("Invalid CycloneDX JSON data")
+				err = validator.validate_str(xbom)
+				if err:
+					raise ValueError("Invalid CycloneDX JSON data: " + str(err))
 				self.xbom = Bom.from_json(json.loads(xbom))
 			case _:
 				raise NotImplementedError(f"Deserialization for format {self.format} is not implemented.")
