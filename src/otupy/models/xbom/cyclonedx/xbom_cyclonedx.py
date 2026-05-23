@@ -121,7 +121,25 @@ class CyclonedxXbom(Xbom):
 		return self.xbom
 
 	def summary(self) -> str:
-		return self.__str__()
+		if self.xbom is None:
+			return "No BOM"
+
+		res = ""
+		if len(self.xbom.components):
+			res = res + f"Components ({len(self.xbom.components)})\n"
+			for c in self.xbom.components:
+				res = res + f"\t" + str(c.bom_ref) + "\n"
+		if len(self.xbom.services):
+			res = res + f"Services ({len(self.xbom.services)})\n"
+			for s in self.xbom.services:
+				res = res + f"\t" + str(s.bom_ref) + "\n"
+		if len(self.xbom.dependencies):
+			res = res + f"Dependencies ({len(self.xbom.dependencies)})\n"
+			for d in self.xbom.dependencies:
+				res = res + f"\t{str(d.ref)}: {d.dependencies}\n"
+		
+		
+		return res
 
 
 	def _add_service_to_bom(self, item: Component | Service | Dependency | Any ) -> None:
