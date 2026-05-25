@@ -18,12 +18,7 @@ from os.path import dirname
 
 from yaml import safe_load
 
-# noinspection PyUnusedImports
-import otupy.actuators  # Do not remove! It is necessary to find the registered actuators.
-# noinspection PyUnusedImports
-import otupy.encoders  # Do not remove! It is necessary to find the registered encoders.
-# noinspection PyUnusedImports
-import otupy.transfers  # Do not remove! It is necessary to find the registered transferers.
+
 from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 

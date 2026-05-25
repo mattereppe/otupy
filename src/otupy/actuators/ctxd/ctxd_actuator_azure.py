@@ -16,6 +16,7 @@
 import json
 import logging
 import subprocess
+import time
 from types import SimpleNamespace
 
 from otupy import ArrayOf, actuator_implementation
@@ -43,6 +44,7 @@ from otupy.profiles.ctxd.data.pod import Pod
 from otupy.profiles.ctxd.data.port import Port
 from otupy.profiles.ctxd.data.service import SId, Service
 from otupy.profiles.ctxd.data.service_type import ServiceType
+from otupy.actuators.ctxd.metrics import MetricsCollector
 from otupy.types.data.hostname import Hostname
 
 logger = logging.getLogger(__name__)
@@ -68,11 +70,25 @@ def _run(cmd):
         return False, "", str(e)
 
 
-def _aks_invoke(resource_group, cluster_name, kubectl_cmd):
+def _aks_invoke(resource_group, cluster_name, kubectl_cmd, label=None,
+                metrics=None):
     """Run a kubectl command on the cluster via `az aks command invoke`.
 
     Returns the raw textual output (including the Azure wrapper envelope),
     or an empty string if the invocation failed.
+
+    A timing measurement is recorded for every call (when ``metrics`` is
+    not ``None`` and enabled): the wall-clock duration of the subprocess,
+    the success flag, and the size of the returned payload. The
+    measurement is routed through the shared :class:`MetricsCollector`,
+    so the format matches what the Proxmox actuator emits.
+
+    :param label:   optional short tag describing the call (e.g.
+                    ``"get_nodes"``, ``"get_pods:kube-system"``).
+                    Defaults to the kubectl command itself.
+    :param metrics: optional :class:`MetricsCollector` instance.
+                    When ``None`` or ``not enabled``, no measurement is
+                    recorded.
     """
     full_cmd = [
         "az", "aks", "command", "invoke",
@@ -80,9 +96,26 @@ def _aks_invoke(resource_group, cluster_name, kubectl_cmd):
         "--name", cluster_name,
         "--command", kubectl_cmd,
     ]
+
+    call_label = label or kubectl_cmd
+    t_start = time.perf_counter()
     success, out, err = _run(full_cmd)
+    elapsed = time.perf_counter() - t_start
+
+    if metrics is not None:
+        metrics.record(
+            call_label,
+            elapsed,
+            success=success,
+            bytes_out=len(out) if out else 0,
+            cmd=kubectl_cmd,
+        )
+
     if not success:
-        logger.warning("AKS command invoke failed: %s", err)
+        logger.warning(
+            "AKS command invoke failed (label=%s, elapsed=%.3fs): %s",
+            call_label, elapsed, err,
+        )
         return ""
     return out
 
@@ -137,12 +170,20 @@ class CTXDActuatorAzure(CTXDActuator):
     required by the base class.
     """
 
-    def __init__(self, auth, **kwargs):
+    def __init__(self, auth, metrics=None, **kwargs):
         """Initialize the actuator.
 
         :param auth: dict with the Azure credentials and cluster coordinates.
                      Expected keys: ``tenant_id``, ``client_id``,
                      ``client_secret``, ``resource_group``, ``cluster_name``.
+        :param metrics: optional dict controlling per-call timing logs.
+                        Forwarded verbatim to
+                        :class:`otupy.actuators.ctxd.metrics.MetricsCollector`.
+                        See its docstring for the recognized keys
+                        (``enabled``, ``file``, ``mode``, ``propagate``).
+                        When omitted or ``enabled: false``, no timing
+                        file is produced and the actuator behaves
+                        exactly as before instrumentation was added.
         """
         kwargs["auth"] = auth
         super().__init__(**kwargs)
@@ -163,6 +204,10 @@ class CTXDActuatorAzure(CTXDActuator):
         self._aks_nodes = {}
         self._aks_pods = {}
 
+        # Per-actuator metrics collector. Shared format with the Proxmox
+        # actuator, so a single parser can post-process both.
+        self._metrics = MetricsCollector("ctxd-azure", metrics)
+
     # ------------------------------------------------------------------ #
     # CTXDActuator interface
     # ------------------------------------------------------------------ #
@@ -173,8 +218,12 @@ class CTXDActuatorAzure(CTXDActuator):
 
     def discover_context(self):
         """Discover the full context of the AKS cluster."""
-        self.discover_services()
-        self.discover_links()
+        self._metrics.start_run()
+        try:
+            self.discover_services()
+            self.discover_links()
+        finally:
+            self._metrics.end_run()
 
     def discover_services(self):
         """Discover services in two phases: cluster/nodes, then pods."""
@@ -210,6 +259,8 @@ class CTXDActuatorAzure(CTXDActuator):
             self.resource_group,
             self.cluster_name,
             "kubectl get nodes -o json",
+            label="get_nodes",
+            metrics=self._metrics,
         )
         wrapper = _strip_invoke_envelope_json(raw_output)
         if wrapper is None:
@@ -279,6 +330,8 @@ class CTXDActuatorAzure(CTXDActuator):
             self.resource_group,
             self.cluster_name,
             "kubectl get ns -o jsonpath='{.items[*].metadata.name}'",
+            label="get_namespaces",
+            metrics=self._metrics,
         )
         ns_payload = _strip_invoke_envelope_text(ns_output)
         if ns_payload is None:
@@ -292,6 +345,8 @@ class CTXDActuatorAzure(CTXDActuator):
                 self.resource_group,
                 self.cluster_name,
                 f"kubectl get pods -n {ns} -o json",
+                label=f"get_pods:{ns}",
+                metrics=self._metrics,
             )
             data = _strip_invoke_envelope_json(raw_output)
             if data is None:

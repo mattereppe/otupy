@@ -2,13 +2,13 @@
 Proxmox Actuator Manager
 """
 
-import logging
-import time
 import functools
+import logging
 
 from proxmoxer import ProxmoxAPI
 
 from otupy.actuators.ctxd.ctxd_actuator import CTXDActuator
+from otupy.actuators.ctxd.metrics import MetricsCollector
 from otupy.profiles.ctxd.data.execution_environment import ExecutionEnvironment
 from otupy.profiles.ctxd.data.execution_environment_type import ExecutionEnvironmentType
 from otupy.profiles.ctxd.data.host import Host
@@ -37,21 +37,67 @@ logger = logging.getLogger(__name__)
 
 
 def measure_latency(func):
+    """Class-method decorator that times a Proxmox API helper.
+
+    Unlike the previous version (which appended CSV rows to
+    ``latency_log.txt``), this decorator routes the measurement through
+    the shared :class:`MetricsCollector` attached to the actuator
+    instance as ``self._metrics``. The collector is configured from
+    the actuator YAML (the ``metrics:`` block); when it is disabled,
+    the decorator is effectively a pass-through and the call is not
+    timed.
+
+    The wrapped function's name is used as the call label, matching the
+    convention used by the Azure actuator (``get_nodes``,
+    ``get_pods:<ns>``, etc.) so that a single parser can post-process
+    output from both actuators.
+    """
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        start = time.perf_counter()
-        result = func(self, *args, **kwargs)
-        elapsed = time.perf_counter() - start
-        with open("latency_log.txt", "a") as f:
-            f.write(f"{func.__name__},{elapsed:.6f}\n")
-        return result
+        metrics = getattr(self, "_metrics", None)
+        if metrics is None or not getattr(metrics, "enabled", False):
+            return func(self, *args, **kwargs)
+
+        import time
+        label = func.__name__
+        t_start = time.perf_counter()
+        try:
+            result = func(self, *args, **kwargs)
+            elapsed = time.perf_counter() - t_start
+            # Best-effort payload size; for proxmoxer this is usually a
+            # list of dicts whose len() reflects how many items came back.
+            try:
+                bytes_out = len(result) if hasattr(result, "__len__") else 0
+            except Exception:
+                bytes_out = 0
+            metrics.record(label, elapsed, success=True,
+                           bytes_out=bytes_out, cmd=label)
+            return result
+        except Exception:
+            elapsed = time.perf_counter() - t_start
+            metrics.record(label, elapsed, success=False,
+                           bytes_out=0, cmd=label)
+            raise
     return wrapper
 
 
 @actuator_implementation("ctxd-proxmox")
 class CTXDActuatorProxmox(CTXDActuator):
 
-    def __init__(self, auth, **kwargs):
+    def __init__(self, auth, metrics=None, **kwargs):
+        """Initialize the Proxmox actuator.
+
+        :param auth:    dict with the Proxmox credentials. Required keys:
+                        ``proxmox_host``, ``username``, ``password``.
+                        Optional: ``verify_ssl`` (default False).
+        :param metrics: optional dict controlling per-call timing logs.
+                        Forwarded verbatim to
+                        :class:`otupy.actuators.ctxd.metrics.MetricsCollector`.
+                        See its docstring for the recognized keys
+                        (``enabled``, ``file``, ``mode``, ``propagate``).
+                        When omitted or ``enabled: false``, no timing
+                        file is produced.
+        """
         kwargs['auth'] = auth
         super().__init__(**kwargs)
 
@@ -81,6 +127,10 @@ class CTXDActuatorProxmox(CTXDActuator):
         self._cloud_service: Service | None = None
         self._node_services: dict[str, Service] = {}   # node_name -> Service
 
+        # Per-actuator metrics collector. Shared format with the Azure
+        # actuator, so a single parser can post-process both.
+        self._metrics = MetricsCollector("ctxd-proxmox", metrics)
+
         self.proxmox_conn = None
         self._connect()
 
@@ -106,11 +156,15 @@ class CTXDActuatorProxmox(CTXDActuator):
     # ------------------------------------------------------------------
 
     def discover_context(self):
-        self.nodes = self.get_cluster_nodes()
-        resources = self.proxmox_conn.cluster.resources.get(type="vm")
-        self._vm_node_map = {r['vmid']: r['node'] for r in resources}
-        self.discover_services()
-        self.discover_links()
+        self._metrics.start_run()
+        try:
+            self.nodes = self.get_cluster_nodes()
+            resources = self.proxmox_conn.cluster.resources.get(type="vm")
+            self._vm_node_map = {r['vmid']: r['node'] for r in resources}
+            self.discover_services()
+            self.discover_links()
+        finally:
+            self._metrics.end_run()
 
     def discover_services(self):
         self._discover_proxmox_nodes()
@@ -119,7 +173,7 @@ class CTXDActuatorProxmox(CTXDActuator):
         self._discover_networks()
 
     def discover_links(self):
-        self._discover_nodes_link_cloud()    # execenv -> cloud  (NEW)
+        self._discover_nodes_link_cloud()    # execenv -> cloud
         self._discover_vms_link_nodes()      # host    -> execenv
         self._discover_vms_link_networks()   # host    -> network
         self._discover_networks_link_nodes() # network -> execenv
@@ -353,21 +407,10 @@ class CTXDActuatorProxmox(CTXDActuator):
 
     def _discover_nodes_link_cloud(self):
         """
-        Add hosting links: physical node → Proxmox cloud.
-
-        This is the missing piece that was causing execenv (perseo) to appear
-        as a disconnected island in the graph.  The Cloud service already lists
-        nodes in its subservices, but the graph renderer reads links — not
-        subservices — for topology.  Without an explicit Link, execenv nodes
-        have no edge to the cloud and float free.
-
-        Direction follows the same hosting convention used everywhere else:
-            source  = node  (role: guest)
-            peer    = cloud (role: host)
-        so the arrow reads "node is hosted by / belongs to cloud".
+        Add hosting links: physical node -> Proxmox cloud.
         """
         if self._cloud_service is None:
-            logger.warning("Cloud service not found; skipping node→cloud links")
+            logger.warning("Cloud service not found; skipping node->cloud links")
             return
 
         for node_name, node_svc in self._node_services.items():
@@ -388,7 +431,7 @@ class CTXDActuatorProxmox(CTXDActuator):
 
     def _discover_vms_link_nodes(self):
         """
-        Add hosting links: VM/container → physical node that runs it.
+        Add hosting links: VM/container -> physical node that runs it.
         """
         proxmox_vms = self.get_services_by_sid(
             SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM))
@@ -423,7 +466,7 @@ class CTXDActuatorProxmox(CTXDActuator):
 
     def _discover_vms_link_networks(self):
         """
-        Add packet-flow links: VM/container → bridge network.
+        Add packet-flow links: VM/container -> bridge network.
         """
         proxmox_vms = self.get_services_by_sid(
             SId(type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM))
@@ -479,7 +522,7 @@ class CTXDActuatorProxmox(CTXDActuator):
 
     def _discover_networks_link_nodes(self):
         """
-        Add hosting links: bridge network → physical node that owns it.
+        Add hosting links: bridge network -> physical node that owns it.
         Uses the cached _node_services to avoid re-building SIds.
         """
         for node_name, bridges in self._node_bridges.items():

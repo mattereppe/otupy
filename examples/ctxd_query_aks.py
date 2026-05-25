@@ -1,15 +1,15 @@
 """
-CTXd context discovery — Graphviz renderer.
+CTXd context discovery — Graphviz renderer (Azure / AKS).
 
 Install:
     pip install graphviz
     sudo apt install graphviz
 
 Run:
-    python discovery.py
-    python discovery.py --save infra --format svg
-    python discovery.py --layout fdp
-    python discovery.py --no-show
+    python discovery_azure.py
+    python discovery_azure.py --save infra --format svg
+    python discovery_azure.py --layout fdp
+    python discovery_azure.py --no-show
 """
 
 import argparse
@@ -308,7 +308,7 @@ def main(outfile='ctxd_graph', layout='dot', fmt='pdf', show=True):
         JSONEncoder(),
         HTTPTransfer("127.0.0.1", 8080),
     )
-    actuator_spec = ctxd.Specifiers({'asset_id': "ctxd-proxmox-example"})
+    actuator_spec = ctxd.Specifiers({'asset_id': "ctxd-azure-example"})
     arg    = ctxd.Args({'name_only': False, 'cached': False})
     target = ctxd.Context(
         services=otupy.ArrayOf(Name)(),
@@ -340,7 +340,7 @@ def main(outfile='ctxd_graph', layout='dot', fmt='pdf', show=True):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    parser = argparse.ArgumentParser(description="CTXd context discovery — Graphviz renderer")
+    parser = argparse.ArgumentParser(description="CTXd context discovery — Graphviz renderer (Azure / AKS)")
     parser.add_argument("--save",   metavar="NAME", default="ctxd_graph")
     parser.add_argument("--format", dest="fmt", default="pdf",
                         choices=["pdf", "svg", "png"])

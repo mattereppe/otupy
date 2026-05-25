@@ -1,42 +1,51 @@
 id: connector@mirandaproject.eu
 consumer:
-   host: '127.0.0.1'
-   port: 8080
-   endpoint: "/.well-known/openc2"
-   encoding: "json"
-   transfer: "http"
+  host: '127.0.0.1'
+  port: 8080
+  endpoint: "/.well-known/openc2"
+  encoding: "json"
+  transfer: "http"
 configs: "configs"
-
 logger:
-   version: 1
-   disable_existing_loggers: false
-   propagate: true
-   formatters:
-      otupy:
-         (): otupy.LogFormatter
-         datetime: True
-         name: True
-      otupy2file:
-         (): otupy.LogFormatter
-         datetime: True
-         name: True
-         datefmt: "%t"
-   handlers:
-      console:
-         class: logging.StreamHandler
-         formatter: otupy
-         level: DEBUG
-         filters: Null
-      file:
-         class: logging.FileHandler
-         formatter: otupy2file
-         level: DEBUG
-         filters: Null
-         filename: "connector.log"
-   root:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    otupy:
+      (): otupy.LogFormatter
+      datetime: True
+      name: True
+    otupy2file:
+      (): otupy.LogFormatter
+      datetime: True
+      name: True
+      datefmt: "%t"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: otupy
+      level: DEBUG
+      filters: Null
+    file:
+      class: logging.FileHandler
+      formatter: otupy2file
+      level: DEBUG
+      filters: Null
+      filename: "connector.log"
+  root:
+    handlers: [console]
+    level: DEBUG
+  loggers:
+    otupy:
       handlers: [console]
       level: DEBUG
-   loggers:
-      otupy:
-         handlers: [console]
-         level: DEBUG
+
+
+    watchdog:
+      level: WARNING
+      propagate: false
+    watchdog.observers:
+      level: WARNING
+      propagate: false
+    watchdog.observers.inotify_buffer:
+      level: WARNING
+      propagate: false
