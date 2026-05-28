@@ -17,7 +17,7 @@ from otupy.types.data.version import Version
 
 from otupy.actuators.ebpf.actuators.TC.actions.query import query
 from otupy.actuators.ebpf.actuators.TC.actions.delete import delete
-from otupy.actuators.ebpf.actuators.TC.actions.create import create
+from otupy.actuators.ebpf.actuators.TC.actions.create import load_cmd
 from otupy.actuators.ebpf.actuators.TC.actions.copy import copy
 
 """ Supported OpenC2 Version """
@@ -49,7 +49,7 @@ class TCActuator():
             return servererror(status_text='Unable to identify actuator')
         match cmd.action:
             case Actions.copy: return copy(cmd)
-            case Actions.create: return create(cmd)
+            case Actions.create: return load_cmd(cmd)
             case Actions.query: return query(cmd)
             case Actions.delete: return delete(cmd)
             case _: return self.__notimplemented(cmd)

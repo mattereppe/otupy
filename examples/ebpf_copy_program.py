@@ -50,7 +50,7 @@ def main():
 
     pf = ebpf.Specifiers({})
     #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
-    prog_path = "/home/abba/ebpf/eBPF_scripts-master/tc_fl_kern.o"
+    prog_path = "/home/abba/ebpf/eBPF_scripts-master/tc_fl_kern.c"
 
     try:
         with open(prog_path, "rb") as f:
@@ -61,7 +61,7 @@ def main():
 
     hashes =  oc2.Hashes({"md5": oc2.Binaryx(hashlib.md5(bcontent).digest())})
     artifact = oc2.Artifact(mime_type="application/json",payload=oc2.Binary(bcontent), hashes=hashes)
-    storage= File({"path": "tmacp/fcd/a", "name": "tc_fl_kernel.o"})
+    storage= File({"path": "tmacp/fcd/a", "name": "tc_fl_kernel.c"})
     args = rcli.Args({"storage":storage})
     cmd = oc2.Command(oc2.Actions.copy,artifact,args=args, actuator=pf)
 

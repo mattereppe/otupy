@@ -49,7 +49,7 @@ def main():
     #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
 
     file_path = "/opt/abba/tmacp/fcd/a"
-    file_name = "tc_fl_kernel.o"
+    file_name = "tc_fl_kernel.c"
     direction = "ingress"
     attach_type = "tc"
     iface = "wlp7s0"
@@ -63,7 +63,7 @@ def main():
     maps.append("fl_stats")
     #storage= File({"path": "tmacp/fcd/a", "name":
     
-    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces,"maps":maps, })
+    args = ebpf.Args({"Direction": direction_obj, "AttachType": attach_obj, "Interfaces": interfaces,"maps":maps })
     cmd = oc2.Command(oc2.Actions.create,target=target_features,args=args, actuator=pf)
 
     logger.info("Sending command: %s", cmd)
