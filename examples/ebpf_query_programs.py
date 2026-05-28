@@ -46,15 +46,7 @@ def main():
 
     pf = ebpf.Specifiers({})
     #arg = rcli.Args({"response_requested": oc2.ResponseType.complete})
-    full_path = "/opt/abba/tmacp/fcd/a/allow.o"
-    direction = "ingress"
-    attach_type = "tc"
-    iface = "wlp7s0"
-    section = "tc"
-    prog = ProgramFile(full_path, Section=section,isUri=False) 
-    direction_obj = Direction(direction)
-    attach_obj = AttachType(attach_type)
-    interfaces = Interfaces(iface)
+
     target_features = eBPF_program(file=None)
     args = ebpf.Args({"maps_required": False})
     cmd = oc2.Command(oc2.Actions.query,target=target_features,args=args, actuator=pf)

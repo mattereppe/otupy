@@ -69,8 +69,8 @@ def query_tc(cmd):
         # 1. Database Retrieval
         results = db.retrieve_hookpoints(
             uid=PRODUCER_ID,
-            file_path=target.file.Name if target.file else None,
-            file_name=os.path.basename(target.file.Name) if target.file else None,
+            file_path=target.file.FilePath if target.file else None,
+            file_name=os.path.basename(target.file.FileName) if target.file else None,
             attach_type=arguments.get("AttachType").Name if arguments.get("AttachType") else None,
             direction=arguments.get("Direction").Name if arguments.get("Direction") else None,
             Section=target.file.Section if target.file else None,
@@ -116,10 +116,10 @@ def query_tc(cmd):
                         logger.warning(f"Map '{name}' defined in DB but not found in kernel.")
             # 3. Build ProgramStatus for each DB row
             prog_status.append(ProgramStatus(
-                Program=ProgramFile(file_path=f_path, file_name=f_name, Section=sect),
+                Program=ProgramFile(FilePath=f_path, FileName=f_name, Section=sect),
                 Direction=Direction(d_rect),
                 hook_point=AttachType(a_type),
-                Interfaces=Interfaces([iface] if iface else []),
+                Interfaces=Interfaces(iface),
                 maps=ArrayOf(MapeBPF)([m for m in found_maps if m.name in all_required_names]) if arguments.get("maps_required") else ArrayOf(MapeBPF)()
             ))
         res_data = QueryResults(

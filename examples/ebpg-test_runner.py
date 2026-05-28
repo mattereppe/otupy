@@ -100,8 +100,8 @@ def build_copy():
 
 
 def build_create():
-    prog = ProgramFile(file_name=CONFIG["remote_name"],
-                       file_path=CONFIG["remote_path"],
+    prog = ProgramFile(FileName=CONFIG["remote_name"],
+                       FilePath=CONFIG["remote_path"],
                        Section=CONFIG["section"])
     target = eBPF_program(file=prog)
     maps = ArrayOf(str)()
@@ -115,8 +115,8 @@ def build_create():
 
 
 def build_delete():
-    prog = ProgramFile(file_name=CONFIG["remote_name"],
-                       file_path=CONFIG["remote_path"],
+    prog = ProgramFile(FileName=CONFIG["remote_name"],
+                       FilePath=CONFIG["remote_path"],
                        Section=CONFIG["section"])
     target = eBPF_program(file=prog)
     args = ebpf.Args({"Direction": Direction(CONFIG["direction"]),

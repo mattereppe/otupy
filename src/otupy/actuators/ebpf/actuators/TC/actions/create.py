@@ -51,8 +51,8 @@ def _compile_if_needed(program_file: ProgramFile, executor: TCCommandExecutor) -
     try:
 
         if ext.lower() == '.c':
-            out_name = program_file.file_name.replace('.c', '.o')
-            out_path = os.path.join(program_file.file_path, out_name)
+            out_name = program_file.FileName.replace('.c', '.o')
+            out_path = os.path.join(program_file.FilePath, out_name)
             
             cmd = [
                 'clang',
@@ -87,8 +87,8 @@ def load_cmd(cmd: Command) -> Response:
 
         result = rcli_db.retrieve_file(
             PRODUCER_ID, 
-            target.file.file_path, 
-            target.file.file_name
+            target.file.FilePath, 
+            target.file.FileName
         )
         if not result:
             return notfound(status_text="eBPF file not found in database")
@@ -104,8 +104,8 @@ def load_cmd(cmd: Command) -> Response:
                 try:
                     compiled_path, compiled_name = _compile_if_needed(
                         ProgramFile(
-                            file_name=f_name,
-                            file_path=f_path,
+                            FileName=f_name,
+                            FilePath=f_path,
                             Section=target.file.Section
                         ),
                         executor
@@ -127,7 +127,7 @@ def load_cmd(cmd: Command) -> Response:
                 attach_type=arguments.get("AttachType").Name if arguments.get("AttachType") else None,
                 maps=arguments.get("maps") if arguments.get("maps") else None,
                 hash=calculated_hash,
-                ifaces=arguments.get("Interfaces") if arguments.get("Interfaces") else None
+                interface=arguments.get("Interfaces") if arguments.get("Interfaces") else None
             )
 
         return ok("Program loaded successfully")
@@ -139,7 +139,7 @@ def load_cmd(cmd: Command) -> Response:
         return servererror("Internal server error")
 
 def load(
-    ifaces: Interfaces = None,
+    interface: Interfaces = None,
     file_path: str = None,
     file_name: str = None,
     section: str = None,
@@ -151,53 +151,53 @@ def load(
     executor = TCCommandExecutor()
     iface_mgr = InterfaceManager(executor)
 
-    if not ifaces or not ifaces.Names:
-        raise ValueError("No interfaces provided")
+    if not interface or not interface.iface:
+        raise ValueError("No interface provided")
 
     try:
-        for iface in ifaces.Names:
+
 
             # Ensure clsact
-            if not iface_mgr.ensure_clsact(iface):
-                raise RuntimeError(f"Cannot ensure clsact on interface {iface}")
+        if not iface_mgr.ensure_clsact(interface.iface):
+            raise RuntimeError(f"Cannot ensure clsact on interface {interface.iface}")
 
 
-            # Run tc command
-            try:
-                executor.run_cmd(
-                    [
-                        "tc",
-                        "filter",
-                        "add",
-                        "dev",
-                        iface,
-                        direction,
-                        "bpf",
-                        "da",
-                        "obj",
-                        os.path.join(file_path, file_name),
-                        "sec",
-                        section,
-                    ],
-                    check=True,
-                )
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(
-                    f"tc command failed on interface {iface}"
-                ) from e
-
-            # Store metadata
-            db.add_hookpoint(
-                uid=PRODUCER_ID,
-                file_path=file_path,
-                file_name=file_name,
-                calculated_hash=hash,  # Hash calculation can be added here if needed
-                attach_type=attach_type,
-                direction=direction,
-                Section=section,
-                interface=iface,
-                maps=str(maps)
+        # Run tc command
+        try:
+            executor.run_cmd(
+                [
+                    "tc",
+                    "filter",
+                    "add",
+                    "dev",
+                    interface.iface,
+                    direction,
+                    "bpf",
+                    "da",
+                    "obj",
+                    os.path.join(file_path, file_name),
+                    "sec",
+                    section,
+                ],
+                check=True,
             )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"tc command failed on interface {interface.iface}"
+            ) from e
+
+        # Store metadata
+        db.add_hookpoint(
+            uid=PRODUCER_ID,
+            file_path=file_path,
+            file_name=file_name,
+            calculated_hash=hash,  # Hash calculation can be added here if needed
+            attach_type=attach_type,
+            direction=direction,
+            Section=section,
+            interface=interface.iface,
+            maps=str(maps)
+        )
 
     except Exception as e:
         raise RuntimeError("Error during program loading") from e

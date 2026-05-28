@@ -8,6 +8,7 @@ import logging
 from otupy.actuators.ebpf.executors.TC_command_executor import TCCommandExecutor
 from otupy.actuators.rcli.user.config import PRODUCER_ID
 from otupy.profiles import rcli
+from otupy.profiles.ebpf.data.interfaces_ebpf import Interfaces
 from otupy.profiles.ebpf.targets.TCHook.eBPF_program import eBPF_program
 
 
@@ -65,9 +66,9 @@ def delete(cmd: Command) -> Response:
             )
 
         remove(
-            ifaces=arguments["Interfaces"],
-            file_path=target.file.file_path,
-            file_name=target.file.file_name,
+            interface=arguments["Interfaces"],
+            file_path=target.file.FilePath,
+            file_name=target.file.FileName,
             section=target.file.Section,
             direction=arguments["Direction"].Name,
             attach_type=arguments["AttachType"].Name,
@@ -83,7 +84,7 @@ def delete(cmd: Command) -> Response:
         return servererror("Internal server error")
 
 def remove(
-    ifaces,
+    interface: Interfaces,
     file_path=None,
     file_name=None,
     direction=None,
@@ -92,95 +93,93 @@ def remove(
 ):
     executor = TCCommandExecutor()
 
-    if not ifaces or not ifaces.Names:
-        raise ValueError("No interfaces provided")
-
-  
+    if not interface or not interface.iface:
+        raise ValueError("No interface provided")
 
     try:
-        for iface in ifaces.Names:
+        
 
-            # Check if exists in DB
-            exists = db.exists_file(
-                uid=PRODUCER_ID,
-                file_path=file_path,
-                file_name=file_name,
-                attach_type=attach_type,
-                direction=direction,
-                Section=section,
-                interface=iface,
+        # Check if exists in DB
+        exists = db.exists_file(
+            uid=PRODUCER_ID,
+            file_path=file_path,
+            file_name=file_name,
+            attach_type=attach_type,
+            direction=direction,
+            Section=section,
+            interface=interface.iface,
+        )
+
+        if not exists:
+            logger.warning(
+                f"No hookpoint found for {file_name} on {interface.iface}"
             )
+            raise ValueError("Specified eBPF program not found on target")
 
-            if not exists:
-                logger.warning(
-                    f"No hookpoint found for {file_name} on {iface}"
-                )
-                continue
-
-            # Show tc filters
-            try:
-                cp = executor.run_cmd(
-                    ["tc", "filter", "show", "dev", iface, direction],
-                    check=False,
-                )
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(
-                    f"Failed to list tc filters on {iface}"
-                ) from e
-
-            # Find and delete matching filters
-            for line in cp.stdout.splitlines():
-                if file_name in line:
-                    match = re.search(r"pref\s+(\d+)", line)
-                    if match:
-                        pref = match.group(1)
-
-                        try:
-                            executor.run_cmd(
-                                [
-                                    "tc",
-                                    "filter",
-                                    "del",
-                                    "dev",
-                                    iface,
-                                    direction,
-                                    "protocol",
-                                    "all",
-                                    "pref",
-                                    pref,
-                                    "bpf",
-                                ],
-                                check=False,
-                            )
-                        except subprocess.CalledProcessError as e:
-                            raise RuntimeError(
-                                f"Failed to delete filter on {iface}"
-                            ) from e
-
-            # Remove from DB
-            db.delete_hookpoint(
-                uid=PRODUCER_ID,
-                file_path=file_path,
-                file_name=file_name,
-                attach_type=attach_type,
-                direction=direction,
-                Section=section,
-                interface=iface,
+        # Show tc filters
+        try:
+            cp = executor.run_cmd(
+                ["tc", "filter", "show", "dev", interface.iface, direction],
+                check=False,
             )
-            logger.info(
-                f"Deleted hookpoint for {file_name} on {iface} ({direction})"
-            )
-            
-            response = delete_from_rcli(
-                path=file_path,
-                name_file=file_name,)
-            
-            if response.get("status") != StatusCode.OK:
-                raise RuntimeError("Error deleting file from target location")
-            logger.info(
-                f"Deleted file from the filesystem"
-            )
-            
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"Failed to list tc filters on {interface.iface}"
+            ) from e
+
+        # Find and delete matching filters
+        for line in cp.stdout.splitlines():
+            if file_name in line:
+                match = re.search(r"pref\s+(\d+)", line)
+                if match:
+                    pref = match.group(1)
+
+                    try:
+                        executor.run_cmd(
+                            [
+                                "tc",
+                                "filter",
+                                "del",
+                                "dev",
+                                interface.iface,
+                                direction,
+                                "protocol",
+                                "all",
+                                "pref",
+                                pref,
+                                "bpf",
+                            ],
+                            check=False,
+                        )
+                    except subprocess.CalledProcessError as e:
+                        raise RuntimeError(
+                            f"Failed to delete filter on {interface.iface}"
+                        ) from e
+
+        # Remove from DB
+        db.delete_hookpoint(
+            uid=PRODUCER_ID,
+            file_path=file_path,
+            file_name=file_name,
+            attach_type=attach_type,
+            direction=direction,
+            Section=section,
+            interface=interface.iface,
+        )
+        logger.info(
+            f"Deleted hookpoint for {file_name} on {interface.iface} ({direction})"
+        )
+        
+        response = delete_from_rcli(
+            path=file_path,
+            name_file=file_name,)
+        
+        if response.get("status") != StatusCode.OK:
+            raise RuntimeError("Error deleting file from target location")
+        logger.info(
+            f"Deleted file from the filesystem"
+        )
+        
 
     except Exception as e:
         raise RuntimeError("Error during program deletion") from e
