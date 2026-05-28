@@ -46,7 +46,7 @@ def main():
 
     pf = ebpf.Specifiers({})
     file_path = "/opt/abba/tmacp/fcd/a"
-    file_name = "tc_fl_kernel.o"
+    file_name = "tc_fl_kernel.c"
     direction = "ingress"
     attach_type = "tc"
     iface = "wlp7s0"

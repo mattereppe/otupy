@@ -119,7 +119,7 @@ def query_tc(cmd):
                 Program=ProgramFile(file_path=f_path, file_name=f_name, Section=sect),
                 Direction=Direction(d_rect),
                 hook_point=AttachType(a_type),
-                Interfaces=Interfaces(Names=[iface] if iface else []),
+                Interfaces=Interfaces([iface] if iface else []),
                 maps=ArrayOf(MapeBPF)([m for m in found_maps if m.name in all_required_names]) if arguments.get("maps_required") else ArrayOf(MapeBPF)()
             ))
         res_data = QueryResults(
