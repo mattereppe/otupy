@@ -202,15 +202,52 @@ def main():
 
     if args.baseline:
         import subprocess
-        lat = []
+
+        obj = CONFIG["local_source_path"]
+        sec = CONFIG["section"]
+        dev = CONFIG["interface"]
+
+        def _run(cmd):
+            return subprocess.run(cmd, capture_output=True, text=True)
+
+        # clsact qdisc is required for ingress filters; set up once,
+        # OUTSIDE the timed region, and tear down at the end.
+        _run(["tc", "qdisc", "del", "dev", dev, "clsact"])   # ignore if absent
+        _run(["tc", "qdisc", "add", "dev", dev, "clsact"])
+
+        add_lat, show_lat, del_lat = [], [], []
         for i in range(total):
+            # native create: load + attach
             t0 = time.perf_counter()
-            subprocess.run(["tc", "filter", "show", "dev", CONFIG["interface"], "ingress"],
-                           capture_output=True, text=True)
+            r_add = _run(["tc", "filter", "add", "dev", dev, "ingress",
+                          "bpf", "da", "obj", obj, "sec", sec])
             t1 = time.perf_counter()
+
+            # native query: list filters (with the program attached)
+            t2 = time.perf_counter()
+            _run(["tc", "filter", "show", "dev", dev, "ingress"])
+            t3 = time.perf_counter()
+
+            # native delete: detach
+            t4 = time.perf_counter()
+            r_del = _run(["tc", "filter", "del", "dev", dev, "ingress"])
+            t5 = time.perf_counter()
+
+            if r_add.returncode != 0:
+                logger.warning("native tc add failed: %s", r_add.stderr.strip())
+            if r_del.returncode != 0:
+                logger.warning("native tc del failed: %s", r_del.stderr.strip())
+
             if i >= args.warmup:
-                lat.append((t1 - t0) * 1000.0)
-        results.append(_stats("baseline_tc_show", lat, "n/a", args.runs, []))
+                add_lat.append((t1 - t0) * 1000.0)
+                show_lat.append((t3 - t2) * 1000.0)
+                del_lat.append((t5 - t4) * 1000.0)
+
+        _run(["tc", "qdisc", "del", "dev", dev, "clsact"])   # tear down
+
+        results.append(_stats("baseline_tc_add",  add_lat,  "n/a", args.runs, []))
+        results.append(_stats("baseline_tc_show", show_lat, "n/a", args.runs, []))
+        results.append(_stats("baseline_tc_del",  del_lat,  "n/a", args.runs, []))
 
     with open(args.out + ".json", "w") as f:
         json.dump(results, f, indent=2)
