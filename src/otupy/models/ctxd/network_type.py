@@ -6,6 +6,7 @@ from otupy.models.ctxd.vlan_network import VLANNetwork
 from otupy.models.ctxd.ip_network import IPNetwork
 from otupy.models.ctxd.veth_network import VEthNetwork
 from otupy.models.ctxd.tunnel_network import TunnelNetwork
+from otupy.models.ctxd.tuntap_network import TunTapNetwork
 from otupy.models.ctxd.vxlan_network import VXLANNetwork
 
 #ATTENTION!! THIS IS ONLY PARTIALLY DEFINED!!!
@@ -20,7 +21,7 @@ class NetworkType(Choice):
 	"""
 
 	register = Register({'ip': IPNetwork, 'eth': EthernetNetwork, '802.11': str, '802.15': str, 'zigbee': str, 
-			'vlan': VLANNetwork, 'tun': TunnelNetwork, 'veth': VEthNetwork, 'vxlan': VXLANNetwork,
+			'vlan': VLANNetwork, 'tun': TunnelNetwork, 'tuntap': TunTapNetwork, 'veth': VEthNetwork, 'vxlan': VXLANNetwork,
 			'vpn': str, 'lorawan': str, 'wan': str, '5G': MobileNetwork})
 
 	def __init__(self, type):

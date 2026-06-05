@@ -59,7 +59,6 @@ from otupy.models.ctxd import *
 
 logger = logging.getLogger(__name__)
 
-DPKG_LIST=['dpkg','--list']
 KUBELET_CONFIG_FILE='/var/lib/kubelet/config.yaml'
 
 @actuator_implementation("xbom-host")
@@ -87,6 +86,8 @@ class XBOMHostActuator(XBOMActuator):
 		else:
 			self.kube_suffix = ""
 		self.host = kwargs.get('host')
+		self.brctl_exe = kwargs.get('brctl_exe', '/sbin/brctl')
+		self.dpkg_exe = kwargs.get('dpkg_exe', '/usr/bin/dpkg')
 
 		# Ensure the platform service is always available
 		self.services = ArrayOf(Service)()
@@ -156,19 +157,28 @@ class XBOMHostActuator(XBOMActuator):
 		self.domain=None
 		self._net_deps={}
 		# We discover again the platform at each run because packages might have changed
+		logger.debug("Discovering services...")
+		logger.debug("Discovering platform...")
 		self._discover_platform()
+		logger.debug("Discovering namespaces...")
 		self._discover_network_namespaces()
+		logger.debug("Discovering networks...")
 		self._discover_networks()
+		logger.debug("Discovering network functions...")
 		self._discover_network_functions()
+		logger.debug("Discovering links...")
+		logger.debug("Discovering host links...")
 		self._discover_link_host()
+		logger.debug("Discovering network links...")
 		self._discover_links_networks()
+		logger.debug("Discovering network function links...")
 		self._discover_links_net_functions()
 
 	def _discover_platform(self):
 		name = platform.node()
 		self.domain = name
     
-		pkgs = subprocess.run(DPKG_LIST, capture_output=True)
+		pkgs = subprocess.run([self.dpkg_exe, '--list'], capture_output=True)
 		
 		pkg_list=ArrayOf(Package)()
 		for line in pkgs.stdout.splitlines():
@@ -477,7 +487,11 @@ class XBOMHostActuator(XBOMActuator):
 						ipnetaddrs.append(addr)
 
 					for attr in link.get_attrs('IFLA_LINKINFO'):
-						link_type=attr.get_attrs('IFLA_INFO_KIND')[0]
+						link_type=None
+						if attr.get_attrs('IFLA_INFO_KIND'):
+							link_type=attr.get_attrs('IFLA_INFO_KIND')[0]
+#						if attr.get_attrs('IFLA_INFO_SLAVE_KIND'):
+#						    link_type=attr.get_attrs('IFLA_INFO_SLAVE_KIND')[0]
 
 						match link_type:
 							case 'veth':
@@ -568,50 +582,19 @@ class XBOMHostActuator(XBOMActuator):
 
 		
 							case 'tun':
-								logger.warn("tun/tap vpns must be managed at the application layer!")
-								# tun/tap interfaces are vpn made at the application layer, and it is not possible to infer the network here
-								# The following code worked in an empirical way for all namespaces in this host, but it cannot discover 
-								# vpn links to outside nodes.
-#								# The ned_id will be iface.client@iface.server. We create a partial name here, and will update it later on
-#								net_id=self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-#								net_service=None
-#								if len(ipnetaddrs) > 0:
-#									netaddr = ipnetaddrs[0]
-#									# There should be only 1 IP address assigned to a tunnel interface...
-#									ip = ipaddress.ip_network(netaddr.getObj())
-#									old_net_name=None
-#									for i, s in tuns.items():
-#										if ip.subnet_of(ipaddress.ip_network(i)): # The new element is a client of an existing element
-#											tuns_server[i]=copy.deepcopy(s)
-#											net_service=s
-#											net_service.name=Name("tun:"+net_id+"@"+net_service.name.getObj())
-#											net_service.type.getObj().name=str(ipnetaddrs[0])
-#											net_service.type.getObj().type.getObj()['nets']=ipnetaddrs
-#											# Is it possible to be client of multiple servers???
-#										elif ip.supernet_of(ipaddress.ip_network(i)): # The new element is a server of the current element
-#											net_service=s
-#											old_net_name=net_service.name
-#											net_service.name=Name("tun:"+net_service.name.getObj()+"@"+net_id)
-#											net_service.type.getObj().id=net_id
-#											net_service.type.getObj().type.getObj()['server']=net_id
-#											tuns_servers[str(ip)]=copy.deepcopy(s)
-#											tuns_servers[str(ip)].name=Name(net_id)
-#											# Do not break the loop, because it might be the server of many clients
-#								if net_service is None:
-#									# Create a network service, we will change its name later on when we discover its client/server
-#									net_service=self._add_net_service(name=Name(net_id), description="Tunnel network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=TunnelNetwork) 
-#									tuns[str(ip)]=net_service
-#									for i, s in tuns_servers.items():
-#										if ip.subnet_of(ipaddress.ip_network(i)): # Another client of a previously-seen server
-#											net_service.name=Name("tun:"+net_id+"@"+s.name.getObj())
-#											net_service.type.getObj().id=s.type.getObj().id
-#											net_service.type.getObj().type.getObj()['server']=s.type.getObj().id
-#								else:
-#									self._namespaces[ns]['networks'].append({peer1[0]: net_service.name})
+								net_id="tuntap:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
+								net_service=self._add_net_service(service_name=Name(net_id), 
+																				net_name=self._namespaces[ns]['ifaces'][link_idx], 
+																				domain=self.domain, 
+																				namespace=ns, description="Tun/Tap network", 
+																				ipnetaddrs=ipnetaddrs,  
+																				id=net_id, 
+																				nettype=TunTapNetwork) 
+								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
+								
 
 							case 'bridge':
 								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-#								net_service=self._add_net_service(service_name=Name(net_id), net_name=self._namespaces[ns]['ifaces'][link_idx], namespace=self._namespaces[ns]['name'], description="Bridged network", ipnetaddrs=ipnetaddrs,  id=net_id, nettype=EthernetNetwork) 
 								# Bridge metanetworks are always "internal" to the ExecEnv, so set the domain name
 								net_service=self._add_net_service(service_name=Name(net_id), 
 																				net_name=self._namespaces[ns]['ifaces'][link_idx], 
@@ -631,8 +614,10 @@ class XBOMHostActuator(XBOMActuator):
 								
 							case 'vxlan':
 								for a in attr.get_attrs('IFLA_INFO_DATA'):
+									# I did not check the presence of the following attributes. I prefer to get the error
+									# and to manage them when I know how to do that
 									vni = a.get_attrs('IFLA_VXLAN_ID')[0]
-									fw_iface_idx = a.get_attrs('IFLA_VXLAN_LINK')[0]
+									fw_iface_idx = a.get_attrs('IFLA_VXLAN_LINK')[0] if a.get_attrs('IFLA_VXLAN_LINK') else link_idx
 									port=a.get_attrs('IFLA_VXLAN_PORT')[0]
 								net_id="vxlan:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
 								net_service=self._add_net_service(service_name=Name(net_id), 
@@ -754,10 +739,15 @@ class XBOMHostActuator(XBOMActuator):
 
 		ns_service_sid=self._namespaces[ns]['service_sid']
 		if ns is None:
-			cmd=['brctl',  'show']
+			cmd=[self.brctl_exe,  'show']
 		else:
-			cmd=['ip', 'netns',  'exec', ns, 'brctl',  'show']
-		brctl = subprocess.run(cmd, capture_output=True)
+			cmd=['ip', 'netns',  'exec', ns, self.brctl_exe,  'show']
+		try:
+	 		brctl = subprocess.run(cmd, capture_output=True)
+		except Exception as e: # This may happen when brctl is not installed
+		    logger.warn("No linux bridge found: %s", e) 
+		    return
+
 		wlist = map(str.split, brctl.stdout.decode().splitlines()[1:])
 		brwlist = filter(lambda x: len(x) != 1, wlist)
 		brlist = map(lambda x: x[0], brwlist)
@@ -875,8 +865,11 @@ class XBOMHostActuator(XBOMActuator):
 	def _discover_links_net_functions(self):
 		""" Discover links between networks and network functions """
 		for ns in self._namespaces:
+			logger.debug(" - router links...")
 			self._discover_links_routers(ns)
+			logger.debug(" - bridge links...")
 			self._discover_links_bridges(ns)
+			logger.debug("   done!")
 
 	def _discover_links_routers(self, ns):
 		""" Discover links between routers and networks
@@ -905,6 +898,7 @@ class XBOMHostActuator(XBOMActuator):
 			@:param ns: Network namespace name
 		"""
 		for br in self._namespaces[ns]['bridges']:
+			print(self._namespaces[ns]['bridges'][br])
 			peer = Peer(service_name=Name(self._namespaces[ns]['bridges'][br]['service_sid'].name),
 								sid=self._namespaces[ns]['bridges'][br]['service_sid'],
 							  	role=PeerRole.forwarding, consumer=None)

@@ -41,6 +41,7 @@ from .server import Server
 #from .service import SId
 from .service import Service
 from .tunnel_network import TunnelNetwork
+from .tuntap_network import TunTapNetwork
 #from .veth_network import VEthPeer
 from .veth_network import VEthNetwork
 from .vlan_network import VLANNetwork
