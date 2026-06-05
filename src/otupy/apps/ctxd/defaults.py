@@ -12,6 +12,7 @@ defaults = { # Default values for context discovery operation
 				'loop': -1,
 				'frequency': 60,
 				'append_threadid': True,
+				'recursive': False,
 				# Default values for OpenC2 communication
 				'openc2': {
 					'host': '127.0.0.1',
@@ -60,7 +61,7 @@ defaults = { # Default values for context discovery operation
 						'console': {
 							'class': 'logging.StreamHandler', 
 							'formatter': 'otupy', 
-							'level': 'INFO', 
+							'level': 'DEBUG', 
 							'filters': None
 						}
 					},
@@ -117,7 +118,7 @@ def parse_and_default(config):
 	"""
 
 	# Logging framework and base service parameters
-	for c in ['name', 'logger', 'loop', 'frequency']:
+	for c in ['name', 'recursive', 'append_threadid', 'logger', 'loop', 'frequency']:
 #		if c not in config:
 #			config[c]=defaults[c]
 		config.setdefault(c, defaults[c])
@@ -145,7 +146,7 @@ def parse_and_default(config):
 			if config['publishers'][name] is None:
 				config['publishers'][name]={}
 			for p in defaults[name].keys():
-#				config['publishers'][name][p] = set_defaults(config['publishers'][name], name,  p)
+	#				config['publishers'][name][p] = set_defaults(config['publishers'][name], name,  p)
 				config['publishers'][name].setdefault(p, defaults[name][p])
 	else:
 		config['publishers']={}

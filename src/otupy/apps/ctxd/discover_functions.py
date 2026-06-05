@@ -93,6 +93,7 @@ def discovery(config):
 	# We allow more root services to be present in the configuration
 	for root in config['services']:
 		consumers = [root]
+		logger.debug("Discoverying: %s", root)
 
 		# Start recursive discovery
 		while len(consumers) > 0: 
