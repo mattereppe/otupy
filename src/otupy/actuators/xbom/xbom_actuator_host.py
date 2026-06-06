@@ -42,7 +42,7 @@ import pyroute2
 import ipaddress
 import json
 import yaml
-import os
+import os as pythonos
 import pybrctl
 import copy
 import datetime
@@ -271,6 +271,7 @@ class XBOMHostActuator(XBOMActuator):
 		if self.kube_pods is None:
 			self.kube_pods = {}
 
+			logger.debug("Looking for Kubernetes pods")
 			# Create a map between inodes and netns names
 			with pyroute2.IPRoute() as iprns:
 				nsmap={}
@@ -299,10 +300,10 @@ class XBOMHostActuator(XBOMActuator):
 					for ns in linux_namespaces:
 						if ns['type'] == 'network':
 							try:
-								inode=os.stat(ns['path']).st_ino
+								inode=pythonos.stat(ns['path']).st_ino
 								self.kube_pods[nsmap[inode]]=pod_sid
-							except:
-								pass
+							except Exception as e:
+								logger.error("Kubernetes pod detected, but unable to locate namespace path: %s", e)
 
 		if netns_name in self.kube_pods:
 			return self.kube_pods[netns_name]
@@ -409,7 +410,7 @@ class XBOMHostActuator(XBOMActuator):
 					self._namespaces[ns]['netnsmap'][0]=None # Main network stack does not have a name, and it is referred to as '0' 
 
 				# Create the NetworkNode object associated to this namespace
-				netnode = NetworkNode(name=ns, description=description, id=None, # Kubernetes id,
+				netnode = NetworkNode(name=self._namespaces[ns]['name'], description=description, id=None, # Kubernetes id,
 					ifaces=ArrayOf(NetworkInterface)())
 
 				# Retrieve the default gateway for this container
@@ -446,8 +447,8 @@ class XBOMHostActuator(XBOMActuator):
 
 					netnode.ifaces.append( port )
 
-				port_service = Service(namespace=ns, name=Name(self._namespaces[ns]['name']+".ports"),
-						sid=SId.create_from_service_type(netnode, namespace=ns),
+				port_service = Service(namespace=self._namespaces[ns]['name'], name=Name(self._namespaces[ns]['name']+".ports"),
+						sid=SId.create_from_service_type(netnode, namespace=self._namespaces[ns]['name']),
 						type=ServiceType(netnode), subservices=None, owner=str(self._namespaces[ns]['service_sid']))
 				self.services.append(port_service)
 				if self._namespaces[ns]['service'] is not None:
@@ -489,6 +490,9 @@ class XBOMHostActuator(XBOMActuator):
 				for link in iprns.get_links(): 
 					link_idx=link['index']
 					link_name=link.get_attr('IFLA_IFNAME') 
+#					print("**** iface: ", link_name, "[", link_idx, "]", " (", ns, ")")
+#					print(link.get_attrs('IFLA_LINKINFO'))
+#					print("type: ", link_type)
 
 					ipnetaddrs = ArrayOf(IPNetAddress)()
 					peer1=(link_idx, self._namespaces[ns]['name'])
@@ -1045,6 +1049,7 @@ class XBOMHostActuator(XBOMActuator):
 			@:param ns: Network namespace name
 		"""
 		for br in self._namespaces[ns]['bridges']:
+#print(self._namespaces[ns]['bridges'][br])
 			peer = Peer(service_name=Name(self._namespaces[ns]['bridges'][br]['service_sid'].name),
 								sid=self._namespaces[ns]['bridges'][br]['service_sid'],
 							  	role=PeerRole.forwarding, consumer=None)
