@@ -34,4 +34,4 @@ azure-mgmt-network==30.1.0
 azure-mgmt-resource==24.0.0
 sphinx-rtd-theme==3.0.2
 cyclonedx-bom==7.3.0
-
+ovs==3.7.1
