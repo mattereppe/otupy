@@ -87,8 +87,8 @@ def load_cmd(cmd: Command) -> Response:
 
         result = rcli_db.retrieve_file(
             PRODUCER_ID, 
-            target.file.FilePath, 
-            target.file.FileName
+            target.file.file_path, 
+            target.file.file_name
         )
         if not result:
             return notfound(status_text="eBPF file not found in database")
@@ -104,9 +104,9 @@ def load_cmd(cmd: Command) -> Response:
                 try:
                     compiled_path, compiled_name = _compile_if_needed(
                         ProgramFile(
-                            FileName=f_name,
-                            FilePath=f_path,
-                            Section=target.file.Section
+                            file_name=f_name,
+                            file_path=f_path,
+                            section=target.file.section
                         ),
                         executor
                     )
@@ -122,9 +122,9 @@ def load_cmd(cmd: Command) -> Response:
             load(
                 file_path=f_path,
                 file_name=f_name,
-                section=target.file.Section if target.file else None,
-                direction=arguments.get("Direction").Name if arguments.get("Direction") else None,
-                attach_type=arguments.get("AttachType").Name if arguments.get("AttachType") else None,
+                section=target.file.section if target.file else None,
+                direction=arguments.get("Direction").name if arguments.get("Direction") else None,
+                attach_type=arguments.get("AttachType").name if arguments.get("AttachType") else None,
                 maps=arguments.get("maps") if arguments.get("maps") else None,
                 hash=calculated_hash,
                 interface=arguments.get("Interfaces") if arguments.get("Interfaces") else None

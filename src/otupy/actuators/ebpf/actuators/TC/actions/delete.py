@@ -67,11 +67,11 @@ def delete(cmd: Command) -> Response:
 
         remove(
             interface=arguments["Interfaces"],
-            file_path=target.file.FilePath,
-            file_name=target.file.FileName,
-            section=target.file.Section,
-            direction=arguments["Direction"].Name,
-            attach_type=arguments["AttachType"].Name,
+            file_path=target.file.file_path,
+            file_name=target.file.file_name,
+            section=target.file.section,
+            attach_type=arguments.get("AttachType").name if arguments.get("AttachType") else None,
+            direction=arguments.get("Direction").name if arguments.get("Direction") else None,
         )
 
         return ok("Program has been deleted successfully")
@@ -79,7 +79,7 @@ def delete(cmd: Command) -> Response:
     except ValueError as e:
         return badrequest(status_text=str(e))
 
-    except Exception:
+    except Exception as e:
         logger.exception("Unhandled error in delete()")
         return servererror("Internal server error")
 

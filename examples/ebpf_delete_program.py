@@ -51,9 +51,9 @@ def main():
     attach_type = "tc"
     iface = "wlp7s0"
     section = "tc_flowlabel_stats"
-    prog = ProgramFile(FileName=file_name, FilePath=file_path, Section=section)
-    direction_obj = Direction(direction)
-    attach_obj = AttachType(attach_type)
+    prog = ProgramFile(file_name=file_name, file_path=file_path, section=section)
+    direction_obj = Direction[direction]
+    attach_obj = AttachType[attach_type]
     interfaces = Interfaces(iface)
     target_features = eBPF_program(file=prog)
     #storage= File({"path": "tmacp/fcd/a", "name": "allow.o"})
