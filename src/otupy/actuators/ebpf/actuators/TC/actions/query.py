@@ -116,10 +116,10 @@ def query_tc(cmd):
                         logger.warning(f"Map '{name}' defined in DB but not found in kernel.")
             # 3. Build ProgramStatus for each DB row
             prog_status.append(ProgramStatus(
-                Program=ProgramFile(file_path=f_path, file_name=f_name, section=sect),
-                Direction=Direction[d_rect],
+                program=ProgramFile(file_path=f_path, file_name=f_name, section=sect),
+                direction=Direction[d_rect],
                 hook_point=AttachType[a_type],
-                Interfaces=Interfaces(iface),
+                interfaces=Interfaces(iface),
                 maps=ArrayOf(MapeBPF)([m for m in found_maps if m.name in all_required_names]) if arguments.get("maps_required") else ArrayOf(MapeBPF)()
             ))
         res_data = QueryResults(

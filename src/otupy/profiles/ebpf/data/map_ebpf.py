@@ -7,18 +7,18 @@ class MapeBPF(Record):
     OpenC2-compliant record for an eBPF map.
     """
 
-    Name: str
-    Id: str
+    name: str
+    id: str
 
-    def __init__(self, Name: str, Id: str):
+    def __init__(self, name: str, id: str):
         super().__init__()
-        self.Name = Name
-        self.Id = Id
+        self.name = name
+        self.id = id
         self.validate_fields()
 
     def validate_fields(self):
-        if not isinstance(self.Name, str):
+        if not isinstance(self.name, str):
             raise TypeError("Map.Name must be str")
 
-        if not isinstance(self.Id, str):
+        if not isinstance(self.id, str):
             raise TypeError("Map.Id must be str")

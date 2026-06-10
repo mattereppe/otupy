@@ -15,17 +15,17 @@ class ProgramStatus(Record):
     Serialization/deserialization fully inherited from Record.
     """
 
-    Program: ProgramFile
-    Direction: DirectionType
+    program: ProgramFile
+    direction: DirectionType
     hook_point: AttachType
-    Interfaces: InterfacesType
+    interfaces: InterfacesType
     maps: ArrayOf(MapeBPF) # type: ignore[reportInvalidTypeForm]
 
-    def __init__(self, Program=None, Direction=None, hook_point=None,
-                 Interfaces=None, maps=None):
+    def __init__(self, program=None, direction=None, hook_point=None,
+                 interfaces=None, maps=None):
         super().__init__()
-        self.Program = Program
-        self.Direction = Direction
+        self.program = program
+        self.direction = direction
         self.hook_point = hook_point
-        self.Interfaces = Interfaces
+        self.interfaces = interfaces
         self.maps = maps if maps is not None else ArrayOf(MapeBPF)()
