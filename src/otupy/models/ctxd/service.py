@@ -101,6 +101,24 @@ class SId(Record):
 							namespace=sid_list[3] if sid_list[3] != 'None' else None,
 						  	name=sid_list[4] if sid_list[4] != 'None' else None, 
 							version=sid_list[5] if sid_list[5] != 'None' else None)
+	
+	def match(self, pattern):
+		""" Match a SId against pattern
+
+			Use a subset of SId fields to select sids. Fields that are equal to None are 
+			treated as wildcards, fields with a value must be equal.
+
+			@:param pattern: A SId with values to be looked for.
+			@:return: True if matches, False otherwise.
+		"""
+		if pattern.type == None or ( pattern.type == self.type ):
+			if pattern.subtype == None or ( pattern.subtype == self.subtype):
+				if pattern.namespace == None or pattern.namespace == self.namespace:
+					if pattern.domain == None or pattern.domain == self.domain:
+						if pattern.name == None or ( pattern.name == self.name ):
+							if pattern.version == None or (pattern.name == self.name):
+								return True
+		return False
 
 	def __eq__(self, other):
 		""" Compare two sids for equality """

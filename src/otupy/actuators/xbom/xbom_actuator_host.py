@@ -302,7 +302,7 @@ class XBOMHostActuator(XBOMActuator):
 								inode=pythonos.stat(ns['path']).st_ino
 								self.kube_pods[nsmap[inode]]=pod_sid
 							except Exception as e:
-								logger.error("Kubernetes pod detected, but unable to locate namespace path: %s", e)
+								logger.error("Kubernetes pod detected: %s, but unable to locate namespace path: %s", pod_name, e)
 
 		if netns_name in self.kube_pods:
 			return self.kube_pods[netns_name]
@@ -481,7 +481,6 @@ class XBOMHostActuator(XBOMActuator):
 
 			This includes meta-networks like veth links.
 		"""
-		veths = []
 		tuns = {}
 		tuns_servers = {}
 		for ns in self._namespaces.keys():
@@ -513,63 +512,17 @@ class XBOMHostActuator(XBOMActuator):
 								else: # Same namespace
 									ns2=ns
 								peer2=(link.get_attrs('IFLA_LINK')[0], self._namespaces[ns2]['name'])
-								net_id="if"+str(peer1[0])+'.'+str(peer1[1])+"+"+"if"+str(peer2[0])+"."+str(peer2[1])
-								if [(peer1, peer2)] not in veths and [(peer2, peer1)] not in veths:
-									veths.append( [(peer1, peer2)] )
-									peer1_service_sid = self._namespaces[ns]['service_sid']
-									peer2_service_sid = self._namespaces[ns2]['service_sid']
-									description="Veth link between " + peer1_service_sid.name + " and " + peer2_service_sid.name
-									# Default: try with peer1
-									net_name = self._create_net_name(netns=self._namespaces[ns]['name'], if_idx=peer1[0])
-#									if net_name is None: # If peer1 has not got a valid ip address, try with ip2 (may be None as well)
-#										net_name = self._create_net_name(netns=self._namespaces[ns2]['name'], if_idx=peer2[0])
-#										if net_name is None:
-#											net_name=net_id
-#
-									if ns == ns2:
-										use_namespace=ns # Veth is fully contained in a specific namespace
-									else:
-										use_namespace=None # Veth across multiple namespaces
-								
-									for addr in self._get_net_addrs(netns=self._namespaces[ns2]['name'], if_idx=peer2[0]):
-										ipnetaddrs.append(addr)
-								
-									# Create services for the virtual network (even if it is only a link)
-									net_service=self._add_net_service(service_name=Name(net_id), 
-#																					net_name=net_name,
-																					domain=self.domain, # Veth are always internal networks
-																					net_name=net_id,
-																					description=description,
-																					ipnetaddrs=ipnetaddrs, 
-																					id=net_id, 
-																					nettype=VEthNetwork,
-																					peers=ArrayOf(Array)([Array(peer1), Array(peer2)]))
+								peer1_service_sid = self._namespaces[ns]['service_sid']
+								peer2_service_sid = self._namespaces[ns2]['service_sid']
+
+								# Save namespace service name in the connected networks (used later to create links)
+								self._namespaces[ns]['networks'].append({peer1[0]: self._namespaces[ns2]['service_sid']})
 
 
-									# Save network service name in the connected namespaces (used later to create links)
-									self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
-									self._namespaces[ns2]['networks'].append({peer2[0]: net_service.sid})
-
-#									# Create links between containers and the network
-#									peer = Peer(service_name=net_service.name, role=PeerRole.forwarding, consumer=None)
-#									self.links.append( Link(name=ns_service_name, description="Connection to veth link",
-#												link_type=LinkType.packet_flow,
-#												role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
-#									self.links.append( Link(name=ns2_service_name, description="Connection to veth link",
-#												link_type=LinkType.packet_flow,
-#												role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
-#								else:
-#									try:
-#										peer = self.get_services(Name(net_id))[0] # There must be such service!
-#									except:
-#										peer = self.get_services(Name(peer2+" <-> "+peer1))[0]
-#
 							case 'macvlan':
 								if attr.get_attrs('IFLA_INFO_DATA')[0].get_attrs('IFLA_MACVLAN_MODE')[0] == 'bridge':
 									link_idx2 = link.get_attrs('IFLA_LINK')[0]
 									ns2=self._namespaces[ns]['netnsmap'][link.get_attrs('IFLA_LINK_NETNSID')[0]]
-#									net_id=self._get_namespace_ifaces(ns2)[link.get_attrs('IFLA_LINK')[0]]+"@"+str(ns2)
-#net_id="ipnet:"+self._namespaces[ns2]['ifaces'][link.get_attrs('IFLA_LINK')[0]]+"@"+self._namespaces[ns2]['name']
 									net_id="if"+str(peer1[0])+'.'+str(peer1[1])
 									try:
 										net_service=self.get_services(name=Name(net_id), filter=Network)[0]
@@ -1003,19 +956,24 @@ class XBOMHostActuator(XBOMActuator):
 		for ns in self._namespaces:
 			for net in self._namespaces[ns]['networks']:
 				for idx, net_service_sid in net.items():
-#					peer = Peer(service_name=Name(net_service_sid.name), sid=net_service_sid, role=PeerRole.forwarding, consumer=None)
-					peer = Peer(service_name=Name(self._namespaces[ns]['service_sid'].name), sid=self._namespaces[ns]['service_sid'], 
-										role=PeerRole.endpoint, consumer=self.get_consumer(sid=self._namespaces[ns]['service_sid']))
-#					self.links.append( Link(name=Name(self._namespaces[ns]['service_sid'].name),
-#									sid=self._namespaces[ns]['service_sid'], 
-#									description="Connection to network",
-#									link_type=LinkType.packet_flow,
-#									role=PeerRole.endpoint, peers=ArrayOf(Peer)([peer])))
-					self.links.append( Link(name=Name(net_service_sid.name),
-									sid=net_service_sid,
-									description="Connection to network",
-									link_type=LinkType.packet_flow,
-									role=PeerRole.forwarding, peers=ArrayOf(Peer)([peer])))
+					# Check whether the link was already created by the peer veth
+					# Service_sid and peer_sid must be swapped to match the opposite veth
+					if len(self.get_links_by_sid(peer_sid=net_service_sid, 
+													service_sid=self._namespaces[ns]['service_sid'],
+													filter=LinkType.packet_flow) ) == 0:
+						peer = Peer(service_name=Name(self._namespaces[ns]['service_sid'].name), sid=self._namespaces[ns]['service_sid'], 
+											role=PeerRole.endpoint, consumer=self.get_consumer(sid=self._namespaces[ns]['service_sid']))
+						if net_service_sid.type == ServiceType.get_type_name(Network):
+							role=PeerRole.forwarding
+							description="Connection to network"
+						else:
+							role=PeerRole.endpoint
+							description="Connection to environment"
+						self.links.append( Link(name=Name(net_service_sid.name),
+										sid=net_service_sid,
+										description=description,
+										link_type=LinkType.packet_flow,
+										role=role, peers=ArrayOf(Peer)([peer])))
 
 
 	def _discover_links_net_functions(self):
