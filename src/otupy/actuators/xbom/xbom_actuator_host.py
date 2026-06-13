@@ -127,6 +127,9 @@ class XBOMHostActuator(XBOMActuator):
 					ifaces_idx:			# Similar maps as before, but reversed (get idx from name)
 						<name>
 							<idx>
+					veths:				# Keep a list of veths rooted in this namespace (the peer could be here  too)
+						- <idx>:			# Iface index in this namespace
+							(iface_idx, ns_name)  # Pair of peer namespace name and local iface index 
 					networks:			# Keep a list of network service sids connected to this namespace,
 						- <idx>:			# organized according to the interface giving access.
 							<netsid>
@@ -150,6 +153,13 @@ class XBOMHostActuator(XBOMActuator):
 								<netname>
 							ifaces:
 								- <idx>
+							networks:			# Keep a list of network service sids connected to this bridge,
+								- <idx>:			# organized according to the interface giving access.
+									<netsid>
+							vlans:			# Keep a list of vlans hosted by this bridge
+								- vlan		# VLAN number
+							trunks:			# Unused: may be used in the future
+								- trunk	
 
 			An additional structure is kept to store network dependencies (e.g., virtual networks
 			hosted on other physical networks).
@@ -384,7 +394,7 @@ class XBOMHostActuator(XBOMActuator):
 		self._namespaces = {}
 		for ns in pyroute2.netns.listnetns()+[None]: # Last element is to discover the main network stack
 			self._namespaces[ns] = {'name': ns, 'netnsmap': {}, 'ifaces': {}, 'ifaces_idx': {}, 
-				'service_name': None, 'service_id': None, 'service': None, 'networks': [], 'router': {} , 'bridges': {} }
+				'service_name': None, 'service_id': None, 'service': None, 'veths': [], 'networks': [], 'router': {} , 'bridges': {} }
 			if ns is None:
 				self._namespaces[ns]['name']=str(self.platform.name)
 
@@ -517,6 +527,7 @@ class XBOMHostActuator(XBOMActuator):
 
 								# Save namespace service name in the connected networks (used later to create links)
 								self._namespaces[ns]['networks'].append({peer1[0]: self._namespaces[ns2]['service_sid']})
+								self._namespaces[ns]['veths'].append({peer1[0]: peer2})
 
 
 							case 'macvlan':
@@ -579,25 +590,6 @@ class XBOMHostActuator(XBOMActuator):
 								self._namespaces[ns]['bridges'][link_name]['ifaces']=[]
 								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 								
-#							case 'openvswitch':
-#								net_id="ovs:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-#								# OVS metanetworks are always "internal" to the ExecEnv, so set the domain name
-#								net_service=self._add_net_service(service_name=Name(net_id), 
-#																				net_name=self._namespaces[ns]['ifaces'][link_idx], 
-#																				domain=self.domain, 
-#																				namespace=ns, description="Bridged ovs network", 
-#																				ipnetaddrs=ipnetaddrs,  
-#																				id=net_id, 
-#																				nettype=EthernetNetwork) 
-#								# This is a virtual ethernet network with one ovs as subservice with the same name of the interface
-#								if link_name not in self._namespaces[ns]['ovs']:
-#									self._namespaces[ns]['ovs'][link_name] = {}
-#								self._namespaces[ns]['ovs'][link_name]['net']=net_service.sid
-#								# Do not add the bridge interface to the list of its interfaces, otherwise this will create a recursive link between the bridge network and the bridge
-##								self._namespaces[ns]['ovs'][link_name]['ifaces']=[link_idx]
-#								self._namespaces[ns]['ovs'][link_name]['ifaces']=[]
-#								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
-#								
 							case 'vxlan':
 								for a in attr.get_attrs('IFLA_INFO_DATA'):
 									# I did not check the presence of the following attributes. I prefer to get the error
@@ -607,7 +599,7 @@ class XBOMHostActuator(XBOMActuator):
 									port=a.get_attrs('IFLA_VXLAN_PORT')[0]
 								net_id="vxlan:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
 								net_service=self._add_net_service(service_name=Name(net_id), 
-																				net_name=str(vni), 
+																				net_name=link_name+":"+str(vni), 
 #													namespace=peer1[1],
 																				description="VXLAN interface "+link_name, 
 																				ipnetaddrs=ipnetaddrs, 
@@ -687,6 +679,9 @@ class XBOMHostActuator(XBOMActuator):
 	def _discover_routers(self, ns):
 		""" Discover routers
 			
+			Routers are associated to namespaces with the routing function enabled.
+			Discover routers and hosting links.
+			
 			@:param ns: Network namespace name
 		"""
 		ns_service_sid=self._namespaces[ns]['service_sid']
@@ -744,38 +739,13 @@ class XBOMHostActuator(XBOMActuator):
 			brid = brctl.stdout.decode().split()[1]
 			ifaces = brctl.stdout.decode().split()[10:]
 			netfun=NetworkFunction(name=br, id=brid, description="Linux bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
-			if 'ifaces' not in self._namespaces[ns]['bridges'][br]: # An interface should be already present, but just to be sure
-				self._namespaces[ns]['bridges'][br]['ifaces'] = []
-			for iface in ifaces:
-				# A bridged interface is no more available to the namespace; it is replaced by the bridge interface
-				# If there are other interfaces connected to the network of a bridged interface (veth), they must be now connected to the bridge network
-				self._namespaces[ns]['bridges'][br]['ifaces'].append(self._namespaces[ns]['ifaces_idx'][iface])
-				cur_idx=None
-				for net in self._namespaces[ns]['networks']: # net is the {if_idx, netsid}
-					for k,v in net.items(): # k=iface_idx; v=network sid
-						if k==self._namespaces[ns]['ifaces_idx'][iface]:
-							cur_idx=self._namespaces[ns]['networks'].index(net)
-					if cur_idx is not None:
-						break
-				cur=self._namespaces[ns]['networks'].pop(cur_idx)
-				for k, v in cur.items():
-					cur_iface_net=v
-				# Look for the removed network in the current and other namespaces
-				for ns2 in self._namespaces:
-					for net in self._namespaces[ns2]['networks']:
-						for k,v in net.items():
-							if v==cur_iface_net:
-								net[k]=self._namespaces[ns]['bridges'][br]['net'] 
-				port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface], iface=iface, mac=None, ips = None)
-				netfun.type.getObj()['ifaces'].append(port)
-
 			net_service = Service(domain=self.domain, namespace=ns, name=Name(br+"."+str(ns_service_sid)), 
 					sid=SId.create_from_service_type(netfun, domain=self.domain, namespace=ns),
 					type=ServiceType(netfun), owner=str(self.platform.sid))
 			self.services.append(net_service)
 			self.platform.subservices.append(net_service.sid)
 			self._namespaces[ns]['bridges'][br]['service_sid']=net_service.sid
-			
+			self._namespaces[ns]['bridges'][br]['networks'] = []
 
 			# Add this bridge as a subservice of its main network
 			br_net_service = self.get_services_by_sid(self._namespaces[ns]['bridges'][br]['net'])
@@ -786,6 +756,38 @@ class XBOMHostActuator(XBOMActuator):
 			self.links.append( Link(name=net_service.name, sid=net_service.sid, 
 						description="Bridge hosted in "+self._namespaces[ns]['name'],
 						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
+
+			if 'ifaces' not in self._namespaces[ns]['bridges'][br]: # An interface should be already present, but just to be sure
+				self._namespaces[ns]['bridges'][br]['ifaces'] = []
+			for iface in ifaces:
+				# A bridged interface is no more available to the namespace; it is replaced by the bridge interface
+				# If there are other interfaces connected to the network of a bridged interface (veth), they must be now connected to the bridge network
+				self._namespaces[ns]['bridges'][br]['ifaces'].append(self._namespaces[ns]['ifaces_idx'][iface])
+				# Move the peer network to the bridge
+				cur_idx = None
+				for net in self._namespaces[ns]['networks']:
+					for k,v in net.items():
+						if k == self._namespaces[ns]['ifaces_idx'][iface]:
+							cur_idx=self._namespaces[ns]['networks'].index(net)
+					if cur_idx is not None:
+						break
+				br_net=self._namespaces[ns]['networks'].pop(cur_idx)
+				self._namespaces[ns]['bridges'][br]['networks'].append(br_net)
+
+				# Update this network on the remote peer (see ovs for the description)
+				for veth in self._namespaces[ns]['veths']:
+					for idx, peer in veth.items():
+						if idx == self._namespaces[ns]['ifaces_idx'][iface]: 
+							for ns2 in self._namespaces:
+								if self._namespaces[ns2]['name'] == peer[1]:
+									for net in self._namespaces[ns2]['networks']:
+											for k, v in net.items():
+												if k == peer[0]:
+													net[k] = net_service.sid
+											
+
+				port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface], iface=iface, mac=None, ips = None)
+				netfun.type.getObj()['ifaces'].append(port)
 
 
 
@@ -844,59 +846,16 @@ class XBOMHostActuator(XBOMActuator):
 		# Print bridges, ports and interfaces, à la 'ovs-vsctl show'.
 		for br in idl.tables['Bridge'].rows.values():
 
+			# Add the network function for the bridge
 			netfun=NetworkFunction(name=br.name, id=br.uuid, description="OpenVSwitch bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
-			if 'ifaces' not in self._namespaces[ns]['bridges'][br.name]: # An interface should be already present, but just to be sure
-				self._namespaces[ns]['bridges'][br.name]['ifaces'] = []
-			for ovsport in br.ports: # OVS uses ports as a mean to bond interfaces. The CTXD model only works on interfaces
-				for iface in ovsport.interfaces:
-					match iface.type:
-						case 'internal':
-							# Internal interfaces are used to access the bridge network, because the bridged interfaces are no more available to processes.
-							# Internal interfaces are previously connected to the bridge network
-							pass 
-						case '':
-							# A bridged interface is no more available to the namespace; it is replaced by the bridge interface
-							# If there are other interfaces connected to the network of a bridged interface (veth), they must be now connected to the bridge network
-							self._namespaces[ns]['bridges'][br.name]['ifaces'].append(self._namespaces[ns]['ifaces_idx'][iface.name])
-							cur_idx=None
-							for net in self._namespaces[ns]['networks']:
-								for k,v in net.items():
-									if k==self._namespaces[ns]['ifaces_idx'][iface.name]:
-										cur_idx=self._namespaces[ns]['networks'].index(net)
-								if cur_idx is not None:
-									break # I found the network connected to the bridge iface
-							cur=self._namespaces[ns]['networks'].pop(cur_idx) # Remove the interface: no process can use it anymore
-							for k, v in cur.items():
-								cur_iface_net=v # This is the name (sid) of the network connected to the interface
-							# Look for the removed network in the current and other namespaces
-							# This part only makes sense for those interfaces connected to an internal network (e.g., veths)
-							# In many cases (external networks) there will not be any other host interface connected.
-							for ns2 in self._namespaces: # Now loop in the other namespaces, looking for all other interfaces connected to this network
-								for net in self._namespaces[ns2]['networks']:
-									for k,v in net.items():
-										if v==cur_iface_net:
-											net[k]=self._namespaces[ns]['bridges'][br.name]['net'] # The previous network is now replaced by the bridge network
-											# (we could have connected the old network to the bridge network, but this makes less sense)
-							# Mind this is the CTXD concept of port, not related to ovs ports!!!
-							if len( iface.mac ):
-								mac = iface.mac[0]
-							elif len(iface.mac_in_use):
-								mac = iface.mac_in_use[0]
-							else:
-							 	mac = None
-							port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface.name], iface=iface.name, mac=mac, ips = None)
-							netfun.type.getObj()['ifaces'].append(port)
-
-						case _:
-							logger.warn("Unhandled ovs interface %s", iface.type)
-
 			net_service = Service(domain=self.domain, namespace=ns, name=Name(br.name+"."+str(ns_service_sid)), 
 					sid=SId.create_from_service_type(netfun, domain=self.domain, namespace=ns),
-					type=ServiceType(netfun), owner=str(self.platform.sid))
+					type=ServiceType(netfun), subservices=ArrayOf(SId)(), owner=str(self.platform.sid))
 			self.services.append(net_service)
 			self.platform.subservices.append(net_service.sid)
 			self._namespaces[ns]['bridges'][br.name]['service_sid']=net_service.sid
-				
+			self._namespaces[ns]['bridges'][br.name]['networks'] = []
+			self._namespaces[ns]['bridges'][br.name]['vlans'] = []
 
 			# Add this bridge as a subservice of its main network
 			br_net_service = self.get_services_by_sid(self._namespaces[ns]['bridges'][br.name]['net'])
@@ -909,6 +868,139 @@ class XBOMHostActuator(XBOMActuator):
 						description="OpenVSwitch hosted in "+self._namespaces[ns]['name'],
 						link_type=LinkType.hosting, role=PeerRole.guest, peers=ArrayOf(Peer)([peer])))
 
+
+			# Add interfaces to the bridge
+			if 'ifaces' not in self._namespaces[ns]['bridges'][br.name]: # An interface should be already present, but just to be sure
+				self._namespaces[ns]['bridges'][br.name]['ifaces'] = []
+			for ovsport in br.ports: # OVS uses ports as a mean to bond interfaces. The CTXD model only works on interfaces
+				# OVS manages VLANs. A VLAN is substantially a partion of the bridge, namely a bridge hosted in the bridge.
+				# We create a new bridge, if it does not exist. For managing the interface, we select either the main bridge (no vlan)
+				# or the vlan bridge (if vlan is set)
+				# The following code only works for a single vlan tag assigned to a port
+				if len(ovsport.tag) > 0:
+					for vlan in ovsport.tag:
+						# Generate a new sid from the parent bridge
+						vlan_sid=copy.deepcopy(net_service.sid)
+						br_name = net_service.sid.name+":"+str(vlan)
+						vlan_sid.name = br_name
+						# Check if this vlan bridge was previously created
+						if len(self.get_services_by_sid(sid=vlan_sid)) == 0:
+							netfun_vlan=NetworkFunction(name=br_name, id=br.uuid,
+									description="VLAN in bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
+							net_service_vlan = Service(domain=self.domain, namespace=ns, name=Name(br_name+"."+str(ns_service_sid)), 
+									sid=vlan_sid,
+									type=ServiceType(netfun_vlan), owner=str(br.name))
+							self.services.append(net_service_vlan)
+							net_service.subservices.append(net_service_vlan.sid)
+
+							self._namespaces[ns]['bridges'][br_name] = {}
+							self._namespaces[ns]['bridges'][br_name]['service_sid']=net_service_vlan.sid
+							self._namespaces[ns]['bridges'][br_name]['ifaces'] = []
+							self._namespaces[ns]['bridges'][br_name]['networks'] = []
+							self._namespaces[ns]['bridges'][br_name]['vlans'] = []
+							self._namespaces[ns]['bridges'][br_name]['vlans'].append(vlan) 
+				else:
+					br_name = br.name
+					
+				for iface in ovsport.interfaces:
+					match iface.type:
+						case 'internal':
+							# Internal interfaces are used to access the bridge network, because the bridged interfaces are no more available to processes.
+							# Internal interfaces are previously connected to the bridge network
+							pass 
+						case '':
+							self._namespaces[ns]['bridges'][br_name]['ifaces'].append(self._namespaces[ns]['ifaces_idx'][iface.name])
+							# Furthermore, we need to put this interface under the bridge and remove from the network from the namespace
+							cur_idx = None
+							for net in self._namespaces[ns]['networks']:
+								for k,v in net.items():
+									if k == self._namespaces[ns]['ifaces_idx'][iface.name]:
+										cur_idx=self._namespaces[ns]['networks'].index(net)
+									if cur_idx is not None:
+										break
+							br_net=self._namespaces[ns]['networks'].pop(cur_idx)
+							self._namespaces[ns]['bridges'][br_name]['networks'].append(br_net)
+							# A bridged interface is no more available to the namespace; it is replaced by the bridge interface
+							# If there are other interfaces connected to the network of a bridged interface (veth), they must be now connected to the bridge network
+							#
+							#   br_name              ext network (Network): nothing to do: bridge will be connected to network
+							# ns  o----------------o namespace (ExecEnv): must update the remote peer that a bridge is connected on this side
+							#                        bridge (NetFun): same as above (the remote peer already updated this ns previously) 
+							# Here the purpose is to inform the remote peer that this interface is connected to a bridge, not the namespace 
+							# as previously detected by the veth interface (discover_networks)
+							for veth in self._namespaces[ns]['veths']:
+								for idx, peer in veth.items():
+									if idx == self._namespaces[ns]['ifaces_idx'][iface.name]: 
+										for ns2 in self._namespaces:
+											found = False
+											if self._namespaces[ns2]['name'] == peer[1]: # namespace name
+												for net in self._namespaces[ns2]['networks']:
+														for k, v in net.items():
+															if k == peer[0]: # iface idx
+																net[k] = self._namespaces[ns]['bridges'][br_name]['service_sid']
+																found = True
+											# If the interface is not in the namespace, it might be in one bridge
+											for ns2_bridge_name, ns_bridge in self._namespaces[ns2]['bridges'].items():
+												if not found and 'networks' in ns_bridge:
+													for net in ns_bridge['networks']:
+														for k,v in net.items():
+															if k == peer[0]:
+																net[k] = self._namespaces[ns]['bridges'][br_name]['service_sid']
+																found = True
+														
+
+							# Mind this is the CTXD concept of port, not related to ovs ports!!!
+							if len( iface.mac ):
+								mac = iface.mac[0]
+							elif len(iface.mac_in_use):
+								mac = iface.mac_in_use[0]
+							else:
+							 	mac = None
+							port = NetworkInterface(id=self._namespaces[ns]['ifaces_idx'][iface.name], iface=iface.name, mac=mac, ips = None)
+							netfun.type.getObj()['ifaces'].append(port)
+
+						case 'patch':
+							peer = iface.options.get('peer')
+							if peer is None:
+								raise ValueException("No peer value for patch port "+br.port.name+" in ovs bridge "+br_name)
+							# Add this interface to the switch. Patches do not have idx, so we'll add the name and we hope
+							# this will not break the rest of the code
+							self._namespaces[ns]['bridges'][br_name]['ifaces'].append(iface.name)
+							
+							# Try to locate the peer bridge.
+							for br2_name in self._namespaces[ns]['bridges']:
+								if peer in self._namespaces[ns]['bridges'][br2_name]['ifaces']: 
+									# Add a local network pointing to the remote peer
+									self._namespaces[ns]['bridges'][br_name]['networks'].append({iface.name: self._namespaces[ns]['bridges'][br2_name]['service_sid']})
+									# Add a remote network for the peer to the local sid
+									self._namespaces[ns]['bridges'][br2_name]['networks'].append({peer: self._namespaces[ns]['bridges'][br_name]['service_sid']})
+								# else: skip, the other peer will do the work for us, since now we are discoverable
+									
+
+						case 'vxlan':
+							print("+++++++++++++ ", iface)
+							# No VNI. It seems ovs creates a generic vxlan where all vnis are permitted. Specific vnis could be created as sub-bridges (similar to vlans)
+							fw_iface_idx = self._namespaces[ns]['ifaces_idx'][iface.status.get('tunnel_egress_iface')]
+							port=iface.options.get('dst_port', 8472) # https://docs.openvswitch.org/en/latest/faq/vxlan/
+							net_id="vxlan:"+iface.name+"."+br_name
+							net_service=self._add_net_service(service_name=Name(net_id), 
+																			net_name=iface.name,
+																			description="VXLAN interface "+iface.name,
+																			namespace=self.host,
+#																			ipnetaddrs=ipnetaddrs, 
+																			id=net_id, 
+																			nettype=VXLANNetwork,
+#																			vni=vni,
+																			port=port)
+							self._namespaces[ns]['bridges'][br_name]['networks'].append({iface.name: net_service.sid})
+							if (fw_iface_idx, ns) not in self._net_deps:
+								self._net_deps[(fw_iface_idx, ns)] = []
+							self._net_deps[(fw_iface_idx, ns)].append(net_service.sid)
+						
+						case _:
+							logger.warn("Unhandled ovs interface %s", iface.type)
+
+				
 
 	def _discover_link_host(self):
 		""" Discover host hosting this ExecEnv
@@ -1016,10 +1108,13 @@ class XBOMHostActuator(XBOMActuator):
 								sid=self._namespaces[ns]['bridges'][br]['service_sid'],
 							  	role=PeerRole.forwarding, consumer=None)
 			for iface_idx in self._namespaces[ns]['bridges'][br]['ifaces']:
-				for net in self._namespaces[ns]['networks']:
+				for net in self._namespaces[ns]['bridges'][br]['networks']:
 					for idx, net_service_sid in net.items():
-						if iface_idx == idx:
-							self.links.append( Link(name=Name(net_service_sid.name), 
+						if iface_idx == idx and \
+							len(self.get_links_by_sid(peer_sid=net_service_sid, 
+										service_sid=self._namespaces[ns]['bridges'][br]['service_sid'],
+										filter=LinkType.packet_flow) ) == 0:
+								self.links.append( Link(name=Name(net_service_sid.name), 
 										sid=net_service_sid, 
 										description="Connection to bridge",
 										link_type=LinkType.packet_flow,
