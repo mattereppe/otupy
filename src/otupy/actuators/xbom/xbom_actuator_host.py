@@ -64,6 +64,7 @@ logger = logging.getLogger(__name__)
 KUBELET_CONFIG_FILE='/var/lib/kubelet/config.yaml'
 DEFAULT_OVS_HOST='127.0.0.1'
 DEFAULT_OVS_PORT=6640
+DEFAULT_OVS_MASTER='ovs-system'
 
 @actuator_implementation("xbom-host")
 class XBOMHostActuator(XBOMActuator):
@@ -570,8 +571,6 @@ class XBOMHostActuator(XBOMActuator):
 								# Workaround: ovs-system is the kernel Open vSwitch datapath device. 
 								# It exists so the Linux kernel can represent the OVS forwarding datapath, 
 								# but it is not an OVS bridge, not an OVS port,
-								if link_name == "ovs-system":
-									continue
 								net_id="brnet:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
 								# Bridge metanetworks are always "internal" to the ExecEnv, so set the domain name
 								net_service=self._add_net_service(service_name=Name(net_id), 
@@ -594,8 +593,18 @@ class XBOMHostActuator(XBOMActuator):
 								for a in attr.get_attrs('IFLA_INFO_DATA'):
 									# I did not check the presence of the following attributes. I prefer to get the error
 									# and to manage them when I know how to do that
+									print("vxlan: ", link)
 									vni = a.get_attrs('IFLA_VXLAN_ID')[0]
-									fw_iface_idx = a.get_attrs('IFLA_VXLAN_LINK')[0] if a.get_attrs('IFLA_VXLAN_LINK') else link_idx
+									if  a.get_attrs('IFLA_VXLAN_LINK'):
+										fw_iface_idx = a.get_attrs('IFLA_VXLAN_LINK')[0] 
+									elif link.get_attrs('IFLA_MASTER'):
+										print("master: ", link.get_attrs('IFLA_MASTER'))
+										print("master len: ", len(link.get_attrs('IFLA_MASTER')))
+										fw_iface_idx = link.get_attrs('IFLA_MASTER')[0]
+										print("Chiara pompinara")
+									else:
+										fw_iface_idx = None
+										logger.warn("Unable to retrieve master interface for %s", link_name)
 									port=a.get_attrs('IFLA_VXLAN_PORT')[0]
 								net_id="vxlan:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
 								net_service=self._add_net_service(service_name=Name(net_id), 
@@ -608,9 +617,11 @@ class XBOMHostActuator(XBOMActuator):
 																				vni=vni,
 																				port=port)
 								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
-								if (fw_iface_idx, ns) not in self._net_deps:
-									self._net_deps[(fw_iface_idx, ns)] = []
-								self._net_deps[(fw_iface_idx, ns)].append(net_service.sid)
+								if fw_iface_idx:
+									if	(fw_iface_idx, ns) not in self._net_deps:
+										print("Adding: ", fw_iface_idx)
+										self._net_deps[(fw_iface_idx, ns)] = []
+									self._net_deps[(fw_iface_idx, ns)].append(net_service.sid)
 
 							case _:
 								logger.warn("Unable to manage interface %s of type: %s", link_name, link_type)
@@ -843,6 +854,16 @@ class XBOMHostActuator(XBOMActuator):
 			poller.block()
 			idl.run()
 
+		# Workaround: add an ovs-system bridge that is representative of the kernel datapath. 
+		# All ovs bridges will be partitions of this master bridge
+		netfun=NetworkFunction(name=DEFAULT_OVS_MASTER, description="OpenVSwitch master bridge", type=NetworkFunctionType( Bridge({'ifaces': ArrayOf(NetworkInterface)()}) ))
+		master_ovs = Service(domain=self.domain, namespace=ns, name=Name(DEFAULT_OVS_MASTER+"."+str(ns_service_sid)), 
+					sid=SId.create_from_service_type(netfun, domain=self.domain, namespace=ns),
+					type=ServiceType(netfun), subservices=ArrayOf(SId)(), owner=str(self.platform.sid))
+		self.services.append(master_ovs)
+		self.platform.subservices.append(master_ovs.sid)
+		self._namespaces[ns]['bridges'][DEFAULT_OVS_MASTER]['service_sid']=master_ovs.sid
+
 		# Print bridges, ports and interfaces, à la 'ovs-vsctl show'.
 		for br in idl.tables['Bridge'].rows.values():
 
@@ -853,6 +874,7 @@ class XBOMHostActuator(XBOMActuator):
 					type=ServiceType(netfun), subservices=ArrayOf(SId)(), owner=str(self.platform.sid))
 			self.services.append(net_service)
 			self.platform.subservices.append(net_service.sid)
+			master_ovs.subservices.append(net_service.sid)
 			self._namespaces[ns]['bridges'][br.name]['service_sid']=net_service.sid
 			self._namespaces[ns]['bridges'][br.name]['networks'] = []
 			self._namespaces[ns]['bridges'][br.name]['vlans'] = []
@@ -978,7 +1000,6 @@ class XBOMHostActuator(XBOMActuator):
 									
 
 						case 'vxlan':
-							print("+++++++++++++ ", iface)
 							# No VNI. It seems ovs creates a generic vxlan where all vnis are permitted. Specific vnis could be created as sub-bridges (similar to vlans)
 							fw_iface_idx = self._namespaces[ns]['ifaces_idx'][iface.status.get('tunnel_egress_iface')]
 							port=iface.options.get('dst_port', 8472) # https://docs.openvswitch.org/en/latest/faq/vxlan/
@@ -986,7 +1007,8 @@ class XBOMHostActuator(XBOMActuator):
 							net_service=self._add_net_service(service_name=Name(net_id), 
 																			net_name=iface.name,
 																			description="VXLAN interface "+iface.name,
-																			namespace=self.host,
+																			namespace=ns,
+																			domain=self.domain,
 #																			ipnetaddrs=ipnetaddrs, 
 																			id=net_id, 
 																			nettype=VXLANNetwork,
@@ -1032,10 +1054,14 @@ class XBOMHostActuator(XBOMActuator):
 	def _discover_links_networks_hosted(self):
 		""" Discover links between virtual networks hosted on physical interfaces """
 		for k, v in self._net_deps.items():
+			print("lookng at: ", k)
+			print("nets: ", v)
 			for net in self._namespaces[k[1]]['networks']:
+				print("net: ", net)
 				if k[0] in net:	
 					peer=Peer(service_name=net[k[0]].name, sid=net[k[0]], role=PeerRole.host, consumer=None)
 					for sid in v:
+						print("Adding net: ", str(sid))
 						self.links.append( Link(name=sid.name, 
 									sid=sid,
 									description="Virtual network "+sid.name+ " hosted on "+str(sid),
@@ -1104,9 +1130,13 @@ class XBOMHostActuator(XBOMActuator):
 			@:param ns: Network namespace name
 		"""
 		for br in self._namespaces[ns]['bridges']:
+			print("Miola tettona: ", br)
+			print("===================")
+			print(self._namespaces[ns]['bridges'][br])
 			peer = Peer(service_name=Name(self._namespaces[ns]['bridges'][br]['service_sid'].name),
 								sid=self._namespaces[ns]['bridges'][br]['service_sid'],
 							  	role=PeerRole.forwarding, consumer=None)
+			print("Chiara pompinara")
 			for iface_idx in self._namespaces[ns]['bridges'][br]['ifaces']:
 				for net in self._namespaces[ns]['bridges'][br]['networks']:
 					for idx, net_service_sid in net.items():
