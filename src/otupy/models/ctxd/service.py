@@ -133,6 +133,9 @@ class SId(Record):
 		""" Return the SId as simple string according to the initial scheme """
 		return f"{str(self.type)}:{str(self.subtype)}/{str(self.domain)}/{str(self.namespace)}/{str(self.name)}@{str(self.version)}"
 
+	def __repr__(self):
+		return self.__str__()
+
 
 class Service(Record):
 	""" Service components

@@ -49,8 +49,15 @@ import datetime
 import grpc
 import ovs.db.idl
 import ovs.dirs
+import libvirt
+import xml.etree.ElementTree as ET
+import openstack
+
+
 
 from containerd.services.containers.v1 import containers_pb2_grpc, containers_pb2
+from configparser import ConfigParser
+from pathlib import Path
 
 from otupy import Array, ArrayOf, actuator_implementation, Hostname, MACAddr
 
@@ -65,6 +72,9 @@ KUBELET_CONFIG_FILE='/var/lib/kubelet/config.yaml'
 DEFAULT_OVS_HOST='127.0.0.1'
 DEFAULT_OVS_PORT=6640
 DEFAULT_OVS_MASTER='ovs-system'
+DEFAULT_QEMU_URI='qemu:///system'
+DEFAULT_OS_NOVAPATH='/etc/nova/nova.conf'
+OS_NOVA_AUTH_SECTION='keystone_authtoken'
 
 @actuator_implementation("xbom-host")
 class XBOMHostActuator(XBOMActuator):
@@ -96,6 +106,8 @@ class XBOMHostActuator(XBOMActuator):
 		self.host = kwargs.get('host')
 		self.brctl_exe = kwargs.get('brctl_exe', '/sbin/brctl')
 		self.dpkg_exe = kwargs.get('dpkg_exe', '/usr/bin/dpkg')
+		self.qemu_uri = kwargs.get('qemu_uri', DEFAULT_QEMU_URI)
+		self.os_nova_path = kwargs.get('os_nova_path', DEFAULT_OS_NOVAPATH)
 
 		# Ensure the platform service is always available
 		self.services = ArrayOf(Service)()
@@ -134,6 +146,8 @@ class XBOMHostActuator(XBOMActuator):
 					networks:			# Keep a list of network service sids connected to this namespace,
 						- <idx>:			# organized according to the interface giving access.
 							<netsid>
+					vms:					# Keep a list of vms (OpenStack for now) using a given tap interface
+						<idx>: <vmsid> # The association of each iface index to the corresponding sid of the vm
 					service_name:		# The service name of the service associated to this namespace. It might
 						<name>			# be external (e.g., in case of Kubernetes pods).
 					service_sid			# The service sid associated to this namespace.
@@ -169,18 +183,27 @@ class XBOMHostActuator(XBOMActuator):
 				<idx, ns>:				# Interfaces index and namespace of the hosting network
 					- <netsid>			# Network service sid
 											# (assuming the corresponding service might have not been created yet)
+
+			The following structure is used to associate openstack vms to their tap interfaces:
+			(this could be discovered at the same time as networks, but it would not be efficient)
+
+			self._os_vms:
+				<iface>: <vmsid>		# Name of the interface -> vm sid
 		"""
 
 		# Retrieve the association between pods and namespaces from scratch
 		self.kube_pods=None
 		self.domain=None
 		self._net_deps={}
+		self._os_vms={}
 		# We discover again the platform at each run because packages might have changed
 		logger.debug("Discovering services...")
 		logger.debug("Discovering platform...")
 		self._discover_platform()
 		logger.debug("Discovering namespaces...")
 		self._discover_network_namespaces()
+		logger.debug("Discovering OpenStack vms...")
+		self._discover_os_vms()
 		logger.debug("Discovering networks...")
 		self._discover_networks()
 		logger.debug("Discovering network functions...")
@@ -241,9 +264,9 @@ class XBOMHostActuator(XBOMActuator):
 		if kube_service_sid is not None:
 			return kube_service_sid, None
 
-		os_service_sid = self._get_namespace_service_openstack(netns)
-		if os_service_sid is not None:
-			return os_service_sid, None
+#		os_service_sid = self._get_namespace_service_openstack(netns)
+#		if os_service_sid is not None:
+#			return os_service_sid, None
 
 		netfun = self._get_namespace_execenv(netns)
 
@@ -337,9 +360,80 @@ class XBOMHostActuator(XBOMActuator):
 		return suffix
 
 
-	def _get_namespace_service_openstack(self, netns):
+	def _discover_os_vms(self):
 		""" Infer the OpenStack network function name based on container name """
-		pass
+
+		if self.qemu_uri is None:
+			return 
+
+		conn = libvirt.open(self.qemu_uri)
+		if conn is None:
+			logger.warn("Unable to connecto to qemu at %s", self.qemu_uri)
+			return 
+
+		# We'll use this to minimise the queries for getting domain names
+		projects = {}
+
+		try:
+			for dom_id in conn.listDomainsID():
+				dom = conn.lookupByID(dom_id)
+				root = ET.fromstring(dom.XMLDesc())
+				# This is a weird workaround to find the name without knowing the namespace used 
+				# for nova. Parse the url from the instance element (not the name, because it gets
+				# confused with the libvirt name), and then do a second round to find the nova name.
+				inst = next(el for el in root.iter() if el.tag.endswith('instance'))
+				if inst.tag.startswith("{"):
+					ns_uri = inst.tag.split("}", 1)[0][1:]
+					nsmap={'nova': ns_uri}
+					name=root.find(".//nova:name", nsmap).text
+					project=root.find(".//nova:project", nsmap).text
+					project_id=root.find(".//nova:project", nsmap).attrib['uuid']
+					projects[project]=(project_id, "XXXXXXXDefault")
+					# Unfortunately, there is no way to get the domain from libvirt. It's quite common to 
+				 	# have a single domain, so let's skip it for now.
+					vmsid=SId(name=name, namespace=project, 
+							type=ServiceType.get_type_name(Host), subtype=HostType.get_type_name(VM) )
+					for iface in  root.findall('./devices/interface'):
+						self._os_vms[iface.find('target').attrib['dev']]=vmsid
+
+		finally:
+			conn.close()
+
+		# Retrieve nova service credential and use them to retrieve the domain names
+		logger.debug("Retrieving nova configuration...")
+		nova_conf = Path(self.os_nova_path)
+		if nova_conf.exists():
+			cfg = ConfigParser()
+			cfg.read(nova_conf)
+			if cfg.has_section(OS_NOVA_AUTH_SECTION):
+				auth = {
+					"auth_url": cfg.get(OS_NOVA_AUTH_SECTION, "www_authenticate_uri", fallback=None),
+					"username": cfg.get(OS_NOVA_AUTH_SECTION, "username", fallback=None),
+					"password": cfg.get(OS_NOVA_AUTH_SECTION, "password", fallback=None),
+					"project_name": cfg.get(OS_NOVA_AUTH_SECTION, "project_name", fallback="service"),
+					"user_domain_name": cfg.get(OS_NOVA_AUTH_SECTION, "user_domain_name", fallback="Default"),
+					"project_domain_name": cfg.get(OS_NOVA_AUTH_SECTION, "project_domain_name", fallback="Default"),
+					"identity_api_version": 3
+				}
+
+
+				try:
+					logger.debug("Connecting to OpenStack...")
+					conn = openstack.connection.Connection(**auth, verify=False)
+					for k,v in projects.items():
+						project = conn.identity.get_project(v[0])
+						domain = conn.identity.get_domain(project.domain_id)
+						projects[k]=(v[0], domain.name)
+
+				except Exception as e:
+					logger.warn("Unable to retrieve domain name, using: Default")
+					logger.warn("Reason: ", str(e))
+				finally:
+					conn.close()
+
+		for k, v in self._os_vms.items():
+			v.domain = projects[v.namespace][1]
+
 
 
 	def _get_namespace_routes(self, iprns):
@@ -556,15 +650,8 @@ class XBOMHostActuator(XBOMActuator):
 
 		
 							case 'tun':
-								net_id="tuntap:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
-								net_service=self._add_net_service(service_name=Name(net_id), 
-																				net_name=self._namespaces[ns]['ifaces'][link_idx], 
-																				domain=self.domain, 
-																				namespace=ns, description="Tun/Tap network", 
-																				ipnetaddrs=ipnetaddrs,  
-																				id=net_id, 
-																				nettype=TunTapNetwork) 
-								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
+								net_service_sid = self.get_tuntap_network(ns, link_idx, ipnetaddrs)
+								self._namespaces[ns]['networks'].append({peer1[0]: net_service_sid})
 								
 
 							case 'bridge' | 'openvswitch':
@@ -593,15 +680,11 @@ class XBOMHostActuator(XBOMActuator):
 								for a in attr.get_attrs('IFLA_INFO_DATA'):
 									# I did not check the presence of the following attributes. I prefer to get the error
 									# and to manage them when I know how to do that
-									print("vxlan: ", link)
 									vni = a.get_attrs('IFLA_VXLAN_ID')[0]
 									if  a.get_attrs('IFLA_VXLAN_LINK'):
 										fw_iface_idx = a.get_attrs('IFLA_VXLAN_LINK')[0] 
 									elif link.get_attrs('IFLA_MASTER'):
-										print("master: ", link.get_attrs('IFLA_MASTER'))
-										print("master len: ", len(link.get_attrs('IFLA_MASTER')))
 										fw_iface_idx = link.get_attrs('IFLA_MASTER')[0]
-										print("Chiara pompinara")
 									else:
 										fw_iface_idx = None
 										logger.warn("Unable to retrieve master interface for %s", link_name)
@@ -619,7 +702,6 @@ class XBOMHostActuator(XBOMActuator):
 								self._namespaces[ns]['networks'].append({peer1[0]: net_service.sid})
 								if fw_iface_idx:
 									if	(fw_iface_idx, ns) not in self._net_deps:
-										print("Adding: ", fw_iface_idx)
 										self._net_deps[(fw_iface_idx, ns)] = []
 									self._net_deps[(fw_iface_idx, ns)].append(net_service.sid)
 
@@ -642,6 +724,28 @@ class XBOMHostActuator(XBOMActuator):
 
 						for ip in ipnetaddrs:
 							net_service.type.getObj().type.getObj()['nets'].append(ip)
+
+	def get_tuntap_network(self, ns, link_idx, ipnetaddrs):
+		""" Infer the network/vms connected to a tuntap device """
+		# Look for known applications that use the tuntap device
+		net_service = self.get_tuntap_network_openstack(ns, link_idx) # Tap devices for openstack do not have IP addresses (assigned to VMs)
+		if net_service is not None:
+			return net_service
+
+		# Default: create a generic network. There should be something else at the application layer to match it
+		net_id="tuntap:"+self._namespaces[ns]['ifaces'][link_idx]+"."+self._namespaces[ns]['name']
+		net_service=self._add_net_service(service_name=Name(net_id), 
+														net_name=self._namespaces[ns]['ifaces'][link_idx], 
+														domain=self.domain, 
+														namespace=ns, description="Tun/Tap network", 
+														ipnetaddrs=ipnetaddrs,  
+														id=net_id, 
+														nettype=TunTapNetwork) 
+		return net_service.sid
+
+	def get_tuntap_network_openstack(self, ns, link_idx):
+		""" Look for os vm that uses this device """
+		return self._os_vms.get(self._namespaces[ns]['ifaces'][link_idx])
 
 
 
@@ -1054,14 +1158,10 @@ class XBOMHostActuator(XBOMActuator):
 	def _discover_links_networks_hosted(self):
 		""" Discover links between virtual networks hosted on physical interfaces """
 		for k, v in self._net_deps.items():
-			print("lookng at: ", k)
-			print("nets: ", v)
 			for net in self._namespaces[k[1]]['networks']:
-				print("net: ", net)
 				if k[0] in net:	
 					peer=Peer(service_name=net[k[0]].name, sid=net[k[0]], role=PeerRole.host, consumer=None)
 					for sid in v:
-						print("Adding net: ", str(sid))
 						self.links.append( Link(name=sid.name, 
 									sid=sid,
 									description="Virtual network "+sid.name+ " hosted on "+str(sid),
@@ -1130,13 +1230,9 @@ class XBOMHostActuator(XBOMActuator):
 			@:param ns: Network namespace name
 		"""
 		for br in self._namespaces[ns]['bridges']:
-			print("Miola tettona: ", br)
-			print("===================")
-			print(self._namespaces[ns]['bridges'][br])
 			peer = Peer(service_name=Name(self._namespaces[ns]['bridges'][br]['service_sid'].name),
 								sid=self._namespaces[ns]['bridges'][br]['service_sid'],
 							  	role=PeerRole.forwarding, consumer=None)
-			print("Chiara pompinara")
 			for iface_idx in self._namespaces[ns]['bridges'][br]['ifaces']:
 				for net in self._namespaces[ns]['bridges'][br]['networks']:
 					for idx, net_service_sid in net.items():

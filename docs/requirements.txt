@@ -35,3 +35,4 @@ azure-mgmt-resource==24.0.0
 sphinx-rtd-theme==3.0.2
 cyclonedx-bom==7.3.0
 ovs==3.7.1
+libvirt-python==12.4.0
