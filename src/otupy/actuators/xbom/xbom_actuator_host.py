@@ -366,7 +366,13 @@ class XBOMHostActuator(XBOMActuator):
 		if self.qemu_uri is None:
 			return 
 
-		conn = libvirt.open(self.qemu_uri)
+		try:
+			conn = libvirt.open(self.qemu_uri)
+		except Exception as e:
+			logger.warn("Unable to connecto to qemu at %s", self.qemu_uri)
+			logger.warn("Reason: %s", str(e))
+			return
+		
 		if conn is None:
 			logger.warn("Unable to connecto to qemu at %s", self.qemu_uri)
 			return 

@@ -15,10 +15,10 @@ xbom-host-server:
     discover: True
     host: '127.0.0.1'
     port: 6640
-  brctl_exe: '/sbin/brctl'
-  dpkg_exe: '/usr/bin/dpkg'
-  qemu_uri: 'qemu:///system'
-  os_nova_path: '/etc/nova/nova.conf'
+  brctl_exe: '/sbin/brctl' # brctl exe location
+  dpkg_exe: '/usr/bin/dpkg' # debian dpkg exe location
+  qemu_uri: 'qemu:///system' # This is the default uri for qemu. Set to None to disable libvirt usage
+  os_nova_path: '/etc/nova/nova.conf' # Default location of the nova config files to get credential. Set to None to disable nova.
   host:
     type: host
     subtype: server
