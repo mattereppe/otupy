@@ -1,17 +1,18 @@
-nfm-packetbeat-example:
+fclm-filebeat-example:
   actuator: "fclm-filebeat"
   profile: "x-fclm"
   owner: "acme.com"
   specifiers:
     domain: null
-    asset_id: "fclm-filebeat"
+    asset_id: "fclm-filebeat-example"
   probe:
-    executable: "/sbin/filebeat"
+    executable: "/usr/share/filebeat/bin/filebeat" # WARNING: /usr/bin/filebeat is a wrapper!!! DO NOT USE
     info_elements: null
     base_config: null
-    data_directory: "./filebeat-data"
-    log_directory: "./filebeat-log"
-    config_directory: "./filebeat-config"
+    path_home: "beat"
+    path_data: "filebeat-data"
+    path_logs: "filebeat-log"
+    path_config: "filebeat-config"
     capabilities:
       agent: "filebeat"
       imports_config:
@@ -135,6 +136,3 @@ nfm-packetbeat-example:
 #        filebeat: cloud.account.id
 #      cloud service:
 #        filebeat: cloud.service
-      
-      
-       

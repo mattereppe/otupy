@@ -203,13 +203,8 @@ class XBOMActuator:
 		"""
 		service_list= []
 		for s in self.services:
-			if sid.type == None or ( sid.type == s.sid.type ):
-				if sid.subtype == None or ( sid.subtype == s.sid.subtype):
-					if sid.namespace == None or sid.namespace == s.sid.namespace:
-						if sid.domain == None or sid.domain == s.sid.domain:
-							if sid.name == None or ( sid.name == s.sid.name ):
-								if sid.version == None or (sid.name == s.sid.name):
-									service_list.append(s)
+			if sid is None or s.sid.match(sid):
+				service_list.append(s)
 
 		return service_list
 
@@ -228,6 +223,33 @@ class XBOMActuator:
 			if filter == None or ( filter == l.link_type ):
 				if name == None or (l.name == name):
 					link_list.append(l)
+
+		return link_list
+		
+	def get_links_by_sid(self, service_sid: SId = None, peer_sid: SId = None, filter: LinkType = None) -> []:
+		""" Returns the list of current links
+
+			Returns the list of discovered links. Filters by service and peer SIds and type.
+			Links that match at least one peer are returned.
+			
+
+			:param service_sid: The sid of the service originating the link (all if not set).
+			:param peer_sid: The sid of one peer of the link (all if not set).
+			:param filter: The type of link (given by `LinkType`).
+			:return: A list of links that match the searching criteria.
+		"""
+		link_list=[]
+		for l in self.links:
+			if filter == None or ( filter == l.link_type ):
+				if service_sid is None or (l.sid.match(service_sid)):
+					if peer_sid is None: 
+						link_list.append(l)
+					else:
+						if l.peers is not None: # Is it possible to have None peers???
+							for peer in l.peers:
+								if peer.sid.match(peer_sid):
+									link_list.append(l)
+									break # To avoid returning multiple items in case more peers match
 
 		return link_list
 		
