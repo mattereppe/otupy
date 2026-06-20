@@ -27,7 +27,7 @@ class Application(CTXDObject):
 
 	def get_subtype(self):
 		""" Might be replace in the future with a subtype type """
-		return app_type
+		return self.app_type
 
 	def __repr__(self):
 		return (f"Application({super().__repr__()},"
