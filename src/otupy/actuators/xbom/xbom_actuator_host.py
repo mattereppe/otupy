@@ -49,7 +49,6 @@ import datetime
 import grpc
 import ovs.db.idl
 import ovs.dirs
-import libvirt
 import xml.etree.ElementTree as ET
 import openstack
 
@@ -64,9 +63,17 @@ from otupy import Array, ArrayOf, actuator_implementation, Hostname, MACAddr
 from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
 from otupy.models.ctxd import *
 
-
-
 logger = logging.getLogger(__name__)
+
+try:
+	import libvirt
+	QEMU_ENABLE = True
+except:
+	# Libvirt is only available for Linux; other host will not run OpenStack
+	logger.warn("libvirt module unavailable. Disabling discovery of OpenStack vms")
+	QEMU_ENABLE = False
+
+
 
 KUBELET_CONFIG_FILE='/var/lib/kubelet/config.yaml'
 DEFAULT_OVS_HOST='127.0.0.1'
@@ -106,7 +113,10 @@ class XBOMHostActuator(XBOMActuator):
 		self.host = kwargs.get('host')
 		self.brctl_exe = kwargs.get('brctl_exe', '/sbin/brctl')
 		self.dpkg_exe = kwargs.get('dpkg_exe', '/usr/bin/dpkg')
-		self.qemu_uri = kwargs.get('qemu_uri', DEFAULT_QEMU_URI)
+		if QEMU_ENABLE:
+			self.qemu_uri = kwargs.get('qemu_uri', DEFAULT_QEMU_URI)
+		else:
+			self.qemu_uri = None
 		self.os_nova_path = kwargs.get('os_nova_path', DEFAULT_OS_NOVAPATH)
 
 		# Ensure the platform service is always available

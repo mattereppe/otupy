@@ -98,6 +98,14 @@ class Xbom(ABC):
 		pass
 
 	@abstractmethod
+	def get_consumers(self) -> list:
+		""" Retrieve list of consumers
+
+			Returns the list of consumers serving peers in existing links.
+		"""
+		pass
+
+	@abstractmethod
 	def summary(self) -> str:
 		""" Get human readable summary of the bom content
 

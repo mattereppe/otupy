@@ -98,58 +98,46 @@ def discovery(config):
 		# Start recursive discovery
 		while len(consumers) > 0: 
 			consumer = consumers.pop()
+
 			if consumer in queried_consumers:
 				logger.info("Skipping %s: already queried", get_consumer_short(consumer))
+				continue
+
+			if consumer.get('profile', xbom.Profile.nsid) != xbom.Profile.nsid:
+				logger.info("Skipping %s: not an xbom profile", get_consumer_short(consumer))
+				continue
+
+			logger.info("Now discovering services and links from %s", get_consumer_short(consumer))
+		
+			res = discover(consumer, producer_name, 
+						config.get("xbom_format", xbom.XbomFormat.ctxd.name), 
+						config.get("xbom_encoding", xbom.XbomEncoding.json.name))
+			if res is not None:
+				boms = res['boms']
+				xbom_encoding = res['encoding']
+				xbom_format = res['format']
+				logger.info("Got %d %s bom(s) (encoded as %s)", len(boms), xbom_format, xbom_encoding)
+				logger.debug("%s", boms)
+
+				try:
+					for b in boms:
+						xbom_raw = Xbom.get(xbom_format)()
+						xbom_data = xbom_raw.deserialize(b, xbom_encoding)
+						xboms.append(xbom_raw)
+						logger.debug("Bom data:\n%s", xbom_raw.summary())
+						publish_data(config, b)
+				except Exception as e:
+					logger.error("Unable to retrieve consumers for external bom refs: %s", e)
+
+
+				if config['recursive']:
+					consumers += xbom_raw.get_consumers()
+
 			else:
-				logger.info("Now discovering services and links from %s", get_consumer_short(consumer))
-			
-				res = discover(consumer, producer_name, 
-							config.get("xbom_format", xbom.XbomFormat.ctxd.name), 
-							config.get("xbom_encoding", xbom.XbomEncoding.json.name))
-				if res is not None:
-					boms = res['boms']
-					xbom_encoding = res['encoding']
-					xbom_format = res['format']
-					logger.info("Got %d %s bom(s) (encoded as %s)", len(boms), xbom_format, xbom_encoding)
-					logger.debug("%s", boms)
+				logger.warning("No links returned for %s", get_consumer_short(consumer))
 
-					try:
-						for b in boms:
-							xbom_raw = Xbom.get(xbom_format)()
-							xbom_data = xbom_raw.deserialize(b, xbom_encoding)
-							xboms.append(xbom_raw)
-							logger.debug("Bom data:\n%s", xbom_raw.summary())
-							publish_data(config, b)
+			queried_consumers.append(consumer)
 
-
-						if config['recursive']:
-							consumers += xbom_raw.get_consumers()
-					except Exception as e:
-						logger.error("Unable to retrieve consumers for external bom refs: %s", e)
-				else:
-					logger.warning("No links returned for %s", get_consumer_short(consumer))
-
-				queried_consumers.append(consumer)
-
-
-def get_consumers(links):
-	""" Retrieve additional consumers from links 
-
-		:param links: An array of links, as discovered by the `discover` function.
-		:return: A list of consumers found in the links' peers
-	"""
-	consumers = []
-	for l in links:
-		if l.peers:
-			for p in l.peers:
-				if p.consumer:
-					if not p.consumer.profile or p.consumer.profile == xbom.Profile.nsid:
-						new_consumer=set_consumer_defaults(vars(p.consumer))
-						if new_consumer not in consumers:
-							logger.info("Found new context actuator: %s", get_consumer_short(new_consumer))
-							consumers.append(new_consumer)
-				
-	return consumers
 
 def discover(consumer, producer_name, xbom_format, xbom_encoding):
 	""" Query an OpenC2 discovery consumer
@@ -158,8 +146,8 @@ def discover(consumer, producer_name, xbom_format, xbom_encoding):
 		:param consumer: The endpoint to query from the configuration file.
 		:return: service and link lists
 	"""
+	consumer = set_consumer_defaults(consumer)
 	try:
-		consumer.setdefault('encoding', defaults['openc2']['encoding'])
 		encoder = otupy.Encoders[consumer['encoding']].value
 	except:
 		logger.error("No valid encoder: %s", consumer['encoding'])
@@ -168,7 +156,6 @@ def discover(consumer, producer_name, xbom_format, xbom_encoding):
 		encoder = otupy.Encoders[consumer['encoding']].value
 
 	try:
-		consumer.setdefault('transfer',  defaults['openc2']['transfer'])
 		transferer = otupy.Transfers[consumer['transfer']](consumer['host'], 
 				consumer['port'], consumer['endpoint'])
 	except:

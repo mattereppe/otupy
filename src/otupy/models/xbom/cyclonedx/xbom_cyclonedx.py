@@ -120,6 +120,15 @@ class CyclonedxXbom(Xbom):
 
 		return self.xbom
 
+	def get_consumers(self) -> list:
+		""" Retrieve list of consumers
+
+			Returns the list of consumers serving peers in existing links.
+		"""
+		logger.warn("Discovery of consumers not supported for CycloneDX format")
+
+		return []
+
 	def summary(self) -> str:
 		if self.xbom is None:
 			return "No BOM"

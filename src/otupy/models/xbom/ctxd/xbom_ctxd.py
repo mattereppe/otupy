@@ -87,6 +87,22 @@ class CtxdXbom(Xbom):
 		self.xbom = encoder.decode(xbom, Ctxd)
 		return self.xbom
 
+	def get_consumers(self):
+		""" Retrieve additional consumers from links 
+	
+			:return: A list of consumers found in the links' peers
+		"""
+		consumers = []
+		for l in self.xbom['links']:
+			if l.link.peers:
+				for p in l.link.peers:
+					if p.consumer:
+						new_consumer = vars(p.consumer)
+						if new_consumer not in consumers:
+							consumers.append(new_consumer)
+					
+		return consumers
+
 	def summary(self) -> str:
 		""" A summary of the ctxd content, mostly for Debug purposes """
 		res = ""
@@ -98,7 +114,7 @@ class CtxdXbom(Xbom):
 				if item.service.subservices is not None:
 					for s in item.service.subservices:
 						sub+=str(s)+","
-				res = res + f"Service: {item.service.sid} [{item.service.name}] {{sub}}\n"
+				res = res + f"Service: {item.service.sid} [{item.service.name}] {{{sub}}}\n"
 				tot_services = tot_services+1
 			for item in self.xbom.get('links', []):
 				peers=""

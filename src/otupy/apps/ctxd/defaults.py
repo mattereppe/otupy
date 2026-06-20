@@ -18,7 +18,7 @@ defaults = { # Default values for context discovery operation
 					'host': '127.0.0.1',
 					'port': 443,
 					'endpoint': "/.well-known/openc2",
-					'profile': 'x-ctxd',
+					'profile': 'x-xbom',
 					'encoding': 'json',
 					'transfer': 'http'},
 				# Default values for Mongodb connection
@@ -74,7 +74,7 @@ defaults = { # Default values for context discovery operation
 """ Defaults value to be used for missing input parameters """
 
 def set_consumer_defaults(consumer):
-	""" Set missing values for ctxd consumer
+	""" Set missing values for xbom consumer
 		
 		Assign default values to keys which value is None
 		:param consumer: A consumer dict
@@ -123,7 +123,7 @@ def parse_and_default(config):
 #			config[c]=defaults[c]
 		config.setdefault(c, defaults[c])
 
-	# Service section (ctxd actuators)
+	# Service section (xbom actuators)
 	if 'services' in config and config['services'] is not None:
 		for service in config["services"]:
 			
@@ -134,8 +134,8 @@ def parse_and_default(config):
 
 #			# Check discovery params
 #			for p in 'loop', 'frequency':
-##				config[p] = set_defaults(config, 'ctxd', p)	
-#				config.setdefault(p, defaults['ctxd'][p])
+##				config[p] = set_defaults(config, 'xbom', p)	
+#				config.setdefault(p, defaults['xbom'][p])
 	else:
 		config['services'] = []
 	
