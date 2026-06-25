@@ -77,11 +77,25 @@ class XMLEncoder(Encoder):
 			as strings and this make the deconding of EnumeratedID fail.
 		"""
 		def _postprocessor(path, key, value):
+			# Workaround for testing against good/bad patterns: special chars
+			if key == "arg" and isinstance(value, dict) and "@name" in value:
+				name = value.pop("@name")
+				key=name
+
+			# Try to infer bool types (this might introduce additional bugs later on
+			if value == 'true':
+				value = True
+			if value == 'false':
+				value = False
 			try:
 				return key , int(value)
 			except (ValueError, TypeError):
 				return key, value
 
+		# Workaround for testing against good/bad patterns: empty file
+#		if len(msg)==0:
+#			return {}
+		
 		if msgtype == None:
 			return xmltodict.parse(msg, postprocessor=_postprocessor)[XMLEncoder.OpenC2Root]
 

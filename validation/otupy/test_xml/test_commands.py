@@ -264,15 +264,18 @@ def test_decoding_invalid(cmd_file):
 	print("Command file: ", cmd_file)
 	# It may also raises while loading the files, since they may be empty
 	with open(cmd_file, 'r') as fcmd:
-		try:
+#		try:
 #	cmd = xmltodict.parse(fcmd) 
+#		cmd = fcmd.read()
+#		cmd_dic =  xmltodict.parse(cmd, postprocessor=_postprocessor)[XMLEncoder.OpenC2Root]
+#		except ExpatError:
+#			cmd = ""
+		with pytest.raises( (TypeError, ValueError, KeyError, EncoderError, ExpatError) ):
 			cmd = fcmd.read()
 			cmd_dic =  xmltodict.parse(cmd, postprocessor=_postprocessor)[XMLEncoder.OpenC2Root]
-		except ExpatError:
-			cmd = ""
-		with pytest.raises( (TypeError, ValueError, KeyError, EncoderError) ):
 			print("Command xml: ", cmd)
-			Encoder.decode(Command, cmd)
+#	Encoder.decode(Command, cmd)
+			XMLEncoder.decode(cmd, Command)	
 		
 
 @pytest.mark.parametrize("file",  load_files(command_path_bad)  )

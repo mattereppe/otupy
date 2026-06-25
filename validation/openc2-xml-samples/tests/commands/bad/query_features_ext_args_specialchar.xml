@@ -7,8 +7,8 @@
   <features>rate_limit</features>
 </target>
 <args>
-  <x-mycompany/foo;bar>
+  <arg name="x-mycompany/foo;bar">
     <debug_logging>true</debug_logging>
-  </x-mycompany/foo;bar>
+  </arg>
 </args>
 </OpenC2Msg>
