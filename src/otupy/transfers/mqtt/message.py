@@ -1,9 +1,11 @@
-""" HTTP Message
+""" MQTT Message
 	
 	This module defines the MQTT definition of the abstract OpenC2 Message data.
-	See Sec. 2.4.2 of the MQTT Specification. However, this Section does not define
-	serialization requirements. This implementation guesses from the examples in 
-	Appendix A that the same serialization requirements as HTTP apply here.
+	See Sec. 2.4.2 of the MQTT Specification. Note that the definition is not
+	compliant with the examples in Appendix A. Since Appendix A is non-normative,
+  	the current implementation is compliance with the definition in Sec. 2.4.2.
+	An alternative implementation using the same serialization requirements as HTTP 
+	(Appendix A) is also available (see message-http.py).
 	
 """
 import dataclasses
@@ -11,17 +13,6 @@ import logging
 import copy
 
 import otupy as oc2
-
-
-class Headers(oc2.Map):
-	""" MQTT Message Headers (see Sec. 3.3.2 of the HTTP Specification) 
-		
-		Note: the Specification defines `to` as "String [0..*]", but it should be an `ArrayOf(str)`. Using
-		a plain Python list does not work with the current otupy implementation.
-	"""
-	fieldtypes = {'request_id': str, 'created': oc2.DateTime, 'from': str, 'to': oc2.ArrayOf(str)}
-	extend = None
-	regext = {}
 
 
 OpenC2Contents = oc2.Register()
@@ -38,36 +29,31 @@ class OpenC2Content(oc2.Choice):
 	""" MQTT Message OpenC2-Content (see Sec. 3.3.2 of the Specification) """
 	register = OpenC2Contents
 
-Bodies = oc2.Register()
-""" List allowed objects in Body (see Sec. 3.3.2 of the Specification) """
-Bodies.add('openc2',OpenC2Content, 1)
-
-class Body(oc2.Choice):
-	""" HTTP Message Body (see Sec. 3.3.2 of the Specification) """
-	register = Bodies
-
 @dataclasses.dataclass
 class Message(oc2.Record):
 	""" MQTT Message representation
 
-		This class implements the HTTP-specific representation of the 
+		This class implements the MQTT-specific representation of the 
 		OpenC2 Message metadata. The OpenC2 Message metadata are described in 
 		Table 3.1 of the Language Specification as message elements, but they are not
-		framed in a concrete structure. The HTTP Specification defines such structure 
-		in Sec. 3.3.2, and this class is its implementation. The MQTT specification 
+		framed in a concrete structure. The MQTT Specification defines such structure 
+		in Sec. 2.4.2, and this class is its implementation. The MQTT specification 
 		mandates the usage of the Message type defined in Table 3-1 of the Specification,
 		but does not provide serialization requirements.
 
 		The methods of this class are meant to translate back and for the otupy
 		`Message` class.
 	"""
-	headers: Headers = None
-	""" Contains the `Message` metadata """
-	body: Body = None # This is indeed not optional, but the default argument is set to preserve ordering
+	content: OpenC2Content = None
 	""" Contains the `Content` """
-# Not explicitly provided in MQTT
-#	signature: str = None
-#	""" Not used (the Specification does not define its usage """
+	request_id: str = None
+	""" Request identifier """
+	created: oc2.DateTime = None
+	""" Creation time """ 
+	from_: str = None
+	""" Sender of the message """
+	to: oc2.ArrayOf(str) = None
+	""" Receivers of the message """
 
 	def set(self, msg: oc2.Message):
 		""" Create MQTT `Message` from otupy `Message` 
@@ -75,13 +61,12 @@ class Message(oc2.Record):
 			:param msg: An otupy `Message`.
 			:return: An MQTT `Message`
 		"""
-		self.headers = {}
-		self.headers['request_id'] = msg.request_id
-		self.headers['created'] = msg.created
-		self.headers['from'] = msg.from_
-		self.headers['to'] = msg.to
+		self.request_id = msg.request_id
+		self.created = msg.created
+		self.from_ = msg.from_
+		self.to = msg.to
 
-		self.body = Body(OpenC2Content(msg.content))
+		self.content = OpenC2Content(msg.content)
 
 		
 	def get(self):
@@ -90,12 +75,46 @@ class Message(oc2.Record):
 			:param msg: An otupy `Message`.
 			:return: An HTTP `Message`
 		"""
-		msg = oc2.Message(self.body.getObj().getObj())
-		msg.request_id = self.headers['request_id'] if 'request_id' in self.headers.keys() else None
-		msg.created = self.headers['created'] if 'created' in self.headers.keys() else None
-		msg.from_ = self.headers['from'] if 'from' in self.headers.keys() else None
-		msg.to = self.headers['to'] if 'to' in self.headers.keys() else None
+		msg = oc2.Message(self.content.getObj())
+		msg.request_id = self.request_id 
+		msg.created = self.created
+		msg.from_ = self.from_
+		msg.to = self.to
 		msg.msg_type = msg.content.getType()
 
 		return msg
+
+	def todict(self, e):
+		""" Fix dictionary representation
+
+			Since "from" is a reserved Python keyword, we needed to use "from_" as variable name,
+			which is not what is expected in the serialization. We therefore need to replace
+			this.
+
+			:param e: Encoder to be used for serialization
+			:return: The serialization of the MQTT Message
+		"""
+		tmp = super().todict(e)
+		if 'from_' in tmp:
+			tmp['from']=tmp.pop['from_']
+
+		return tmp
+
+	@classmethod
+	def fromdict(clstype, dic, e):
+		""" Fix dictionary representation
+
+			Same problem as for serialization, we need to convert the OpenC2 key "from" into
+			the Python variable "from_".
+
+			:param dic: The intermediary dictionary representation from which the object is built.
+			:param e: The :py:class:`~otupy.core.encoder.Encoder` that is being used.
+			:return: An instance of this class initialized from the dictionary values.
+		"""
+		if 'from' in dic:
+			dic['from_']=dic.pop('from')
+
+		return super().fromdict(dic, e)
+
+
 
