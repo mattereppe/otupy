@@ -43,6 +43,11 @@ To run the test, enter the ```test_json``` folder and run:
 ```
 # pytest test_commands.py::test_sending
 ```
+for testing good commands, and
+```
+# pytest test_commands.py::test_response_to_invalid_commands
+```
+for testing bad commands.
 
 
 To perform these tests, a Consumer must run and answer to requests from the Producer, which is emulated in the tests. A dumb consumer is available that uses dumb actuators, because the sample commands usually does not make sense for a real function.
