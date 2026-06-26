@@ -5,11 +5,15 @@ There are multiple tests available to check the compliance of otupy with the Lan
 ## Data types
 A first set of tests concerns the correct instantiation of data, including both data, targets, args, artifacts, and commands.
 
-
-
 To run these tests, enter the ```test_types``` folder and run:
 ```
 % pytest
+```
+
+## Data types for profiles
+Enter the specific folders in the ```test_types``` folder and run:
+```
+% pytest --confcutdir=.
 ```
 
 ## Encoding/Deconding messages
