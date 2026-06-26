@@ -1,6 +1,6 @@
-from openc2lib.types.base import ArrayOf
+from otupy.types.base import ArrayOf
 from otupy.profiles.rcli.data.process import Process
-from openc2lib.core.target import target
+from otupy.core.target import target
 from otupy.profiles.rcli.profile import Profile  # Assuming this exists
 
 

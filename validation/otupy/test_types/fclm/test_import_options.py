@@ -1,7 +1,7 @@
 import pytest
 import parametrize_from_file
-from otupy.profiles.fclm.data import ImportOptions
-from openc2lib.types.data.duration import Duration
+from otupy.profiles.fclm.data.import_options import ImportOptions
+from otupy.types.data.duration import Duration
 
 
 @parametrize_from_file("parameters/test_import_options.yml")

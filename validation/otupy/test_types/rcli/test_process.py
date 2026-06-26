@@ -1,6 +1,6 @@
 import pytest
 from otupy.profiles.rcli.data.process import Process
-from openc2lib.types.targets import File
+from otupy.types.targets import File
 from otupy.profiles.rcli.data.state import State
 import pytest
 import string

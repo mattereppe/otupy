@@ -4,11 +4,11 @@ This module extends the Args defined by the Language Specification
 (see Sec. 'Command Arguments Unique to RCLI').
 """
 
-import openc2lib as oc2
+import otupy as oc2
 
 from otupy.profiles.rcli.profile import Profile
-from openc2lib import TargetEnum
-from openc2lib.types.targets.file import File
+from otupy import TargetEnum
+from otupy.types.targets.file import File
 
 
 @oc2.extension(nsid=Profile.nsid)

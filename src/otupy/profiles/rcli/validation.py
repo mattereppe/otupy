@@ -4,7 +4,7 @@ This module defines specific RCLI constraints on the usable `Action`s and `Args`
 
 """
 
-from openc2lib import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
+from otupy import Actions, StatusCode, ActionTargets, ActionArguments, TargetEnum, ResponseType
 
 from otupy.profiles.rcli.profile import Profile
 
@@ -37,7 +37,7 @@ AllowedCommandTarget = ActionTargets()
 """
 
 AllowedCommandTarget[Actions.query] = [
-    TargetEnum.__features,
+    TargetEnum.features,
     TargetEnum[Profile.nsid + ":files"],
     TargetEnum[Profile.nsid + ":processes"],
 ]
@@ -62,7 +62,7 @@ def fillin_allowed_command_arguments(AllowedCommandArguments, action, targets, a
 
 # TODO: complete the list (if necessary)
 args = ["response_requested"]
-AllowedCommandArguments[(Actions.query, TargetEnum.__features)] = ["response_requested"]
+AllowedCommandArguments[(Actions.query, TargetEnum.features)] = ["response_requested"]
 AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid + ":processes"])] = ["response_requested"]
 AllowedCommandArguments[(Actions.query, TargetEnum[Profile.nsid + ":files"])] = ["response_requested"]
 AllowedCommandArguments[(Actions.copy, TargetEnum.artifact)] = ["response_requested", "storage"]

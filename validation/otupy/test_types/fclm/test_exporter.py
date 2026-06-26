@@ -1,10 +1,10 @@
 import pytest
 import parametrize_from_file
-from openc2lib.types.base import ArrayOf
+from otupy.types.base import ArrayOf
 from otupy.profiles.fclm.data.exporter import Exporter
-from otupy.profiles.fclm.data.collector import Collector
-from openc2lib.types.targets.file import File
-from openc2lib.types.data import IPv4Addr, Port
+from otupy.profiles.fclm.data.collector import Collector, Host
+from otupy.types.targets.file import File
+from otupy.types.data import IPv4Addr, Port
 from otupy.profiles.fclm.data.file_format import FileFormat
 
 
@@ -16,7 +16,7 @@ def test_good_exporters(storage, collectors):
             ArrayOf(Collector)(
                 [
                     Collector(
-                        address=IPv4Addr(c.get("address")) if c.get("address") else None,
+                        host=Host(IPv4Addr(c.get("address"))) if c.get("address") else None,
                         port=Port(c.get("port")) if c.get("port") else None,
                         format=FileFormat[c.get("format")] if c.get("format") else None,
                     )
@@ -37,7 +37,7 @@ def test_bad_exporters(storage, collectors):
         collectors_val = ArrayOf(Collector)(
             [
                 Collector(
-                    address=IPv4Addr(c.get("address")) if c.get("address") else None,
+                    host=Host(IPv4Addr(c.get("address"))) if c.get("address") else None,
                     port=Port(c.get("port")) if c.get("port") else None,
                     format=FileFormat[c.get("format")] if c.get("format") else None,
                 )

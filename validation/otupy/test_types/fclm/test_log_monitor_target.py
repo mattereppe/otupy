@@ -1,10 +1,10 @@
 import pytest
 import parametrize_from_file
 from otupy.profiles.fclm import LogMonitor
-from openc2lib.types.targets import File, URI
+from otupy.types.targets import File, URI
 from otupy.profiles.fclm.data.socket import Socket
-from openc2lib.types.data.hostname import Hostname
-from openc2lib.types.targets.ipv4_connection import IPv4Connection
+from otupy.types.data.hostname import Hostname
+from otupy.types.targets.ipv4_connection import IPv4Connection
 
 
 @parametrize_from_file("parameters/test_log_monitor_target.yml")

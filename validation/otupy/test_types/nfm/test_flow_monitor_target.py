@@ -1,11 +1,11 @@
 import pytest
 import parametrize_from_file
-from openc2lib.types.base import ArrayOf, Array
+from otupy.types.base import ArrayOf, Array
 from otupy.profiles.nfm.targets.monitor import FlowMonitor
 from otupy.profiles.nfm import Interface  # Assuming this path exists
 from otupy.profiles.nfm.data.ie import IE  # Assuming this path exists
-from openc2lib.types.data import Port  # Assuming Port is defined
-from openc2lib.types.targets import IPv4Connection, IPv6Connection  # Updated to use Connections
+from otupy.types.data import Port  # Assuming Port is defined
+from otupy.types.targets import IPv4Connection, IPv6Connection  # Updated to use Connections
 
 @parametrize_from_file("parameters/test_flow_monitor_target.yml")
 def test_good_flow_monitor(interfaces, information_elements, filter_v4, filter_v6):

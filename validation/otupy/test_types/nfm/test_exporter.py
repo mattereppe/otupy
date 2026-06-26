@@ -1,10 +1,10 @@
 import pytest
 import parametrize_from_file
 from otupy.profiles.nfm import Exporter
-from otupy.profiles.nfm.data.collector import Collector
-from openc2lib.types.targets.file import File
-from openc2lib.types.base import ArrayOf
-from openc2lib.types.data import IPv4Addr, Port
+from otupy.profiles.nfm.data.collector import Collector, Host
+from otupy.types.targets.file import File
+from otupy.types.base import ArrayOf
+from otupy.types.data import IPv4Addr, Port
 
 
 @parametrize_from_file("parameters/test_exporter.yml")
@@ -13,7 +13,7 @@ def test_good_exporter(storage, collectors):
     transformed_storage = File(**storage) if storage else None
     transformed_collectors = ArrayOf(Collector)([
         Collector(
-            address=IPv4Addr(c.get("address")) if c.get("address") else None,
+            host=Host(IPv4Addr(c.get("address"))) if c.get("address") else None,
             port=Port(c.get("port")) if c.get("port") else None,
         ) for c in collectors]) if collectors else None
 
@@ -30,7 +30,7 @@ def test_bad_exporter(storage, collectors):
         transformed_storage = File(**storage) if isinstance(storage, dict) else storage
         transformed_collectors = ArrayOf(Collector)([
                 Collector(
-                    address=IPv4Addr(c.get("address")) if c.get("address") else None,
+                    host=Host(IPv4Addr(c.get("address"))) if c.get("address") else None,
                     port=Port(c.get("port")) if c.get("port") else None,
                 ) for c in collectors]) if collectors else None
         Exporter(storage=transformed_storage, collectors=transformed_collectors)

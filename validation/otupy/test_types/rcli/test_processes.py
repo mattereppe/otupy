@@ -4,8 +4,8 @@ import pytest
 from otupy.profiles.rcli.data.process import Process
 from otupy.profiles.rcli.targets.processes import Processes
 from otupy.profiles.rcli.data.state import State
-from openc2lib.types.base import ArrayOf, Array
-from openc2lib.types.targets import File
+from otupy.types.base import ArrayOf, Array
+from otupy.types.targets import File
 
 
 def random_string(length=10):

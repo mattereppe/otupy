@@ -1,7 +1,7 @@
 import pytest
 import parametrize_from_file
-from otupy.profiles.nfm.data.collector import Collector
-from openc2lib.types.data import IPv4Addr, Port
+from otupy.profiles.nfm.data.collector import Collector, Host
+from otupy.types.data import IPv4Addr, Port
 
 
 @parametrize_from_file("parameters/test_collector.yml")
@@ -11,7 +11,7 @@ def test_good_collector(address, port):
     transformed_port = Port(port)
     
     # Create the Collector object
-    obj = Collector(address=transformed_address, port=transformed_port)
+    obj = Collector(host=Host(transformed_address), port=transformed_port)
     
     # Assert the object is of type Collector
     assert isinstance(obj, Collector)
@@ -24,4 +24,4 @@ def test_bad_collector(bad_address, bad_port):
         transformed_bad_port = Port(bad_port) if bad_port else None
         
         # Attempt to create a Collector object with possibly incorrect inputs
-        Collector(address=transformed_bad_address, port=transformed_bad_port)
+        Collector(host=Host(transformed_bad_address), port=transformed_bad_port)

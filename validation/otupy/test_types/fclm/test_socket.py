@@ -1,8 +1,8 @@
 import pytest
 import parametrize_from_file
 from otupy.profiles.fclm.data.socket import Socket
-from openc2lib.types.data import IPv4Addr, Port
-from openc2lib.types.data.l4_protocol import L4Protocol
+from otupy.types.data import IPv4Addr, Port
+from otupy.types.data.l4_protocol import L4Protocol
 
 
 @parametrize_from_file("parameters/test_socket.yml")

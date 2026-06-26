@@ -1,8 +1,8 @@
 import pytest
 import random
 import string
-from openc2lib import File, Hashes, Binaryx
-from openc2lib.types.base import ArrayOf, Array
+from otupy import File, Hashes, Binaryx
+from otupy.types.base import ArrayOf, Array
 
 # Function to generate random strings
 def random_strings():
