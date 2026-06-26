@@ -6,8 +6,8 @@
 	a different actuator should be created for each profile.
 
 """
-#from otupy.actuators.slpf.mockup_slpf_actuator import MockupSlpfActuator
-#from otupy.actuators.slpf.dump_actuator import DumbActuator
+from otupy.actuators.slpf.mockup_slpf_actuator import MockupSlpfActuator
+from otupy.actuators.slpf.dumb_actuator import DumbActuator
 from otupy.actuators.xbom.xbom_actuator_kubernetes import XBOMKubernetesActuator
 from otupy.actuators.xbom.xbom_actuator_openstack import XBOMOpenStackActuator
 from otupy.actuators.xbom.xbom_actuator_host import XBOMHostActuator

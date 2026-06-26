@@ -14,11 +14,15 @@ from otupy.transfers.http import HTTPTransfer
 import otupy.profiles.slpf as slpf
 import otupy.profiles.dumb as dumb
 
+class JSONDump(logging.Filter):
+	def filter(self, record):
+		return  record.getMessage().startswith("HTTP Request Content") or record.getMessage().startswith("HTTP Response Content")
 
 #logging.basicConfig(filename='openc2.log',level=logging.DEBUG)
 #logging.basicConfig(stream=sys.stdout,level=logging.INFO)
 #logger = logging.getLogger('openc2producer')
-logger = logging.getLogger()
+logger = logging.getLogger('otupy.transfers.http.http_transfer')
+#logger.addFilter(JSONDump())
 # Ask for 4 levels of logging: INFO, WARNING, ERROR, CRITICAL
 logger.setLevel(logging.DEBUG)
 # Create stdout handler for logging to the console 

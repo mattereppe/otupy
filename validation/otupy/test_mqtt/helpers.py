@@ -58,7 +58,7 @@ def load_json(path):
 
 	files = load_files(path)
 # use this if you want to debug a single file
-#cmds_files = [ "openc2-json-schema/src/test/resources/commands/bad/action_notarget.json" ]
+#files = [ "../../openc2-json-schema/tests/commands/good/query_features_notunique.json" ]
 
 	lst = []
 	for f in files:
@@ -77,7 +77,8 @@ def load_cbor(path):
 
 	files = load_files(path)
 # use this if you want to debug a single file
-#cmds_files = [ "openc2-json-schema/src/test/resources/commands/bad/action_notarget.json" ]
+#	files = [ "../../openc2-cbor-samples/tests/commands/good/query_features_all.cbor" ]
+#"
 
 	lst = []
 	for f in files:

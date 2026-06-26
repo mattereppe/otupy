@@ -1,4 +1,4 @@
-#!../.oc2-env/bin/python3
+#!../.venv/bin/python3
 # Example to test the OpenC2 library locally (e.g., with no real Managed Devices)
 #
 
@@ -11,10 +11,24 @@ import otupy as oc2
 
 from otupy.encoders.json import JSONEncoder
 from otupy.transfers.http import HTTPTransfer
-from otupy.actuators.mokup_slpf_actuator import MokupSlpfActuator
+from otupy.actuators.slpf.mockup_slpf_actuator import MockupSlpfActuator
 import otupy.profiles.slpf as slpf
 import otupy.profiles.dumb as dumb
-from otupy.actuators.dumb_actuator import DumbActuator
+from otupy.actuators.slpf.dumb_actuator import DumbActuator
+
+sys.path.insert(0, "../validation/otupy/profiles/")
+import acme
+import mycompany
+import mycompany_capX
+import mycompany_dots
+import mycompany_nox
+import mycompany_specialchar
+import mycompany_with_underscore
+import example
+import esm
+import digits
+import digits_and_chars
+
 
 #logging.basicConfig(filename='consumer.log',level=logging.DEBUG)
 #logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
@@ -42,7 +56,7 @@ def main():
 # Instantiate the list of available actuators, using a dictionary which key
 # is the assed_id of the actuator.
 	actuators = {}
-	actuators[(slpf.Profile.nsid,'iptables')]=MokupSlpfActuator()
+	actuators[(slpf.Profile.nsid,'iptables')]=MockupSlpfActuator()
 	actuators[('x-dumb','dumb')]=DumbActuator()
 
 	c = oc2.Consumer("testconsumer", actuators, JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))

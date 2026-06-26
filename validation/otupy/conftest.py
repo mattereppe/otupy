@@ -75,7 +75,7 @@ def create_xml_producer():
 
 @pytest.fixture
 def http_headers():
-	return {'Content-Type': 'application/openc2+xml;version=1.0', 'Accept': 'application/openc2+cbor;version=1.0', 'Content-Encoding': 'cbor', 'Date': datetime.datetime.now(datetime.timezone.utc).strftime('%a, %d %b %Y %H:%M:%S %Z') }
+	return {'Content-Type': 'application/openc2+json;version=1.0', 'Accept': 'application/openc2+json;version=1.0', 'Content-Encoding': 'json', 'Date': datetime.datetime.now(datetime.timezone.utc).strftime('%a, %d %b %Y %H:%M:%S %Z') }
 
 @pytest.fixture
 def http_body():
@@ -83,9 +83,12 @@ def http_body():
 		"body": { "openc2": { "request": {} }}}
 
 @pytest.fixture
+#def mqtt_body():
+#	return  {'headers': { "request_id": "0e3d8fa8-0bae-4055-a341-9c97b4f328f7", "created": 1545257700000, "from": "myproducer", "to": [ "testconsumer" ] },
+#		"body": { "openc2": { "request": {} }}}
 def mqtt_body():
-	return  {'headers': { "request_id": "0e3d8fa8-0bae-4055-a341-9c97b4f328f7", "created": 1545257700000, "from": "myproducer", "to": [ "testconsumer" ] },
-		"body": { "openc2": { "request": {} }}}
+	return  {"request_id": "0e3d8fa8-0bae-4055-a341-9c97b4f328f7", "created": 1545257700000, "from": "myproducer", "to": [ "testconsumer" ] ,
+		"content": { "request": {} }}
 
 
 @pytest.fixture

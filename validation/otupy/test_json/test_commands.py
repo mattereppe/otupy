@@ -143,8 +143,8 @@ def validate_json(caplog):
 	req = msg[msg.index("\n")+1:]
 	msg = caplog.messages[1]
 	rsp = msg[msg.index("\n")+1:]
-	print(req)
-	print(rsp)
+#	print(req)
+#	print(rsp)
 	json_schema_validation.validate_http(req, json_schema_validation.Validation.base)
 	json_schema_validation.validate_http(req, json_schema_validation.Validation.contrib)
 	json_schema_validation.validate_http(rsp, json_schema_validation.Validation.base)
@@ -192,12 +192,17 @@ def test_sending(cmd, create_producer, caplog):
 	c = Encoder.decode(Command, cmd)
 
 # Filter the log to get what I need
-	logger = logging.getLogger("otupy.transfers.http.http_transfer")
+#	logger = logging.getLogger("otupy.transfers.http.http_transfer")
+	logger = logging.getLogger()
+	logger.setLevel(logging.WARNING)
 	logger.addFilter(JSONDump())
+	
+	caplog.clear()
+	caplog.handler.addFilter(JSONDump())
 
 	check_command(c)
 	print("Command: ", c)
-	with caplog.at_level(logging.INFO):
+	with caplog.at_level(logging.DEBUG, logger="otupy.transfers.http.http_transfer"):
 		resp = create_producer.sendcmd(c)
 
 	assert type(resp) == Message
