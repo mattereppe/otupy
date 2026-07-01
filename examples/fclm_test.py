@@ -15,7 +15,7 @@ from otupy.transfers.http import HTTPTransfer
 
 import otupy.profiles.fclm as fclm
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logging.basicConfig(stream=sys.stdout, level=logging.WARN)
 logger = logging.getLogger("openc2producer")
 
 
@@ -39,7 +39,7 @@ def main():
     sum_start = 0
     sum_stop = 0
     for i in range(args.test):
-      logger.info("Creating Producer")
+      logger.info("Running test n. %s/%s", i, args.test)
   
       p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer(args.server, args.port))
       arg = fclm.Args({"response_requested": oc2.ResponseType.complete})
@@ -71,12 +71,12 @@ def main():
       tstop = datetime.datetime.now()
       diff = (tstop-tstart).total_seconds()
       sum_start = sum_start + diff
-      print("Time to start: ", diff)
+#      print("Time to start: ", diff)
       
       logger.info("Got response: %s", resp)
       identifier = resp.content["results"]["monitor_id"]
-      print("------------------------------")
-      print("Started process: ", identifier)
+#      print("------------------------------")
+#      print("Started process: ", identifier)
   
       sleep(3)
       # Stop filebeat
@@ -88,14 +88,13 @@ def main():
       resp = p.sendcmd(cmd)
       tstop = datetime.datetime.now()
       diff = (tstop-tstart).total_seconds()
-      sum_stop = sum_start + diff
-      print("Time to stop: ", diff)
+      sum_stop = sum_stop + diff
+#      print("Time to stop: ", diff)
       logger.info("Got response: %s", resp)
   
       sleep(3)
 
-    print("Average time to start: ", sum_start/args.test)
-    print("Average time to stop: ", sum_stop/args.test)
+    print("Average time to start/stop: ", sum_start/args.test, "\t", sum_stop/args.test)
 
 if __name__ == "__main__":
     main()
