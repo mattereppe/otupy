@@ -105,7 +105,8 @@ class NFMActuatorNProbe(NFMActuator):
 #            value = self.config.get_info_element(self.asset_id, monitor.information_elements)
             values = [self.__features["info_elements"].get(k) for k in monitor.information_elements]
             if None in values:
-                return badrequest("Information element is not supported")
+                logger.error("Information element is not supported")
+                values = [k for k in values if k is not None]
             cmd_list.extend(values)
         return cmd_list
 
