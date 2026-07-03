@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import json
 
 from typing_extensions import deprecated
 
@@ -12,39 +13,65 @@ from otupy.profiles.nfm.targets.monitor_id import MonitorID
 from otupy.actuators.nfm.handlers.response_handler import badrequest, ok
 from otupy.actuators.nfm.utils.process_utils import run_monitor
 from otupy.actuators.nfm.nfm_actuator import NFMActuator
-from otupy import Feature
+from otupy import Feature, actuator_implementation
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+IE_MAP="ie/nprobe.json"
 
-@deprecated("This actuator is untested with the new version of otupy.")
+@actuator_implementation("nfm-nprobe")
 class NFMActuatorNProbe(NFMActuator):
-    def __init__(self, asset_id):
-        super().__init__(asset_id)
+    __features = {
+        "exports": ["collector", "file"],
+        "export_options": ["sampling", "aggregate", "buffer", "timeout"],
+        "flow_format": ["netflow5", "netflow7", "json", "csv"],
+        "filters": ["source / destination", "ipv4 / ipv6", "port", "protocol"],
+        "info_elements": {},
+    }
+
+    def __init__(self, *, specifiers, probe, **kwargs):
+        super().__init__(asset_id=specifiers["asset_id"])
+        self.probe = probe
+        self.allowed_interfaces = probe.get("allowed_interfaces", [])
+        self.__features["info_elements"] = self._load_information_elements()
+
+    def _load_information_elements(self):
+        iemap_path = os.path.join(os.path.dirname(__file__), IE_MAP)
+        try:
+            with open(iemap_path, 'r') as f:
+                iemap = json.load(f)
+                if iemap:
+                    return iemap
+                else:
+                    return {}
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            logger.error(f"Failed to load information element mapping: {e}")
+            return {}
+
 
     def _handle_feature(self, f):
-        print("f")
         match f:
             case Feature.information_elements:
-                a = self.config.get_info_element(self.asset_id)
-                print(a)
-                return a
+                return self.__features["info_elements"].keys()
             case Feature.exports:
-                return self.config.get_feature(self.asset_id, "exports")
+                return self.__features["exports"]
             case Feature.export_options:
-                return self.config.get_feature(self.asset_id, "export_options")
+                return self.__features["export_options"]
             case Feature.flow_format:
-                return self.config.get_feature(self.asset_id, "flow_format")
+                return self.__features["flow_format"]
             case Feature.filters:
-                return self.config.get_feature(self.asset_id, "filters")
+                return self.__features["filters"]
             case _:
                 return super()._handle_feature(f)
 
     def _start_monitor(self, cmd):
         monitor = cmd.target.getObj()
         args = cmd.args or {}
-        cmd_list = [os.getenv("NPROBE_EXECUTABLE")]
+        if 'executable' not in self.probe:
+            logger.error("No nprobe executable provided, skipping command")
+            return servererror("Invalid configuration")
+        cmd_list = [self.probe.get('executable', None)]
         cmd_list = self._add_interfaces(cmd_list, monitor)
         cmd_list = self._add_bpf_filter(cmd_list, monitor)
         cmd_list = self._add_information_elements(cmd_list, monitor)
@@ -75,10 +102,11 @@ class NFMActuatorNProbe(NFMActuator):
     def _add_information_elements(self, cmd_list, monitor):
         if monitor.get("information_elements"):
             cmd_list += ["-T"]
-            value = self.config.get_info_element(self.asset_id, monitor.information_elements)
-            if value is None:
+#            value = self.config.get_info_element(self.asset_id, monitor.information_elements)
+            values = [self.__features["info_elements"].get(k) for k in monitor.information_elements]
+            if None in values:
                 return badrequest("Information element is not supported")
-            cmd_list.extend(value)
+            cmd_list.extend(values)
         return cmd_list
 
     def _add_exporter_options(self, cmd_list, args):
@@ -104,9 +132,9 @@ class NFMActuatorNProbe(NFMActuator):
 
     def _add_exporter_collectors(self, cmd_list, exporter):
         for c in exporter.collectors or []:
-            if c.address:
+            if c.host:
                 if c.port:
-                    cmd_list += ["--collector", f"{c.address.addr()}:{c.port}"]
+                    cmd_list += ["--collector", f"{c.host.getObj()}:{c.port}"]
         return cmd_list
 
     def _add_option(self, cmd_list, opts, opt, flag):
