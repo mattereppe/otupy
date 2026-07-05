@@ -138,7 +138,7 @@ class NFMActuatorPacketbeat(NFMActuator):
         exporter = args.get("exporter")
         if exporter and exporter.get("collectors", []):
             for c in exporter.get("collectors", []):
-                host = c['host'].getObj() if 'host' in c else DEFAULT_COLLECTOR_ADDRESS
+                host = c.get('host').getObj() if hasattr(c,'host') else DEFAULT_COLLECTOR_ADDRESS
                 collectors.append( (host, c.get("port", DEFAULT_COLLECTOR_PORT)) )
         return collectors
 
