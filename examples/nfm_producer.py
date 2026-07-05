@@ -34,7 +34,7 @@ arguments = ArgumentParser()
 arguments.add_argument("--start", action="store_true", help="Start monitoring")
 arguments.add_argument("--stop", help="Stop monitoring the specified process")
 arguments.add_argument("--query", action="store_true", help="Stop monitoring the specified process")
-arguments.add_argument("--probe", default="fprobe", help="Select probe to run [fprobe|packetbeat]")
+arguments.add_argument("--probe", default="fprobe", help="Select probe to run [fprobe|nprobe|packetbeat]")
 arguments.add_argument("--server", default="127.0.0.1", help="Select IP address of the Consumer")
 arguments.add_argument("--port", default="8080", help="Select TCP port of the Consumer")
 arguments.add_argument("--iface", default="eth0", help="Select interface to monitor")
@@ -74,7 +74,7 @@ if args.start:
     print("Starting nfm actuator...")
     collectors = ArrayOf(Collector)()
     collectors.append(Collector(host=Host("127.0.0.1"), port=Port(2055)))
-    if args.probe == "fprobe":
+    if args.probe == "fprobe" or args.probe == "nprobe":
         # For fprobe.
         arg = nfm.Args(
             {

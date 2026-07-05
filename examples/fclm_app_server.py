@@ -3,11 +3,11 @@
 #
 
 import logging
-import openc2lib as oc2
+import otupy as oc2
 
-from openc2lib.encoders.json import JSONEncoder
-from openc2lib.transfers.http import HTTPTransfer
-from otupy.actuators.fclm import FilebeatActuator
+from otupy.encoders.json import JSONEncoder
+from otupy.transfers.http import HTTPTransfer
+from otupy.actuators.fclm import FCLMActuatorFilebeat
 
 import otupy.profiles.fclm as fclm
 
@@ -33,7 +33,7 @@ hdls = [stdout_handler, file_handler]
 
 def main():
     actuators = {}
-    actuators[(fclm.Profile.nsid, "agent_x")] = FilebeatActuator(asset_id="agent_x")
+    actuators[(fclm.Profile.nsid, "agent_x")] = FCLMActuatorFilebeat(asset_id="agent_x")
     c = oc2.Consumer("testconsumer", actuators, JSONEncoder(), HTTPTransfer("127.0.0.1", 8080))
     c.run()
 
