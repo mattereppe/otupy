@@ -3,10 +3,10 @@
 #
 
 import logging
-import openc2lib as oc2
+import otupy as oc2
 
-from openc2lib.encoders.json import JSONEncoder
-from openc2lib.transfers.http import HTTPTransfer
+from otupy.encoders.json import JSONEncoder
+from otupy.transfers.http import HTTPTransfer
 from otupy.actuators.rcli.rcli_actuator import RCLIActuator
 import otupy.profiles.rcli as rcli
 

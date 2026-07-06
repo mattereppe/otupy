@@ -4,7 +4,7 @@ This module defines the nsid and unique name for the RCLI profile.
 No explicit values are used anywhere in the rest of the code.
 """
 
-import openc2lib as oc2
+import otupy as oc2
 
 nsid = "x-rcli"
 

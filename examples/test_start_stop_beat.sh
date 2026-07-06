@@ -34,9 +34,9 @@ echo -e "Start\tStop"
 for i in $(seq $count); do
 	start=$( (time -p ssh tulipano "cd $base_path && (sudo $beat_exe -c $beat.yml --path.config $path/$beat-config > /dev/null  2>&1 & while [ -z \$pid ]; do pid=\$(pgrep -af \"^/usr/share/$beat/bin/$beat\" | awk '{print \$1}'); done; echo \$pid) " > beat.pid  ) 2>&1 | awk '/^real/ {print $2}' )
 	
-	sleep 3
+	sleep 6
 	pid=$(cat beat.pid)
-	echo "pid: $pid"
+#echo "pid: $pid"
 	stop=$( (time -p ssh tulipano "sudo kill -9 $pid")  2>&1 | awk '/^real/ {print $2}' )
 	
 	echo -e "$start\t$stop "
