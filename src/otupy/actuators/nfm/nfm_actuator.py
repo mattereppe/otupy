@@ -18,12 +18,6 @@ from otupy.profiles.nfm import Profile, AllowedCommandTarget, Results, validate_
 from otupy.profiles.nfm.targets.monitor import FlowMonitor
 from otupy.profiles.nfm.targets.monitor_id import MonitorID
 
-Feature.extend("interfaces", 5)
-Feature.extend("information_elements", 6)
-Feature.extend("exports", 7)
-Feature.extend("export_options", 8)
-Feature.extend("flow_format", 9)
-Feature.extend("filters", 10)
 logger = logging.getLogger(__name__)
 OPENC2VERS = Version(1, 0)
 

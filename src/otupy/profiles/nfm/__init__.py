@@ -15,6 +15,7 @@ from otupy import TargetEnum
 from otupy.profiles.nfm.data import *
 from otupy.profiles.nfm.targets import FlowMonitor
 from otupy.profiles.nfm.targets import MonitorID
+from otupy.profiles.nfm.targets import Feature
 
 
 # According to the standard, extended targets must be prefixed with the nsid
