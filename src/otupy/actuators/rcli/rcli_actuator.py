@@ -19,6 +19,7 @@ Feature.extend("clicommands", 5)
 
 
 # An implementation of the rcli profile.
+@actuator_implementation("rcli-linux")
 class RCLIActuator:
     """RCLI implementation
 
