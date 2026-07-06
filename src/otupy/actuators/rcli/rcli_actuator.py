@@ -5,7 +5,7 @@ It only answers to the request for available features.
 """
 
 import logging
-from otupy import Actions, Feature
+from otupy import Actions, Feature, actuator_implementation
 import otupy.profiles.rcli as rcli
 from otupy.actuators.rcli.actions.copy import copy
 from otupy.actuators.rcli.actions.delete import delete
@@ -25,6 +25,14 @@ class RCLIActuator:
 
     This class provides an implementation of the RCLI `Actuator`.
     """
+
+    def __init__(self, *, specifiers, **kwargs):
+        """Initialization of the `RCLI Actuator`.
+			  Assign default values; always call this before any specific initialization of derived classes.
+
+        :param asset_id: RCLI Actuator asset id.
+        """
+        self.asset_id = specifiers["asset_id"]
 
     def run(self, cmd):
         logger.info(f"Received command for processing: {cmd}")
