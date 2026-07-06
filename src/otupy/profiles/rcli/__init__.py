@@ -15,6 +15,7 @@ from otupy import TargetEnum
 from otupy.profiles.rcli.data import *
 from otupy.profiles.rcli.targets import Processes
 from otupy.profiles.rcli.targets import Files
+from otupy.profiles.rcli.targets import Feature
 
 
 # According to the standard, extended targets must be prefixed with the nsid
