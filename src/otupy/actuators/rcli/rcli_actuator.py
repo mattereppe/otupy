@@ -15,7 +15,7 @@ from otupy.actuators.rcli.actions.query import query
 from otupy.actuators.rcli.handlers.response_handler import notimplemented, servererror, notfound
 
 logger = logging.getLogger(__name__)
-Feature.extend("clicommands", 5)
+#Feature.extend("clicommands", 5)
 
 
 # An implementation of the rcli profile.
