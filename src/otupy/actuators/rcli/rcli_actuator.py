@@ -33,6 +33,7 @@ class RCLIActuator:
         :param asset_id: RCLI Actuator asset id.
         """
         self.asset_id = specifiers["asset_id"]
+        self.file_location = kwargs.get('file_location', '/tmp')
 
     def run(self, cmd):
         logger.info(f"Received command for processing: {cmd}")
@@ -58,9 +59,9 @@ class RCLIActuator:
                 case Actions.stop:
                     response = stop(cmd)
                 case Actions.copy:
-                    response = copy(cmd)
+                    response = copy(cmd, self.file_location)
                 case Actions.delete:
-                    response = delete(cmd)
+                    response = delete(cmd, self.file_location)
                 case _:
                     response = notimplemented("Command not implemented")
         except Exception as e:

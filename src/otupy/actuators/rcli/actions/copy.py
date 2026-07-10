@@ -15,7 +15,7 @@ from otupy.actuators.rcli.handlers.response_handler import servererror, badreque
 logger = logging.getLogger(__name__)
 
 
-def copy(cmd):
+def copy(cmd, location):
     """
     Handles the `copy` action by validating the command arguments and calling the appropriate method to copy an artifact.
 
@@ -54,13 +54,13 @@ def copy(cmd):
         except KeyError:
             return badrequest("Invalid copy argument")
     if cmd.target.getObj().__class__ == Artifact:
-        r = copy_artifact(cmd)
+        r = copy_artifact(cmd, location)
     else:
         return badrequest("Unsupported Target Type.")
     return r
 
 
-def copy_artifact(cmd):
+def copy_artifact(cmd, location):
     """
     Copies a file from the target artifact and stores it in the specified directory.
 
@@ -100,7 +100,7 @@ def copy_artifact(cmd):
             "Payload cannot be empty",
         )
 
-    full_path, file_path, file_name = get_file_path(arguments)
+    full_path, file_path, file_name = get_file_path(arguments, location)
 
     if os.path.exists(full_path):
         return badrequest("File already exists")
@@ -119,4 +119,4 @@ def copy_artifact(cmd):
         )
         return ok("Ok", res=res)
     except Exception as e:
-        return servererror("Error copying artifact")
+        return servererror("Error copying artifact: %s", e)

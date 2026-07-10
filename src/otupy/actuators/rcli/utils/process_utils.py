@@ -88,7 +88,7 @@ def open_process(cmd, scheduled_name, terminate_time):
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         parent_process = psutil.Process(process.pid)
         pid = process.pid
-        time.sleep(3)
+#        time.sleep(3)
         stdout, stderr = None, None
         if (
             process.poll() is not None

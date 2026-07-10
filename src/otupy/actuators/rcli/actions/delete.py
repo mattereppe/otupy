@@ -18,7 +18,7 @@ from otupy.profiles.rcli.targets.files import Files
 logger = logging.getLogger(__name__)
 
 
-def delete(cmd):
+def delete(cmd, location):
     """Delete action
 
     This method implements the `delete` action.
@@ -34,13 +34,13 @@ def delete(cmd):
         except KeyError:
             return badrequest("Invalid start argument")
     if cmd.target.getObj().__class__ == Files:
-        r = delete_file(cmd)
+        r = delete_file(cmd, location)
     else:
         return notimplemented("Unsupported Target Type.")
     return r
 
 
-def delete_file(cmd):
+def delete_file(cmd, location):
     """
     Handles the `delete` action by validating the command arguments and calling the appropriate method to delete a file.
 
@@ -76,7 +76,10 @@ def delete_file(cmd):
         return badrequest("Request should contain at least a file")
     for file in target:
         file_name = file.get("name")
-        file_path = file.get("path")
+        file_path = os.path.join(location, str(PRODUCER_ID), os.path.splitroot(file.get("path"))[2])
+#        file_path = file.get("path")
+        # Stay save and remove the "/" absolute path from the provided string
+#        full_path = os.path.join(location, str(PRODUCER_ID), os.path.splitroot(file_path)[2], file_name)
         full_path = os.path.join(file_path, file_name)
 
         if not is_file_authorized(file_path, file_name):
