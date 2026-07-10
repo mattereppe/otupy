@@ -16,10 +16,6 @@ from otupy.actuators.fclm.handlers.response_handler import (
 )
 from otupy import ResponseType, Duration, DateTime, ArrayOf, Nsid, Version, Actions, Features, Feature
 
-Feature.extend("export_fields", 11)
-Feature.extend("exports_config", 12)
-Feature.extend("imports_config", 13)
-Feature.extend("import_controls", 14)
 logger = logging.getLogger(__name__)
 OPENC2VERS = Version(1, 0)
 

@@ -15,6 +15,7 @@ from otupy import TargetEnum
 from otupy.profiles.fclm.data import *
 from otupy.profiles.fclm.targets import LogMonitor
 from otupy.profiles.fclm.targets import MonitorID
+from otupy.profiles.fclm.targets import Feature
 
 from otupy.profiles.fclm.data.collector import Collector
 from otupy.profiles.fclm.data.file_format import FileFormat
