@@ -5,9 +5,15 @@ from otupy import ArrayOf, Process
 
 
 class Commands:
-    # Load available commands from JSON
-    with open(os.path.join(os.path.dirname(__file__), "available_commands.json"), "r") as file:
-        available_commands = json.load(file)
+    available_commands = {}
+
+    @staticmethod
+    def load_allowed_commands(command_list={}):
+        """ 
+            Loads avaialble commands with their allowed flags.
+        """
+        Commands.available_commands = command_list
+        print("Allowed commands: ", Commands.available_commands)
 
     @staticmethod
     def get_available_commands(command_list=None):
@@ -55,7 +61,9 @@ class Commands:
     @staticmethod
     def validate_command(name, flags_string):
         """Validates the command name and its flags. Returns True if valid, else False."""
+        print("Commands.available_commands: ", Commands.available_commands)
         if name not in Commands.available_commands:
+            print("---- chiara pompinara")
             return False
 
         command_info = Commands.available_commands[name]

@@ -13,6 +13,7 @@ from otupy.actuators.rcli.actions.start import start
 from otupy.actuators.rcli.actions.stop import stop
 from otupy.actuators.rcli.actions.query import query
 from otupy.actuators.rcli.handlers.response_handler import notimplemented, servererror, notfound
+from otupy.actuators.rcli.cli.commands import Commands
 
 logger = logging.getLogger(__name__)
 #Feature.extend("clicommands", 5)
@@ -34,6 +35,7 @@ class RCLIActuator:
         """
         self.asset_id = specifiers["asset_id"]
         self.file_location = kwargs.get('file_location', '/tmp')
+        Commands.load_allowed_commands( kwargs.get('allowed_commands', {}) )
 
     def run(self, cmd):
         logger.info(f"Received command for processing: {cmd}")
