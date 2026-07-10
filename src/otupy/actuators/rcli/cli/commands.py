@@ -56,15 +56,18 @@ class Commands:
     def validate_command(name, flags_string):
         """Validates the command name and its flags. Returns True if valid, else False."""
         if name not in Commands.available_commands:
-
             return False
 
         command_info = Commands.available_commands[name]
 
         # Expand and separate flags and potential paths
-        parts = flags_string.split()
-        expanded_flags = Commands.expand_flags(" ".join([p for p in parts if p.startswith("-")]))
-        paths = [p for p in parts if not p.startswith("-")]
+        if flags_string and len(flags_string) > 0:
+           parts = flags_string.split()
+           expanded_flags = Commands.expand_flags(" ".join([p for p in parts if p.startswith("-")]))
+           paths = [p for p in parts if not p.startswith("-")]
+        else:
+           expanded_flags = []
+           paths = []
 
         # Validate flags
         if not set(expanded_flags).issubset(command_info["flags"]):

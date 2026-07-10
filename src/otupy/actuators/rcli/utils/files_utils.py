@@ -34,7 +34,7 @@ def get_payload(target):
     return None, False
 
 
-def get_file_path(arguments):
+def get_file_path(arguments, location):
     """
     Determines the file path where an artifact should be saved.
 
@@ -52,11 +52,14 @@ def get_file_path(arguments):
 
     if storage and isinstance(storage, File):
         path_value = storage.get("path", None)
+        if path_value is not None:
+            # Stay save and remove leading "/"
+            path_value=os.path.splitroot(path_value)[2]
         file_name = storage.get("name") or file_name
-        file_path = os.path.join("/opt", str(PRODUCER_ID), path_value)
+        file_path = os.path.join(location, str(PRODUCER_ID), path_value)
         return os.path.join(file_path, file_name), file_path, file_name
 
-    file_path = os.path.join("/opt", str(PRODUCER_ID))
+    file_path = os.path.join(location, str(PRODUCER_ID))
     return os.path.join(file_path, file_name), file_path, file_name
 
 
@@ -80,7 +83,9 @@ def download_or_save_file(is_uri, payload, file_path):
             f.write(response.content)
         file_content = response.content
     else:  # If the payload is binary data, save it
-        Path(file_path).write_text(payload.decode())
+        with open(file_path, "wb") as f:
+            f.write(payload)
+            #Path(file_path).write_text(payload.decode())
         file_content = payload
     # Calculate MD5 hash of the file content
     file_hash = hashlib.md5(file_content).digest()

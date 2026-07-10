@@ -91,12 +91,6 @@ def validate_command(cmd):
     """
 
     try:
-        print("--------------------------------------")
-        print(cmd)
-        print(cmd.action)
-        print(AllowedActions)
-        print(AllowedCommandTarget[cmd.action])
-        print(TargetEnum[cmd.target.getName()])
         if cmd.action in AllowedActions and TargetEnum[cmd.target.getName()] in AllowedCommandTarget[cmd.action]:
             return True
         else:
