@@ -6,6 +6,7 @@
 
 import logging
 import time
+import datetime
 
 from threading import Event, get_ident
 
@@ -90,10 +91,12 @@ def discovery(config):
 	queried_consumers = []
 	producer_name=config.get('name','Discovery')
 
+	start_discovery = datetime.datetime.now().timestamp()
 	# We allow more root services to be present in the configuration
 	for root in config['services']:
 		consumers = [root]
-		logger.debug("Discoverying: %s", root)
+		logger.info("Discoverying: %s", root)
+		start_discovery_service = datetime.datetime.now().timestamp()
 
 		# Start recursive discovery
 		while len(consumers) > 0: 
@@ -128,6 +131,7 @@ def discovery(config):
 						publish_data(config, b)
 				except Exception as e:
 					logger.error("Unable to retrieve consumers for external bom refs: %s", e)
+					print(xbom_raw)
 
 
 				if config['recursive']:
@@ -137,6 +141,11 @@ def discovery(config):
 				logger.warning("No links returned for %s", get_consumer_short(consumer))
 
 			queried_consumers.append(consumer)
+		discovery_service_time = datetime.datetime.now().timestamp() - start_discovery_service
+		logger.info("Discoverying %s took: %s", root['actuator']['asset_id'], discovery_service_time)
+
+	discovery_time = datetime.datetime.now().timestamp() - start_discovery
+	logger.info("Discovery took: %s", discovery_time)
 
 
 def discover(consumer, producer_name, xbom_format, xbom_encoding):
