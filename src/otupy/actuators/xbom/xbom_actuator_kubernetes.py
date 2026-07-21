@@ -36,6 +36,7 @@ import logging
 import sys
 import ipaddress
 import uuid
+import datetime
 
 from otupy.profiles import slpf
 
@@ -173,7 +174,10 @@ class XBOMKubernetesActuator(XBOMActuator):
 	def _k8s_namespaces_list(self):
 		namespace_list = []
 		try:
+			start_api = datetime.datetime.now().timestamp()
 			namespace_list = self.api_client.list_namespace(field_selector="status.phase=Active").items
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Kubernetes  namespace_list took: %s", api_time)
 		except ApiException as e: # Fails without cluster-wide scope
 			logger.warn("Unable to retrieve namespace list (do you have cluster-wide access?)")
 			logger.debug("Reason: %s", e)
@@ -497,7 +501,11 @@ class XBOMKubernetesActuator(XBOMActuator):
 		"""
 		try:
 			if namespaces is None:
-				return self.api_client.list_service_for_all_namespaces().items 
+				start_api = datetime.datetime.now().timestamp()
+				a =  self.api_client.list_service_for_all_namespaces().items 
+				api_time = datetime.datetime.now().timestamp() - start_api
+				logger.debug("Kubernetes service_list took: %s", api_time)
+				return a
 		except ApiException as e:
 			logger.warn("Unable to retrieve service list for all namespaces")
 			logger.debug("Reason: %s",e)
@@ -505,9 +513,12 @@ class XBOMKubernetesActuator(XBOMActuator):
 
 		try:
 			service_list=[]
+			start_api = datetime.datetime.now().timestamp()
 			for n in namespaces:
 				# This works even without cluster scope
 				service_list+=self.api_client.list_namespaced_service(namespace=n).items
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Kubernetes service_list took: %s", api_time)
 		except ApiException as e:
 			logger.warn("Unable to retrieve service list for namespace %s: %s",n, e)
 		
@@ -520,14 +531,20 @@ class XBOMKubernetesActuator(XBOMActuator):
 			fs = None
 
 		try:
+			start_api = datetime.datetime.now().timestamp()
 			return self.api_client.list_namespaced_endpoints(namespace=namespace, field_selector=fs)
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Kubernetes endpoint_list took: %s", api_time)
 		except:
 			logger.warn("Unable to retrieve endpoints for namespace: %s", namespace)
 			return []
 
 	
 	def _k8s_pod_node(self, pod):
+		start_api = datetime.datetime.now().timestamp()
 		pods = self.api_client.list_namespaced_pod(namespace=pod.namespace, field_selector="metadata.name="+str(pod.name))
+		api_time = datetime.datetime.now().timestamp() - start_api
+		logger.debug("Kubernetes XXX pod_list took: %s", api_time)
 		for p in pods.items:
 			# Just one item will be present because the pod name is unique in the same namespace
 			return p.spec.node_name
@@ -762,7 +779,11 @@ class XBOMKubernetesActuator(XBOMActuator):
 
 	def _k8s_node_list(self, field_selector=None, label_selector=None):
 		try:
-			return self.api_client.list_node(field_selector=field_selector, label_selector=label_selector).items
+			start_api = datetime.datetime.now().timestamp()
+			a =  self.api_client.list_node(field_selector=field_selector, label_selector=label_selector).items
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Kubernetes node_list took: %s", api_time)
+			return a
 		except ApiException as e:
 			logger.warn("Unable to retrieve node list (do you have cluster-wide access?)")
 			logger.debug("Reaseon: %s", e)
@@ -969,7 +990,11 @@ class XBOMKubernetesActuator(XBOMActuator):
 
 		try:
 			if self.namespaces is None:
-				return self.api_client.list_pod_for_all_namespaces(label_selector=label_selector).items
+				start_api = datetime.datetime.now().timestamp()
+				a = self.api_client.list_pod_for_all_namespaces(label_selector=label_selector).items
+				api_time = datetime.datetime.now().timestamp() - start_api
+				logger.debug("Kubernetes pod_list took: %s", api_time)
+				return a
 		except ApiException as e:
 			logger.warn("Unable to retrieve pod list for all namespaces")
 			logger.debug("Reason: %s", e)
@@ -977,8 +1002,11 @@ class XBOMKubernetesActuator(XBOMActuator):
 		
 		try:
 			pods = []
+			start_api = datetime.datetime.now().timestamp()
 			for ns in self.namespaces:
 				pods += self.api_client.list_namespaced_pod(namespace=ns, label_selector=label_selector).items 
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Kubernetes pod_list took: %s", api_time)
 		except ApiException as e:
 			logger.warn("Unable to retrieve pod list for namespace %s", ns)
 			logger.warn("Reason: %s", ns , e)
@@ -1032,7 +1060,10 @@ class XBOMKubernetesActuator(XBOMActuator):
 				configuration.verify_ssl=False
 	
 			# Create an API client
+			start_api = datetime.datetime.now().timestamp()
 			self.api_client = client.CoreV1Api(client.ApiClient(configuration))
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Kubernetes connect took: %s", api_time)
 		except Exception as e:
 			logger.error("Failed to connect to kubernetes: ", e)
 			return Exception("Failed to connect to kubernetes")
