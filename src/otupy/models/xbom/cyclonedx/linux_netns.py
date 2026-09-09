@@ -25,3 +25,31 @@ class LinuxNetns(Record):
 	
 	def __str__(self):
 		return self.__repr__()
+
+from otupy.models.ctxd.linux_ns import LinuxNetns
+
+from cyclonedx.model import Property
+from cyclonedx.model.component import Component, ComponentType
+from otupy.models.xbom.cyclonedx.bom_ref import generate_bom_ref
+
+def to_cyclonedx(self) -> Component:
+	"""Convert LinuxNS to CycloneDX component format.
+	
+	Returns:
+		Component: CycloneDX Component with type LINUX_NS.
+	"""
+	properties = [
+		Property(name="otupy:type", value="linux_ns")
+	]
+	if self.inode is not None:
+		properties.append(Property(name="otupy:linux_ns:inode", value=self.inode))
+	
+	# Include nested components from Host
+	return Component(
+		name="linux_ns",
+		type=ComponentType.PLATFORM,
+		bom_ref=generate_bom_ref("linux_ns"),
+		properties=properties
+	)
+
+LinuxNS.to_cyclonedx = to_cyclonedx

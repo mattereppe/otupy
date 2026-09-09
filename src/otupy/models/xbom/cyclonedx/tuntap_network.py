@@ -30,7 +30,7 @@ def to_cyclonedx(self) -> Service:
 			properties.extend(net_props)
 	
 	return Service(
-		name=server or "tuntap-network",
+		name=app or "tuntap-network",
 		bom_ref=generate_bom_ref("tuntap_network"),
 		properties=properties
 	)

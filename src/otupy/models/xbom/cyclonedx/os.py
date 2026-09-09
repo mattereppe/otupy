@@ -30,3 +30,5 @@ def to_cyclonedx(self) -> Component:
 		# description=self.description,
 		properties=properties
 	)
+
+OS.to_cyclonedx = to_cyclonedx
