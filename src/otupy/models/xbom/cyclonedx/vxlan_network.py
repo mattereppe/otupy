@@ -1,22 +1,22 @@
-""" Virtual LAN network
+""" Virtual eXtended LAN network
 
-	Defines the main characteristics of a VLAN
+	Defines the main characteristics of a VXLAN
 """
 
-from otupy.models.ctxd.vlan_network import VLANNetwork
+from otupy.models.ctxd.vxlan_network import VXLANNetwork
 
 from cyclonedx.model import Property
 from cyclonedx.model.service import Service
 from otupy.models.xbom.cyclonedx.bom_ref import generate_bom_ref
 
 def to_cyclonedx(self) -> Service:
-	"""Convert VLANNetwork to CycloneDX service format.
+	"""Convert VXLANNetwork to CycloneDX service format.
 	
 	Returns:
 		Service: CycloneDX Service representation.
 	"""
 	properties = [
-		Property(name="otupy:type", value="vlan_network")
+		Property(name="otupy:type", value="vxlan_network")
 	]
 	
 	vni = self.get('vni')
@@ -30,13 +30,13 @@ def to_cyclonedx(self) -> Service:
 	nets = self.get('nets')
 	if nets is not None:
 		for i, net in enumerate(nets):
-			net_props = net.to_cyclonedx(prefix=f"otupy:vlan:{i}")
+			net_props = net.to_cyclonedx(prefix=f"otupy:vxlan:{i}")
 			properties.extend(net_props)
 	
 	return Service(
-		name=name or "vlan-network",
-		bom_ref=generate_bom_ref("vlan_network"),
+		name=vni or "vxlan-network",
+		bom_ref=generate_bom_ref("vxlan_network"),
 		properties=properties
 	)
 
-VLANNetwork.to_cyclonedx = to_cyclonedx
+VXLANNetwork.to_cyclonedx = to_cyclonedx
