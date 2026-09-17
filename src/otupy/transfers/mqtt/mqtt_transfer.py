@@ -272,7 +272,7 @@ class MQTTTransfer(oc2.Transfer):
 			resp.content_type = oc2.Message.content_type
 			resp.version = oc2.Message.version
 			resp.encoder = encname
-			encoder = oc2.Encoders[encname]
+			encoder = oc2.Encoders[encname].value
 			resp.status=oc2.StatusCode.INTERNALERROR
 			resp.to = None
 		else:
@@ -393,6 +393,7 @@ class MQTTTransfer(oc2.Transfer):
 			data = encoder.encode(m)
 		else:
 			data = oc2.Encoder().encode(m)
+		logger.debug("Sending OpenC2 message:\n%s", data)
 
 		return data
 
@@ -407,6 +408,7 @@ class MQTTTransfer(oc2.Transfer):
 			data_text = data
 		data = data_text
 
+		logger.debug("Received OpenC2 message:\n%s", data)
 		if not content_type.removeprefix('application/').startswith(oc2.Message.content_type):
 			raise UnsupportedMediaType("Unsupported content type " + "content_type")
 

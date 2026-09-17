@@ -27,8 +27,6 @@ import otupy.transfers  # Do not remove! It is necessary to find the registered 
 from otupy import Actuators, Encoders, Transfers
 from otupy import Consumer, LogFormatter
 
-from otupy.actuators.ctxd.ctxd_actuator_openstack import CTXDActuator_openstack
-
 logger = logging.getLogger(__name__)
 
 default_consumer = {
@@ -129,6 +127,8 @@ def main() -> None:
                     logger.info("Loading actuator: %s", name)
                     identifier = values["actuator"]
                     if identifier not in Actuators:
+                        logger.error(f"No actuator: {identifier}")
+                        logger.error(f"Available actuators: {Actuators}")
                         raise RuntimeError(f"{identifier} is not a registered actuator")
 
                     # By default, we give the actuator this consumer, if the configuration file
@@ -138,7 +138,7 @@ def main() -> None:
                     clazz = Actuators[identifier]
                     parameters = dict(values)
                     del parameters["actuator"]
-                    del parameters["profile"]
+#         del parameters["profile"]
     
                     profile = values["profile"]
                     logger.info(" - Profile: %s", profile)
@@ -150,10 +150,7 @@ def main() -> None:
         encoder = Encoders[consumer['encoding']].value
 
         # Load the transferer (beautiful name, eh?).
-        try:
-            transfer_options = consumer['transfer_options']
-        except:
-            transfer_options= {}
+        transfer_options = consumer.get('transfer_options', {})
         if consumer['transfer'] not in Transfers:
             raise RuntimeError(f"{consumer['transfer']} is not a registered transfer schema")
         if 'endpoint' in consumer:

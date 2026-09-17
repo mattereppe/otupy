@@ -5,11 +5,11 @@ import json
 
 
 from helpers import load_json, load_files, send_raw_command
-from openc2lib import Encoder, Command, Response, Message, StatusCode, EncoderError, Feature
-from openc2lib.core.producer import Producer
-from openc2lib.transfers.http.http_transfer import HTTPTransfer
-import openc2lib.transfers.http.message as http
-from openc2lib.encoders.json import JSONEncoder
+from otupy import Encoder, Command, Response, Message, StatusCode, EncoderError, Feature
+from otupy.core.producer import Producer
+from otupy.transfers.http.http_transfer import HTTPTransfer
+import otupy.transfers.http.message as http
+from otupy.encoders.json import JSONEncoder
 
 import json_schema_validation_rcli
 
@@ -41,7 +41,7 @@ def fix_ip_addresses(cmd):
 		to be given. However, a single host address may be acceptable as well. Openc2lib strictly adhere to
 		the network-biased convention to always give the prefix, but it also accepts ip addresses as input.
 		This fix is necessary to convert the reference json examples so that they are comparable with the 
-		notation of openc2lib.
+		notation of otupy.
 	"""
 	if 'ipv4_net' in cmd['target']:
 		cmd['target']['ipv4_net'] = ipaddress.IPv4Network(cmd['target']['ipv4_net']).compressed
@@ -100,14 +100,14 @@ def validate_json(caplog):
 @pytest.mark.parametrize("cmd", load_json(command_path_good) )
 @pytest.mark.dependency(name="test_decoding")
 def test_decoding(cmd):
-	""" Test 'good' commands can be successfully decoded by openc2lib """
+	""" Test 'good' commands can be successfully decoded by otupy """
 	c = JSONEncoder.decode(cmd, Command)
 	assert type(c) == Command
 
 @pytest.mark.parametrize("cmd", load_json(command_path_good) )
 @pytest.mark.dependency(name="test_encoding", depends=["test_decoding"])
 def test_encoding(cmd):
-	""" Test 'good' commands can be successfully encoded by openc2lib
+	""" Test 'good' commands can be successfully encoded by otupy
 
 		The test decodes 'good' commands, and then create again the json. Finally, the original
 		and created json are compared. A number of fixes are applied to account for different
@@ -137,7 +137,7 @@ def test_sending(cmd, create_producer, caplog):
 	c = Encoder.decode(Command, cmd)
 
 # Filter the log to get what I need
-	logger = logging.getLogger("openc2lib.transfers.http.http_transfer")
+	logger = logging.getLogger("otupy.transfers.http.http_transfer")
 	logger.addFilter(JSONDump())
 
 	check_command(c)

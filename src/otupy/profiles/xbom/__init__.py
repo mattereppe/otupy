@@ -14,8 +14,9 @@ from otupy.profiles.xbom.actuator import *
 from otupy import TargetEnum
 from otupy.profiles.xbom.data import *
 from otupy.profiles.xbom.data.xbom_format import XbomFormat
+from otupy.profiles.xbom.data.xbom_encoding import XbomEncoding
 from otupy.profiles.xbom.data.xbom import CyclonedxXbom
-from otupy.profiles.xbom.targets import Context, XbomCtx
+from otupy.profiles.xbom.targets import XbomTarget
 
 
 # According to the standard, extended targets must be prefixed with the nsid
@@ -73,6 +74,6 @@ from otupy.profiles.xbom.data.server import Server
 from otupy.profiles.xbom.data.web_service import WebService
 
 # Backward compatibility aliases for old names
-SbomCtx = XbomCtx
-SbomFormat = XbomFormat
+#SbomCtx = XbomCtx
+#SbomFormat = XbomFormat
 

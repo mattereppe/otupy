@@ -192,11 +192,12 @@ def test_decoding_invalid(cmd_file):
 	print("Command file: ", cmd_file)
 	# It may also raises while loading the files, since they may be empty
 	with open(cmd_file, 'r') as fcmd:
-		try:
+#		try:
+#			cmd = yaml.safe_load(fcmd) 
+#		except yaml.YAMLError:
+#			cmd = ""
+		with pytest.raises( (TypeError, ValueError, KeyError, EncoderError, yaml.YAMLError) ):
 			cmd = yaml.safe_load(fcmd) 
-		except yaml.YAMLError:
-			cmd = ""
-		with pytest.raises( (TypeError, ValueError, KeyError, EncoderError) ):
 			print("Command yaml: ", cmd)
 			Encoder.decode(Command, cmd)
 		

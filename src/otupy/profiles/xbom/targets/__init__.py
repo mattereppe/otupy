@@ -3,6 +3,5 @@
 	This modules defines additional targets specific for the XBOM profile.
 """
 
-from otupy.profiles.xbom.targets.context import Context
-from otupy.profiles.xbom.targets.xbom_ctx import XbomCtx
+from otupy.profiles.xbom.targets.xbom_ctx import XbomTarget
 

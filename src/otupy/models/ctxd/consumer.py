@@ -1,0 +1,93 @@
+import logging
+
+import otupy.types.base
+import otupy.transfers
+import otupy.encoders
+from otupy import Transfer, Transfers, Encoder, Encoders, Map, Extensions
+from otupy.types.data.hostname import Hostname
+from otupy.types.data.l4_protocol import L4Protocol
+
+logger = logging.getLogger(__name__)
+
+class Consumer(otupy.types.base.Record):
+	"""Consumer
+
+		This class contains all mandatory and optional data to connect to an OpenC2 Consumer.
+		Although a typical OpenC2 communication stack will likely use JSON/HTTPS, there
+		are not default settings for this class.
+	"""
+	host: str = None
+	""" Hostname or IP address """
+	port: int = None
+	""" port used to connect to the actuator """
+	protocol: L4Protocol = None
+	""" protocol used to connect to the actuator """
+	endpoint: str = None
+	""" path to the endpoint (.../.well-known/openc2) """
+	transfer: str = None
+	""" transfer protocol used to connect to the actuator """
+	encoding: str = None
+	""" encoding format used to connect to the actuator """	
+	profile: str = None
+	""" profile implemented by this Consumer. Default to the context discovery profile. """
+	actuator: dict = None
+	""" actuator specifiers """
+
+	def __init__(self, host:str = None, port:int = None, protocol:int = None, endpoint:str = None, 
+			transfer:str = None, encoding:str = None,
+			profile:str = None, actuator = None, **kwargs):
+			# kwargs are additional configurations used by external components that must not be
+			# exposed in the ctxd model (e.g., connector options)
+		if isinstance(host, Consumer):
+			self.host = host.host
+			self.port = host.port
+			self.protocol = host.protocol
+			self.endpoint = host.endpoint
+			self.transfer = host.transfer
+			self.encoding = host.encoding
+			self.profile = host.profile
+			self.actuator = host.actuator
+		else:
+			self.host = host if host is not None else None
+			self.port = port if port is not None else None
+			self.protocol = L4Protocol[protocol] if protocol is not None else None
+			self.endpoint = endpoint if endpoint is not None else None
+			self.transfer = transfer if transfer is not None else None
+			self.encoding = Encoders[encoding].name if encoding is not None else None
+			self.profile = profile # Default value assigned in function declaration
+			specifiers = None
+			if actuator is not None:
+				try:
+					specifiers = Extensions['Actuators'][profile](actuator)
+				except:
+					specifiers = None
+					logger.error("Cannot instantiate %s profile for consumer: %s", profile, host)
+			self.actuator=specifiers
+
+
+	def __repr__(self):
+		return f"Consumer(" \
+	            f"host={self.host}, " \
+	            f"port={self.port}, " \
+	            f"protocol={self.protocol}, " \
+	            f"endpoint={self.endpoint}, " \
+					f"transfer={self.transfer}, " \
+	            f"encoding={self.encoding}, " \
+					f"profile={self.profile}, " \
+					f"actuator={self.actuator})"
+	
+	def __str__(self):
+		return self.__repr__()
+
+#	def __eq__(self, other):
+#		""" Equality operator
+#
+#			We define two actuators to be equal, if the same specifiers serves
+#			the same profiles on the same host/port pair. We deliberately do not
+#			consider protocol, endpoint, and transfer, because the same actuator might
+#			serve multiple of them
+#		"""
+#		return self.host == other.host and self.port == other.port and self.profile == other.profile and self.specifiers == other.specifiers
+
+
+

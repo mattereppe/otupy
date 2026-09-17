@@ -1,23 +1,21 @@
-""" CTXD Arguments
+""" XBOM Arguments
 	
-	This module extends the Args defined by the Language Specification
-	(see Sec. 'Command Arguments Unique to CTXD').
+	This module extends the Args defined by the Language Specification.
 """
 import otupy as oc2
 
 from otupy.profiles.xbom.profile import Profile
+from otupy.profiles.xbom.data.xbom_format import XbomFormat
+from otupy.profiles.xbom.data.xbom_encoding import XbomEncoding
 
 
 @oc2.extension(nsid=Profile.nsid)
 class Args(oc2.Args):
-	""" CTXD Args
+	""" XBOM Args
 
-		This class extends the Args defined in the Language Specification.
-		The extension mechanism is described in the 
-		[Developing extensions](https://github.com/mattereppe/otupy/blob/main/docs/developingextensions.md#developing-extensions) Section of the main documentation.
-
-		:param name_only: Set to True to get only service name, False (default) to get full details.
+		:param format: Requests the format to represent the XBOM (e.g. ctxd, CycloneDX). 
+		:param encoding: Requests the serialization format for the XBOM (e.g., json, xml). Must be supported by the requested format (if any).
 		:param cached: Set to True to speed up the answer by returning cached results, False (default) to update services before returning the response.
 
 	"""
-	fieldtypes = {'cached': bool}
+	fieldtypes = {'format': XbomFormat, 'encoding': XbomEncoding, 'cached': bool}

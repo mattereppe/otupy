@@ -6,7 +6,8 @@ from jsonschema import validate
 json_schema_cmd='../../openc2-json-schema/schemas/command.json'
 json_schema_rsp='../../openc2-json-schema/schemas/response.json'
 json_schema_contrib = '../../openc2-json-schema/schemas/contrib/oc2ls-v1.0-wd14_update.json'
-json_schema_http = '../../openc2-http-json-schema/message.json'
+json_schema_mqtt = '../../openc2-mqtt-json-schema/message.json'
+#'
 
 class Validation(enum.Enum):
 	command  = 1
@@ -23,7 +24,7 @@ def detect_duplicated_keys(json):
 			d[k] = v
 	return d
 
-def validate_http(msg, schema_type=None):
+def validate_mqtt(msg, schema_type=None):
 	""" Validate json message in HTTP body
 
 		Validate the `msg` inside an HTTP body. If `schema_type` is provided, performs the validation of the 
@@ -38,7 +39,7 @@ def validate_http(msg, schema_type=None):
 		:param schema_type: The type of schema to use: `Validation.base` or `Validation.contrib`. `None` means no validation of OpenC2 command/response is performed (default).
 		:return: True if validation succeds, an `Exception` otherwise.
 	"""
-	with open(json_schema_http, 'r') as f:
+	with open(json_schema_mqtt, 'r') as f:
 		schema = json.loads(f.read())
 
 	content = json.loads(msg, object_pairs_hook=detect_duplicated_keys)
@@ -50,12 +51,12 @@ def validate_http(msg, schema_type=None):
 		assert False
 	
 	if schema_type:
-		if list(content["body"]["openc2"].keys())[0] == "request":
-			validate_openc2(content["body"]["openc2"]["request"], Validation.command, schema_type)
-		elif list(content["body"]["openc2"].keys())[0] == "response":
-			validate_openc2(content["body"]["openc2"]["response"], Validation.response, schema_type)
+		if list(content["content"].keys())[0] == "request":
+			validate_openc2(content["content"]["request"], Validation.command, schema_type)
+		elif list(content["content"].keys())[0] == "response":
+			validate_openc2(content["content"]["response"], Validation.response, schema_type)
 		else:
-			raise ValueError("Unable to validate OpenC2 " + list(content["body"]["openc2"].keys())[0])
+			raise ValueError("Unable to validate OpenC2 " + list(content["content"].keys())[0])
 	
 def validate_openc2(msg, msg_type, schema_type):
 	""" Validate json command/response

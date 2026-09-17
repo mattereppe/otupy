@@ -1,4 +1,4 @@
-from openc2lib.types.base import Enumerated
+from otupy.types.base import Enumerated
 
 
 class Transfer(Enumerated):

@@ -37,11 +37,12 @@ command_path_good = "../../openc2-json-schema/tests/commands/good"
 command_path_bad = "../../openc2-json-schema/tests/commands/bad"
 command_path_good_cbor = "../../openc2-cbor-samples/tests/commands/good"
 command_path_bad_cbor = "../../openc2-cbor-samples/tests/commands/bad"
+#"
 
 
 class JSONDump(logging.Filter):
 	def filter(self, record):
-		return  record.getMessage().startswith("HTTP Request Content") or record.getMessage().startswith("HTTP Response Content") 
+		return  record.getMessage().startswith("Sending OpenC2 message") or record.getMessage().startswith("Received OpenC2 message") 
 
 
 def check_command(cmd):
@@ -96,6 +97,22 @@ def check_command(cmd):
 def validate_json(caplog):
 	""" Check the openc2 json messages exchanged between the consumer and the producer are valid according to the schema """
 	
+# WARNING: the visible logs are those generated within this function. Everything else in the fixture does not produce logs
+	print("-- caplog: ", caplog.messages[0])
+#	assert len(caplog.messages) == 2 # More than one message could come
+	msg = caplog.messages[0]
+	req = msg[msg.index("\n")+1:]
+	msg = caplog.messages[1]
+	rsp = msg[msg.index("\n")+1:]
+	print("*************** Req: ", req)
+	print("*************** Rsp: ", rsp)
+	json_schema_validation.validate_mqtt(req, json_schema_validation.Validation.base)
+	json_schema_validation.validate_mqtt(req, json_schema_validation.Validation.contrib)
+	json_schema_validation.validate_mqtt(rsp, json_schema_validation.Validation.base)
+	json_schema_validation.validate_mqtt(rsp, json_schema_validation.Validation.contrib)
+
+	return True
+
 @pytest.mark.parametrize("cmd", load_json(command_path_good) )
 def test_sending(cmd, create_producer_mqtt, caplog):
 	""" Test 'good' messages are successfully sent to the remote party and a response is received.
@@ -106,12 +123,16 @@ def test_sending(cmd, create_producer_mqtt, caplog):
 	c = Encoder.decode(Command, cmd)
 
 # Filter the log to get what I need
-	logger = logging.getLogger("otupy.transfers.mqtt.mqtt_transfer")
+	logger = logging.getLogger()
+	logger.setLevel(logging.WARNING)
 	logger.addFilter(JSONDump())
+
+	caplog.clear()
+	caplog.handler.addFilter(JSONDump())
 
 	check_command(c)
 	print("Command: ", c)
-	with caplog.at_level(logging.INFO):
+	with caplog.at_level(logging.DEBUG, logger="otupy.transfers.mqtt.mqtt_transfer"):
 		resp = create_producer_mqtt.sendcmd(c,consumers=["testconsumer"])
 
 	assert type(resp) == list
@@ -132,11 +153,19 @@ def test_sending_cbor(cmd, create_producer_mqtt, caplog):
 		Validate the openc2 json messages exchanged. The response is often an error because the majority
 		of features are not implemented in the available actuators.
 	"""
+# Filter the log to get what I need
+	logger = logging.getLogger()
+	logger.setLevel(logging.WARNING)
+	logger.addFilter(JSONDump())
+
+	caplog.clear()
+	caplog.handler.addFilter(JSONDump())
+
 	c = Encoder.decode(Command, cmd)
 
 	check_command(c)
 	print("Command: ", c)
-	with caplog.at_level(logging.INFO):
+	with caplog.at_level(logging.DEBUG, logger="otupy.transfers.mqtt.mqtt_transfer"):
 		resp = create_producer_mqtt.sendcmd(c,consumers=["testconsumer"])
 
 	assert type(resp) == list
@@ -153,16 +182,20 @@ def test_sending_cbor(cmd, create_producer_mqtt, caplog):
 
 @pytest.mark.parametrize("file",  load_files(command_path_bad)  )
 def test_response_to_invalid_commands(file, mqtt_body):
+#def test_response_to_invalid_commands(mqtt_body):
 	""" Send invalid commands and check a BADREQUEST is returned
 
 		Read invalid commands from file and send them to a Consumer. Commands are not encoded (because invalid).
 		Check that a BADREQUEST status is returned.
 	"""
+#	file = "../../openc2-json-schema/tests/commands/bad/query_features_unknown.json" 
+#"
 	print("Command json: ", file)
 	# It may also raises while loading the files, since they may be empty
 	count = 0
 #	for f in cmd_files:
 #print("File: " , file)
+	
 	with open(file, 'r') as fcmd:
 		try:
 			cmd = json.load(fcmd) 
@@ -173,12 +206,11 @@ def test_response_to_invalid_commands(file, mqtt_body):
 			else:
 				raise ValueError("Unable to read json")
 #		print("Command json: ", cmd)
-		mqtt_body['body']['openc2']['request'] = cmd
-#		print("HTTP body: ", json.dumps(http_body))
+		mqtt_body['content']['request'] = cmd
 		response = send_raw_message(json.dumps(mqtt_body))
 
 		msg = JSONEncoder.decode(response, mqtt.Message)
-		assert msg.body.getObj().getObj()['status'] == StatusCode.BADREQUEST
+		assert msg.content.getObj()['status'] == StatusCode.BADREQUEST
 		
 @pytest.mark.parametrize("file",  load_files(command_path_bad_cbor)  )
 def test_response_to_invalid_commands_cbor(file, mqtt_body):
@@ -199,12 +231,11 @@ def test_response_to_invalid_commands_cbor(file, mqtt_body):
 			# In the bad exampes, 1 file is empty. If more than one file cannot be read, something has changed!
 			cmd = {}	
 #		print("Command json: ", cmd)
-		mqtt_body['body']['openc2']['request'] = cmd
+		mqtt_body['content']['request'] = cmd
 #		print("HTTP body: ", json.dumps(http_body))
 		response = send_raw_message_cbor(cbor2.dumps(mqtt_body))
 		print("CBOR response: ", response)
 
 		msg = CBOREncoder.decode(response, mqtt.Message)
-		assert msg.body.getObj().getObj()['status'] == StatusCode.BADREQUEST
+		assert msg.content.getObj()['status'] == StatusCode.BADREQUEST
 		
-

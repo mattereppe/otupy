@@ -94,23 +94,13 @@ def disconnect_from_publishers(publishers):
 
 
 
-def publish_data(config, ctx):
+def publish_data(config, xbomdata):
 	""" Publish data
 
 		Publishes data on all available publishers. This function assumes a persistent session is active.
 	"""
 
 	publishers = connect_to_publishers(config)
-
-	# TODO: Add metadata about the service which publish data
-	ctx['date'] = otupy.DateTime()
-	try:
-		ctx['creator'] = config['name']
-	except:
-		ctx['creator'] = "unkwnon"
-	ctx['jsonschema'] = JSONSCHEMA
-
-	jsondata = otupy.encoders.JSONEncoder().encode(ctx)
 
 	for name, pub  in publishers.items(): 
 		match name:
@@ -123,17 +113,17 @@ def publish_data(config, ctx):
 				# Delete all documents in the collection -- NO MORE NECESSARY, because we use metadata right now
 				# collection.delete_many({})
 				# Note: otupy encoders return str, so we must convert them to dict
-				collection.insert_one(json.loads(jsondata)).inserted_id
+				collection.insert_one(json.loads(xbomdata)).inserted_id
 			case 'kafka':
 				try:
-					pub.send(config['publishers'][name]['topic'], value=jsondata.encode('utf-8'))
+					pub.send(config['publishers'][name]['topic'], value=xbomdata.encode('utf-8'))
 #	pub.send('demo', b'Hello, Kafka!')
 					pub.flush()
 				except Exception as e:
 					logger.error("Unable to publish data to kafka topic: %s", str(e))
 			case 'file':
 				try:
-					pub.write(jsondata)
+					pub.write(xbomdata)
 				except Exception as e:
 					logger.error("Unable to dump data to file: %s", e)
 			case _:

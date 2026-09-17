@@ -12,7 +12,7 @@ data:
     publishers:
       file: 
         name: "onesource.txt"
-      kafka:
+     kafka:
         bootstrap:
           - host: 'kafka-broker-0.intra.miranda.onesource.pt'
             port: 9093

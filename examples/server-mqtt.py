@@ -12,7 +12,6 @@ import otupy as oc2
 from otupy.encoders.json import JSONEncoder
 from otupy.encoders.cbor import CBOREncoder
 from otupy.transfers.mqtt import MQTTTransfer
-from otupy.actuators.iptables_actuator import IptablesActuator
 import otupy.profiles.slpf as slpf
 import otupy.profiles.dumb as dumb
 from otupy.actuators.slpf.dumb_actuator import DumbActuator

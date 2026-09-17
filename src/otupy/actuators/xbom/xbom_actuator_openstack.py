@@ -34,6 +34,7 @@ import logging
 import openstack
 import ipaddress
 import re
+import datetime
 
 from urllib.parse import urlparse, urlsplit
 
@@ -41,37 +42,22 @@ from urllib.parse import urlparse, urlsplit
 import otupy.profiles
 from otupy import Extensions
 
-from otupy.actuators.xbom.xbom_actuator import XBOMActuator
-from otupy.profiles.xbom.data.name import Name
-from otupy.profiles.xbom.data.service import Service, SId
-from otupy.profiles.xbom.data.link import Link
-from otupy.profiles.xbom.data.execution_environment_type import ExecutionEnvironmentType
-from otupy.profiles.xbom.data.host_type import HostType
-from otupy.profiles.xbom.data.host import Host
-from otupy.profiles.xbom.data.vlan_network import VLANNetwork
-from otupy.profiles.xbom.data.network_node import NetworkNode
-from otupy.profiles.xbom.data.network_firewall import Firewall
-from otupy.profiles.xbom.data.network_interface import NetworkInterface
-from otupy.profiles.xbom.data.vm import VM
-from otupy.profiles.xbom.data.ip_net_address import IPNetAddress
+from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
+from otupy.models.ctxd import *
 
-from otupy.profiles.xbom import *
+from otupy.profiles.ctxd import *
 
-from otupy.types.data.hostname import Hostname
-from otupy.types.data.l4_protocol import L4Protocol
-
-from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, IPv4Net, IPv6Net
-from otupy.types.data import IPv4Addr, IPv6Addr
-import otupy.profiles.xbom as xbom
+from otupy import ArrayOf, Nsid, Version,Actions, Response, StatusCode, StatusCodeDescription, Features, ResponseType, Feature, actuator_implementation, IPv4Net, IPv6Net, Hostname, L4Protocol, IPv4Addr, IPv6Addr
+import otupy.profiles.ctxd as ctxd
 
 
 logger = logging.getLogger(__name__)
 
 @actuator_implementation("xbom-openstack")
-class XBOMActuator_openstack(XBOMActuator):
+class XBOMOpenStackActuator(XBOMActuator):
 	""" Openstack Actuator Manager
 
-		Extend the base `CTDXActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
+		Extend the base `XBOMActuator` to retrieve services and links for a Openstack cluster. Currently discovery is mostly limited to vms,
 		hypervisors, and OpenStack sw components. It should be extended in future releases with additional resources (e.g., networks, ports).
 
 
@@ -133,10 +119,15 @@ class XBOMActuator_openstack(XBOMActuator):
 			OpenStack is a complex framework, where a bundle of applications create and manage virtual resources,
 			including VMs, networks, image repositories.
 		"""
+		logger.debug("Discovering services...")
 		self._discover_os_services()
+		logger.debug("Discovering servers...")
 		self._discover_os_servers()
+		logger.debug("Discovering hypervisors...")
 		self._discover_os_hypervisors()		
+		logger.debug("Discovering networks...")
 		self._discover_os_networks()
+		logger.debug("Discovering routers...")
 		self._discover_os_routers()
 		# TODO: Discover:
 		# - images
@@ -151,15 +142,25 @@ class XBOMActuator_openstack(XBOMActuator):
 			- SLPF firewall (iptables) and VMs (servers)
 			- VMs (servers) and ExecutionEnvironment (System and application software), only from a configuration file
 		"""
+		logger.debug("Discovering OpenStack links to servers...")
 		self._discover_os_link_vms()
+		logger.debug("Discovering OpenStack links to security group...")
 		self._discover_os_link_sg()
+		logger.debug("Discovering OpenStack links to networks...")
 		self._discover_os_link_networks()
+		logger.debug("Discovering OpenStack links to network functions...")
 		self._discover_os_link_networkfunctions()
+		logger.debug("Discovering OpenStack links to hypervisors...")
 		self._discover_vms_link_hypervisors()
+		logger.debug("Discovering server links to networks...")
 		self._discover_vms_link_networks()
+		logger.debug("Discovering routers links to controllers and networks...")
 		self._discover_routers_link_controllers_and_networks()
+		logger.debug("Discovering networks links to controllers...")
 		self._discover_networks_link_controllers()
+		logger.debug("Discovering execenvs links to servers...")
 		self._discover_execenvs_link_vms()
+		logger.debug("Discovering security group links to servers...")
 		self._discover_sg_link_vms()
 
 
@@ -222,7 +223,7 @@ class XBOMActuator_openstack(XBOMActuator):
 					try:
 						ips.append( IPInfo(ip=a['ip_address'], prefix=prefix, gw=gw))
 					except Exception as e:
-						logger.error("Unable to add ip address: %s", e)
+						logger.error("Unable to add ip address: ", e)
 
 
 				ifaces.append(NetworkInterface(description=p['description'], id=p['id'], iface=None, ips=ips))
@@ -360,7 +361,7 @@ class XBOMActuator_openstack(XBOMActuator):
 					try:
 						ips.append( IPInfo(ip=a['ip_address'], prefix=prefix, gw=gw))
 					except Exception as e:
-						logger.error("Unable to add ip address for router: %s", e)
+						logger.error("Unable to add ip address for router: ", e)
 				ifaces.append(NetworkInterface(description=p['description'], id=p['id'], iface=None, ips=ips))
 
 			node = NetworkNode(name=r['name'],
@@ -704,11 +705,14 @@ class XBOMActuator_openstack(XBOMActuator):
 					auth=self.auth,
 					cacert=self.config['cacert'],
 		    		)
+				start_api = datetime.datetime.now().timestamp()
 				self.conn = openstack.connection.from_config(cloud_config=cloud_region)
 		
 	
 	        # Get the token from the connection object (it will automatically handle authentication)
 				token = self.conn.authorize()
+				api_time = datetime.datetime.now().timestamp() - start_api
+				logger.debug("Openstack auth took: %s", api_time)
 	
 	        # Verify successful authentication by checking token
 				if token:
@@ -738,7 +742,10 @@ class XBOMActuator_openstack(XBOMActuator):
 		
 		try:
 		    # List services available in OpenStack
+			start_api = datetime.datetime.now().timestamp()
 			services = self.conn.identity.services()
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack service_list took: %s", api_time)
 		except Exception as e:
 			logger.warning("Failed to retrieve service list: %s", e)
 			return []
@@ -758,7 +765,10 @@ class XBOMActuator_openstack(XBOMActuator):
 
 		try:
 			# List endpoints available in OpenStack
+			start_api = datetime.datetime.now().timestamp()
 			endpoints = self.conn.identity.endpoints()
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack endpoint_list took: %s", api_time)
 		except Exception as e:
 			logger.warn("Failed to retrieve endpoint list: %s", e)
 			return []
@@ -773,7 +783,10 @@ class XBOMActuator_openstack(XBOMActuator):
 		self._connect_to_openstack()
 
 		try:
+			start_api = datetime.datetime.now().timestamp()
 			regions = self.conn.identity.regions()
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack region_list took: %s", api_time)
 		except Exception as e:
 			logger.warn("Failed to retrieve region list: %s", e)
 			return []
@@ -791,7 +804,10 @@ class XBOMActuator_openstack(XBOMActuator):
 		self._connect_to_openstack()
 
 		try:
+			start_api = datetime.datetime.now().timestamp()
 			all_projects = self._format_os_data(self.conn.identity.projects())
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack project_list took: %s", api_time)
 			# Filter projects according to configuration
 			
 			if self.projects_config is not None: # We have a specific list of projects
@@ -812,7 +828,11 @@ class XBOMActuator_openstack(XBOMActuator):
 	def _openstack_domain_list(self):
 		self._connect_to_openstack()
 
-		return self._format_os_data(self.conn.identity.domains())
+		start_api = datetime.datetime.now().timestamp()
+		a= self._format_os_data(self.conn.identity.domains())
+		api_time = datetime.datetime.now().timestamp() - start_api
+		logger.debug("Openstack domain_list took: %s", api_time)
+		return a
 
 	def _openstack_server_list(self):
 		""" Retrieve list of servers (VMs) from OpenStack APIs """
@@ -823,12 +843,18 @@ class XBOMActuator_openstack(XBOMActuator):
 			# This is faster, but cannot get servers from all projects
 			if self.projects_config is None and self.project is not None:
 #servers = self.conn.compute.servers(details=True, status="ACTIVE")
+				start_api = datetime.datetime.now().timestamp()
 				s = self.conn.compute.servers(details=True)
+				api_time = datetime.datetime.now().timestamp() - start_api
+				logger.debug("Openstack server_list took: %s", api_time)
 				servers = self._format_os_data(s)
 			else:
 			# This looks slower, but gets everything
 				servers = []
+				start_api = datetime.datetime.now().timestamp()
 				all_servers = self.conn.list_servers(all_projects=True)
+				api_time = datetime.datetime.now().timestamp() - start_api
+				logger.debug("Openstack server_list took: %s", api_time)
 				for x in all_servers:
 					for p in self.cloud_projects:
 						if x['project_id'] == p['id']:
@@ -847,7 +873,10 @@ class XBOMActuator_openstack(XBOMActuator):
 
 		try:
 			# Use the OpenStack client to list hypervisors
+			start_api = datetime.datetime.now().timestamp()
 			hypervisors = self.conn.compute.hypervisors(details=True) # No filters set
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack hypervisor_list took: %s", api_time)
 			# Note: this API is not documented
 		except Exception as e:
 			logger.warning("Failed to retrieve hypervisors list: %s", e)
@@ -862,7 +891,10 @@ class XBOMActuator_openstack(XBOMActuator):
 
 		try:
 			networks = []
+			start_api = datetime.datetime.now().timestamp()
 			nets = self.conn.network.networks() 
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack network_list took: %s", api_time)
 			for n in self._format_os_data(nets):
 				for p in self.cloud_projects:
 					# Must include shared networks!!!
@@ -883,7 +915,10 @@ class XBOMActuator_openstack(XBOMActuator):
 
 		try:
 			# Use the OpenStack client to list hypervisors
+			start_api = datetime.datetime.now().timestamp()
 			subnets = self.conn.network.subnets() # No filters set
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack subnet_list took: %s", api_time)
 		except Exception as e:
 			logger.warning("Failed to retrieve subnet list: %s", e)
 			return []
@@ -897,7 +932,10 @@ class XBOMActuator_openstack(XBOMActuator):
 
 		try:
 			# Use the OpenStack client to list hypervisors
+			start_api = datetime.datetime.now().timestamp()
 			ports = self.conn.network.ports() # No filters set
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack network_port took: %s", api_time)
 		except Exception as e:
 			logger.warning("Failed to retrieve subnet list: %s", e)
 			return []
@@ -910,7 +948,10 @@ class XBOMActuator_openstack(XBOMActuator):
 		self._connect_to_openstack()
 
 		try:
+			start_api = datetime.datetime.now().timestamp()
 			console_log = self.conn.get_server_console(server)
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack console_log took: %s", api_time)
 		except Exception as e:
 			logger.debug("Failed to get console output for server %s (not running?)", server)
 			return None
@@ -923,7 +964,10 @@ class XBOMActuator_openstack(XBOMActuator):
 
 		try:
 			routers = []
+			start_api = datetime.datetime.now().timestamp()
 			rs = self._format_os_data(self.conn.network.routers()) # No filters set
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack router_list took: %s", api_time)
 			for r in rs:
 				for p in self.cloud_projects:
 					if r['project_id'] == p['id']:
@@ -940,7 +984,10 @@ class XBOMActuator_openstack(XBOMActuator):
 		""" Retrieve the image installed in a VM from OpenStack APIs """
 		try:
         # Get image details using the OpenStack client
+			start_api = datetime.datetime.now().timestamp()
 			image = self.conn.compute.get_image(image_id)
+			api_time = datetime.datetime.now().timestamp() - start_api
+			logger.debug("Openstack server_os took: %s", api_time)
 
         # Check if the image is found and return the operating system name
 			if image:

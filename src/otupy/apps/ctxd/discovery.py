@@ -51,9 +51,14 @@ def main() -> None:
 	try:
 		# Parse the configuration file.
 		with open(args.config) as cf:
-		    config = safe_load(cf)
-	except:
-		config = {}
+			config = safe_load(cf)
+	except Exception as e:
+		config = parse_and_default({})
+		args.api = True
+		logging.config.dictConfig(config["logger"]) 
+		logger.error("Unable to open config file: %s", e)		
+		logger.error("Using default config")
+		logger.error("Expecting discovery configuration from the API")
 
 	# We don't include these values in the config files, because when the api service is used
 	# it is likely we don't use a config file at all (logger taken from default)
@@ -68,8 +73,10 @@ def main() -> None:
 	
 	if args.api:
 		# Start HTTP server and listen for commands
+		logger.debug("Waiting for configuration...")
 		api_listen(config)
 	else:
+		logger.debug("Starting discovery")
 		start_discovery(config)	
 						
 if __name__ == "__main__":

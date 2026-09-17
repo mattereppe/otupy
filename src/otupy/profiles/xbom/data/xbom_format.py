@@ -1,11 +1,14 @@
-from otupy.types.base import Enumerated
+from otupy import Enumerated
 
 class XbomFormat(Enumerated):
-	"""Xbom-Format
+	""" Xbom data model
 	
-	Defines the allowable standards for the Xbom data.
-	The CycloneDX standard for application security contexts and supply chain component analysis.
+		Defines possible data models to represent the BOM. Even if most of data models are
+		expected to be defined by international standards, it is also possible to define
+		experimental and proprietary data models.
 	"""
 	
+	ctxd = 0
+	""" Otupy native data model for context discovery. """
 	cyclonedx = 1
 	""" The CycloneDX standard for application security contexts and supply chain component analysis. """

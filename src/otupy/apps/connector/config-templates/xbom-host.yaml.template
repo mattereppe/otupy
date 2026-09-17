@@ -1,0 +1,39 @@
+xbom-host-server:
+  actuator: "xbom-host"
+  profile: "x-xbom"
+  owner: "tnt-lab"
+  specifiers:
+    domain: null
+    asset_id: "xbom-host-compute04"
+  kubernetes:
+    use_suffix: false
+    suffix: 'acme.eu'
+    kubelet_config: '/var/lib/kubelet/config.yaml'
+    namespaces:
+      - my5gtestbed
+  ovs:
+    discover: True
+    host: '127.0.0.1'
+    port: 6640
+  brctl_exe: '/sbin/brctl' # brctl exe location
+  dpkg_exe: '/usr/bin/dpkg' # debian dpkg exe location
+  qemu_uri: 'qemu:///system' # This is the default uri for qemu. Set to None to disable libvirt usage
+  os_nova_path: '/etc/nova/nova.conf' # Default location of the nova config files to get credential. Set to None to disable nova.
+  host:
+    type: host
+    subtype: server
+    name: compute04
+    domain: tnt-lab.unige.it
+    namespace: None
+  peers:
+    - service_sid:
+        type: host
+        subtype: vm
+        name: kube0
+        domain: Default
+        namespace: astrid
+      consumer:
+        host: "127.0.0.1"
+        port: 8080
+        actuator:
+          asset_id: "xbom-openstack-tntlab"

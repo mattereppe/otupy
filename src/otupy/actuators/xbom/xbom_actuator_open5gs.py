@@ -23,32 +23,33 @@
 from dotenv import dotenv_values
 
 import logging
+import copy
 import yaml
 import ipaddress
 from glob import glob
 
 from otupy.profiles import slpf
-from otupy.profiles.ctxd.data.application import Application
 from otupy import IPv4Addr, IPv4Net
 
 
-from otupy.actuators.xbom.xbom_actuator import XBOMActuator
-from otupy.profiles.xbom import *
+from otupy.actuators.xbom.base_xbom_actuator import XBOMActuator
+from otupy.models.ctxd import *
 
 from otupy import ArrayOf, actuator_implementation
-import otupy.profiles.xbom as xbom
 
 logger = logging.getLogger(__name__)
 
+MIRANDACONNECTOR_NAME="miranda-connector"
+MIRANDACONNECTOR_SERVICE="openc2"
 
 @actuator_implementation("xbom-open5gs")
-class XBOMActuator_open5gs(XBOMActuator):
+class XBOMOpen5gsActuator(XBOMActuator):
 	""" Open5GS Actuator Manager
 
 		Extend the base `XBOMActuator` to retrieve services and links for a Open5GS core. 
 		
 		A bit of understanding about this actuator. A network operator deploys its network
-		and provides the xbom service. There are alternative deployment ways: in servers, 
+		and provides the ctxd service. There are alternative deployment ways: in servers, 
 		in virtual machines, as cloud native application. We currently assume the cloud
 		native deployment in Kubernetes, and this means we have the manifest files available
 		to create the links to K8S resources. Support for additional deployment options
@@ -71,6 +72,8 @@ class XBOMActuator_open5gs(XBOMActuator):
 
 		self.mobilenets = []
 		self.mobileterminals_services = []
+		self.connectors = {}
+		self.connector_configs = {}
 		try:
 			self._load_open5gs_config(**kwargs)
 			self.configured = True
@@ -84,10 +87,17 @@ class XBOMActuator_open5gs(XBOMActuator):
 			logger.error("Unable to get open5gs service name: %s", e)
 			self.service_name="open5gs"
 
+		# Get additional services and links corresponding to manual configurations
+		self._services = self._create_services(kwargs.get('services', []))
+		self._links = self._create_links(kwargs.get('links', []))
 
 	def discover_context(self):
 		self.discover_services()
+		for s in self._services:
+			self.services.append(s)
 		self.discover_links()
+		for l in self._links:
+			self.links.append(l)
 
 	def discover_services(self):
 		""" Mobile network + data network 
@@ -97,6 +107,7 @@ class XBOMActuator_open5gs(XBOMActuator):
 		"""
 		if not self.configured:
 			return
+		self.mobileterminals_services = []
 
 		# Main 5G composite service
 		mobile = MobileNetwork({'name': self.net_name, 'mcc': self.mcc, 'mnc': self.mnc,
@@ -194,10 +205,6 @@ class XBOMActuator_open5gs(XBOMActuator):
 								description="Routing function connected to Tunnel Network",
 								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
 								peers=ArrayOf(Peer)([peer])))
-		print(Link(name=self.tunnel_service.name, sid=self.tunnel_service.sid,
-								description="Routing function connected to Tunnel Network",
-								link_type=LinkType.packet_flow, role=PeerRole.endpoint, 
-								peers=ArrayOf(Peer)([peer])))
 
 		# Add link between mobile terminals and tunnel network
 		# Note: we do not consider the role of the gNodeB
@@ -210,6 +217,47 @@ class XBOMActuator_open5gs(XBOMActuator):
 						description=description,
 						link_type=LinkType.packet_flow, role=PeerRole.forwarding,
 						peers=ArrayOf(Peer)([peer])))
+
+		# Add links for security functions 
+		for k, v in self.connectors.items():
+			# Add links between security functions and network functions
+			for p in v['configs']:
+				if self.connector_configs.get(p):
+					for l,u in self.connector_configs.get(p).items():
+						if isinstance(u, dict) and u.get('profile'):
+							v['consumer'].profile = u.get('profile')
+							if isinstance(u, dict) and u.get('specifiers'):
+								v['consumer'].actuator = copy.deepcopy(u.get('specifiers'))
+								connector_name=v['consumer'].actuator['asset_id']
+							else:
+							 	connector_name=MIRANDACONNECTOR_NAME
+
+							sid = SId(name=connector_name, type="app", subtype="sec", domain=MIRANDACONNECTOR_NAME,
+														namespace=None, version=None) # Don't use version: not visible in Kubernetes!
+	
+							peer = Peer(service_name=k, sid=sid,
+										role=PeerRole.protect, # Generic indication
+										consumer=v['consumer'])
+							for c in v['protected_containers']:
+								protected_sid = copy.deepcopy(v['function'])
+								protected_sid.name = c
+								protected_sid.type = "execenv"
+								protected_sid.subtype = "container"
+#self.links.append(Link(name=v['function'].name, sid=protected_sid,
+								self.links.append(Link(name=protected_sid.name, sid=protected_sid,
+										description="MIRANDA Connector protects " + protected_sid.name,
+										link_type=LinkType.protecting, role=PeerRole.protected,
+										peers=ArrayOf(Peer)([peer])))
+
+							# Add links between security functions and hosting containers
+							host_sid=SId(name=v['host'], type="execenv", subtype="container", 
+								domain=self.k8s_domain, namespace=self.k8s_namespace, version=None)
+							peer = Peer(service_name=v['host'], sid=host_sid,
+								role=PeerRole.host, consumer=self.get_consumer(sid=host_sid))
+							self.links.append(Link(name=sid.name, sid=sid,
+								description="MIRANDA Connector hosted on " + host_sid.name,
+								link_type=LinkType.hosting, role=PeerRole.guest,
+								peers=ArrayOf(Peer)([peer])))
 
 	def _load_open5gs_config(self, **kwargs):
 		if kwargs['config']['deployment'] == 'kubernetes' and \
@@ -235,6 +283,8 @@ class XBOMActuator_open5gs(XBOMActuator):
 		self.mnc=config['OPEN5GS_MNC']
 		self.ssd=config['OPEN5GS_SST']
 		self.net_name=config['OPEN5GS_NETNAME']
+		self.connector_host=config.get('CONNECTOR_HOST')
+		self.connector_port=int(config.get('CONNECTOR_PORT'))
 		malicious_users=config['DDOS_REPLICAS']
 		licit_users=config['CURL_REPLICAS']
 		self.users = []
@@ -267,7 +317,10 @@ class XBOMActuator_open5gs(XBOMActuator):
 			try:
 				with open(file) as f:
 					configs = yaml.load_all(f, Loader=yaml.FullLoader)
+					connector_name=None
+					connector_consumer=None
 					for c in configs:
+						# Looking for the upf function
 						try:
 							if c['kind'] == "StatefulSet" or c['kind'] == "Deployment":
 								sid=SId(name= c['metadata']['name'], type="app", domain=self.k8s_domain, 
@@ -278,7 +331,100 @@ class XBOMActuator_open5gs(XBOMActuator):
 										self.upf=sid
 								except:
 									pass
+								try:
+									protected_containers = []
+									for container in c['spec']['template']['spec']['containers']:
+										if container['name'] == MIRANDACONNECTOR_NAME:
+											connector_name=c['metadata']['name']+"."+container['name']
+											if not self.connectors.get(connector_name):
+												self.connectors[connector_name] = {}
+											# This is a trick, but I have not got any way to retrieve the container
+											self.connectors[connector_name]['host'] = container['name'] + "." + c['metadata']['name'] + "-0"
+											self.connectors[connector_name]['function'] =  sid
+											self.connectors[connector_name]['configs'] =  []
+											for v in c['spec']['template']['spec']['volumes']:
+												if v.get('configMap'):
+													self.connectors[connector_name]['configs'].append(v.get('configMap').get('name'))
+											# We assume only one miranda container to be present in each pod
+											# (makes sense, because it all actuators)
+											self.connectors[connector_name]['protected_containers'] = copy.deepcopy(protected_containers)
+											protected_containers.clear()
+											if connector_consumer:
+												self.connectors[connector_name]['consumer'] = connector_consumer 
+										else:
+											# This is a trick, but I have not got any way to retrieve the container
+											protected_containers.append(container['name'] + "." + c['metadata']['name'] + "-0")
+											if connector_name:
+												if	not self.connectors[connector_name].get('protected_containers'):
+														self.connectors[connector_name]['protected_containers'] = []
+												self.connectors['protected']= self.connectors['protected'] + copy.deepcopy(protected_containers)
+												protected_containers.clear()
+								except Exception as e:
+									pass
 						except Exception as e:
 							logger.warning("Unable to retrieve mobile network service list: %s", e)
+						# Looking for a MIRANDA connector protecting this function
+						try:
+							# Detect the connector port in the Service
+							if c['kind'] == "Service":
+								for port in c['spec']['ports']:
+									if port.get('name') == MIRANDACONNECTOR_SERVICE:
+										if self.connector_host:
+											host = self.connector_host
+										else:
+											host = c['metadata']['name']
+											if self.k8s_namespace:
+												host = host + "." + self.k8s_namespace
+											host = host + ".svc"
+											if self.k8s_domain:
+												host = host + "." + self.k8s_domain
+										if self.connector_port:
+											connector_port = self.connector_port
+										else:
+											connector_port=port.get('nodePort')
+										connector_consumer = Consumer(host=host, port=connector_port)
+										if connector_name:
+											if	not self.connectors.get(connector_name):
+												self.connectors[connector_name] = {}
+											self.connectors[connector_name]['consumer'] = connector_consumer
+						except Exception as e:
+							logger.warning("Unable to retrieve MIRANDA connector endpoint: %s", e)
+									
 			except Exception as e: 
 				logger.error("Unable to parse %s: %s", file, e)
+
+		for file in glob(kwargs['config']['config_dir']+"/templates/config/25_connector/*.yaml"):
+			try:
+				with open(file) as f:
+					configs = yaml.load_all(f, Loader=yaml.FullLoader)
+					for c in configs:
+						for k,v in c['data'].items():
+							conf = yaml.safe_load(v)
+							for l,u in conf.items():
+								self.connector_configs[c['metadata']['name']] = yaml.safe_load(v)
+								# connector configs have the "consumer" keyword, 
+								# actuator configs have the "actuator" keyword
+			except Exception as e:
+				logger.error("Unabel to parse config file %s: %s", file, e)
+					
+	# The following two methods are a duplication of what implemented by the
+	# file actuator, but for now it is simpler and cleaner to copy them
+	# instead of creating common code
+	def _create_services(self, services):
+
+		service_list = []
+		for s in services:
+			service_list.append(Encoder.decode(Service, s))
+
+		return service_list
+	
+	def _create_links(self, links):
+
+		link_list = []
+		for l in links:
+			link_list.append(Encoder.decode(Link, l))
+
+		return link_list
+
+
+
