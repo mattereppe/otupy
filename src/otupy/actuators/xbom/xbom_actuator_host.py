@@ -334,7 +334,7 @@ class XBOMHostActuator(XBOMActuator):
 						pod_sid=SId(name=container.labels['io.kubernetes.pod.name'], 
 											domain=self.kube_suffix, 
 											namespace=container.labels['io.kubernetes.pod.namespace'],
-											type=ServiceType.get_type_name(ExecutionEnvironment),
+											type=ServiceType.get_type_name(Host),
 											subtype=HostType.get_type_name(Pod))
 						jsondata=json.loads(container.spec.value)
 						linux_namespaces=jsondata['linux']['namespaces']
