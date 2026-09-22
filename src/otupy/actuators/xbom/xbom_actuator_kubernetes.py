@@ -857,9 +857,9 @@ class XBOMKubernetesActuator(XBOMActuator):
 			pod_subservices_list = ArrayOf(SId)()
 			# pod.status.pod_ip and pod.status.pod_i_ps return wrong values (host ip) and
 			# do not include multus networks
+			port_list = ArrayOf(NetworkInterface)()
 			if pod.metadata.annotations is not None and 'k8s.v1.cni.cncf.io/network-status' in pod.metadata.annotations:
 				ports = json.loads(pod.metadata.annotations['k8s.v1.cni.cncf.io/network-status'])
-				port_list = ArrayOf(NetworkInterface)()
 				for p in ports:
 					name = p['name'] if 'name' in p else None
 					iface = p['iface'] if 'iface' in p else None
