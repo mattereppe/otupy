@@ -2,6 +2,8 @@ name: "test-discovery"
 frequency: 10 # seconds
 loop: 1 # -1: forever, 0: no run, >0: number of runs
 append_thread_id: True # Append a trailing thread number to the "name"
+xbom_format: "ctxd" # Allowed values: "ctxd", "cyclonedx"
+xbom_encoding: "json" # Allowed values: "json", "yaml", "cbor", "xml" (might not be supported by implementations)
 recursive: True # Recursively inspect service chains from one or more root services
 publishers:
   mongodb:
@@ -29,11 +31,11 @@ services:
     encoding: "json"
     transfer: "http"
     actuator:
-      asset_id: "ctxd-kubernetes-example"
+      asset_id: "xbom-kubernetes-example"
   - host: '127.0.0.1'
     port: 8080
     actuator:
-      asset_id: "ctxd-openstack-example"
+      asset_id: "xbom-openstack-example"
 
 logger:
    version: 1
