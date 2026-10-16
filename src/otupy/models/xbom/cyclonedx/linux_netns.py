@@ -1,4 +1,4 @@
-from otupy.models.ctxd.linux_ns import LinuxNetns
+from otupy.models.ctxd.linux_netns import LinuxNetns
 
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType

@@ -9,9 +9,9 @@ from otupy.types.base.array_of import ArrayOf
 class SId(Record):
 	""" Service Identifier
 
-		This is a reference to the service, using the following schema:
+		This is a reference to the service, using the following schema (purl-like):
 
-		<type>:<subtype>/<domain>/<namespace>/<name>@<version>
+		<type>:<subtype>/<domain>/<namespace>/<name>@<version>?<qualifiers>
 
 		Some fields might not be set; in this case they are not present or equal to `None`.
 		
@@ -32,9 +32,11 @@ class SId(Record):
 	""" The internal name used by the `ServiceType` to identify the resource. """
 	version: str = None
 	""" Used to identify specific versions (this is mostly used for software """
+	qualifiers: dict = None
+	""" Used to append optional metadata) """
 
 	def __init__(self, sid:dict = None, type:str = None, subtype:str = None,
-			domain: str = None, namespace:str = None, name: str = None, version:str=None):
+			domain: str = None, namespace:str = None, name: str = None, version:str=None, qualifiers:dict=None):
 		""" Initialize a Sid
 
 			The init function is specifically conceived to support the otupy serialization mechanism.
@@ -47,6 +49,7 @@ class SId(Record):
 			self.namespace=sid.namespace
 			self.name=sid.name
 			self.version=sid.version
+			self.qualifiers=sid.qualifiers
 		else:
 			self.type=type
 			self.subtype=subtype
@@ -54,6 +57,7 @@ class SId(Record):
 			self.namespace=namespace
 			self.name=name
 			self.version=version
+			self.qualifiers=qualifiers
 
 
 	@staticmethod
@@ -94,13 +98,16 @@ class SId(Record):
 			@:param sid: A string following the SId format
 			@:return: A SId class
 		"""
+		# TODO: improve splitting: this version assume a 'None' tag is always present in empty fields
+		# It would be nice to create valid purl at this stage (needs some more debugging)
 		sid_list=re.split(':|/|@', sid)
 		return SId(type=sid_list[0] if sid_list[0] != 'None' else None, 
 							subtype=sid_list[1] if sid_list[1] != 'None' else None, 
 							domain=sid_list[2] if sid_list[2] != 'None' else None, 
 							namespace=sid_list[3] if sid_list[3] != 'None' else None,
 						  	name=sid_list[4] if sid_list[4] != 'None' else None, 
-							version=sid_list[5] if sid_list[5] != 'None' else None)
+							version=sid_list[5] if sid_list[5] != 'None' else None,
+							qualifiers=dict(q.split('=',1) for q in re.split('&', sid_list[6]))  if 6>len(sid_list) and sid_list[6] != 'None' else None)
 	
 	def match(self, pattern):
 		""" Match a SId against pattern
@@ -117,7 +124,8 @@ class SId(Record):
 					if pattern.domain == None or pattern.domain == self.domain:
 						if pattern.name == None or ( pattern.name == self.name ):
 							if pattern.version == None or (pattern.name == self.name):
-								return True
+								if pattern.qualifiers == None or (pattern.qualifiers == self.qualifiers):
+									return True
 		return False
 
 	def __eq__(self, other):
@@ -127,11 +135,16 @@ class SId(Record):
 							self.subtype == other.subtype and \
 							self.domain == other.domain and \
 							self.namespace == other.namespace and \
-							self.version == other.version
+							self.version == other.version and \
+							self.qualifiers == other.qualifiers
 
 	def __str__(self):
 		""" Return the SId as simple string according to the initial scheme """
-		return f"{str(self.type)}:{str(self.subtype)}/{str(self.domain)}/{str(self.namespace)}/{str(self.name)}@{str(self.version)}"
+		if self.qualifiers is None:
+			text_qualifiers = str(self.qualifiers)
+		else:
+			text_qualifiers = "&".join(f"{key}={value}" for key, value in self.qualifiers.items())
+		return f"{str(self.type)}:{str(self.subtype)}/{str(self.domain)}/{str(self.namespace)}/{str(self.name)}@{str(self.version)}?{text_qualifiers}"
 
 	def __repr__(self):
 		return self.__str__()
