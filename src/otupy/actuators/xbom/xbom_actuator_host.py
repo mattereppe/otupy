@@ -245,13 +245,26 @@ class XBOMHostActuator(XBOMActuator):
 							version=platform.release(), pkgs=pkg_list,
 							type=ExecutionEnvironmentType(OS(family=platform.system(), 
 																		release=platform.version(), 
-																		version=platform.release, 
+																		version=platform.release(), 
 																		arch=platform.machine() )))
+		match execenv.family:
+			case 'Linux':
+				linux = platform.freedesktop_os_release()
+				namespace = linux['ID']
+				distro = linux['VERSION_CODENAME']
+			# TODO: Manage other OS families
+			case _:
+				namespace = None
+				distro = None
+
 		self.platform = Service(name=Name(Hostname(name)), 
-					sid=SId.create_from_service_type(execenv, domain=self.domain),
+					sid=SId.create_from_service_type(execenv, domain=platform.system(), namespace=namespace),
 					domain=self.domain,
 					type=ServiceType(execenv), subservices=ArrayOf(SId)(),
 					release=None, owner="root")
+		self.platform.sid.qualifiers['arch']=platform.machine()
+		if distro is not None:
+			self.platform.sid.qualifiers['distro'] = distro 
 		self.services.append( self.platform )
 	
 		# TODO: Add a Host service for the hardware
