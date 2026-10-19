@@ -9,6 +9,8 @@ data:
     name: "miranda-discovery"
     frequency: 120 # seconds
     loop: -1 # -1: forever, 0: no run, >0: number of runs
+    xbom_format: "ctxd" # Allowed values: "ctxd", "cyclonedx"
+    xbom_encoding: "json" # Allowed values: "json", "yaml", "cbor", "xml" (might not be supported by implementations)
     publishers:
       file: 
         name: "onesource.txt"
