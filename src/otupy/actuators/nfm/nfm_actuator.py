@@ -41,6 +41,7 @@ class NFMActuator(ABC):
         logger.info(f"Received command: {cmd}")
         if not validate_command(cmd) or not validate_args(cmd):
             return notimplemented("Invalid command or arguments")
+        
         if cmd.actuator:
             try:
                 if not self.__is_addressed_to_actuator(cmd.actuator.getObj()):

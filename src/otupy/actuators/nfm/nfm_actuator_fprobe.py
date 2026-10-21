@@ -61,7 +61,7 @@ class NFMActuatorFProbe(NFMActuator):
     # Private helper functions
     def _add_interfaces(self, cmd_list, args):
         if args.get("interfaces"):
-            cmd_list += ["-i"] + [iface.name for iface in args.interfaces]
+            cmd_list += ["-i"] + [iface.name for iface in args.get("interfaces")]
         return cmd_list
 
     def _add_bpf_filter(self, cmd_list, monitor):
