@@ -22,46 +22,33 @@ class FlowMonitor(oc2.types.base.Record):
 
     def __init__(
         self,
-        interfaces: ArrayOf = None,
-        information_elements: ArrayOf = None,
         filter_v4: ArrayOf = None,
         filter_v6: ArrayOf = None,
     ):  # type: ignore
-        if isinstance(interfaces, FlowMonitor):
-            self._init_from_flowmonitor(interfaces)
+        if isinstance(filter_v4, FlowMonitor):
+            self._init_from_flowmonitor(filter_v4)
         else:
-            self._init_from_params(interfaces, information_elements, filter_v4, filter_v6)
+            self._init_from_params(filter_v4, filter_v6)
         self.validate_fields()
 
     def _init_from_flowmonitor(self, flowmonitor):
-        self.interfaces = flowmonitor.interfaces
-        self.information_elements = flowmonitor.information_elements
         self.filter_v4 = flowmonitor.filter_v4
         self.filter_v6 = flowmonitor.filter_v6
 
-    def _init_from_params(self, interfaces, information_elements, filter_v4, filter_v6):
-        self.interfaces = interfaces
-        self.information_elements = information_elements
+    def _init_from_params(self, filter_v4, filter_v6):
         self.filter_v4 = filter_v4
         self.filter_v6 = filter_v6
 
     def __repr__(self):
         return (
-            f"FlowMonitor(interfaces={self.interfaces}, information_elements={self.information_elements}, "
-            f"filter_v4={self.filter_v4}, filter_v6={self.filter_v6})"
+            f"FlowMonitor(filter_v4={self.filter_v4}, filter_v6={self.filter_v6})"
         )
 
     def __str__(self):
         return self.__repr__()
 
     def validate_fields(self):
-        if not any([self.interfaces, self.information_elements, self.filter_v4, self.filter_v6]):
-            raise ValueError("At least one field must be set in FlowMonitor (Record{0..*})")
 
-        if self.interfaces is not None and not isinstance(self.interfaces, Array):
-            raise TypeError(f"'interfaces' must be ArrayOf(Interface), got {type(self.interfaces)}")
-        if self.information_elements is not None and not isinstance(self.information_elements, Array):
-            raise TypeError(f"'information_elements' must be ArrayOf(IE), got {type(self.information_elements)}")
         if self.filter_v4 is not None and not isinstance(self.filter_v4, Array):
             raise TypeError(f"'filter_v4' must be ArrayOf(IPv4Addr), got {type(self.filter_v4)}")
         if self.filter_v6 is not None and not isinstance(self.filter_v6, Array):
