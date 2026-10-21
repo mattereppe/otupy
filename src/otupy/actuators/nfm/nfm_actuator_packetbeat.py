@@ -114,7 +114,7 @@ class NFMActuatorPacketbeat(NFMActuator):
         return run_monitor(cmd_list, terminate_time, monitor_id)
 
     def _parse_monitor(self, monitor, args):
-        interfaces = [iface.name for iface in monitor.get("interfaces", [])]
+        interfaces = [iface.name for iface in args.get("interfaces", [])]
         if self.info_elements is not None:
             information_elements = self.info_elements
         else:

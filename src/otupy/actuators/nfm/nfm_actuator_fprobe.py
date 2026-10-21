@@ -48,8 +48,8 @@ class NFMActuatorFProbe(NFMActuator):
         monitor = cmd.target.getObj()
         args = cmd.args or {}
         cmd_list = [self.probe["executable"], "-l", "2"]
-        cmd_list = self._add_interfaces(cmd_list, monitor)
         cmd_list = self._add_bpf_filter(cmd_list, monitor)
+        cmd_list = self._add_interfaces(cmd_list, args)
         cmd_list = self._add_exporter_options(cmd_list, args)
         sleep_time, terminate_time = get_sleep_times(args)
         monitor_id = generate_unique_name()
@@ -59,9 +59,9 @@ class NFMActuatorFProbe(NFMActuator):
         return run_monitor(cmd_list, terminate_time, monitor_id)
 
     # Private helper functions
-    def _add_interfaces(self, cmd_list, monitor):
-        if monitor.get("interfaces"):
-            cmd_list += ["-i"] + [iface.name for iface in monitor.interfaces]
+    def _add_interfaces(self, cmd_list, args):
+        if args.get("interfaces"):
+            cmd_list += ["-i"] + [iface.name for iface in args.interfaces]
         return cmd_list
 
     def _add_bpf_filter(self, cmd_list, monitor):

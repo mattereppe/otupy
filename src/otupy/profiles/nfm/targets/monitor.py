@@ -2,8 +2,6 @@ import otupy as oc2
 from otupy.profiles.nfm.profile import Profile  # Assuming this exists
 from otupy.types.base import ArrayOf, Array
 from otupy.types.targets import IPv4Connection, IPv6Connection
-from otupy.profiles.nfm.data.interface import Interface  # Assuming the path exists
-from otupy.profiles.nfm.data.ie import IE  # Assuming the path exists
 
 
 # Target for FlowMonitor Configuration
@@ -15,11 +13,6 @@ class FlowMonitor(oc2.types.base.Record):
     Represents a monitoring system capable of handling flow data.
     """
 
-    interfaces: ArrayOf(Interface) = None  # type: ignore
-    """ Interfaces capable of running monitoring agents """
-
-    information_elements: ArrayOf(IE) = None  # type: ignore
-    """ NetFlow/IPFIX Information Elements """
 
     filter_v4: ArrayOf(IPv4Connection) = None  # type: ignore
     """ List of IPv4 addresses assigned to the interface (including prefix) """

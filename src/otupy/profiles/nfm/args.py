@@ -7,6 +7,8 @@ This module extends the Args defined by the Language Specification
 import otupy as oc2
 
 from otupy.profiles.nfm.profile import Profile
+from otupy.profiles.nfm.data.interface import Interface  
+from otupy.profiles.nfm.data.ie import IE  
 from otupy.profiles.nfm.data.exporter import Exporter
 from otupy.profiles.nfm.data.export_options import ExportOptions
 
@@ -22,4 +24,5 @@ class Args(oc2.Args):
 
     """
 
-    fieldtypes = {"exporter": Exporter, "exporter_options": ExportOptions}
+    fieldtypes = {"interfaces": oc2.ArrayOf(Interface), "information_elements": oc2.ArrayOf(IE), 
+		 "exporter": Exporter, "exporter_options": ExportOptions}

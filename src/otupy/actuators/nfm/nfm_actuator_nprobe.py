@@ -72,9 +72,9 @@ class NFMActuatorNProbe(NFMActuator):
             logger.error("No nprobe executable provided, skipping command")
             return servererror("Invalid configuration")
         cmd_list = [self.probe.get('executable', None)]
-        cmd_list = self._add_interfaces(cmd_list, monitor)
         cmd_list = self._add_bpf_filter(cmd_list, monitor)
-        cmd_list = self._add_information_elements(cmd_list, monitor)
+        cmd_list = self._add_interfaces(cmd_list, args)
+        cmd_list = self._add_information_elements(cmd_list, args)
         cmd_list = self._add_exporter_options(cmd_list, args)
         sleep_time, terminate_time = get_sleep_times(args)
         monitor_id = generate_unique_name()
@@ -84,9 +84,9 @@ class NFMActuatorNProbe(NFMActuator):
         return run_monitor(cmd_list, terminate_time, monitor_id)
 
     # Private helper functions
-    def _add_interfaces(self, cmd_list, monitor):
-        if monitor.get("interfaces"):
-            cmd_list += ["--interface"] + [iface.name for iface in monitor.interfaces]
+    def _add_interfaces(self, cmd_list, args):
+        if args.get("interfaces"):
+            cmd_list += ["--interface"] + [iface.name for iface in args.interfaces]
         return cmd_list
 
     def _add_bpf_filter(self, cmd_list, monitor):
@@ -99,11 +99,11 @@ class NFMActuatorNProbe(NFMActuator):
             cmd_list += ["-f", f"'{bpf_filters}'"]
         return cmd_list
 
-    def _add_information_elements(self, cmd_list, monitor):
-        if monitor.get("information_elements"):
+    def _add_information_elements(self, cmd_list, args):
+        if args.get("information_elements"):
             cmd_list += ["-T"]
-#            value = self.config.get_info_element(self.asset_id, monitor.information_elements)
-            values = [self.__features["info_elements"].get(k) for k in monitor.information_elements]
+#            value = self.config.get_info_element(self.asset_id, args.information_elements)
+            values = [self.__features["info_elements"].get(k) for k in args.information_elements]
             if None in values:
                 logger.error("Information element is not supported")
                 values = [k for k in values if k is not None]
