@@ -64,6 +64,8 @@ AllowedCommandArguments[(Actions.start, TargetEnum[Profile.nsid + ":monitor"])] 
     "duration",
     "exporter",
     "exporter_options",
+    "interfaces",
+    "information_elements"
 ]
 AllowedCommandArguments[(Actions.stop, TargetEnum[Profile.nsid + ":monitor_id"])] = [
     "response_requested",
