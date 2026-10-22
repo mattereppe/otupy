@@ -85,14 +85,118 @@
 	API service
 	-----------
 
-	The following endpoints are available:
+	All requests that require an input payload must be sent with the header ``Content-Type: application/json``.
 
-	- ``/start``: POST request with a config in json format to start discovery, returns the id of started thread
-	- ``/stop``: POST request with a list of thread ids to stop
-	- ``/threads``: GET request which returns the list of active threads (active means not cancelled, they may have terminated their job)
-	- ``/clean``: POST request that cleans up all threads
+	.. http:post:: /start
 
-	All ``POST`` requests MUST have the ``Content-type`` header set to ``application/json``. The configuration of the start request
-	only includes a subset of the parameters described above: ``logger`` is not allowed and is ignored.
+	   Starts a new background periodic discovery thread task based on the provided configuration options.
+
+	   .. warning::
+	      **Input Sanitization:** The request body only permits a specific subset of parameters. Any keys sent outside of ``name``, ``loop``, ``frequency``, ``publishers``, and ``services`` will be silently dropped by the server before initialization. Other operational defaults (such as logger configurations) are pulled dynamically from the base server context.
+
+	   **:reqheader Content-Type:** must be ``application/json``
+	   
+	   **Request JSON Payload:**
+	      * **string name:** *(Optional)* Descriptive identity tracking name for this discovery.
+	      * **integer loop:** *(Optional)* Total iteration limit constraints. Set to ``-1`` for endless looping runtime behaviors.
+	      * **integer frequency:** *(Optional)* Active scheduling delta sleep gap sequence interval quantified in seconds.
+	      * **object publishers:** *(Optional)* Dictionary data mappings defining active external publishing storage sinks.
+	      * **array services:** *(Optional)* Target listing array defining starting consumer root service profiles.
+
+	   **Response JSON Payload:**
+	      * **integer id:** The unique internal operating thread sequence key.
+	      * **float start_time:** Execution launch tracking stamp format tracking.
+	      * **float end_time:** Estimated task cleanup tracking stamp calculation, or ``null`` if loop rules require indefinite monitoring cycles.
+	      * **integer loop:** The finalized configuration constraint value active on the running instance.
+	      * **integer frequency:** The finalized sleep loop timing configuration value applied to the running thread.
+
+	   **Example Request Body (JSON):**
+	   
+	   .. code-block:: json
+
+	      {
+	        "name": "Local Network Scanner",
+	        "loop": 5,
+	        "frequency": 10,
+	        "publishers": {},
+	        "services": []
+	      }
+
+	   **Example Response Body (JSON):**
+
+	   .. code-block:: json
+
+	      {
+	        "id": 140224158140160,
+	        "start_time": 1795283000.0,
+	        "end_time": 1795283050.0,
+	        "loop": 5,
+	        "frequency": 10
+	      }
+
+	   :statuscode 200: Thread spawned successfully and joined active tracker framework pipelines.
+	   :statuscode 415: Provided Content-Type was missing or did not match expected application/json format mappings.
+	   :statuscode 501: Backend exception encountered while trying to instantiate background thread workers.
+
+	.. http:post:: /stop
+
+	   Terminates specifically requested active discovery processes running in the ecosystem.
+
+	   **:reqheader Content-Type:** must be ``application/json``
+
+	   **Request JSON Payload:**
+	      * **Array of Integers:** A list of internal target thread unique identifiers to terminate.
+
+	   **Response JSON Payload:**
+	      * **Array of Integers:** A list of unique operational identifiers successfully unmapped and safely shut down from the active registry.
+
+	   **Example Request Body (JSON):**
+	   
+	   .. code-block:: json
+
+	      [140224158140160, 140224158140161]
+
+	   **Example Response Body (JSON):**
+
+	   .. code-block:: json
+
+	      [140224158140160, 140224158140161]
+
+	   :statuscode 200: Safe evaluation step processed. Stopped and collected matching event references.
+	   :statuscode 400: Call failed context validation checks due to missing explicit content type descriptions.
+	   :statuscode 415: Payload structure mapping extraction validation failed parsing checks.
+	   :statuscode 501: Processing failure encountered while accessing active worker indexes.
+
+	.. http:get:: /threads
+
+	   Provides a complete active snapshot list of all thread registration identity integers managed by the local tracker.
+
+	   **Response JSON Payload:**
+	      * **Array of Integers:** Array list containing all currently active numeric identifier reference values.
+
+	   **Example Response Body (JSON):**
+
+	   .. code-block:: json
+
+	      [140224158140160, 140224158140161]
+
+	   :statuscode 200: Array snapshot compiled and output successfully.
+
+	.. http:post:: /clean
+
+	   Signals a destructive global termination event message across all stored threads, wiping the application registry clean.
+
+	   **Response JSON Payload:**
+	      * **Array of Integers:** List of unique thread identification numbers evicted during systemic sweep iterations.
+
+	   **Example Response Body (JSON):**
+
+	   .. code-block:: json
+
+	      [140224158140160, 140224158140161]
+
+	   :statuscode 200: All background execution maps safely cleared out.
+	   :statuscode 501: System intercepted context extraction faults while indexing elements during iterative removal processing.
 
 """
+

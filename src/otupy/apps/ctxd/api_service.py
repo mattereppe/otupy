@@ -6,7 +6,7 @@
 	- start: POST request with a config in json format to start discovery, returns the id of started thread
 	- stop: POST request with a list of thread ids to stop
 	- threads: GET request which returns the list of active threads (active means not cancelled, they may have terminated their job)
-	- clean: GET request that clean up all threads
+	- clean: POST request that clean up all threads
 
 
 
