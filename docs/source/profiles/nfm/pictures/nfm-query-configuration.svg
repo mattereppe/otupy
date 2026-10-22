@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="950" viewBox="0 0 1400 950" role="img" aria-labelledby="title description">
+  <title id="title">NFM flow monitor configuration interface</title>
+  <desc id="description">Example graphical interface for configuring an NFM flow monitor from an OpenC2 Query response. It includes traffic filters, flow source and format, information elements, export options, and the Data Handling Pipeline collector details.</desc>
+  <style>
+    .bg { fill: #f5f7fb; }
+    .window { fill: #ffffff; stroke: #d8dee9; stroke-width: 2; }
+    .header { fill: #172033; }
+    .panel { fill: #ffffff; stroke: #dce3ee; stroke-width: 1.5; }
+    .side-panel { fill: #f9fafc; stroke: #dce3ee; stroke-width: 1.5; }
+    .field { fill: #ffffff; stroke: #b9c5d6; stroke-width: 1.25; }
+    .chip { fill: #e9f0fb; stroke: #b7c9e8; stroke-width: 1; }
+    .button { fill: #2261a8; }
+    .button-light { fill: #edf2f8; stroke: #b9c5d6; stroke-width: 1; }
+    .separator { stroke: #e0e6ef; stroke-width: 1; }
+    .t-title { fill: #172033; font: 600 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-section { fill: #172033; font: 600 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-label { fill: #4b5b70; font: 500 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-value { fill: #172033; font: 400 14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-small { fill: #607086; font: 400 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-header { fill: #ffffff; font: 500 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-header-muted { fill: #cbd5e1; font: 400 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-button { fill: #ffffff; font: 600 14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .t-chip { fill: #295a96; font: 500 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  </style>
+
+  <rect class="bg" width="1400" height="950"/>
+  <rect class="window" x="40" y="30" width="1320" height="890" rx="12"/>
+  <path class="header" d="M52 30h1296a12 12 0 0 1 12 12v74H40V42a12 12 0 0 1 12-12z"/>
+  <circle cx="76" cy="73" r="13" fill="#5a91d0"/>
+  <path d="M70 73h12M76 67v12" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <text class="t-header" x="102" y="69">OpenC2 / NFM Monitor</text>
+  <text class="t-header-muted" x="102" y="89">Configure a flow-monitoring actuator</text>
+  <text class="t-header-muted" x="1010" y="66">Consumer</text>
+  <text class="t-header" x="1010" y="86">172.17.0.11:8080</text>
+  <text class="t-header-muted" x="1194" y="66">Actuator</text>
+  <text class="t-header" x="1194" y="86">nfm-fprobe</text>
+
+  <text class="t-title" x="82" y="164">Configure flow monitor</text>
+  <text class="t-small" x="82" y="189">Controls are populated from the Query response before sending an OpenC2 start request.</text>
+
+  <rect class="panel" x="78" y="222" width="878" height="211" rx="9"/>
+  <text class="t-section" x="104" y="258">Traffic filters</text>
+  <text class="t-small" x="104" y="280">Define one or more packet-flow filters.</text>
+  <rect class="button-light" x="790" y="241" width="138" height="34" rx="6"/>
+  <text class="t-value" x="814" y="263">+ Add filter</text>
+  <text class="t-label" x="104" y="316">IP family</text>
+  <text class="t-label" x="260" y="316">Source address</text>
+  <text class="t-label" x="477" y="316">Destination address</text>
+  <text class="t-label" x="705" y="316">Protocol</text>
+  <rect class="field" x="104" y="327" width="128" height="40" rx="5"/>
+  <text class="t-value" x="120" y="352">IPv4</text><text class="t-small" x="209" y="352">⌄</text>
+  <rect class="field" x="260" y="327" width="190" height="40" rx="5"/>
+  <text class="t-small" x="274" y="352">Any address</text>
+  <rect class="field" x="477" y="327" width="190" height="40" rx="5"/>
+  <text class="t-small" x="491" y="352">Any address</text>
+  <rect class="field" x="705" y="327" width="195" height="40" rx="5"/>
+  <text class="t-value" x="720" y="352">Any protocol</text><text class="t-small" x="875" y="352">⌄</text>
+  <text class="t-label" x="104" y="397">Source port</text>
+  <text class="t-label" x="260" y="397">Destination port</text>
+  <rect class="field" x="104" y="408" width="128" height="40" rx="5"/>
+  <text class="t-small" x="118" y="433">0–65536</text>
+  <rect class="field" x="260" y="408" width="190" height="40" rx="5"/>
+  <text class="t-small" x="274" y="433">0–65536</text>
+
+  <rect class="panel" x="78" y="456" width="878" height="180" rx="9"/>
+  <text class="t-section" x="104" y="492">Flow source and format</text>
+  <text class="t-label" x="104" y="530">Interfaces</text>
+  <rect class="field" x="104" y="542" width="365" height="42" rx="5"/>
+  <rect class="chip" x="115" y="550" width="78" height="26" rx="13"/>
+  <text class="t-chip" x="130" y="568">ens18 ×</text>
+  <text class="t-small" x="440" y="568">⌄</text>
+  <text class="t-label" x="505" y="530">Flow format</text>
+  <rect class="field" x="505" y="542" width="395" height="42" rx="5"/>
+  <text class="t-value" x="520" y="568">netflow5</text><text class="t-small" x="874" y="568">⌄</text>
+  <text class="t-small" x="104" y="614">Values are supplied by the actuator capabilities returned by Query.</text>
+
+  <rect class="panel" x="78" y="659" width="878" height="178" rx="9"/>
+  <text class="t-section" x="104" y="695">Information elements</text>
+  <text class="t-small" x="104" y="717">Optional — select the fields exported with each flow record.</text>
+  <rect class="field" x="104" y="737" width="796" height="60" rx="5"/>
+  <rect class="chip" x="118" y="754" width="132" height="26" rx="13"/>
+  <text class="t-chip" x="131" y="772">source_ip ×</text>
+  <rect class="chip" x="260" y="754" width="151" height="26" rx="13"/>
+  <text class="t-chip" x="273" y="772">destination_ip ×</text>
+  <rect class="chip" x="421" y="754" width="145" height="26" rx="13"/>
+  <text class="t-chip" x="434" y="772">source_port ×</text>
+  <rect class="chip" x="576" y="754" width="166" height="26" rx="13"/>
+  <text class="t-chip" x="589" y="772">destination_port ×</text>
+  <text class="t-small" x="866" y="772">⌄</text>
+
+  <rect class="panel" x="78" y="860" width="878" height="1" rx="0"/>
+
+  <rect class="side-panel" x="984" y="222" width="338" height="399" rx="9"/>
+  <text class="t-section" x="1010" y="258">Data Handling Pipeline</text>
+  <text class="t-small" x="1010" y="281">For MIRANDA, collector data is supplied</text>
+  <text class="t-small" x="1010" y="299">by the pipeline rather than edited here.</text>
+  <line class="separator" x1="1010" y1="325" x2="1296" y2="325"/>
+  <text class="t-label" x="1010" y="357">Collector host</text>
+  <text class="t-value" x="1010" y="382">127.0.0.1</text>
+  <line class="separator" x1="1010" y1="404" x2="1296" y2="404"/>
+  <text class="t-label" x="1010" y="436">Collector port</text>
+  <text class="t-value" x="1010" y="461">2055</text>
+
+  <rect class="panel" x="984" y="644" width="338" height="193" rx="9"/>
+  <text class="t-section" x="1010" y="680">Export options</text>
+  <text class="t-small" x="1010" y="702">Optional values exposed by Query.</text>
+  <text class="t-label" x="1010" y="737">Buffer</text>
+  <rect class="field" x="1010" y="747" width="86" height="40" rx="5"/>
+  <text class="t-small" x="1023" y="772">Default</text>
+  <text class="t-label" x="1110" y="737">Timeout</text>
+  <rect class="field" x="1110" y="747" width="86" height="40" rx="5"/>
+  <text class="t-value" x="1123" y="772">60</text>
+  <text class="t-label" x="1210" y="737">Format</text>
+  <rect class="field" x="1210" y="747" width="86" height="40" rx="5"/>
+  <text class="t-small" x="1223" y="772">netflow5</text>
+
+  <line class="separator" x1="78" y1="870" x2="1322" y2="870"/>
+  <text class="t-small" x="82" y="900">Ready to build and send the OpenC2 start request.</text>
+  <rect class="button" x="1168" y="882" width="154" height="42" rx="6"/>
+  <text class="t-button" x="1201" y="908">Start monitor</text>
+</svg>
