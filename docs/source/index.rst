@@ -70,11 +70,9 @@ There are a few OpenC2-based applications provided with ``otupy``:
 
    MIRANDA Connector <_autosummary/otupy.apps.connector>
    Context Discovery <_autosummary/otupy.apps.ctxd>
-   XBOM Content Discovery <_autosummary/otupy.apps.xbom>
 
 * :doc:`MIRANDA Connector <_autosummary/otupy.apps.connector>`
 * :doc:`Context Discovery <_autosummary/otupy.apps.ctxd>`
-* :doc:`XBOM Content Discovery <_autosummary/otupy.apps.xbom>`
 
 
 Profiles
