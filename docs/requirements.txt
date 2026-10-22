@@ -1,5 +1,6 @@
 otupy==1.1.38
 sphinx-rtd-theme==3.0.2
+sphinxcontrib-httpdomain==2.2.1
 aenum==3.1.15
 apscheduler==3.11.2
 cbor2==5.6.5

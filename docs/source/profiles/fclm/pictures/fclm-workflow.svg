@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">FCLM actuator profile workflow</title>
+  <desc id="desc">A Producer queries FCLM capabilities, starts a log monitor, receives a monitor identifier, and later stops the monitor through the Consumer.</desc>
+  <defs>
+    <marker id="arrow-right" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#255E91"/>
+    </marker>
+    <marker id="arrow-left" markerWidth="10" markerHeight="10" refX="2" refY="5" orient="auto">
+      <path d="M10,0 L0,5 L10,10 Z" fill="#357A4B"/>
+    </marker>
+    <style>
+      .heading { font: 700 25px Arial, Helvetica, sans-serif; fill: #173B5D; }
+      .actor { font: 700 22px Arial, Helvetica, sans-serif; fill: #173B5D; }
+      .action { font: 600 18px Arial, Helvetica, sans-serif; fill: #173B5D; }
+      .detail { font: 16px Arial, Helvetica, sans-serif; fill: #24445F; }
+      .response { font: 16px Arial, Helvetica, sans-serif; fill: #225F39; }
+      .step { font: 700 16px Arial, Helvetica, sans-serif; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="650" fill="#ffffff"/>
+  <text x="600" y="48" text-anchor="middle" class="heading">Typical FCLM Operational Workflow</text>
+
+  <rect x="90" y="88" width="270" height="82" rx="10" fill="#E8F1F8" stroke="#255E91" stroke-width="2"/>
+  <text x="225" y="137" text-anchor="middle" class="actor">OpenC2 Producer</text>
+  <rect x="840" y="88" width="270" height="82" rx="10" fill="#EAF5EC" stroke="#357A4B" stroke-width="2"/>
+  <text x="975" y="128" text-anchor="middle" class="actor">OpenC2 Consumer</text>
+  <text x="975" y="151" text-anchor="middle" class="detail">FCLM actuator</text>
+
+  <line x1="225" y1="188" x2="225" y2="600" stroke="#9FB4C5" stroke-width="2" stroke-dasharray="8 8"/>
+  <line x1="975" y1="188" x2="975" y2="600" stroke="#A5C7AE" stroke-width="2" stroke-dasharray="8 8"/>
+
+  <circle cx="315" cy="245" r="17" fill="#255E91"/>
+  <text x="315" y="251" text-anchor="middle" class="step">1</text>
+  <line x1="255" y1="245" x2="936" y2="245" stroke="#255E91" stroke-width="3" marker-end="url(#arrow-right)"/>
+  <text x="600" y="227" text-anchor="middle" class="action">query features</text>
+  <text x="600" y="269" text-anchor="middle" class="detail">request supported export and input capabilities</text>
+
+  <line x1="945" y1="309" x2="264" y2="309" stroke="#357A4B" stroke-width="3" marker-end="url(#arrow-left)"/>
+  <text x="600" y="296" text-anchor="middle" class="response">capabilities response</text>
+
+  <circle cx="315" cy="382" r="17" fill="#255E91"/>
+  <text x="315" y="388" text-anchor="middle" class="step">2</text>
+  <line x1="255" y1="382" x2="936" y2="382" stroke="#255E91" stroke-width="3" marker-end="url(#arrow-right)"/>
+  <text x="600" y="364" text-anchor="middle" class="action">start monitor</text>
+  <text x="600" y="406" text-anchor="middle" class="detail">select a file, URI, or socket source and optional configuration</text>
+
+  <line x1="945" y1="446" x2="264" y2="446" stroke="#357A4B" stroke-width="3" marker-end="url(#arrow-left)"/>
+  <text x="600" y="433" text-anchor="middle" class="response">monitor_id returned</text>
+
+  <circle cx="315" cy="520" r="17" fill="#255E91"/>
+  <text x="315" y="526" text-anchor="middle" class="step">3</text>
+  <line x1="255" y1="520" x2="936" y2="520" stroke="#255E91" stroke-width="3" marker-end="url(#arrow-right)"/>
+  <text x="600" y="502" text-anchor="middle" class="action">stop monitor_id</text>
+  <text x="600" y="544" text-anchor="middle" class="detail">terminate the collection session when it is no longer required</text>
+
+  <line x1="945" y1="584" x2="264" y2="584" stroke="#357A4B" stroke-width="3" marker-end="url(#arrow-left)"/>
+  <text x="600" y="571" text-anchor="middle" class="response">termination confirmation</text>
+</svg>

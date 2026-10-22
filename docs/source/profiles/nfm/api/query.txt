@@ -1,0 +1,130 @@
+POST /.well-known/openc2 HTTP/1.1
+Host: 172.17.0.11:8080
+User-Agent: python-requests/2.32.5
+Accept-Encoding: gzip, deflate
+Accept: application/openc2+json;version=1.0
+Connection: keep-alive
+Content-Type: application/openc2+json;version=1.0
+Date: Thu, 22 Oct 2026 14:38:38 
+Content-Length: 886
+
+{
+   "headers": {
+      "request_id": "1ad563fd-2476-4bcf-bc66-8f0346dc706a",
+      "created": 1792672718592,
+      "from": "nfm.example.net",
+      "to": [
+         "172.17.0.11"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs",
+                  "exports",
+                  "export_options",
+                  "flow_format",
+                  "filters",
+                  "interfaces",
+                  "information_elements"
+               ]
+            },
+            "args": {
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "x-nfm": {
+                  "asset_id": "nfm-fprobe"
+               }
+            }
+         }
+      }
+   }
+}
+
+
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.6 Python/3.13.9
+Date: Thu, 22 Oct 2026 12:38:38 GMT
+Content-Type: application/openc2+json;version=1.0
+Content-Length: 2065
+Connection: close
+
+{
+   "headers": {
+      "request_id": "1ad563fd-2476-4bcf-bc66-8f0346dc706a",
+      "created": 1792672718783,
+      "from": "connector@abete.tnt-lab.unige.it",
+      "to": [
+         "nfm.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 200,
+            "status_text": "Features available",
+            "results": {
+               "x-nfm": {
+                  "exports": [
+                     "collector"
+                  ],
+                  "export_options": [
+                     "buffer",
+                     "format",
+                     "timeout"
+                  ],
+                  "flow_format": [
+                     "netflow5",
+                     "netflow7"
+                  ],
+                  "filters": [
+                     "source / destination",
+                     "ipv4 / ipv6",
+                     "port",
+                     "protocol"
+                  ],
+                  "interfaces": [
+                     {
+                        "name": "ens18",
+                        "description": "Interface ens18",
+                        "ipv4_addr": [
+                           "172.17.0.11"
+                        ],
+                        "ipv6_addr": [
+                           "fe80::705d:f5ff:fee2:695b"
+                        ],
+                        "mac_addr": "72:5D:F5:E2:69:5B",
+                        "iface_type": "ether",
+                        "active": "UP"
+                     }
+                  ],
+                  "information_elements": []
+               },
+               "versions": [
+                  "1.0"
+               ],
+               "profiles": [
+                  "x-nfm"
+               ],
+               "pairs": {
+                  "query": [
+                     "features"
+                  ],
+                  "start": [
+                     "x-nfm:monitor"
+                  ],
+                  "stop": [
+                     "x-nfm:monitor_id"
+                  ]
+               }
+            }
+         }
+      }
+   }
+}

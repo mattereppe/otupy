@@ -1,0 +1,22 @@
+HTTP Headers:
+============
+(Same as query)
+
+JSON object:
+===========
+
+- headers: same as for the query
+
+- body.openc2.request.target.x-nfm:monitor: Set according to the Filter configuration 
+- body.openc2.request.args.exporter.collectors: Set according to the data handling pipeline (hostname/ip address + port number of NetFlow Collector)
+- body.openc2.request.args.exporter_options.format: Set according to "Flow format" configuration (copy selected value)
+- body.openc2.request.args.exporter_options.timeout: You can set a static value or ignore it.
+- body.openc2.request.args.interfaces: Set according to Interfaces configuration.
+- body.openc2.request.args.information_elements: Set according to the configuration
+- body.openc2.request.actuator.x-nfm.asset_id: Set the same used in the query
+
+Response:
+========
+- Check the status is 200 OK (should be the same in the HTTP header and JSON body)
+- Save the identifier in body.openc2.response.results.x-nfm.monitor_id: it will be used to stop the agent later
+

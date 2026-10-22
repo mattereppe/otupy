@@ -1,0 +1,47 @@
+HTTP header:
+===========
+Variable fields:
+- Host: taken from the discovery process
+- Date: auto-generated
+- Content-Length: auto-generated
+
+JSON object:
+===========
+Variable fields:
+
+- headers.request_id: UUID randomly generated
+- headers.created: timestamp (number of milliseconds since 00:00:00 UTC, 1 January 1970)
+- headers.from: use any identifier you want for the dashboard
+- headers.to: replicate the host IP address or name
+
+-body.openc2.request.actuator: use x-nfm and the asset_id provided by the context discovery
+
+Configuration options for the agent:
+===================================
+The configuration is partially given by the profile type (x-nfm), and partially dynamically generated 
+according to the fields in the body.openc2.response.results.x-nfm.
+
+Filter:
+	(There may be multiple items, each one including the following fields, maybe added with a "+" button.
+	 One single item is enough for the demonstration)
+	- IPv4/IPv6 (dropdown list, default to IPv4)
+	- Source address range (text, you can also force the dotted notation+prefix)
+	- Source port (text/integer 0-65536)
+	- Destination address range (text, you can also force the dotted notation+prefix)
+	- Destination port (text/integer 0-65536)
+	- Protocol (list, allowed values: icmp, tcp, udp, sctp)
+Interface:
+	- (dropdown list, take values from the response: body.openc2.response.results.x-nfm.interfaces[].name)
+		(better if multiple values can be selected)
+Flow format:
+	- (dropdown list, take values from the resopnse: body.openc2.response.results.x-nfm.flow_format)
+Exporter:
+	- For MIRANDA, you can ignore it. You will use data from the Data Handling Pipeline.
+Export options [OPTIONAL, you can ignore it]:
+	- Text box (1 for each option listed in body.openc2.response.results.x-nfm.export_options; label the text box with each field in the array)
+Information elements: [OPTIONAL, you can copy all values from: body.openc2.response.results.x-nfm.information_elements]
+	- Check list or dropdown list with the possibility to select more elements
+
+
+
+

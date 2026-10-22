@@ -44,6 +44,8 @@ Getting started
 ---------------
 
 .. toctree::
+   :hidden:
+   :caption: Basic usage
    :maxdepth: 1
 
    background
@@ -51,18 +53,36 @@ Getting started
    download
    usage
 
+* :doc:`Background <background>`
+* :doc:`Architecture <architecture>`
+* :doc:`Download <download>`
+* :doc:`Usage <usage>`
+
 Applications
 ------------
 
 There are a few OpenC2-based applications provided with ``otupy``:
 
 .. toctree::
-	:maxdepth: 1
+   :hidden:
+   :caption: Applications
+   :maxdepth: 1
 
-	MIRANDA Connector <_autosummary/otupy.apps.connector>
-	Context Discovery <_autosummary/otupy.apps.ctxd>
-	XBOM Content Discovery <_autosummary/otupy.apps.xbom>
+   MIRANDA Connector <_autosummary/otupy.apps.connector>
+   Context Discovery <_autosummary/otupy.apps.ctxd>
+   XBOM Content Discovery <_autosummary/otupy.apps.xbom>
 
+* :doc:`MIRANDA Connector <_autosummary/otupy.apps.connector>`
+* :doc:`Context Discovery <_autosummary/otupy.apps.ctxd>`
+* :doc:`XBOM Content Discovery <_autosummary/otupy.apps.xbom>`
+
+
+Profiles
+--------
+
+``otupy`` comes with several extensions and use cases: 
+
+.. include:: profiles/profiles-toc.inc
 
 Advanced usage
 --------------
@@ -73,6 +93,8 @@ learn, because they strictly follow the definition and requirements in
 the common Language Specification and Profile extensions. 
 
 .. toctree::
+   :hidden:
+   :caption: Developer's toolkit
    :maxdepth: 1
 
    API reference <_autosummary/otupy>
@@ -81,23 +103,18 @@ the common Language Specification and Profile extensions.
    logging
    documentation
 
-
-Extensions
-----------
-
-``otupy`` comes with several extensions and use cases: 
-
-.. toctree::
-   :maxdepth: 1
-
-   ctxd/ctxd   
-   xbom/xbom
+* :doc:`API reference <_autosummary/otupy>`
+* :doc:`Developer's guide <developerguide>`
+* :doc:`Logging configuration <logging>`
+* :doc:`Building the documentation <documentation>`
 
 
 Additional notes
 ----------------
 
 .. toctree::
+   :hidden:
+   :caption: Other
    :maxdepth: 1
 
    relateddocuments
@@ -106,3 +123,8 @@ Additional notes
    changelog
    license
 
+* :doc:`OpenC2 documentation <relateddocuments>`
+* :doc:`Authors and acknowledgements <authors>`
+* :doc:`Contributing <contributing>`
+* :doc:`Changelog <changelog>`
+* :doc:`License <license>`

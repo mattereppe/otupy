@@ -1,0 +1,95 @@
+POST /.well-known/openc2 HTTP/1.1
+Host: 172.17.0.11:8080
+User-Agent: python-requests/2.32.5
+Accept-Encoding: gzip, deflate
+Accept: application/openc2+json;version=1.0
+Connection: keep-alive
+Content-Type: application/openc2+json;version=1.0
+Date: Thu, 22 Oct 2026 14:38:50 
+Content-Length: 1375
+
+{
+   "headers": {
+      "request_id": "bfe73434-9ad5-4a01-a22d-f37a7a8a6b45",
+      "created": 1792672730514,
+      "from": "nfm.example.net",
+      "to": [
+         "172.17.0.11"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "start",
+            "target": {
+               "x-nfm:monitor": {
+                  "filter_v4": []
+               }
+            },
+            "args": {
+               "x-nfm": {
+                  "exporter": {
+                     "collectors": [
+                        {
+                           "host": {
+                              "hostname": "127.0.0.1"
+                           },
+                           "port": 2055
+                        }
+                     ]
+                  },
+                  "exporter_options": {
+                     "timeout": 60,
+                     "format": "netflow5"
+                  },
+                  "interfaces": [
+                     {
+                        "name": "ens18"
+                     }
+                  ],
+                  "information_elements": [
+                     "source ip",
+                     "destination ip"
+                  ]
+               }
+            },
+            "actuator": {
+               "x-nfm": {
+                  "asset_id": "nfm-fprobe"
+               }
+            }
+         }
+      }
+   }
+}
+
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.6 Python/3.13.9
+Date: Thu, 22 Oct 2026 12:38:53 GMT
+Content-Type: application/openc2+json;version=1.0
+Content-Length: 496
+Connection: close
+
+{
+   "headers": {
+      "request_id": "bfe73434-9ad5-4a01-a22d-f37a7a8a6b45",
+      "created": 1792672733738,
+      "from": "connector@abete.tnt-lab.unige.it",
+      "to": [
+         "nfm.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 200,
+            "status_text": "Monitor started",
+            "results": {
+               "x-nfm": {
+                  "monitor_id": "Sigma_5803SZ"
+               }
+            }
+         }
+      }
+   }
+}

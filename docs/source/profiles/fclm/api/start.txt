@@ -1,0 +1,95 @@
+POST /.well-known/openc2 HTTP/1.1
+Host: 172.17.0.11:8080
+User-Agent: python-requests/2.32.5
+Accept-Encoding: gzip, deflate
+Accept: application/openc2+json;version=1.0
+Connection: keep-alive
+Content-Type: application/openc2+json;version=1.0
+Date: Thu, 22 Oct 2026 16:21:36 
+Content-Length: 1455
+
+{
+   "headers": {
+      "request_id": "bea3b798-1892-4cfd-af98-5c3de49d14c6",
+      "created": 1792678896134,
+      "from": "producer.example.net",
+      "to": [
+         "172.17.0.11"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "start",
+            "target": {
+               "x-fclm:monitor": {
+                  "file": {
+                     "path": "/var/log/http_access.log"
+                  }
+               }
+            },
+            "args": {
+               "x-fclm": {
+                  "exporter": {
+                     "collectors": [
+                        {
+                           "host": {
+                              "hostname": "127.0.0.1"
+                           },
+                           "port": 1234,
+                           "format": "json"
+                        }
+                     ]
+                  },
+                  "import_controls": {
+                     "scan_frequency": 10,
+                     "max_backoff": 10
+                  },
+                  "export_fields": [
+                     "timestamp",
+                     "metadata",
+                     "message",
+                     "log.file.path",
+                     "input.type"
+                  ]
+               }
+            },
+            "actuator": {
+               "x-fclm": {
+                  "asset_id": "fclm-filebeat"
+               }
+            }
+         }
+      }
+   }
+}
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.6 Python/3.13.9
+Date: Thu, 22 Oct 2026 14:21:39 GMT
+Content-Type: application/openc2+json;version=1.0
+Content-Length: 504
+Connection: close
+
+{
+   "headers": {
+      "request_id": "bea3b798-1892-4cfd-af98-5c3de49d14c6",
+      "created": 1792678899306,
+      "from": "connector@abete.tnt-lab.unige.it",
+      "to": [
+         "producer.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 200,
+            "status_text": "Monitor started",
+            "results": {
+               "x-fclm": {
+                  "monitor_id": "Epsilon_9037HL"
+               }
+            }
+         }
+      }
+   }
+}

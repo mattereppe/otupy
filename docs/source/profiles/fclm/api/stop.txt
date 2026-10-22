@@ -1,0 +1,64 @@
+POST /.well-known/openc2 HTTP/1.1
+Host: 172.17.0.11:8080
+User-Agent: python-requests/2.32.5
+Accept-Encoding: gzip, deflate
+Accept: application/openc2+json;version=1.0
+Connection: keep-alive
+Content-Type: application/openc2+json;version=1.0
+Date: Thu, 22 Oct 2026 16:21:48 
+Content-Length: 643
+
+{
+   "headers": {
+      "request_id": "8d493455-4392-4f04-b643-7f007153dbbf",
+      "created": 1792678908724,
+      "from": "producer.example.net",
+      "to": [
+         "172.17.0.11"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "stop",
+            "target": {
+               "x-fclm:monitor_id": "Epsilon_9037HL"
+            },
+            "args": {
+               "x-fclm": {},
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "x-fclm": {
+                  "asset_id": "fclm-filebeat"
+               }
+            }
+         }
+      }
+   }
+}
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.6 Python/3.13.9
+Date: Thu, 22 Oct 2026 14:21:48 GMT
+Content-Type: application/openc2+json;version=1.0
+Content-Length: 374
+Connection: close
+
+{
+   "headers": {
+      "request_id": "8d493455-4392-4f04-b643-7f007153dbbf",
+      "created": 1792678908915,
+      "from": "connector@abete.tnt-lab.unige.it",
+      "to": [
+         "producer.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 200,
+            "status_text": "Process terminated"
+         }
+      }
+   }
+}

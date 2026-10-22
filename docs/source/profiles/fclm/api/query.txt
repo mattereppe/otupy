@@ -1,0 +1,164 @@
+POST /.well-known/openc2 HTTP/1.1
+Host: 172.17.0.11:8080
+User-Agent: python-requests/2.32.5
+Accept-Encoding: gzip, deflate
+Accept: application/openc2+json;version=1.0
+Connection: keep-alive
+Content-Type: application/openc2+json;version=1.0
+Date: Thu, 22 Oct 2026 16:21:32 
+Content-Length: 867
+
+{
+   "headers": {
+      "request_id": "a63f6dbb-65df-49c9-9b46-153285faf2f2",
+      "created": 1792678892015,
+      "from": "producer.example.net",
+      "to": [
+         "172.17.0.11"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "request": {
+            "action": "query",
+            "target": {
+               "features": [
+                  "versions",
+                  "profiles",
+                  "pairs",
+                  "export_fields",
+                  "exports_config",
+                  "import_controls",
+                  "imports_config"
+               ]
+            },
+            "args": {
+               "x-fclm": {},
+               "response_requested": "complete"
+            },
+            "actuator": {
+               "x-fclm": {
+                  "asset_id": "fclm-filebeat"
+               }
+            }
+         }
+      }
+   }
+}
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.6 Python/3.13.9
+Date: Thu, 22 Oct 2026 14:21:32 GMT
+Content-Type: application/openc2+json;version=1.0
+Content-Length: 3540
+Connection: close
+
+{
+   "headers": {
+      "request_id": "a63f6dbb-65df-49c9-9b46-153285faf2f2",
+      "created": 1792678892131,
+      "from": "connector@abete.tnt-lab.unige.it",
+      "to": [
+         "producer.example.net"
+      ]
+   },
+   "body": {
+      "openc2": {
+         "response": {
+            "status": 200,
+            "status_text": "Features available",
+            "results": {
+               "x-fclm": {
+                  "export_fields": [
+                     "timestamp",
+                     "metadata",
+                     "metadata beat",
+                     "metadata type",
+                     "metadata version",
+                     "agent id",
+                     "agent name",
+                     "agent type",
+                     "agent version",
+                     "ecs version",
+                     "host name",
+                     "host hostname",
+                     "host ip",
+                     "host mac",
+                     "host architecture",
+                     "host os platform",
+                     "host os version",
+                     "host os family",
+                     "host os name",
+                     "host os kernel",
+                     "host os codename",
+                     "input type",
+                     "log file path",
+                     "log file inode",
+                     "log file device id",
+                     "log offset",
+                     "message",
+                     "event module",
+                     "event dataset",
+                     "event category",
+                     "user name",
+                     "user id",
+                     "process name",
+                     "process pid",
+                     "network source ip",
+                     "network destination ip",
+                     "network source port",
+                     "network destination port",
+                     "network protocol",
+                     "network type",
+                     "network direction",
+                     "network bytes sent",
+                     "network bytes received",
+                     "network interface name",
+                     "network interface mac",
+                     "network interface ip",
+                     "cloud id",
+                     "cloud provider",
+                     "cloud region",
+                     "cloud instance id",
+                     "cloud machine type",
+                     "cloud availability zone",
+                     "cloud account id",
+                     "cloud service"
+                  ],
+                  "exports_config": [
+                     "file"
+                  ],
+                  "import_controls": [
+                     "scan_frequency",
+                     "backoff",
+                     "max_backoff",
+                     "close_inactive",
+                     "ignore_older"
+                  ],
+                  "imports_config": [
+                     "file",
+                     "uri",
+                     "socket"
+                  ]
+               },
+               "versions": [
+                  "1.0"
+               ],
+               "profiles": [
+                  "x-fclm"
+               ],
+               "pairs": {
+                  "query": [
+                     "features"
+                  ],
+                  "start": [
+                     "x-fclm:monitor"
+                  ],
+                  "stop": [
+                     "x-fclm:monitor_id"
+                  ]
+               }
+            }
+         }
+      }
+   }
+}

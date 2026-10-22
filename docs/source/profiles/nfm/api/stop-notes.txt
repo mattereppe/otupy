@@ -1,0 +1,11 @@
+HTTP Headers:
+============
+(Same as query, start)
+
+JSON object:
+===========
+
+- headers: same as query/start
+
+- body.openc2.request.target.x-nfm:monitor_id: Use the same identifier returned by the start action
+- body.openc2.request.actuator: use the same returned by context discovery (as in query/start)

@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1280" viewBox="0 0 1400 1280" role="img" aria-labelledby="title desc">
+  <title id="title">NFM operational workflow</title>
+  <desc id="desc">A sequence diagram showing exchanges between an OpenC2 Producer and an NFM Consumer: discovery, monitor creation, status observation, configuration inspection, and monitor termination.</desc>
+  <defs>
+    <marker id="request-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="response-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0f766e"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <rect width="1400" height="1280" rx="28" fill="#ffffff"/>
+  <rect x="20" y="20" width="1360" height="1240" rx="22" fill="#f8fafc" stroke="#dbe4ef" stroke-width="2"/>
+
+  <text x="80" y="98" fill="#102a43" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="700">NFM operational workflow</text>
+  <text x="80" y="140" fill="#526477" font-family="Inter, Arial, sans-serif" font-size="21">Standardized OpenC2 interaction between a Producer and an NFM Consumer</text>
+
+  <g filter="url(#shadow)">
+    <rect x="100" y="190" width="310" height="98" rx="16" fill="#eaf2ff" stroke="#2563eb" stroke-width="2"/>
+    <text x="255" y="232" text-anchor="middle" fill="#173b72" font-family="Inter, Arial, sans-serif" font-size="27" font-weight="700">Producer</text>
+    <text x="255" y="264" text-anchor="middle" fill="#426389" font-family="Inter, Arial, sans-serif" font-size="18">OpenC2 client</text>
+    <rect x="990" y="190" width="310" height="98" rx="16" fill="#e7f7f2" stroke="#0f766e" stroke-width="2"/>
+    <text x="1145" y="232" text-anchor="middle" fill="#115b57" font-family="Inter, Arial, sans-serif" font-size="27" font-weight="700">Consumer</text>
+    <text x="1145" y="264" text-anchor="middle" fill="#39736e" font-family="Inter, Arial, sans-serif" font-size="18">NFM actuator</text>
+  </g>
+
+  <line x1="255" y1="288" x2="255" y2="1120" stroke="#9bb3cd" stroke-width="2" stroke-dasharray="8 10"/>
+  <line x1="1145" y1="288" x2="1145" y2="1120" stroke="#82b9ae" stroke-width="2" stroke-dasharray="8 10"/>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <circle cx="85" cy="352" r="22" fill="#2563eb"/>
+    <text x="85" y="360" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">1</text>
+    <text x="125" y="359" fill="#526477" font-size="18" font-weight="700">DISCOVER CAPABILITIES</text>
+    <line x1="275" y1="391" x2="1125" y2="391" stroke="#2563eb" stroke-width="4" marker-end="url(#request-arrow)"/>
+    <rect x="540" y="355" width="320" height="48" rx="24" fill="#eaf2ff"/>
+    <text x="700" y="386" text-anchor="middle" fill="#173b72" font-size="21" font-weight="600">query features</text>
+    <line x1="1125" y1="441" x2="275" y2="441" stroke="#0f766e" stroke-width="4" marker-end="url(#response-arrow)"/>
+    <rect x="502" y="417" width="396" height="48" rx="24" fill="#e7f7f2"/>
+    <text x="700" y="448" text-anchor="middle" fill="#115b57" font-size="21" font-weight="600">Capabilities response</text>
+
+    <circle cx="85" cy="535" r="22" fill="#2563eb"/>
+    <text x="85" y="543" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">2</text>
+    <text x="125" y="542" fill="#526477" font-size="18" font-weight="700">CREATE A MONITOR</text>
+    <line x1="275" y1="574" x2="1125" y2="574" stroke="#2563eb" stroke-width="4" marker-end="url(#request-arrow)"/>
+    <rect x="498" y="538" width="404" height="48" rx="24" fill="#eaf2ff"/>
+    <text x="700" y="569" text-anchor="middle" fill="#173b72" font-size="21" font-weight="600">start x-nfm:monitor</text>
+    <line x1="1125" y1="624" x2="275" y2="624" stroke="#0f766e" stroke-width="4" marker-end="url(#response-arrow)"/>
+    <rect x="465" y="600" width="470" height="48" rx="24" fill="#e7f7f2"/>
+    <text x="700" y="631" text-anchor="middle" fill="#115b57" font-size="21" font-weight="600">x-nfm:monitor_id returned</text>
+
+    <circle cx="85" cy="718" r="22" fill="#2563eb"/>
+    <text x="85" y="726" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">3</text>
+    <text x="125" y="725" fill="#526477" font-size="18" font-weight="700">OBSERVE THE ACTIVE MONITOR</text>
+    <line x1="275" y1="757" x2="1125" y2="757" stroke="#2563eb" stroke-width="4" marker-end="url(#request-arrow)"/>
+    <rect x="485" y="721" width="430" height="48" rx="24" fill="#eaf2ff"/>
+    <text x="700" y="752" text-anchor="middle" fill="#173b72" font-size="21" font-weight="600">query monitor status</text>
+    <line x1="1125" y1="807" x2="275" y2="807" stroke="#0f766e" stroke-width="4" marker-end="url(#response-arrow)"/>
+    <rect x="501" y="783" width="398" height="48" rx="24" fill="#e7f7f2"/>
+    <text x="700" y="814" text-anchor="middle" fill="#115b57" font-size="21" font-weight="600">Status and statistics</text>
+
+    <circle cx="85" cy="901" r="22" fill="#2563eb"/>
+    <text x="85" y="909" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">4</text>
+    <text x="125" y="908" fill="#526477" font-size="18" font-weight="700">INSPECT / ADJUST CONFIGURATION</text>
+    <line x1="275" y1="940" x2="1125" y2="940" stroke="#2563eb" stroke-width="4" marker-end="url(#request-arrow)"/>
+    <rect x="540" y="904" width="320" height="48" rx="24" fill="#eaf2ff"/>
+    <text x="700" y="935" text-anchor="middle" fill="#173b72" font-size="21" font-weight="600">query features</text>
+    <line x1="1125" y1="990" x2="275" y2="990" stroke="#0f766e" stroke-width="4" marker-end="url(#response-arrow)"/>
+    <rect x="490" y="966" width="420" height="48" rx="24" fill="#e7f7f2"/>
+    <text x="700" y="997" text-anchor="middle" fill="#115b57" font-size="21" font-weight="600">Configuration details</text>
+
+    <circle cx="85" cy="1084" r="22" fill="#2563eb"/>
+    <text x="85" y="1092" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">5</text>
+    <text x="125" y="1091" fill="#526477" font-size="18" font-weight="700">STOP THE MONITOR</text>
+    <line x1="275" y1="1123" x2="1125" y2="1123" stroke="#2563eb" stroke-width="4" marker-end="url(#request-arrow)"/>
+    <rect x="458" y="1087" width="484" height="48" rx="24" fill="#eaf2ff"/>
+    <text x="700" y="1118" text-anchor="middle" fill="#173b72" font-size="21" font-weight="600">stop x-nfm:monitor_id</text>
+    <line x1="1125" y1="1173" x2="275" y2="1173" stroke="#0f766e" stroke-width="4" marker-end="url(#response-arrow)"/>
+    <rect x="471" y="1149" width="458" height="48" rx="24" fill="#e7f7f2"/>
+    <text x="700" y="1180" text-anchor="middle" fill="#115b57" font-size="21" font-weight="600">Termination confirmation</text>
+  </g>
+
+  <g transform="translate(80 1230)" font-family="Inter, Arial, sans-serif">
+    <line x1="0" y1="0" x2="72" y2="0" stroke="#2563eb" stroke-width="4" marker-end="url(#request-arrow)"/>
+    <text x="90" y="7" fill="#526477" font-size="17">Producer command</text>
+    <line x1="325" y1="0" x2="253" y2="0" stroke="#0f766e" stroke-width="4" marker-end="url(#response-arrow)"/>
+    <text x="343" y="7" fill="#526477" font-size="17">Consumer response</text>
+    <text x="1220" y="7" text-anchor="end" fill="#7b8b9f" font-size="16">The lifecycle is flexible; stop the monitor when collection is complete.</text>
+  </g>
+</svg>
