@@ -28,10 +28,6 @@ def main():
     arguments.add_argument("--port", default="8080", help="Select TCP port of the Consumer")
     args = arguments.parse_args()
 
-    Feature.extend("export_fields", 11)
-    Feature.extend("exports_config", 12)
-    Feature.extend("imports_config", 13)
-    Feature.extend("import_controls", 14)
     logger.info("Creating Producer")
 
     p = oc2.Producer("producer.example.net", JSONEncoder(), HTTPTransfer(args.server, args.port))
