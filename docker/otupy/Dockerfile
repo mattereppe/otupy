@@ -25,6 +25,8 @@ ENV PATH="/opt/otupy-venv/bin:$PATH"
 
 ENV TZ="Europe/Rome"
 
+# Fix missing package for libvirt-python
+RUN apt-get update; apt-get install -y libvirt-dev
 
 RUN if [ -n "$VERSION" ]; then \
 		OTUPY_VERSION="==$VERSION"; \
