@@ -94,7 +94,7 @@
 	   .. warning::
 	      **Input Sanitization:** The request body only permits a specific subset of parameters. Any keys sent outside of ``name``, ``loop``, ``frequency``, ``publishers``, and ``services`` will be silently dropped by the server before initialization. Other operational defaults (such as logger configurations) are pulled dynamically from the base server context.
 
-	   **:reqheader Content-Type:** must be ``application/json``
+	   :reqheader Content-Type: must be ``application/json``
 	   
 	   **Request JSON Payload:**
 	      * **string name:** *(Optional)* Descriptive identity tracking name for this discovery.
@@ -102,6 +102,8 @@
 	      * **integer frequency:** *(Optional)* Active scheduling delta sleep gap sequence interval quantified in seconds.
 	      * **object publishers:** *(Optional)* Dictionary data mappings defining active external publishing storage sinks.
 	      * **array services:** *(Optional)* Target listing array defining starting consumer root service profiles.
+
+		Full description of the configuration items is given in the `Configuration <https://otupy.readthedocs.io/en/latest/_autosummary/otupy.apps.ctxd.html#configuration>__` section.
 
 	   **Response JSON Payload:**
 	      * **integer id:** The unique internal operating thread sequence key.
@@ -142,7 +144,7 @@
 
 	   Terminates specifically requested active discovery processes running in the ecosystem.
 
-	   **:reqheader Content-Type:** must be ``application/json``
+	   :reqheader Content-Type: must be ``application/json``
 
 	   **Request JSON Payload:**
 	      * **Array of Integers:** A list of internal target thread unique identifiers to terminate.

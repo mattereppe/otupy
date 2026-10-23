@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560" role="img" aria-labelledby="title desc">
+  <title id="title">XBOM retrieval workflow</title>
+  <desc id="desc">A three-step workflow in which a Producer queries BOMs, an XBOM Consumer selects or refreshes a representation, and serialized BOMs are returned.</desc>
+  <style>
+    .bg{fill:#f5f8fc}.panel{fill:#fff;stroke:#d8e3f0;stroke-width:1.5}.step{fill:#eaf2ff;stroke:#a9c8f8;stroke-width:1.5}.result{fill:#ecfaf3;stroke:#9ed9bc;stroke-width:1.5}.text{fill:#192438;font-family:Arial,sans-serif}.muted{fill:#65758b;font-family:Arial,sans-serif}.blue{fill:#1264dc;font-family:Arial,sans-serif}.green{fill:#14764f;font-family:Arial,sans-serif}.white{fill:#fff;font-family:Arial,sans-serif}.bold{font-weight:700}.title{font-size:30px;font-weight:700}.head{font-size:18px;font-weight:700}.body{font-size:14px}.tiny{font-size:12px}.line{stroke:#79a9ee;stroke-width:3;fill:none}.arrow{fill:#79a9ee}
+  </style>
+  <rect class="bg" x="0" y="0" width="1400" height="560"/>
+  <rect class="panel" x="55" y="38" width="1290" height="484" rx="18"/>
+  <text class="text title" x="92" y="93">XBOM retrieval workflow</text>
+  <text class="muted body" x="92" y="121">The profile retrieves Bills of Materials; it does not start, stop, or otherwise control a managed component.</text>
+
+  <rect class="step" x="92" y="180" width="340" height="238" rx="15"/>
+  <circle fill="#1264dc" cx="126" cy="217" r="18"/>
+  <text class="white bold body" x="121" y="222">1</text>
+  <text class="text head" x="158" y="223">Query BOMs</text>
+  <text class="muted body" x="117" y="263">Producer sends:</text>
+  <text class="text bold body" x="117" y="293">query boms</text>
+  <text class="muted body" x="117" y="323">Optional component identifiers</text>
+  <text class="muted body" x="117" y="348">format · encoding · cached</text>
+  <rect fill="#fff" stroke="#b7cbe6" x="117" y="370" width="184" height="28" rx="14"/>
+  <text class="blue bold tiny" x="135" y="389">x-xbom:boms</text>
+
+  <path class="line" d="M455 299 H565"/>
+  <path class="arrow" d="M565 299 l-15 -9 v18 z"/>
+
+  <rect class="step" x="585" y="180" width="340" height="238" rx="15"/>
+  <circle fill="#1264dc" cx="619" cy="217" r="18"/>
+  <text class="white bold body" x="614" y="222">2</text>
+  <text class="text head" x="651" y="223">Resolve representation</text>
+  <text class="muted body" x="610" y="263">XBOM Consumer / actuator:</text>
+  <text class="muted body" x="610" y="293">• resolves selected components</text>
+  <text class="muted body" x="610" y="318">• refreshes data when needed</text>
+  <text class="muted body" x="610" y="343">• chooses supported format</text>
+  <text class="muted body" x="610" y="368">  and encoding</text>
+  <rect fill="#fff" stroke="#b7cbe6" x="610" y="381" width="211" height="28" rx="14"/>
+  <text class="blue bold tiny" x="626" y="400">ctxd or cyclonedx</text>
+
+  <path class="line" d="M948 299 H1058"/>
+  <path class="arrow" d="M1058 299 l-15 -9 v18 z"/>
+
+  <rect class="result" x="1078" y="180" width="242" height="238" rx="15"/>
+  <circle fill="#14764f" cx="1112" cy="217" r="18"/>
+  <text class="white bold body" x="1107" y="222">3</text>
+  <text class="text head" x="1144" y="223">Receive results</text>
+  <text class="muted body" x="1103" y="263">Response contains:</text>
+  <text class="text bold body" x="1103" y="293">boms</text>
+  <text class="muted body" x="1103" y="318">serialized BOM strings</text>
+  <text class="text bold body" x="1103" y="348">format · encoding</text>
+  <text class="muted body" x="1103" y="373">how to parse each BOM</text>
+</svg>
+
