@@ -24,7 +24,7 @@ An XBOM exchange is made of a single step:
    ``encoding``, and declare whether cached information is acceptable through
    ``cached``. When ``cached`` is false or omitted, the Consumer updates its
    component information before responding.
-   The Consumer returns serialized BOM strings in
-   ``boms`` and identifies the representation actually used through ``format``
+   The Consumer returns serialized BOM strings in ``boms`` and identifies the 
+	representation actually used through ``format``
    and ``encoding``.
 
