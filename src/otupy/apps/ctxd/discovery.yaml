@@ -1,0 +1,104 @@
+name: "discovery-host"
+frequency: 20 # seconds
+loop: 1 # -1: forever, 0: no run, >0: number of runs
+xbom_format: "ctxd" # Allowed values: "ctxd", "cyclonedx"
+xbom_encoding: "json" # Allowed values: "json", "yaml", "cbor", "xml" (might not be supported by implementations)
+append_threadid: False
+recursive: False
+publishers:
+#  mongodb:
+#    host: '172.17.0.11'
+#    port: 27017
+#    db_name: "miranda"
+#    collection: "contextdata"
+#    user: "miranda"
+#    pass: "miranda2025"
+  file:
+    name: "test-xbom.json"
+#  kafka:
+#    host: '172.17.0.11'
+#    port: 29092
+#    topic: "demo"
+#  security_protocol: "SSL"
+#    sasl_mechanism: Null
+#    sasl_plain_username: Null
+#    sasl_plain_password: Null
+#    ssl_cafile: 'ca-cert'
+services:
+#  - host: 'tulipano'
+#    port: 8080
+#    actuator:
+#      asset_id: "xbom-open5gs-tntlab"
+#  - host: 'tulipano'
+#    port: 8080
+#    actuator:
+#      asset_id: "xbom-file-webserver"
+#  - host: 'tulipano'
+#    port: 8080
+#    actuator:
+#      asset_id: "xbom-file-mobileuser"
+#  - host: '130.251.17.131'
+#    port: 8080
+#    endpoint: "/.well-known/openc2"
+#    encoding: "json"
+#    transfer: "http"
+#    actuator:
+#      asset_id: "xbom-kubernetes-tntlab"
+#  - host: '172.21.100.11'
+#    port: 8080
+#    actuator:
+#      asset_id: "xbom-openstack-tntlab"
+  - host: '130.251.17.131'
+    port: 8080
+    endpoint: "/.well-known/openc2"
+    encoding: "json"
+    transfer: "http"
+    profile: "x-xbom"
+    actuator:
+      asset_id: "xbom-host-kube0"
+#  - host: '130.251.17.128'
+#    port: 8081
+#    actuator:
+#      asset_id: 'xbom-host-kube1'
+#  - host: '130.251.17.128'
+#    port: 8082
+#    actuator:
+#      asset_id: 'xbom-host-kube2'
+#  - host: '172.21.100.34'
+#    port: 8080
+#    endpoint: "/.well-known/openc2"
+#    encoding: "json"
+#    transfer: "http"
+#    actuator:
+#      asset_id: "xbom-host-compute04"
+
+
+logger:
+   version: 1
+   formatters:
+      otupy:
+         (): otupy.LogFormatter
+         datetime: True
+         name: True
+   handlers:
+      console:
+         class: logging.StreamHandler
+         formatter: otupy
+         level: DEBUG
+         filters: Null
+      file:
+         class: logging.FileHandler
+         formatter: otupy
+         level: INFO
+         filters: Null
+         filename: "discovery.log"
+#   root:
+#      handlers: [console]
+#      level: INFO
+   loggers:
+#      otupy:
+#         handlers: [console]
+#         level: INFO
+      otupy.apps.ctxd:
+         handlers: [file]
+         level: INFO
