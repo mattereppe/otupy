@@ -15,23 +15,16 @@ JSON, XML, and YAML encoding choices.
 Workflow
 --------
 
-An XBOM exchange has three steps:
+An XBOM exchange is made of a single step:
 
 #. **Request BOMs.** The Producer issues ``query boms``. The target can contain
    component identifiers to narrow the request; an empty target requests all
-   BOMs available through the addressed Consumer.
-#. **Select the representation.** The Producer can request ``format`` and
-   ``encoding`` and select whether cached information is acceptable through
+   BOMs available through the addressed Consumer. 
+	The Producer can also select specific ``format`` and
+   ``encoding``, and declare whether cached information is acceptable through
    ``cached``. When ``cached`` is false or omitted, the Consumer updates its
    component information before responding.
-#. **Consume the result.** The Consumer returns serialized BOM strings in
+   The Consumer returns serialized BOM strings in
    ``boms`` and identifies the representation actually used through ``format``
    and ``encoding``.
-
-.. figure:: pictures/xbom-workflow.svg
-   :alt: Typical retrieval workflow of the XBOM profile
-   :align: center
-   :width: 100%
-
-   Typical retrieval workflow of the XBOM profile.
 

@@ -103,7 +103,7 @@
 	      * **object publishers:** *(Optional)* Dictionary data mappings defining active external publishing storage sinks.
 	      * **array services:** *(Optional)* Target listing array defining starting consumer root service profiles.
 
-		Full description of the configuration items is given in the `Configuration <https://otupy.readthedocs.io/en/latest/_autosummary/otupy.apps.ctxd.html#configuration>__` section.
+		Full description of the configuration items is given in the `Configuration <https://otupy.readthedocs.io/en/latest/_autosummary/otupy.apps.ctxd.html#configuration>`__ section.
 
 	   **Response JSON Payload:**
 	      * **integer id:** The unique internal operating thread sequence key.
