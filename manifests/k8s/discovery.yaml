@@ -14,7 +14,7 @@ data:
     publishers:
       file: 
         name: "onesource.txt"
-     kafka:
+      kafka:
         bootstrap:
           - host: 'kafka-broker-0.intra.miranda.onesource.pt'
             port: 9093
@@ -81,7 +81,7 @@ spec:
           imagePullPolicy: Always
 #          command: ["python3", "discovery.py", "-c", "/config/discovery.yaml"]
           command: ["python3", "discovery.py", "--api", "--host", "0.0.0.0", "--port", "80"]
-#          command: ["/bin/bash","-c","sleep 3660"]
+#          command: ["/bin/bash","-c","sleep 36600"]
           volumeMounts:
           - name: discovery-configmap-volume
             mountPath: /config/
