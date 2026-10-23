@@ -61,13 +61,13 @@ defaults = { # Default values for context discovery operation
 						'console': {
 							'class': 'logging.StreamHandler', 
 							'formatter': 'otupy', 
-							'level': 'DEBUG', 
+							'level': 'INFO', 
 							'filters': None
 						}
 					},
 					'root': {
 						'handlers': ['console'], 
-						'level': 'DEBUG'
+						'level': 'INFO'
 					},
 				}
 }
