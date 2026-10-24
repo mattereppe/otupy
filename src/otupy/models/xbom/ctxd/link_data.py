@@ -9,16 +9,16 @@ class LinkData(Record):
 	source: Consumer = None
 	link: Link = None
 
-	def __init__(self, linkdata: object = None, link: Link = None, consumer=None):
+	def __init__(self, linkdata: object = None, link: Link = None, source: Consumer=None):
 		""" Initialize for an existing LinkData or Link/Consumer pair """
 		if linkdata:
 			self.link = linkdata.link
 			self.source = linkdata.source
 		else:
-			if not link or not consumer:
+			if not link or not source:
 				raise TypeError("LinkData must include both consumer and link")
 			self.link = link
-			self.source = consumer
+			self.source = source
 
 	def __repr__(self):
 		return f"LinkData(link={self.link}, source={self.source})"

@@ -90,11 +90,10 @@ def discovery(config):
 		:param config: A dictionary reporting the known list of services to discover.
 		:return: None. Data are directly inserted in the output sinks.
 	"""
-	# Empty xbom used to collect all xboms from the actuators
-	print("========> " , DEFAULT_XBOM_FORMAT.name)
 	try:
-		print(">>>>>>>>>> ", type(Xbom.get( config.get("xbom_format", DEFAULT_XBOM_FORMAT) )))
-		xboms = Xbom.get( config.get("xbom_format", DEFAULT_XBOM_FORMAT) )().create()
+		# Empty xbom used to collect all xboms from the actuators
+		xboms = Xbom.get( config.get("xbom_format", DEFAULT_XBOM_FORMAT) )()
+		xboms.create()
 	except:
 		xboms = None
 		logger.error("Unable to create xbom collector, format: ", config.get("xbom_format", DEFAULT_XBOM_FORMAT))
@@ -143,6 +142,7 @@ def discovery(config):
 						xbom_data = xbom_raw.deserialize(b, xbom_encoding)
 						logger.debug("Bom data:\n%s", xbom_raw.summary())
 						if xboms: 
+							print("type: ", type(xboms))
 							xboms.merge(xbom_raw)
 						else:
 							publish_data(config, b)
@@ -160,7 +160,7 @@ def discovery(config):
 		logger.info("Discoverying %s took: %s", root['actuator']['asset_id'], discovery_service_time)
 
 	if xboms:
-		publish_data(config, xboms)
+		publish_data(config, xboms.serialize(config.get("xbom_encoding", DEFAULT_XBOM_ENCODING)))
 	discovery_time = datetime.datetime.now().timestamp() - start_discovery
 	logger.info("Discovery took: %s", discovery_time)
 

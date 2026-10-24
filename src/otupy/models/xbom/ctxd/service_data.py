@@ -4,24 +4,24 @@ from otupy.models.ctxd import Service, Consumer
 class ServiceData(Record):
 	""" Service record
 
-		A ctxd service together with its origin (consumer that provided it).
+		A ctxd service together with its source (consumer that provided it).
 	"""
-	consumer: Consumer = None
+	source: Consumer = None
 	service: Service = None
 
-	def __init__(self, servicedata: object = None, service: Service = None, consumer=None):
+	def __init__(self, servicedata: object = None, service: Service = None, source: Consumer=None):
 		""" Initialize for an existing ServiceData or Service/Consumer pair """
 		if servicedata:
 			self.service = servicedata.service
-			self.consumer = servicedata.consumer
+			self.source = servicedata.source
 		else:
-			if not service or not consumer:
+			if not service or not source:
 				raise TypeError("ServiceData must include both consumer and service")
 			self.service = service
-			self.consumer = consumer
+			self.source = source
 
 	def __repr__(self):
-		return f"ServiceData(service={self.service}, consumer={self.consumer})"
+		return f"ServiceData(service={self.service}, source={self.source})"
 
 	def __str__(self):
 		return self.__repr__()
