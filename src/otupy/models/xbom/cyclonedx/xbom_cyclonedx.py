@@ -76,6 +76,22 @@ class CyclonedxXbom(Xbom):
 
 		return self.xbom
 
+	def merge(self, other: Xbom):
+		""" Merge Xboms
+
+			Copy the elements of the provided Xbom into the current object.
+			Raise an exception if the two formats are different.
+			
+			:param other: The Xbom to be merged
+		"""
+		assert False, "Merge function to be implemented for Cyclone DX"
+		assert self.format == other.format, "Merging is only possible with xbom using the same format"
+		assert hasattr(self, 'xbom') and hasattr(other, 'xbom'), "Xbom(s) must be initialized"
+
+		for c in 'services', 'links':
+			for o in other.xbom[c]:
+				self.xbom[c].append(copy.deepcopy(o))
+
 
 	def serialize(self, encoding: XbomEncoding) -> str:
 		""" Serialize the Xbom
