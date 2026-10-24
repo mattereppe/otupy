@@ -22,6 +22,9 @@ import otupy.models.xbom
 from otupy.apps.ctxd.publishers import *
 from otupy.apps.ctxd.defaults import defaults, set_consumer_defaults
 
+DEFAULT_XBOM_FORMAT=xbom.XbomFormat.ctxd
+DEFAULT_XBOM_ENCODING=xbom.XbomEncoding.json
+
 logger = logging.getLogger(__name__)
 
 #def _log_context(xboms):
@@ -87,7 +90,16 @@ def discovery(config):
 		:param config: A dictionary reporting the known list of services to discover.
 		:return: None. Data are directly inserted in the output sinks.
 	"""
-	xboms = []
+	# Empty xbom used to collect all xboms from the actuators
+	print("========> " , DEFAULT_XBOM_FORMAT.name)
+	try:
+		print(">>>>>>>>>> ", type(Xbom.get( config.get("xbom_format", DEFAULT_XBOM_FORMAT) )))
+		xboms = Xbom.get( config.get("xbom_format", DEFAULT_XBOM_FORMAT) )().create()
+	except:
+		xboms = None
+		logger.error("Unable to create xbom collector, format: ", config.get("xbom_format", DEFAULT_XBOM_FORMAT))
+		logger.error("Returning individual boms")
+
 	queried_consumers = []
 	producer_name=config.get('name','Discovery')
 
@@ -114,8 +126,8 @@ def discovery(config):
 			logger.info("Now discovering services and links from %s", get_consumer_short(consumer))
 		
 			res = discover(consumer, producer_name, 
-						config.get("xbom_format", xbom.XbomFormat.ctxd.name), 
-						config.get("xbom_encoding", xbom.XbomEncoding.json.name))
+						config.get("xbom_format", DEFAULT_XBOM_FORMAT.name ),
+						config.get("xbom_encoding", DEFAULT_XBOM_ENCODING.name))
 			if res is not None:
 				boms = res['boms']
 				xbom_encoding = res['encoding']
@@ -126,14 +138,16 @@ def discovery(config):
 				try:
 					for b in boms:
 						xbom_raw = Xbom.get(xbom_format)()
+						# This is mostly necessary to deserialize and load the content, 
+						# so we can proceed with merging
 						xbom_data = xbom_raw.deserialize(b, xbom_encoding)
-						xboms.append(xbom_raw)
 						logger.debug("Bom data:\n%s", xbom_raw.summary())
-						publish_data(config, b)
+						if xboms: 
+							xboms.merge(xbom_raw)
+						else:
+							publish_data(config, b)
 				except Exception as e:
-					logger.error("Unable to retrieve consumers for external bom refs: %s", e)
-					print(xbom_raw)
-
+					logger.error("Unable to load and merge bom: %s", e)
 
 				if config['recursive']:
 					consumers += xbom_raw.get_consumers()
@@ -145,6 +159,8 @@ def discovery(config):
 		discovery_service_time = datetime.datetime.now().timestamp() - start_discovery_service
 		logger.info("Discoverying %s took: %s", root['actuator']['asset_id'], discovery_service_time)
 
+	if xboms:
+		publish_data(config, xboms)
 	discovery_time = datetime.datetime.now().timestamp() - start_discovery
 	logger.info("Discovery took: %s", discovery_time)
 
