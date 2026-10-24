@@ -42,9 +42,9 @@ class CtxdXbom(Xbom):
 		self.xbom['services'] = ArrayOf(ServiceData)()
 		self.xbom['links'] = ArrayOf(LinkData)()
 		for s in services:
-			self.xbom['services'].append(ServiceData(service=copy.deepcopy(s), consumer=copy.deepcopy(consumer)))
+			self.xbom['services'].append(ServiceData(service=copy.deepcopy(s), source=copy.deepcopy(consumer)))
 		for l in links:
-			self.xbom['links'].append(LinkData(link=l, consumer=consumer))
+			self.xbom['links'].append(LinkData(link=l, source=consumer))
 		
 		self.xbom['date'] = DateTime()
 		try:
@@ -54,6 +54,21 @@ class CtxdXbom(Xbom):
 		self.xbom['jsonschema'] = JSONSCHEMA
 
 		return self.xbom
+
+	def merge(self, other: Xbom):
+		""" Merge Xboms
+
+			Copy the elements of the provided Xbom into the current object.
+			Raise an exception if the two formats are different.
+			
+			:param other: The Xbom to be merged
+		"""
+		assert self.format == other.format, "Merging is only possible with xbom using the same format"
+		assert hasattr(self, 'xbom') and hasattr(other, 'xbom'), "Xbom(s) must be initialized"
+
+		for c in 'services', 'links':
+			for o in other.xbom[c]:
+				self.xbom[c].append(copy.deepcopy(o))
 
 
 	def serialize(self, encoding: XbomEncoding) -> str:
@@ -84,6 +99,7 @@ class CtxdXbom(Xbom):
 			:return: The Xbom in its native format.
 		"""
 		encoder = Encoders[encoding.name].value
+		print("Encoder: ", encoder)
 		self.xbom = encoder.decode(xbom, Ctxd)
 		return self.xbom
 

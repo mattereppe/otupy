@@ -70,6 +70,16 @@ class Xbom(ABC):
 		"""
 		self.xbom = xbom
 
+	@abstractmethod
+	def merge(self, other: 'Xbom') -> None:
+		""" Merge an additional xbom 
+
+			Merge an additional xbom into the current one. Keep metadata from the
+			internal xbom; only copy objects. Specific implementations may decide
+			how to deal with duplicates and how to cross-link components.
+			
+			:param other: The new xbom to be merged
+		"""
 
 	@abstractmethod
 	def serialize(self, encoding: XbomEncoding = None) -> str:
